@@ -164,7 +164,7 @@ const MOCK_INITIAL_COMMENTS: CommentItem[] = [
               {
                 id: "c3r1r1r1",
                 author: "Minh Hoàng",
-                content: "Đúng rồi, giúp ngủ ngon hơn nữa 😊",
+                content: "Đúng rồi, giúp ngủ ngon hơn nữa",
                 createdAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(), // 2 phút trước
                 replies: [],
               },
@@ -190,7 +190,7 @@ const MOCK_INITIAL_COMMENTS: CommentItem[] = [
       {
         id: "c2r1",
         author: "Admin",
-        content: "Cảm ơn bạn đã ủng hộ shop! ❤️",
+        content: "Cảm ơn bạn đã ủng hộ shop!",
         createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), // 4 giờ trước
         replies: [],
       },
