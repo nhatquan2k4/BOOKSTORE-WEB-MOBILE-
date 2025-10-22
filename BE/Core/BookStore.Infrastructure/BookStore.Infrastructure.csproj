@@ -25,11 +25,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Shared\BookStore.common\BookStore.common.csproj" />
-    <ProjectReference Include="..\..\Shared\BookStore.Constants\BookStore.Constants.csproj" />
-    <ProjectReference Include="..\..\Shared\BookStore.Utils\BookStore.Utils.csproj" />
+    <ProjectReference Include="..\..\BookStore.Exceptions\BookStore.Exceptions.csproj" />
+    <ProjectReference Include="..\..\BookStore.Helpers\BookStore.Helpers.csproj" />
     <ProjectReference Include="..\BookStore.Application\BookStore.Application.csproj" />
     <ProjectReference Include="..\BookStore.Domain\BookStore.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Repository\Analytics &amp; Activity\" />
+    <Folder Include="Repository\Catalog\" />
+    <Folder Include="Repository\Common\" />
+    <Folder Include="Repository\Identity\" />
+    <Folder Include="Repository\System\" />
+    <Folder Include="Repository\Shipping\" />
+    <Folder Include="Repository\Rental\" />
+    <Folder Include="Repository\Pricing &amp; Inventory\" />
+    <Folder Include="Repository\Ordering &amp; Payment\" />
   </ItemGroup>
 
 </Project>

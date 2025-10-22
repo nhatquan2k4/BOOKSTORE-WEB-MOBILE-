@@ -11,9 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Shared\BookStore.common\BookStore.common.csproj" />
-    <ProjectReference Include="..\..\Shared\BookStore.Constants\BookStore.Constants.csproj" />
-    <ProjectReference Include="..\..\Shared\BookStore.Utils\BookStore.Utils.csproj" />
+    <ProjectReference Include="..\..\BookStore.Constants\BookStore.Constants.csproj" />
+    <ProjectReference Include="..\..\BookStore.Exceptions\BookStore.Exceptions.csproj" />
+    <ProjectReference Include="..\..\BookStore.Results\BookStore.Results.csproj" />
     <ProjectReference Include="..\BookStore.Domain\BookStore.Domain.csproj" />
   </ItemGroup>
 

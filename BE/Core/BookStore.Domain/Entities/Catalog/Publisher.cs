@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 
 namespace BookStore.Domain.Entities.Catalog
 {
-    public class Publisher : Common.BaseEntity
+    public class Publisher
     {
-        public string Name { get; set; }
+        public Guid Id { get; set; } // Khóa chính
+        public string Name { get; set; } = null!; // Tên nhà xuất bản
+        public string? Address { get; set; } 
+        public string? Email { get; set; }
+        public string? PhoneNumber { get; set; }
+        // Navigation property - Một nhà xuất bản có thể có nhiều sách
+        public virtual ICollection<Book> Books { get; set; } = new List<Book>();
     }
 }

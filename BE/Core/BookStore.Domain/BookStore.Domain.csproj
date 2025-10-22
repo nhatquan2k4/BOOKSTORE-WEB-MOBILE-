@@ -6,4 +6,20 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\BookStore.Constants\BookStore.Constants.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Interfaces\Analytics &amp; Activity\" />
+    <Folder Include="Interfaces\Catalog\" />
+    <Folder Include="Interfaces\Common\" />
+    <Folder Include="Interfaces\Identity\" />
+    <Folder Include="Interfaces\System\" />
+    <Folder Include="Interfaces\Shipping\" />
+    <Folder Include="Interfaces\Rental\" />
+    <Folder Include="Interfaces\Pricing &amp; Inventory\" />
+    <Folder Include="Interfaces\Ordering &amp; Payment\" />
+  </ItemGroup>
+
 </Project>
