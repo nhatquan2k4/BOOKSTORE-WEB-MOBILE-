@@ -1,12 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using BookStore.Domain.Entities.Ordering___Payment;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace BookStore.Infrastructure.Data.Configurations.Ordering___Payment
+namespace BookStore.Infrastructure.Data.Configurations.Ordering
 {
-    internal class OrderStatusLogConfiguration
+    public class OrderStatusLogConfiguration : IEntityTypeConfiguration<OrderStatusLog>
     {
+        public void Configure(EntityTypeBuilder<OrderStatusLog> builder)
+        {
+            builder.ToTable("OrderStatusLogs", "ordering");
+
+            builder.HasKey(s => s.Id);
+
+            builder.Property(s => s.OldStatus)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            builder.Property(s => s.NewStatus)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            builder.Property(s => s.ChangedBy)
+                .HasMaxLength(255);
+        }
     }
 }
