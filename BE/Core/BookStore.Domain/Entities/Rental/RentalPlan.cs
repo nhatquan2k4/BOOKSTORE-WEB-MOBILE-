@@ -17,7 +17,7 @@ namespace BookStore.Domain.Entities.Rental
         public bool IsActive { get; set; } = true;              // Gói thuê đang hoạt động hay không
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // 🔗 1-n: Một gói thuê có thể áp dụng cho nhiều lượt thuê sách
+        // 1-n: Một gói thuê có thể áp dụng cho nhiều lượt thuê sách
         public virtual ICollection<BookRental> BookRentals { get; set; } = new List<BookRental>();
     }
 }

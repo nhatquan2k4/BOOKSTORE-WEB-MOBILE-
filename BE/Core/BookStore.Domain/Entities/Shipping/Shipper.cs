@@ -16,7 +16,7 @@ namespace BookStore.Domain.Entities.Shipping
         public string? VehicleNumber { get; set; }              // Biển số xe hoặc mã phương tiện
         public bool IsActive { get; set; } = true;              // Đang hoạt động không
 
-        // 🔗 1-n: Một shipper có thể giao nhiều đơn hàng
+        // 1-n: Một shipper có thể giao nhiều đơn hàng
         public virtual ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
     }
 }

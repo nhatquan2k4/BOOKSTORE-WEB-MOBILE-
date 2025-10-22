@@ -27,7 +27,7 @@ namespace BookStore.Domain.Entities.Rental
         public bool IsRenewed { get; set; } = false;                 // Đã gia hạn gói thuê hay chưa
         public string? Status { get; set; } = "Active";              // Trạng thái: Active, Expired, Cancelled
 
-        // 🔗 1-n: Lịch sử hành động thuê/gia hạn/trả
+        // 1-n: Lịch sử hành động thuê/gia hạn/trả
         public virtual ICollection<RentalHistory> Histories { get; set; } = new List<RentalHistory>();
 
     }

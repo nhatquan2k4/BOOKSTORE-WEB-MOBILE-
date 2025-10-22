@@ -17,7 +17,7 @@ namespace BookStore.Domain.Entities.Ordering
         public bool IsActive { get; set; } = true;             // Giỏ hàng còn hiệu lực không (true = chưa checkout)
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // 🔗 1-n: Giỏ hàng chứa nhiều sản phẩm
+        // 1-n: Giỏ hàng chứa nhiều sản phẩm
         public virtual ICollection<CartItem> Items { get; set; } = new List<CartItem>();
     }
 }

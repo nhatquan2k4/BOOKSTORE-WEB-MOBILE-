@@ -21,7 +21,7 @@ namespace BookStore.Domain.Entities.Pricing___Inventory
         public Guid? UserId { get; set; }                      // Coupon có thể gán riêng cho 1 user
         public virtual User? User { get; set; }
 
-        // 🔗 Có thể gắn coupon vào nhiều đơn hàng
+        // Có thể gắn coupon vào nhiều đơn hàng
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
     }
 }

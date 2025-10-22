@@ -27,23 +27,23 @@ namespace BookStore.Domain.Entities.Ordering
         public DateTime? CompletedAt { get; set; }             // Khi đơn hoàn thành
         public DateTime? CancelledAt { get; set; }             // Khi đơn bị hủy
 
-        // 🔗 1-n: Chi tiết sản phẩm
+        // 1-n: Chi tiết sản phẩm
         public virtual ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
 
-        // 🔗 1-1: Địa chỉ giao hàng riêng cho đơn
+        // 1-1: Địa chỉ giao hàng riêng cho đơn
         public Guid AddressId { get; set; }
         public virtual OrderAddress Address { get; set; } = null!;
 
-        // 🔗 1-1: Giao dịch thanh toán
+        // 1-1: Giao dịch thanh toán
         public virtual PaymentTransaction? PaymentTransaction { get; set; }
 
-        // 🔗 1-n: Lịch sử trạng thái
+        // 1-n: Lịch sử trạng thái
         public virtual ICollection<OrderStatusLog> StatusLogs { get; set; } = new List<OrderStatusLog>();
 
-        // 🔗 1-n: Lịch sử hành động chi tiết
+        // 1-n: Lịch sử hành động chi tiết
         public virtual ICollection<OrderHistory> Histories { get; set; } = new List<OrderHistory>();
 
-        // 🔗 n-1: Có thể dùng coupon
+        // n-1: Có thể dùng coupon
         public Guid? CouponId { get; set; }
         public virtual Coupon? Coupon { get; set; }
     }

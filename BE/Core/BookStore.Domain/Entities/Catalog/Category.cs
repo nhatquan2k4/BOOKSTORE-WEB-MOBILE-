@@ -14,7 +14,7 @@ namespace BookStore.Domain.Entities.Catalog
         public Guid? ParentId { get; set; } // Dùng cho phân cấp (VD: Văn học → Tiểu thuyết)
 
 
-        // 🔗 Quan hệ đệ quy: 1 thể loại cha có nhiều thể loại con
+        // Quan hệ đệ quy: 1 thể loại cha có nhiều thể loại con
         public virtual Category? Parent { get; set; }
         public virtual ICollection<Category> SubCategories { get; set; } = new List<Category>();
 
