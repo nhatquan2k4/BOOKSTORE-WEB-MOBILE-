@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Migrations\" />
     <Folder Include="Repository\Analytics &amp; Activity\" />
     <Folder Include="Repository\Catalog\" />
     <Folder Include="Repository\Common\" />

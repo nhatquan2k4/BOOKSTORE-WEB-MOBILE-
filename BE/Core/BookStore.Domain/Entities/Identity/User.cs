@@ -2,6 +2,7 @@
 using BookStore.Domain.Entities.Common;
 using BookStore.Domain.Entities.Ordering;
 using BookStore.Domain.Entities.Rental;
+using BookStore.Domain.Entities.System;
 using System;
 using System.Collections.Generic;
 using System.Linq;

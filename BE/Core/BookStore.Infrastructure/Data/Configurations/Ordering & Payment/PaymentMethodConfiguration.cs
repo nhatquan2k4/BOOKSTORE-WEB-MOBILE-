@@ -1,12 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using BookStore.Domain.Entities.Ordering___Payment;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace BookStore.Infrastructure.Data.Configurations.Ordering___Payment
+namespace BookStore.Infrastructure.Data.Configurations.Ordering
 {
-    internal class PaymentMethodConfiguration
+    public class PaymentMethodConfiguration : IEntityTypeConfiguration<PaymentMethod>
     {
+        public void Configure(EntityTypeBuilder<PaymentMethod> builder)
+        {
+            builder.ToTable("PaymentMethods", "ordering");
+
+            builder.HasKey(p => p.Id);
+
+            builder.Property(p => p.Name)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            builder.Property(p => p.Description)
+                .HasMaxLength(500);
+
+            builder.Property(p => p.IsActive)
+                .HasDefaultValue(true);
+        }
     }
 }

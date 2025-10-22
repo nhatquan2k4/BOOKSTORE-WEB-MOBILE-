@@ -8,6 +8,7 @@ namespace BookStore.Domain.Entities.Identity
 {
     public class UserAddress
     {
+        public Guid Id { get; set; }
         public string ReipientName { get; set; } = null!; // Tên người nhận
         public string PhoneNumber { get; set; } = null!; // SDT người nhận
         public string Povince { get; set; } = null!; // Tỉnh/Thành phố
