@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BookStore.Constants\BookStore.Constants.csproj" />
+    <ProjectReference Include="..\..\BookStore.Exceptions\BookStore.Exceptions.csproj" />
+    <ProjectReference Include="..\..\BookStore.Results\BookStore.Results.csproj" />
+    <ProjectReference Include="..\BookStore.Domain\BookStore.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Exceptions\" />
+    <Folder Include="Mappers\Book\" />
+    <Folder Include="Mappers\Cart\" />
+    <Folder Include="Mappers\User\" />
+    <Folder Include="Mappers\Order\" />
+  </ItemGroup>
+
+</Project>
