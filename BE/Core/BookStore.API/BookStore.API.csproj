@@ -19,7 +19,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\BookStore.Results\BookStore.Results.csproj" />
-    <ProjectReference Include="..\..\Shared\BookStore.Constants\BookStore.Constants.csproj" />
     <ProjectReference Include="..\BookStore.Application\BookStore.Application.csproj" />
     <ProjectReference Include="..\BookStore.Infrastructure\BookStore.Infrastructure.csproj" />
     <ProjectReference Include="..\BookStore.Domain\BookStore.Domain.csproj" />
