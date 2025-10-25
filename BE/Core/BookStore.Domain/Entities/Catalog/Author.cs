@@ -14,6 +14,6 @@ namespace BookStore.Domain.Entities.Catalog
         public string? AvartarUrl { get; set; } // URL ảnh đại diện
 
         // Navigation property - Một tác giả có thể có nhiều sách
-        public virtual ICollection<BookAuthor> BookAuthor { get; set; } = new List<BookAuthor>();
+        public virtual ICollection<BookAuthor> BookAuthors { get; set; } = new List<BookAuthor>();
     }
 }

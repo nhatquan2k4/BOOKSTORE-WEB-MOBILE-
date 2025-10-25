@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using BookStore.Domain.Entities.System;
 
 namespace BookStore.Domain.Entities.Identity
 {

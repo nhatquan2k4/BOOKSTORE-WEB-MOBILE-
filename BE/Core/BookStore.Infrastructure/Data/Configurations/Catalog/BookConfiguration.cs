@@ -16,11 +16,13 @@ namespace BookStore.Infrastructure.Data.Configurations.Catalog
                 .IsRequired()
                 .HasMaxLength(300);
 
-            builder.Property(b => b.ISBN)
-                .IsRequired()
-                .HasMaxLength(50);
-
-            builder.HasIndex(b => b.ISBN).IsUnique();
+            builder.OwnsOne(b => b.ISBN, isbn =>
+            {
+                isbn.Property(i => i.Value)
+                    .HasColumnName("ISBN")
+                    .HasMaxLength(50)
+                    .IsRequired();
+            });
 
             builder.Property(b => b.Description)
                 .HasMaxLength(4000);

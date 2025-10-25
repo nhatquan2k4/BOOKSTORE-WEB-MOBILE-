@@ -18,7 +18,7 @@ namespace BookStore.Infrastructure.Data.Configurations.Catalog
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne(ba => ba.Author)
-                .WithMany(a => a.BookAuthor)
+                .WithMany(a => a.BookAuthors)
                 .HasForeignKey(ba => ba.AuthorId)
                 .OnDelete(DeleteBehavior.Cascade);
         }

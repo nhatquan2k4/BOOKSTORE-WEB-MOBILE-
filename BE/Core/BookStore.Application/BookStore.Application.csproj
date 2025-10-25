@@ -8,13 +8,14 @@
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BookStore.Constants\BookStore.Constants.csproj" />
     <ProjectReference Include="..\..\BookStore.Exceptions\BookStore.Exceptions.csproj" />
     <ProjectReference Include="..\..\BookStore.Results\BookStore.Results.csproj" />
     <ProjectReference Include="..\BookStore.Domain\BookStore.Domain.csproj" />
+    <ProjectReference Include="..\BookStore.Infrastructure\BookStore.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
