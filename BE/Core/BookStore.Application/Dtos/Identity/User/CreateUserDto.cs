@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Application.Dtos.Identity.UserManagement
+namespace BookStore.Application.Dtos.Identity.User
 {
     public class CreateUserDto
     {

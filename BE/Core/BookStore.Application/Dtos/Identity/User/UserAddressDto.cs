@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Application.Dtos.Identity.UserManagement
+namespace BookStore.Application.Dtos.Identity.User
 {
     public class UserAddressDto
     {
@@ -17,8 +17,6 @@ namespace BookStore.Application.Dtos.Identity.UserManagement
         public string District { get; set; } = null!;
         public string Province { get; set; } = null!;
         public bool IsDefault { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
     }
 
     public class CreateUserAddressDto

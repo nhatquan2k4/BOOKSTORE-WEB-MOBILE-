@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static BookStore.Application.Dtos.Identity.AuthDto;
+
 
 namespace BookStore.Application.Dtos.Identity.Auth
 {

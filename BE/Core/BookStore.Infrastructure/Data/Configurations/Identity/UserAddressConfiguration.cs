@@ -17,7 +17,7 @@ namespace BookStore.Infrastructure.Data.Configurations.Identity
 
             builder.HasKey(a => a.Id);
 
-            builder.Property(a => a.ReipientName)
+            builder.Property(a => a.RecipientName)
                 .HasMaxLength(100)
                 .IsRequired();
 
@@ -25,7 +25,7 @@ namespace BookStore.Infrastructure.Data.Configurations.Identity
                 .HasMaxLength(20)
                 .IsRequired();
 
-            builder.Property(a => a.Povince)
+            builder.Property(a => a.Province)
                 .HasMaxLength(100)
                 .IsRequired();
 

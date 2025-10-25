@@ -5,21 +5,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Application.Dtos.Identity.UserManagement
+namespace BookStore.Application.Dtos.Identity.User
 {
     public class UserDto
     {
         public Guid Id { get; set; }
         public string Email { get; set; } = null!;
-        public string IsActive { get; set; } = null!;
-        public DateTime CreatedAt { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime CreateAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public UserProfileDto? UserProfile { get; set; }
+        public UserProfileDto? Profiles { get; set; }
         public List<UserAddressDto> Addresses { get; set; } = new();
         public List<string> Roles { get; set; } = new();
-        public List<UserDeviceDto> DeviceDtos { get; set; } = new();
-
-
+        public List<UserDeviceDto> Devices { get; set; } = new();
     }
     public class UserSummaryDto
     {

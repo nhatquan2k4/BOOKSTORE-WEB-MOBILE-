@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Application.Dtos.Identity.UserManagement
+namespace BookStore.Application.Dtos.Identity.User
 {
     public class UserProfileDto
     {
@@ -16,8 +16,6 @@ namespace BookStore.Application.Dtos.Identity.UserManagement
         public string? AvatarUrl { get; set; }
         public string? PhoneNumber { get; set; }
         public string? Bio { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
     }
 
 }

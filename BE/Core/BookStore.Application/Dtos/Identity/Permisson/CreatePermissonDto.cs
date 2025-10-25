@@ -9,4 +9,4 @@
         public string Resource { get; set; } = null!;
         public bool IsActive { get; set; } = true;
     }
-}s
+}
