@@ -8,9 +8,9 @@ namespace BookStore.Domain.Entities.Catalog
 {
     public class Publisher
     {
-        public Guid Id { get; set; } // Khóa chính
-        public string Name { get; set; } = null!; // Tên nhà xuất bản
-        public string? Address { get; set; } 
+        public Guid Id { get; set; } 
+        public string Name { get; set; } = null!; 
+        public string? Address { get; set; }
         public string? Email { get; set; }
         public string? PhoneNumber { get; set; }
         // Navigation property - Một nhà xuất bản có thể có nhiều sách

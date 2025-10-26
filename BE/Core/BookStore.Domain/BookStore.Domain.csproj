@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <Folder Include="Interfaces\Analytics &amp; Activity\" />
-    <Folder Include="Interfaces\Catalog\" />
     <Folder Include="Interfaces\Common\" />
     <Folder Include="Interfaces\System\" />
     <Folder Include="Interfaces\Shipping\" />

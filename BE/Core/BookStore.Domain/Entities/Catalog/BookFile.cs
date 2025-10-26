@@ -10,10 +10,10 @@ namespace BookStore.Domain.Entities.Catalog
     {
         public Guid Id { get; set; }
 
-        public string FileUrl { get; set; } = null!;          // Link file ebook (PDF, EPUB,...)
-        public string FileType { get; set; } = null!;         // Loại file
-        public long FileSize { get; set; }                    // Dung lượng file (bytes)
-        public bool IsPreview { get; set; }                   // Có phải bản xem thử không
+        public string FileUrl { get; set; } = null!;          
+        public string FileType { get; set; } = null!;         
+        public long FileSize { get; set; }                   
+        public bool IsPreview { get; set; }                 
 
         public Guid BookId { get; set; }
         public virtual Book Book { get; set; } = null!;
