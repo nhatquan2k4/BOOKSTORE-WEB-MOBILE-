@@ -4,7 +4,7 @@ namespace BookStore.Application.Interfaces.Catalog
 {
     public interface IBookMetadataService
     {
-        Task<IEnumerable<BookMetadataDto>> GetAllAsync();
+        // ❌ XÓA GetAllAsync() - Không hợp lý lấy metadata của ALL sách
         Task<BookMetadataDto?> GetByIdAsync(Guid id);
         Task<IEnumerable<BookMetadataDto>> GetByBookIdAsync(Guid bookId);
         Task<BookMetadataDto> CreateAsync(BookMetadataDto dto);

@@ -8,24 +8,17 @@ namespace BookStore.Application.Services.Catalog
     public class BookImageService : IBookImageService
     {
         private readonly IBookImageRepository _bookImageRepository;
+        private readonly IBookRepository _bookRepository;
 
-        public BookImageService(IBookImageRepository bookImageRepository)
+        public BookImageService(
+            IBookImageRepository bookImageRepository,
+            IBookRepository bookRepository)
         {
             _bookImageRepository = bookImageRepository;
+            _bookRepository = bookRepository;
         }
 
-        public async Task<IEnumerable<BookImageDto>> GetAllAsync()
-        {
-            var images = await _bookImageRepository.GetAllAsync();
-            return images.Select(i => new BookImageDto
-            {
-                Id = i.Id,
-                ImageUrl = i.ImageUrl,
-                IsCover = i.IsCover,
-                DisplayOrder = i.DisplayOrder,
-                BookId = i.BookId
-            });
-        }
+        // ❌ XÓA GetAllAsync() - Hình ảnh chỉ nên lấy theo BookId
 
         public async Task<BookImageDto?> GetByIdAsync(Guid id)
         {
@@ -57,6 +50,30 @@ namespace BookStore.Application.Services.Catalog
 
         public async Task<BookImageDto> CreateAsync(BookImageDto dto)
         {
+            // ✅ VALIDATION: Kiểm tra Book có tồn tại không
+            var book = await _bookRepository.GetByIdAsync(dto.BookId);
+            if (book == null)
+            {
+                throw new InvalidOperationException($"Sách với ID {dto.BookId} không tồn tại");
+            }
+
+            // ✅ VALIDATION: Kiểm tra ImageUrl không trống
+            if (string.IsNullOrWhiteSpace(dto.ImageUrl))
+            {
+                throw new ArgumentException("URL hình ảnh không được để trống");
+            }
+
+            // ✅ BUSINESS LOGIC: Nếu là ảnh bìa, bỏ IsCover của ảnh cũ
+            if (dto.IsCover)
+            {
+                var existingImages = await _bookImageRepository.GetByBookIdAsync(dto.BookId);
+                foreach (var img in existingImages.Where(i => i.IsCover))
+                {
+                    img.IsCover = false;
+                    _bookImageRepository.Update(img);
+                }
+            }
+
             var image = new BookImage
             {
                 Id = Guid.NewGuid(),

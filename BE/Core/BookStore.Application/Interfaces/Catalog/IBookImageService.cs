@@ -4,7 +4,7 @@ namespace BookStore.Application.Interfaces.Catalog
 {
     public interface IBookImageService
     {
-        Task<IEnumerable<BookImageDto>> GetAllAsync();
+        // ❌ XÓA GetAllAsync() - Hình ảnh chỉ nên lấy theo BookId
         Task<BookImageDto?> GetByIdAsync(Guid id);
         Task<IEnumerable<BookImageDto>> GetByBookIdAsync(Guid bookId);
         Task<BookImageDto> CreateAsync(BookImageDto dto);

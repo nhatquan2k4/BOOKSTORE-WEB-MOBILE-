@@ -8,22 +8,14 @@ namespace BookStore.Application.Services.Catalog
     public class BookMetadataService : IBookMetadataService
     {
         private readonly IBookMetadataRepository _bookMetadataRepository;
+        private readonly IBookRepository _bookRepository;
 
-        public BookMetadataService(IBookMetadataRepository bookMetadataRepository)
+        public BookMetadataService(
+            IBookMetadataRepository bookMetadataRepository,
+            IBookRepository bookRepository)
         {
             _bookMetadataRepository = bookMetadataRepository;
-        }
-
-        public async Task<IEnumerable<BookMetadataDto>> GetAllAsync()
-        {
-            var metadata = await _bookMetadataRepository.GetAllAsync();
-            return metadata.Select(m => new BookMetadataDto
-            {
-                Id = m.Id,
-                Key = m.Key,
-                Value = m.Value,
-                BookId = m.BookId
-            });
+            _bookRepository = bookRepository;
         }
 
         public async Task<BookMetadataDto?> GetByIdAsync(Guid id)
@@ -54,6 +46,19 @@ namespace BookStore.Application.Services.Catalog
 
         public async Task<BookMetadataDto> CreateAsync(BookMetadataDto dto)
         {
+            // ✅ VALIDATION: Kiểm tra Book có tồn tại không
+            var book = await _bookRepository.GetByIdAsync(dto.BookId);
+            if (book == null)
+            {
+                throw new InvalidOperationException($"Sách với ID {dto.BookId} không tồn tại");
+            }
+
+            // ✅ VALIDATION: Kiểm tra Key không trống
+            if (string.IsNullOrWhiteSpace(dto.Key))
+            {
+                throw new ArgumentException("Key không được để trống");
+            }
+
             var metadata = new BookMetadata
             {
                 Id = Guid.NewGuid(),
