@@ -1,14 +1,18 @@
 using BookStore.Application.DTOs.Catalog.Book;
-using BookStore.Application.DTOs.Catalog.Author;
-using BookStore.Application.DTOs.Catalog.Category;
-using BookStore.Application.DTOs.Catalog.Publisher;
 using BookStore.Domain.Entities.Catalog;
 using BookStore.Domain.ValueObjects;
 
 namespace BookStore.Application.Mappers.Catalog
 {
+    /// <summary>
+    /// Mapper thủ công cho Book entity
+    /// Sử dụng các mapper khác để map nested entities
+    /// </summary>
     public static class BookMapper
     {
+        /// <summary>
+        /// Map Book entity sang BookDto (Simple DTO với tên thay vì nested objects)
+        /// </summary>
         public static BookDto ToDto(this Book book)
         {
             return new BookDto
@@ -42,73 +46,34 @@ namespace BookStore.Application.Mappers.Catalog
                 PageCount = book.PageCount,
                 IsAvailable = book.IsAvailable,
 
-                // Publisher
-                Publisher = book.Publisher != null ? new PublisherDto
-                {
-                    Id = book.Publisher.Id,
-                    Name = book.Publisher.Name,
-                    Address = book.Publisher.Address,
-                    Email = book.Publisher.Email,
-                    PhoneNumber = book.Publisher.PhoneNumber
-                } : null!,
+                // Publisher - sử dụng PublisherMapper
+                Publisher = book.Publisher?.ToDto()!,
 
-                // BookFormat
-                BookFormat = book.BookFormat != null ? new BookFormatDto
-                {
-                    Id = book.BookFormat.Id,
-                    FormatType = book.BookFormat.FormatType,
-                    Description = book.BookFormat.Description
-                } : null,
+                // BookFormat - sử dụng BookFormatMapper
+                BookFormat = book.BookFormat?.ToDto(),
 
-                // Authors
-                Authors = book.BookAuthors?.Select(ba => new AuthorDto
-                {
-                    Id = ba.Author.Id,
-                    Name = ba.Author.Name,
-                    Biography = ba.Author.Biography,
-                    AvartarUrl = ba.Author.AvartarUrl
-                }).ToList() ?? new List<AuthorDto>(),
+                // Authors - sử dụng AuthorMapper
+                Authors = book.BookAuthors?.Select(ba => ba.Author.ToDto()).ToList()
+                    ?? new List<DTOs.Catalog.Author.AuthorDto>(),
 
-                // Categories
-                Categories = book.BookCategories?.Select(bc => new CategoryDto
-                {
-                    Id = bc.Category.Id,
-                    Name = bc.Category.Name,
-                    Description = bc.Category.Description,
-                    ParentId = bc.Category.ParentId ?? Guid.Empty
-                }).ToList() ?? new List<CategoryDto>(),
+                // Categories - sử dụng CategoryMapper
+                Categories = book.BookCategories?.Select(bc => bc.Category.ToDto()).ToList()
+                    ?? new List<DTOs.Catalog.Category.CategoryDto>(),
 
-                // Images
-                Images = book.Images?.Select(i => new BookImageDto
-                {
-                    Id = i.Id,
-                    ImageUrl = i.ImageUrl,
-                    IsCover = i.IsCover,
-                    DisplayOrder = i.DisplayOrder,
-                    BookId = i.BookId
-                }).ToList() ?? new List<BookImageDto>(),
+                // Images - sử dụng BookImageMapper
+                Images = book.Images?.ToDtoList() ?? new List<BookImageDto>(),
 
-                // Files
-                Files = book.Files?.Select(f => new BookFileDto
-                {
-                    Id = f.Id,
-                    FileUrl = f.FileUrl,
-                    FileType = f.FileType,
-                    FileSize = f.FileSize,
-                    IsPreview = f.IsPreview,
-                    BookId = f.BookId
-                }).ToList() ?? new List<BookFileDto>(),
+                // Files - sử dụng BookFileMapper
+                Files = book.Files?.ToDtoList() ?? new List<BookFileDto>(),
 
-                // Metadata
-                Metadata = book.Metadata?.Select(m => new BookMetadataDto
-                {
-                    Id = m.Id,
-                    Key = m.Key,
-                    Value = m.Value,
-                    BookId = m.BookId
-                }).ToList() ?? new List<BookMetadataDto>()
+                // Metadata - sử dụng BookMetadataMapper
+                Metadata = book.Metadata?.ToDtoList() ?? new List<BookMetadataDto>()
             };
         }
+
+        /// <summary>
+        /// Map CreateBookDto sang Book entity (for Create operation)
+        /// </summary>
         public static Book ToEntity(this CreateBookDto dto)
         {
             return new Book
@@ -128,6 +93,9 @@ namespace BookStore.Application.Mappers.Catalog
             };
         }
 
+        /// <summary>
+        /// Update Book entity từ UpdateBookDto (for Update operation)
+        /// </summary>
         public static void UpdateFromDto(this Book book, UpdateBookDto dto)
         {
             book.Title = dto.Title;
@@ -141,6 +109,10 @@ namespace BookStore.Application.Mappers.Catalog
             book.PublisherId = dto.PublisherId;
             book.BookFormatId = dto.BookFormatId;
         }
+
+        /// <summary>
+        /// Map collection Book entities sang collection BookDto
+        /// </summary>
         public static List<BookDto> ToDtoList(this IEnumerable<Book> books)
         {
             return books.Select(b => b.ToDto()).ToList();

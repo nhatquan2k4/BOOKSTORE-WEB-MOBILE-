@@ -1,23 +1,34 @@
-﻿using BookStore.Application.DTOs.Catalog.Book;
 using BookStore.Application.DTOs.Catalog.Author;
+using BookStore.Application.DTOs.Catalog.Book;
 using BookStore.Application.DTOs.Catalog.Category;
 using BookStore.Application.DTOs.Catalog.Publisher;
 using BookStore.Application.Interfaces.Catalog;
 using BookStore.Domain.Entities.Catalog;
+using BookStore.Domain.Interfaces.Catalog;
 using BookStore.Domain.ValueObjects;
-using BookStore.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-using BookStore.Application.Mappers.Catalog;
 
 namespace BookStore.Application.Services.Catalog
 {
     public class BookService : IBookService
     {
-        private readonly AppDbContext _context;
+        private readonly IBookRepository _bookRepository;
+        private readonly IAuthorRepository _authorRepository;
+        private readonly ICategoryRepository _categoryRepository;
+        private readonly IPublisherRepository _publisherRepository;
+        private readonly IBookFormatRepository _bookFormatRepository;
 
-        public BookService(AppDbContext context)
+        public BookService(
+            IBookRepository bookRepository,
+            IAuthorRepository authorRepository,
+            ICategoryRepository categoryRepository,
+            IPublisherRepository publisherRepository,
+            IBookFormatRepository bookFormatRepository)
         {
-            _context = context;
+            _bookRepository = bookRepository;
+            _authorRepository = authorRepository;
+            _categoryRepository = categoryRepository;
+            _publisherRepository = publisherRepository;
+            _bookFormatRepository = bookFormatRepository;
         }
 
         public async Task<(List<BookDto> Items, int TotalCount)> GetAllAsync(
@@ -29,18 +40,16 @@ namespace BookStore.Application.Services.Catalog
             Guid? publisherId = null,
             bool? isAvailable = null)
         {
-            var query = _context.Books
-                .Include(b => b.Publisher)
-                .Include(b => b.BookFormat)
-                .Include(b => b.BookAuthors).ThenInclude(ba => ba.Author)
-                .Include(b => b.BookCategories).ThenInclude(bc => bc.Category)
-                .AsQueryable();
+            // Get all books
+            var allBooks = await _bookRepository.GetAllAsync();
 
-            // Filters
+            // Apply filters
+            var query = allBooks.AsQueryable();
+
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(b => b.Title.Contains(searchTerm) ||
-                                        b.ISBN.Value.Contains(searchTerm));
+                query = query.Where(b => b.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                                        b.ISBN.Value.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
             }
 
             if (categoryId.HasValue)
@@ -63,105 +72,90 @@ namespace BookStore.Application.Services.Catalog
                 query = query.Where(b => b.IsAvailable == isAvailable.Value);
             }
 
-            var totalCount = await query.CountAsync();
+            var totalCount = query.Count();
 
-            var books = await query
+            // Apply pagination
+            var books = query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(b => new BookDto
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    ISBN = b.ISBN.Value,
-                    PublicationYear = b.PublicationYear,
-                    Language = b.Language,
-                    PageCount = b.PageCount,
-                    IsAvailable = b.IsAvailable,
-                    PublisherId = b.PublisherId,
-                    PublisherName = b.Publisher.Name,
-                    BookFormatId = b.BookFormatId,
-                    BookFormatName = b.BookFormat != null ? b.BookFormat.FormatType : null,
-                    AuthorNames = b.BookAuthors.Select(ba => ba.Author.Name).ToList(),
-                    CategoryNames = b.BookCategories.Select(bc => bc.Category.Name).ToList()
-                })
-                .ToListAsync();
+                .ToList();
 
-            return (books, totalCount);
+            var bookDtos = books.Select(MapToBookDto).ToList();
+
+            return (bookDtos, totalCount);
         }
 
         public async Task<BookDetailDto?> GetByIdAsync(Guid id)
         {
-            var book = await _context.Books
-                .Include(b => b.Publisher)
-                .Include(b => b.BookFormat)
-                .Include(b => b.BookAuthors).ThenInclude(ba => ba.Author)
-                .Include(b => b.BookCategories).ThenInclude(bc => bc.Category)
-                .Include(b => b.Images)
-                .Include(b => b.Files)
-                .Include(b => b.Metadata)
-                .FirstOrDefaultAsync(b => b.Id == id);
-
+            var book = await _bookRepository.GetDetailByIdAsync(id);
             if (book == null) return null;
 
-            return book.ToDetailDto();
+            return MapToBookDetailDto(book);
         }
 
         public async Task<BookDetailDto?> GetByISBNAsync(string isbn)
         {
-            var book = await _context.Books
-                .Include(b => b.Publisher)
-                .Include(b => b.BookFormat)
-                .Include(b => b.BookAuthors).ThenInclude(ba => ba.Author)
-                .Include(b => b.BookCategories).ThenInclude(bc => bc.Category)
-                .Include(b => b.Images)
-                .Include(b => b.Files)
-                .Include(b => b.Metadata)
-                .FirstOrDefaultAsync(b => b.ISBN.Value == isbn);
-
+            var book = await _bookRepository.GetByISBNAsync(isbn);
             if (book == null) return null;
 
-            return book.ToDetailDto();
+            return MapToBookDetailDto(book);
         }
 
         public async Task<bool> IsISBNExistsAsync(string isbn, Guid? excludeBookId = null)
         {
-            var query = _context.Books.Where(b => b.ISBN.Value == isbn);
-
-            if (excludeBookId.HasValue)
-            {
-                query = query.Where(b => b.Id != excludeBookId.Value);
-            }
-
-            return await query.AnyAsync();
+            return await _bookRepository.IsISBNExistsAsync(isbn, excludeBookId);
         }
-
 
         public async Task<BookDetailDto> CreateAsync(CreateBookDto dto)
         {
-            // Validate ISBN
-            if (await IsISBNExistsAsync(dto.ISBN))
+            // Validate ISBN exists
+            if (await _bookRepository.IsISBNExistsAsync(dto.ISBN))
             {
-                throw new InvalidOperationException($"ISBN {dto.ISBN} đã tồn tại");
+                throw new InvalidOperationException($"Sách với ISBN '{dto.ISBN}' đã tồn tại");
             }
 
             // Validate Publisher exists
-            var publisherExists = await _context.Publishers.AnyAsync(p => p.Id == dto.PublisherId);
-            if (!publisherExists)
+            var publisher = await _publisherRepository.GetByIdAsync(dto.PublisherId);
+            if (publisher == null)
             {
                 throw new InvalidOperationException("Nhà xuất bản không tồn tại");
             }
 
-            // Validate BookFormat exists (if provided)
+            // Validate BookFormat if provided
             if (dto.BookFormatId.HasValue)
             {
-                var formatExists = await _context.BookFormats.AnyAsync(f => f.Id == dto.BookFormatId.Value);
-                if (!formatExists)
+                var bookFormat = await _bookFormatRepository.GetByIdAsync(dto.BookFormatId.Value);
+                if (bookFormat == null)
                 {
                     throw new InvalidOperationException("Định dạng sách không tồn tại");
                 }
             }
 
-            // Create Book
+            // Validate Authors exist
+            var authors = new List<Author>();
+            foreach (var authorId in dto.AuthorIds)
+            {
+                var author = await _authorRepository.GetByIdAsync(authorId);
+                if (author == null)
+                {
+                    throw new InvalidOperationException($"Tác giả với ID {authorId} không tồn tại");
+                }
+                authors.Add(author);
+            }
+
+            // Validate Categories exist
+            var categories = new List<Category>();
+            foreach (var categoryId in dto.CategoryIds)
+            {
+                var category = await _categoryRepository.GetByIdAsync(categoryId);
+                if (category == null)
+                {
+                    throw new InvalidOperationException($"Thể loại với ID {categoryId} không tồn tại");
+                }
+                categories.Add(category);
+            }
+
+            // Create Book entity
             var book = new Book
             {
                 Id = Guid.NewGuid(),
@@ -177,64 +171,94 @@ namespace BookStore.Application.Services.Catalog
                 BookFormatId = dto.BookFormatId
             };
 
-            _context.Books.Add(book);
-
-            // Add Authors (many-to-many)
-            if (dto.AuthorIds.Any())
+            // Add BookAuthors (many-to-many)
+            foreach (var author in authors)
             {
-                foreach (var authorId in dto.AuthorIds)
+                book.BookAuthors.Add(new BookAuthor
                 {
-                    var authorExists = await _context.Authors.AnyAsync(a => a.Id == authorId);
-                    if (!authorExists) continue;
-
-                    _context.BookAuthors.Add(new BookAuthor
-                    {
-                        BookId = book.Id,
-                        AuthorId = authorId
-                    });
-                }
+                    BookId = book.Id,
+                    AuthorId = author.Id,
+                    Book = book,
+                    Author = author
+                });
             }
 
-            // Add Categories (many-to-many)
-            if (dto.CategoryIds.Any())
+            // Add BookCategories (many-to-many)
+            foreach (var category in categories)
             {
-                foreach (var categoryId in dto.CategoryIds)
+                book.BookCategories.Add(new BookCategory
                 {
-                    var categoryExists = await _context.Categories.AnyAsync(c => c.Id == categoryId);
-                    if (!categoryExists) continue;
-
-                    _context.BookCategories.Add(new BookCategory
-                    {
-                        BookId = book.Id,
-                        CategoryId = categoryId
-                    });
-                }
+                    BookId = book.Id,
+                    CategoryId = category.Id,
+                    Book = book,
+                    Category = category
+                });
             }
 
-            await _context.SaveChangesAsync();
+            await _bookRepository.AddAsync(book);
+            await _bookRepository.SaveChangesAsync();
 
-            return (await GetByIdAsync(book.Id))!;
+            // Return detail
+            var createdBook = await _bookRepository.GetDetailByIdAsync(book.Id);
+            return MapToBookDetailDto(createdBook!);
         }
 
         public async Task<BookDetailDto> UpdateAsync(UpdateBookDto dto)
         {
-            var book = await _context.Books
-                .Include(b => b.BookAuthors)
-                .Include(b => b.BookCategories)
-                .FirstOrDefaultAsync(b => b.Id == dto.Id);
-
+            var book = await _bookRepository.GetDetailByIdAsync(dto.Id);
             if (book == null)
             {
                 throw new InvalidOperationException("Sách không tồn tại");
             }
 
-            // Validate ISBN (exclude current book)
-            if (await IsISBNExistsAsync(dto.ISBN, dto.Id))
+            // Validate ISBN exists (exclude current book)
+            if (await _bookRepository.IsISBNExistsAsync(dto.ISBN, dto.Id))
             {
-                throw new InvalidOperationException($"ISBN {dto.ISBN} đã được sử dụng bởi sách khác");
+                throw new InvalidOperationException($"Sách với ISBN '{dto.ISBN}' đã tồn tại");
             }
 
-            // Update properties
+            // Validate Publisher exists
+            var publisher = await _publisherRepository.GetByIdAsync(dto.PublisherId);
+            if (publisher == null)
+            {
+                throw new InvalidOperationException("Nhà xuất bản không tồn tại");
+            }
+
+            // Validate BookFormat if provided
+            if (dto.BookFormatId.HasValue)
+            {
+                var bookFormat = await _bookFormatRepository.GetByIdAsync(dto.BookFormatId.Value);
+                if (bookFormat == null)
+                {
+                    throw new InvalidOperationException("Định dạng sách không tồn tại");
+                }
+            }
+
+            // Validate Authors exist
+            var authors = new List<Author>();
+            foreach (var authorId in dto.AuthorIds)
+            {
+                var author = await _authorRepository.GetByIdAsync(authorId);
+                if (author == null)
+                {
+                    throw new InvalidOperationException($"Tác giả với ID {authorId} không tồn tại");
+                }
+                authors.Add(author);
+            }
+
+            // Validate Categories exist
+            var categories = new List<Category>();
+            foreach (var categoryId in dto.CategoryIds)
+            {
+                var category = await _categoryRepository.GetByIdAsync(categoryId);
+                if (category == null)
+                {
+                    throw new InvalidOperationException($"Thể loại với ID {categoryId} không tồn tại");
+                }
+                categories.Add(category);
+            }
+
+            // Update basic properties
             book.Title = dto.Title;
             book.ISBN = new ISBN(dto.ISBN);
             book.Description = dto.Description;
@@ -246,168 +270,190 @@ namespace BookStore.Application.Services.Catalog
             book.PublisherId = dto.PublisherId;
             book.BookFormatId = dto.BookFormatId;
 
-            // Update Authors
-            _context.BookAuthors.RemoveRange(book.BookAuthors);
-            foreach (var authorId in dto.AuthorIds)
+            // Update BookAuthors (many-to-many)
+            book.BookAuthors.Clear();
+            foreach (var author in authors)
             {
-                _context.BookAuthors.Add(new BookAuthor
+                book.BookAuthors.Add(new BookAuthor
                 {
                     BookId = book.Id,
-                    AuthorId = authorId
+                    AuthorId = author.Id,
+                    Book = book,
+                    Author = author
                 });
             }
 
-            // Update Categories
-            _context.BookCategories.RemoveRange(book.BookCategories);
-            foreach (var categoryId in dto.CategoryIds)
+            // Update BookCategories (many-to-many)
+            book.BookCategories.Clear();
+            foreach (var category in categories)
             {
-                _context.BookCategories.Add(new BookCategory
+                book.BookCategories.Add(new BookCategory
                 {
                     BookId = book.Id,
-                    CategoryId = categoryId
+                    CategoryId = category.Id,
+                    Book = book,
+                    Category = category
                 });
             }
 
-            await _context.SaveChangesAsync();
+            _bookRepository.Update(book);
+            await _bookRepository.SaveChangesAsync();
 
-            return (await GetByIdAsync(book.Id))!;
+            // Return updated detail
+            var updatedBook = await _bookRepository.GetDetailByIdAsync(book.Id);
+            return MapToBookDetailDto(updatedBook!);
         }
 
         public async Task<bool> DeleteAsync(Guid id)
         {
-            var book = await _context.Books.FindAsync(id);
+            var book = await _bookRepository.GetByIdAsync(id);
             if (book == null) return false;
 
-            // Hard delete (vì IBookService không có soft delete)
-            _context.Books.Remove(book);
-            await _context.SaveChangesAsync();
+            _bookRepository.Delete(book);
+            await _bookRepository.SaveChangesAsync();
 
             return true;
         }
 
-        // ===== BUSINESS METHODS =====
-
         public async Task<bool> UpdateAvailabilityAsync(Guid id, bool isAvailable)
         {
-            var book = await _context.Books.FindAsync(id);
+            var book = await _bookRepository.GetByIdAsync(id);
             if (book == null) return false;
 
             book.IsAvailable = isAvailable;
-            await _context.SaveChangesAsync();
+            _bookRepository.Update(book);
+            await _bookRepository.SaveChangesAsync();
 
             return true;
         }
 
         public async Task<List<BookDto>> GetByCategoryAsync(Guid categoryId, int top = 10)
         {
-            return await _context.Books
-                .Include(b => b.Publisher)
-                .Include(b => b.BookFormat)
-                .Include(b => b.BookAuthors).ThenInclude(ba => ba.Author)
-                .Include(b => b.BookCategories).ThenInclude(bc => bc.Category)
-                .Where(b => b.BookCategories.Any(bc => bc.CategoryId == categoryId) && b.IsAvailable)
-                .Take(top)
-                .Select(b => new BookDto
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    ISBN = b.ISBN.Value,
-                    PublicationYear = b.PublicationYear,
-                    Language = b.Language,
-                    PageCount = b.PageCount,
-                    IsAvailable = b.IsAvailable,
-                    PublisherId = b.PublisherId,
-                    PublisherName = b.Publisher.Name,
-                    BookFormatId = b.BookFormatId,
-                    BookFormatName = b.BookFormat != null ? b.BookFormat.FormatType : null,
-                    AuthorNames = b.BookAuthors.Select(ba => ba.Author.Name).ToList(),
-                    CategoryNames = b.BookCategories.Select(bc => bc.Category.Name).ToList()
-                })
-                .ToListAsync();
+            var books = await _bookRepository.GetByCategoryAsync(categoryId);
+            return books.Take(top).Select(MapToBookDto).ToList();
         }
 
         public async Task<List<BookDto>> GetByAuthorAsync(Guid authorId, int top = 10)
         {
-            return await _context.Books
-                .Include(b => b.Publisher)
-                .Include(b => b.BookFormat)
-                .Include(b => b.BookAuthors).ThenInclude(ba => ba.Author)
-                .Include(b => b.BookCategories).ThenInclude(bc => bc.Category)
-                .Where(b => b.BookAuthors.Any(ba => ba.AuthorId == authorId) && b.IsAvailable)
-                .Take(top)
-                .Select(b => new BookDto
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    ISBN = b.ISBN.Value,
-                    PublicationYear = b.PublicationYear,
-                    Language = b.Language,
-                    PageCount = b.PageCount,
-                    IsAvailable = b.IsAvailable,
-                    PublisherId = b.PublisherId,
-                    PublisherName = b.Publisher.Name,
-                    BookFormatId = b.BookFormatId,
-                    BookFormatName = b.BookFormat != null ? b.BookFormat.FormatType : null,
-                    AuthorNames = b.BookAuthors.Select(ba => ba.Author.Name).ToList(),
-                    CategoryNames = b.BookCategories.Select(bc => bc.Category.Name).ToList()
-                })
-                .ToListAsync();
+            var books = await _bookRepository.GetByAuthorAsync(authorId);
+            return books.Take(top).Select(MapToBookDto).ToList();
         }
 
         public async Task<List<BookDto>> GetByPublisherAsync(Guid publisherId, int top = 10)
         {
-            return await _context.Books
-                .Include(b => b.Publisher)
-                .Include(b => b.BookFormat)
-                .Include(b => b.BookAuthors).ThenInclude(ba => ba.Author)
-                .Include(b => b.BookCategories).ThenInclude(bc => bc.Category)
-                .Where(b => b.PublisherId == publisherId && b.IsAvailable)
-                .Take(top)
-                .Select(b => new BookDto
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    ISBN = b.ISBN.Value,
-                    PublicationYear = b.PublicationYear,
-                    Language = b.Language,
-                    PageCount = b.PageCount,
-                    IsAvailable = b.IsAvailable,
-                    PublisherId = b.PublisherId,
-                    PublisherName = b.Publisher.Name,
-                    BookFormatId = b.BookFormatId,
-                    BookFormatName = b.BookFormat != null ? b.BookFormat.FormatType : null,
-                    AuthorNames = b.BookAuthors.Select(ba => ba.Author.Name).ToList(),
-                    CategoryNames = b.BookCategories.Select(bc => bc.Category.Name).ToList()
-                })
-                .ToListAsync();
+            var books = await _bookRepository.GetByPublisherAsync(publisherId);
+            return books.Take(top).Select(MapToBookDto).ToList();
         }
 
         public async Task<List<BookDto>> SearchAsync(string searchTerm, int top = 20)
         {
-            return await _context.Books
-                .Include(b => b.Publisher)
-                .Include(b => b.BookFormat)
-                .Include(b => b.BookAuthors).ThenInclude(ba => ba.Author)
-                .Include(b => b.BookCategories).ThenInclude(bc => bc.Category)
-                .Where(b => (b.Title.Contains(searchTerm) || b.ISBN.Value.Contains(searchTerm)) && b.IsAvailable)
-                .Take(top)
-                .Select(b => new BookDto
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    ISBN = b.ISBN.Value,
-                    PublicationYear = b.PublicationYear,
-                    Language = b.Language,
-                    PageCount = b.PageCount,
-                    IsAvailable = b.IsAvailable,
-                    PublisherId = b.PublisherId,
-                    PublisherName = b.Publisher.Name,
-                    BookFormatId = b.BookFormatId,
-                    BookFormatName = b.BookFormat != null ? b.BookFormat.FormatType : null,
-                    AuthorNames = b.BookAuthors.Select(ba => ba.Author.Name).ToList(),
-                    CategoryNames = b.BookCategories.Select(bc => bc.Category.Name).ToList()
-                })
-                .ToListAsync();
+            var books = await _bookRepository.SearchAsync(searchTerm);
+            return books.Take(top).Select(MapToBookDto).ToList();
         }
+
+        #region Private Helper Methods
+
+        private BookDto MapToBookDto(Book book)
+        {
+            return new BookDto
+            {
+                Id = book.Id,
+                Title = book.Title,
+                ISBN = book.ISBN.Value,
+                PublicationYear = book.PublicationYear,
+                Language = book.Language,
+                PageCount = book.PageCount,
+                IsAvailable = book.IsAvailable,
+                PublisherId = book.PublisherId,
+                PublisherName = book.Publisher?.Name ?? string.Empty,
+                BookFormatId = book.BookFormatId,
+                BookFormatName = book.BookFormat?.FormatType,
+                AuthorNames = book.BookAuthors?.Select(ba => ba.Author.Name).ToList() ?? new List<string>(),
+                CategoryNames = book.BookCategories?.Select(bc => bc.Category.Name).ToList() ?? new List<string>(),
+                CurrentPrice = book.Prices?.Where(p => p.IsCurrent &&
+                                                       p.EffectiveFrom <= DateTime.UtcNow &&
+                                                       (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
+                                         .OrderByDescending(p => p.EffectiveFrom)
+                                         .FirstOrDefault()?.Amount,
+                DiscountPrice = book.Prices?.Where(p => p.IsCurrent &&
+                                                        p.EffectiveFrom <= DateTime.UtcNow &&
+                                                        (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow) &&
+                                                        p.DiscountId.HasValue)
+                                           .OrderByDescending(p => p.EffectiveFrom)
+                                           .FirstOrDefault()?.Amount,
+                StockQuantity = book.StockItem?.Quantity,
+                AverageRating = book.Reviews?.Any() == true ? book.Reviews.Average(r => r.Rating) : null,
+                TotalReviews = book.Reviews?.Count ?? 0
+            };
+        }
+
+        private BookDetailDto MapToBookDetailDto(Book book)
+        {
+            return new BookDetailDto
+            {
+                Id = book.Id,
+                Title = book.Title,
+                ISBN = book.ISBN.Value,
+                Description = book.Description,
+                PublicationYear = book.PublicationYear,
+                Language = book.Language,
+                Edition = book.Edition,
+                PageCount = book.PageCount,
+                IsAvailable = book.IsAvailable,
+                Publisher = new PublisherDto
+                {
+                    Id = book.Publisher.Id,
+                    Name = book.Publisher.Name,
+                    Address = book.Publisher.Address,
+                    Email = book.Publisher.Email,
+                    PhoneNumber = book.Publisher.PhoneNumber
+                },
+                BookFormat = book.BookFormat != null ? new BookFormatDto
+                {
+                    Id = book.BookFormat.Id,
+                    FormatType = book.BookFormat.FormatType,
+                    Description = book.BookFormat.Description
+                } : null,
+                Authors = book.BookAuthors?.Select(ba => new AuthorDto
+                {
+                    Id = ba.Author.Id,
+                    Name = ba.Author.Name,
+                    Biography = ba.Author.Biography,
+                    AvartarUrl = ba.Author.AvartarUrl
+                }).ToList() ?? new List<AuthorDto>(),
+                Categories = book.BookCategories?.Select(bc => new CategoryDto
+                {
+                    Id = bc.Category.Id,
+                    Name = bc.Category.Name,
+                    Description = bc.Category.Description
+                }).ToList() ?? new List<CategoryDto>(),
+                Images = book.Images?.Select(img => new BookImageDto
+                {
+                    Id = img.Id,
+                    BookId = img.BookId,
+                    ImageUrl = img.ImageUrl,
+                    IsCover = img.IsCover,
+                    DisplayOrder = img.DisplayOrder
+                }).ToList() ?? new List<BookImageDto>(),
+                Files = book.Files?.Select(f => new BookFileDto
+                {
+                    Id = f.Id,
+                    BookId = f.BookId,
+                    FileUrl = f.FileUrl,
+                    FileType = f.FileType,
+                    FileSize = f.FileSize,
+                    IsPreview = f.IsPreview
+                }).ToList() ?? new List<BookFileDto>(),
+                Metadata = book.Metadata?.Select(m => new BookMetadataDto
+                {
+                    Id = m.Id,
+                    BookId = m.BookId,
+                    Key = m.Key,
+                    Value = m.Value
+                }).ToList() ?? new List<BookMetadataDto>()
+            };
+        }
+
+        #endregion
     }
 }

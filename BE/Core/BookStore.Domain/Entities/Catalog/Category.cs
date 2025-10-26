@@ -18,7 +18,7 @@ namespace BookStore.Domain.Entities.Catalog
         public virtual Category? Parent { get; set; }
         public virtual ICollection<Category> SubCategories { get; set; } = new List<Category>();
 
-        // 🔗 Quan hệ nhiều-nhiều với Book thông qua BookCategory
+        // Quan hệ nhiều-nhiều với Book thông qua BookCategory
         public virtual ICollection<BookCategory> BookCategories { get; set; } = new List<BookCategory>();
     }
 }
