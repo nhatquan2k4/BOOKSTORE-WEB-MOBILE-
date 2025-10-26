@@ -1,19 +1,16 @@
 using BookStore.Application.Dtos.Identity.User;
 using BookStore.Application.Mappers.Identity.User;
+
 using BookStore.Domain.Entities.Identity;
 
 namespace BookStore.Application.Mappers.Identity.Auth
 {
-    /// <summary>
     /// Mapper phức tạp cho User với đầy đủ thông tin (Profile, Addresses, Roles, Devices)
-    /// </summary>
     public static class UserDetailMapper
     {
-        /// <summary>
         /// Chuyển User entity sang UserDetailDto với đầy đủ thông tin
         /// Dùng khi: Cần hiển thị thông tin chi tiết đầy đủ của user
         /// Bao gồm: UserProfile, UserAddresses, UserRoles, UserDevices
-        /// </summary>
         public static UserDetailDto ToDetailDto(this Domain.Entities.Identity.User user)
         {
             if (user == null) return null!;
@@ -70,9 +67,8 @@ namespace BookStore.Application.Mappers.Identity.Auth
             };
         }
 
-        /// <summary>
         /// Chuyển danh sách User sang danh sách UserDetailDto
-        /// </summary>
+
         public static List<UserDetailDto> ToDetailDtoList(this IEnumerable<Domain.Entities.Identity.User> users)
         {
             return users?.Select(u => u.ToDetailDto()).ToList() ?? new List<UserDetailDto>();
@@ -81,9 +77,7 @@ namespace BookStore.Application.Mappers.Identity.Auth
 
     #region Supporting DTOs
 
-    /// <summary>
     /// DTO chi tiết cho User bao gồm tất cả thông tin
-    /// </summary>
     public class UserDetailDto
     {
         // Thông tin cơ bản
@@ -106,9 +100,7 @@ namespace BookStore.Application.Mappers.Identity.Auth
         public int TotalPermissions { get; set; }
     }
 
-    /// <summary>
     /// DTO chi tiết cho Role trong UserDetail (bao gồm permissions)
-    /// </summary>
     public class UserRoleDetailDto
     {
         public Guid RoleId { get; set; }
@@ -116,10 +108,8 @@ namespace BookStore.Application.Mappers.Identity.Auth
         public string? RoleDescription { get; set; }
         public List<PermissionDetailDto> Permissions { get; set; } = new();
     }
-
-    /// <summary>
     /// DTO chi tiết cho Permission trong UserDetail
-    /// </summary>
+
     public class PermissionDetailDto
     {
         public Guid PermissionId { get; set; }

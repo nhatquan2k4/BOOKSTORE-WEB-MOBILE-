@@ -3,18 +3,17 @@ using BookStore.Domain.Entities.Identity;
 
 namespace BookStore.Application.Mappers.Identity.Auth
 {
-    /// <summary>
+
     /// Mapper thủ công cho Authentication (Login, Register, RefreshToken)
-    /// </summary>
+
     public static class AuthMapper
     {
         #region User -> LoginResponseDto
 
-        /// <summary>
+
         /// Chuyển User entity sang LoginResponseDto (sau khi login thành công)
         /// Dùng khi: User đăng nhập thành công, trả về token và thông tin user
         /// Lưu ý: AccessToken và RefreshToken được tạo ở service layer
-        /// </summary>
         public static LoginResponseDto ToLoginResponseDto(
             this Domain.Entities.Identity.User user, 
             string accessToken, 
@@ -34,9 +33,7 @@ namespace BookStore.Application.Mappers.Identity.Auth
             };
         }
 
-        /// <summary>
         /// Chuyển User entity sang UserInfoDto (thông tin user trong LoginResponse)
-        /// </summary>
         public static UserInfoDto ToUserInfoDto(this Domain.Entities.Identity.User user)
         {
             if (user == null) return null!;
@@ -68,11 +65,11 @@ namespace BookStore.Application.Mappers.Identity.Auth
 
         #region RegisterDto -> User
 
-        /// <summary>
+        
         /// Chuyển từ RegisterDto sang User entity
         /// Dùng khi: User đăng ký tài khoản mới
         /// Lưu ý: Password cần được hash trước khi lưu (xử lý ở service layer)
-        /// </summary>
+        
         public static Domain.Entities.Identity.User ToEntity(this RegisterDto dto)
         {
             if (dto == null) return null!;
@@ -109,9 +106,9 @@ namespace BookStore.Application.Mappers.Identity.Auth
 
         #region RefreshToken <-> RefreshTokenDto
 
-        /// <summary>
+        
         /// Chuyển từ RefreshToken entity sang RefreshTokenDto
-        /// </summary>
+        
         public static RefreshTokenDto ToDto(this RefreshToken refreshToken)
         {
             if (refreshToken == null) return null!;
@@ -122,10 +119,10 @@ namespace BookStore.Application.Mappers.Identity.Auth
             };
         }
 
-        /// <summary>
+        
         /// Chuyển từ string token sang RefreshToken entity
         /// Dùng khi: Tạo RefreshToken mới
-        /// </summary>
+        
         public static RefreshToken ToEntity(string token, Guid userId, DateTime expiryDate)
         {
             return new RefreshToken
@@ -138,9 +135,9 @@ namespace BookStore.Application.Mappers.Identity.Auth
             };
         }
 
-        /// <summary>
+        
         /// Tạo RefreshTokenResponseDto sau khi refresh token thành công
-        /// </summary>
+        
         public static RefreshTokenResponseDto ToRefreshTokenResponseDto(
             string accessToken,
             string refreshToken,
@@ -160,9 +157,9 @@ namespace BookStore.Application.Mappers.Identity.Auth
 
         #region Helper Methods
 
-        /// <summary>
+        
         /// Kiểm tra RefreshToken có hợp lệ không
-        /// </summary>
+        
         public static bool IsValid(this RefreshToken refreshToken)
         {
             if (refreshToken == null) return false;
@@ -171,9 +168,9 @@ namespace BookStore.Application.Mappers.Identity.Auth
                    refreshToken.ExpiryDate > DateTime.UtcNow;
         }
 
-        /// <summary>
+        
         /// Thu hồi RefreshToken
-        /// </summary>
+        
         public static void Revoke(this RefreshToken refreshToken)
         {
             if (refreshToken != null)

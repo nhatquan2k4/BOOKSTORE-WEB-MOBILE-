@@ -23,13 +23,6 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                 Name = permission.Name,
                 Description = permission.Description,
                 
-                // Các trường này không có trong Entity, set default
-                Module = "Default",
-                Action = "Unknown",
-                Resource = "Unknown",
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = null,
                 
                 // Lấy danh sách tên roles có permission này
                 Roles = permission.RolePermissions?
@@ -62,12 +55,7 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
             {
                 Id = permission.Id,
                 Name = permission.Name,
-                
-                // Các trường này không có trong Entity, set default
-                Module = "Default",
-                Action = "Unknown",
-                Resource = "Unknown",
-                IsActive = true,
+                Description = permission.Description,
                 
                 // Đếm số role có permission này
                 RoleCount = permission.RolePermissions?.Count ?? 0

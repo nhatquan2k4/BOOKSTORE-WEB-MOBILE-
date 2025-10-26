@@ -7,9 +7,6 @@
         public string UserFullName { get; set; } = null!;
         public Guid RoleId { get; set; }
         public string RoleName { get; set; } = null!;
-        public DateTime AssignedAt { get; set; }
-        public Guid? AssignedBy { get; set; }
-        public string? AssignedByName { get; set; }
     }
 
     public class UserWithRolesDto
@@ -33,6 +30,5 @@
         public Guid Id { get; set; }
         public string Email { get; set; } = null!;
         public string FullName { get; set; } = null!;
-        public DateTime AssignedAt { get; set; }
     }
 }

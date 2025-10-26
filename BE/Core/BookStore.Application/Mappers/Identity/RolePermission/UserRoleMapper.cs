@@ -21,12 +21,7 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                 UserEmail = userRole.User?.Email ?? string.Empty,
                 UserFullName = userRole.User?.Profiles?.FullName ?? userRole.User?.Email ?? string.Empty,
                 RoleId = userRole.RoleId,
-                RoleName = userRole.Role?.Name ?? string.Empty,
-                
-                // Các trường này không có trong Entity, set default
-                AssignedAt = DateTime.UtcNow,
-                AssignedBy = null,
-                AssignedByName = null
+                RoleName = userRole.Role?.Name ?? string.Empty
             };
         }
 
@@ -58,8 +53,6 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                         Id = ur.Role.Id,
                         Name = ur.Role.Name,
                         Description = ur.Role.Description,
-                        IsActive = true, // Default
-                        CreatedAt = DateTime.UtcNow, // Default
                         UserCount = ur.Role.UserRoles?.Count ?? 0,
                         PermissionCount = ur.Role.RolePermissions?.Count ?? 0
                     })
@@ -88,8 +81,7 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                     {
                         Id = ur.User.Id,
                         Email = ur.User.Email,
-                        FullName = ur.User.Profiles?.FullName ?? ur.User.Email,
-                        AssignedAt = DateTime.UtcNow // Default
+                        FullName = ur.User.Profiles?.FullName ?? ur.User.Email
                     })
                     .ToList() ?? new List<UserSummaryForRoleDto>()
             };

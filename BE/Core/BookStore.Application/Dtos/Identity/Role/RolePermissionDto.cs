@@ -6,8 +6,6 @@
         public string RoleName { get; set; } = null!;
         public Guid PermissionId { get; set; }
         public string PermissionName { get; set; } = null!;
-        public string PermissionModule { get; set; } = null!;
-        public DateTime AssignedAt { get; set; }
     }
 
     public class AssignPermissionToRoleDto
@@ -35,7 +33,5 @@
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
-        public string Module { get; set; } = null!;
-        public DateTime AssignedAt { get; set; }
     }
 }

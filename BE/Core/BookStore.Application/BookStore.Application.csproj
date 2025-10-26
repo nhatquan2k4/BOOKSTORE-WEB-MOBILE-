@@ -21,7 +21,6 @@
     <Folder Include="Exceptions\" />
     <Folder Include="Mappers\Book\" />
     <Folder Include="Mappers\Cart\" />
-    <Folder Include="Mappers\Identity\RolePermission\" />
     <Folder Include="Mappers\User\" />
     <Folder Include="Mappers\Order\" />
   </ItemGroup>

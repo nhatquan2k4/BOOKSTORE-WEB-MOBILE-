@@ -14,7 +14,6 @@
     <Folder Include="Interfaces\Analytics &amp; Activity\" />
     <Folder Include="Interfaces\Catalog\" />
     <Folder Include="Interfaces\Common\" />
-    <Folder Include="Interfaces\Identity\" />
     <Folder Include="Interfaces\System\" />
     <Folder Include="Interfaces\Shipping\" />
     <Folder Include="Interfaces\Rental\" />

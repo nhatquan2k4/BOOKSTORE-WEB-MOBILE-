@@ -21,11 +21,6 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                 Name = role.Name,
                 Description = role.Description,
                 
-                // Các trường này không có trong Entity, cần set default hoặc tính toán
-                IsActive = true, // Default value
-                CreatedAt = DateTime.UtcNow, // Default value
-                UpdatedAt = null,
-                
                 // Map permissions từ RolePermissions
                 PermissionDtos = role.RolePermissions?
                     .Select(rp => new PermissionDto
@@ -33,7 +28,6 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                         Id = rp.Permission.Id,
                         Name = rp.Permission.Name,
                         Description = rp.Permission.Description,
-                        Module = "Default" // Entity không có field này
                     })
                     .ToList() ?? new List<PermissionDto>(),
                 
@@ -62,8 +56,6 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                 Id = role.Id,
                 Name = role.Name,
                 Description = role.Description,
-                IsActive = true, // Default value
-                CreatedAt = DateTime.UtcNow, // Default value
                 UserCount = role.UserRoles?.Count ?? 0,
                 PermissionCount = role.RolePermissions?.Count ?? 0
             };
@@ -96,9 +88,7 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                     {
                         Id = rp.Permission.Id,
                         Name = rp.Permission.Name,
-                        Description = rp.Permission.Description,
-                        Module = "Default", // Entity không có field này
-                        AssignedAt = DateTime.UtcNow // Default value
+                        Description = rp.Permission.Description
                     })
                     .ToList() ?? new List<BookStore.Application.Dtos.Identity.Role.PermissionSummaryDto>()
             };

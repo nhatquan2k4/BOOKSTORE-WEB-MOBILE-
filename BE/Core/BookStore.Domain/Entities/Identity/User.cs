@@ -3,12 +3,6 @@ using BookStore.Domain.Entities.Common;
 using BookStore.Domain.Entities.Ordering;
 using BookStore.Domain.Entities.Rental;
 using BookStore.Domain.Entities.System;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using BookStore.Domain.Entities.System;
 
 namespace BookStore.Domain.Entities.Identity
 {

@@ -19,8 +19,7 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                 RoleId = rolePermission.RoleId,
                 RoleName = rolePermission.Role?.Name ?? string.Empty,
                 PermissionId = rolePermission.PermissionId,
-                PermissionName = rolePermission.Permission?.Name ?? string.Empty,
-                AssignedAt = DateTime.UtcNow // Default value
+                PermissionName = rolePermission.Permission?.Name ?? string.Empty
             };
         }
 
