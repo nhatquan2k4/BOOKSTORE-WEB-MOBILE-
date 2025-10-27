@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Application.Interfaces
+namespace BookStore.Application.Services.Identity
 {
-    internal class ICartService
+    public class UserService
     {
     }
 }
