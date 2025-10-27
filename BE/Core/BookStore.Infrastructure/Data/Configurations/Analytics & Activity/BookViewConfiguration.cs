@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace BookStore.Infrastructure.Data.Configurations.AnalyticsActivity
 {
-    public class BookViewsConfiguration : IEntityTypeConfiguration<BookViews>
+    public class BookViewsConfiguration : IEntityTypeConfiguration<BookView>
     {
-        public void Configure(EntityTypeBuilder<BookViews> builder)
+        public void Configure(EntityTypeBuilder<BookView> builder)
         {
             builder.ToTable("BookViews", "analytics");
 

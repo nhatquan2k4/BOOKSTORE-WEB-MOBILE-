@@ -1,5 +1,6 @@
 ﻿using BookStore.Domain.Entities.Common;
 using BookStore.Domain.Entities.Pricing___Inventory;
+using BookStore.Domain.Entities.Pricing_Inventory;
 using BookStore.Domain.Entities.Rental;
 using System;
 using System.Collections.Generic;

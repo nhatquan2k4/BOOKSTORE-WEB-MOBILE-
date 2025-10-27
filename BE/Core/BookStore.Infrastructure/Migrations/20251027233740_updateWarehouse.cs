@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BookStore.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class updateWarehouse : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -37,9 +37,6 @@ namespace BookStore.Infrastructure.Migrations
 
             migrationBuilder.EnsureSchema(
                 name: "shipping");
-
-            migrationBuilder.EnsureSchema(
-                name: "inventory");
 
             migrationBuilder.CreateTable(
                 name: "AuditLogs",
@@ -294,6 +291,22 @@ namespace BookStore.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Warehouses",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Address = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Warehouses", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -780,6 +793,37 @@ namespace BookStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "InventoryTransactions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    WarehouseId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BookId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
+                    QuantityChange = table.Column<int>(type: "int", nullable: false),
+                    ReferenceId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Note = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InventoryTransactions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_InventoryTransactions_Books_BookId",
+                        column: x => x.BookId,
+                        principalSchema: "catalog",
+                        principalTable: "Books",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_InventoryTransactions_Warehouses_WarehouseId",
+                        column: x => x.WarehouseId,
+                        principalTable: "Warehouses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Prices",
                 schema: "pricing",
                 columns: table => new
@@ -848,15 +892,16 @@ namespace BookStore.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "StockItems",
-                schema: "inventory",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     BookId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Quantity = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    Reserved = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    Sold = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    LastUpdated = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()")
+                    WarehouseId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    QuantityOnHand = table.Column<int>(type: "int", nullable: false),
+                    ReservedQuantity = table.Column<int>(type: "int", nullable: false),
+                    SoldQuantity = table.Column<int>(type: "int", nullable: false),
+                    LastUpdated = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    BookId1 = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -867,7 +912,19 @@ namespace BookStore.Infrastructure.Migrations
                         principalSchema: "catalog",
                         principalTable: "Books",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_StockItems_Books_BookId1",
+                        column: x => x.BookId1,
+                        principalSchema: "catalog",
+                        principalTable: "Books",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_StockItems_Warehouses_WarehouseId",
+                        column: x => x.WarehouseId,
+                        principalTable: "Warehouses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1355,6 +1412,16 @@ namespace BookStore.Infrastructure.Migrations
                 columns: new[] { "IsResolved", "CreatedAt" });
 
             migrationBuilder.CreateIndex(
+                name: "IX_InventoryTransactions_BookId",
+                table: "InventoryTransactions",
+                column: "BookId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InventoryTransactions_WarehouseId_BookId_CreatedAt",
+                table: "InventoryTransactions",
+                columns: new[] { "WarehouseId", "BookId", "CreatedAt" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Notifications_UserId_IsRead",
                 schema: "system",
                 table: "Notifications",
@@ -1545,9 +1612,20 @@ namespace BookStore.Infrastructure.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_StockItems_BookId",
-                schema: "inventory",
                 table: "StockItems",
-                column: "BookId",
+                column: "BookId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StockItems_BookId1",
+                table: "StockItems",
+                column: "BookId1",
+                unique: true,
+                filter: "[BookId1] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StockItems_WarehouseId_BookId",
+                table: "StockItems",
+                columns: new[] { "WarehouseId", "BookId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -1629,6 +1707,9 @@ namespace BookStore.Infrastructure.Migrations
                 schema: "system");
 
             migrationBuilder.DropTable(
+                name: "InventoryTransactions");
+
+            migrationBuilder.DropTable(
                 name: "Notifications",
                 schema: "system");
 
@@ -1685,8 +1766,7 @@ namespace BookStore.Infrastructure.Migrations
                 schema: "shipping");
 
             migrationBuilder.DropTable(
-                name: "StockItems",
-                schema: "inventory");
+                name: "StockItems");
 
             migrationBuilder.DropTable(
                 name: "UserActivities",
@@ -1739,6 +1819,9 @@ namespace BookStore.Infrastructure.Migrations
             migrationBuilder.DropTable(
                 name: "Shipments",
                 schema: "shipping");
+
+            migrationBuilder.DropTable(
+                name: "Warehouses");
 
             migrationBuilder.DropTable(
                 name: "Roles",

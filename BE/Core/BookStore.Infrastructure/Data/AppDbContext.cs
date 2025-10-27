@@ -10,6 +10,7 @@ using BookStore.Domain.Entities.Analytics___Activity;
 using BookStore.Domain.Entities.System;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using BookStore.Domain.Entities.Pricing_Inventory;
 
 namespace BookStore.Infrastructure.Data
 {
@@ -50,6 +51,8 @@ namespace BookStore.Infrastructure.Data
         public DbSet<Discount> Discounts { get; set; } = null!;
         public DbSet<Coupon> Coupons { get; set; } = null!;
         public DbSet<StockItem> StockItems { get; set; } = null!;
+        public DbSet<InventoryTransaction> InventoryTransactions { get; set; } = null!;
+        public DbSet<Warehouse> Warehouses { get; set; } = null!;
         #endregion
 
         #region Review
@@ -86,7 +89,7 @@ namespace BookStore.Infrastructure.Data
 
         #region Analytics / Activity
         public DbSet<UserActivity> UserActivities { get; set; } = null!;
-        public DbSet<BookViews> BookViews { get; set; } = null!;
+        public DbSet<BookView> BookViews { get; set; } = null!;
         public DbSet<AuditLog> AuditLogs { get; set; } = null!;
         #endregion
 

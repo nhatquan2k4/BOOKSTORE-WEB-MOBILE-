@@ -65,7 +65,7 @@ namespace BookStore.Infrastructure.Migrations
                     b.ToTable("AuditLogs", "analytics");
                 });
 
-            modelBuilder.Entity("BookStore.Domain.Entities.Analytics___Activity.BookViews", b =>
+            modelBuilder.Entity("BookStore.Domain.Entities.Analytics___Activity.BookView", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1160,6 +1160,47 @@ namespace BookStore.Infrastructure.Migrations
                     b.ToTable("Refunds", "ordering");
                 });
 
+            modelBuilder.Entity("BookStore.Domain.Entities.Pricing_Inventory.StockItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BookId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BookId1")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("QuantityOnHand")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReservedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoldQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("BookId1")
+                        .IsUnique()
+                        .HasFilter("[BookId1] IS NOT NULL");
+
+                    b.HasIndex("WarehouseId", "BookId")
+                        .IsUnique();
+
+                    b.ToTable("StockItems", (string)null);
+                });
+
             modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.Coupon", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1245,6 +1286,44 @@ namespace BookStore.Infrastructure.Migrations
                     b.ToTable("Discounts", "pricing");
                 });
 
+            modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.InventoryTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BookId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("QuantityChange")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReferenceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("WarehouseId", "BookId", "CreatedAt");
+
+                    b.ToTable("InventoryTransactions", (string)null);
+                });
+
             modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.Price", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1289,41 +1368,34 @@ namespace BookStore.Infrastructure.Migrations
                     b.ToTable("Prices", "pricing");
                 });
 
-            modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.StockItem", b =>
+            modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.Warehouse", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("BookId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
-                    b.Property<DateTime>("LastUpdated")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
-                    b.Property<int>("Quantity")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
-                    b.Property<int>("Reserved")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
-                    b.Property<int>("Sold")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BookId")
-                        .IsUnique();
-
-                    b.ToTable("StockItems", "inventory");
+                    b.ToTable("Warehouses", (string)null);
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Rental.BookRental", b =>
@@ -1741,7 +1813,7 @@ namespace BookStore.Infrastructure.Migrations
                     b.ToTable("Notifications", "system");
                 });
 
-            modelBuilder.Entity("BookStore.Domain.Entities.Analytics___Activity.BookViews", b =>
+            modelBuilder.Entity("BookStore.Domain.Entities.Analytics___Activity.BookView", b =>
                 {
                     b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
                         .WithMany()
@@ -2090,6 +2162,27 @@ namespace BookStore.Infrastructure.Migrations
                     b.Navigation("PaymentTransaction");
                 });
 
+            modelBuilder.Entity("BookStore.Domain.Entities.Pricing_Inventory.StockItem", b =>
+                {
+                    b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BookStore.Domain.Entities.Catalog.Book", null)
+                        .WithOne("StockItem")
+                        .HasForeignKey("BookStore.Domain.Entities.Pricing_Inventory.StockItem", "BookId1");
+
+                    b.HasOne("BookStore.Domain.Entities.Pricing___Inventory.Warehouse", null)
+                        .WithMany("StockItems")
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+                });
+
             modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.Coupon", b =>
                 {
                     b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
@@ -2098,6 +2191,25 @@ namespace BookStore.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.InventoryTransaction", b =>
+                {
+                    b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BookStore.Domain.Entities.Pricing___Inventory.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("Warehouse");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.Price", b =>
@@ -2116,17 +2228,6 @@ namespace BookStore.Infrastructure.Migrations
                     b.Navigation("Book");
 
                     b.Navigation("Discount");
-                });
-
-            modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.StockItem", b =>
-                {
-                    b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
-                        .WithOne("StockItem")
-                        .HasForeignKey("BookStore.Domain.Entities.Pricing___Inventory.StockItem", "BookId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Book");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Rental.BookRental", b =>
@@ -2357,6 +2458,11 @@ namespace BookStore.Infrastructure.Migrations
             modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.Discount", b =>
                 {
                     b.Navigation("Prices");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.Warehouse", b =>
+                {
+                    b.Navigation("StockItems");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Rental.BookRental", b =>

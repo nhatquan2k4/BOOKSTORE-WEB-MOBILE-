@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace BookStore.Domain.Entities.Analytics___Activity
 {
-    public class BookViews
+    public class BookView
     {
         public Guid Id { get; set; }
 
