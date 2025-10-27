@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Domain.Interfaces
+namespace BookStore.Domain.IRepository
 {
     public interface IGenericRepository<T> where T : class
     {

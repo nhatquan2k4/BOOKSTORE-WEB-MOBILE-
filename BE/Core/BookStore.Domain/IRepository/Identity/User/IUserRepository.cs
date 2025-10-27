@@ -5,9 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BookStore.Domain.Entities.Identity;
 
-
-
-namespace BookStore.Domain.Interfaces.Identity.User
+namespace BookStore.Domain.IRepository.Identity.User
 {
     public interface IUserRepository : IGenericRepository<Domain.Entities.Identity.User>
     {
