@@ -1,32 +1,98 @@
-﻿using BookStore.Application.IService.Catalog;
-using BookStore.Application.Services.Catalog;
-using BookStore.Domain.Interfaces;
-using BookStore.Domain.Interfaces.Catalog;
-using BookStore.Infrastructure.Data;
-using BookStore.Infrastructure.Repository;
-using BookStore.Infrastructure.Repository.Catalog;
+﻿using BookStore.Infrastructure.Data;
+using BookStore.Application.Settings;
+using BookStore.Application.IService.Identity.Auth;
+using BookStore.Application.Services.Identity.Auth;
+using BookStore.Application.IService.Identity.User;
+using BookStore.Application.Services.Identity;
+using BookStore.Application.IService.Identity.Role;
+using BookStore.Application.Services.Identity.Role;
+using BookStore.Application.IService.Identity.Permission;
+using BookStore.Application.Services.Identity.Permission;
+using BookStore.Domain.IRepository.Identity.User;
+using BookStore.Domain.IRepository.Identity.Auth;
+using BookStore.Domain.IRepository.Identity.RolePermisson;
+using BookStore.Infrastructure.Repository.Identity.User;
+using BookStore.Infrastructure.Repository.Identity.Auth;
+using BookStore.Infrastructure.Repository.Identity.RolePermisson;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using System;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ============================================
-// 1. Đăng ký DbContext
-// ============================================
+
 var cs = builder.Configuration.GetConnectionString("UsersDb")
          ?? throw new InvalidOperationException("Missing connection string 'UsersDb'.");
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(cs));
 
-// ============================================
-// 2. Đăng ký Generic Repository
-// ============================================
-builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+// Configure JWT Settings
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
+    ?? throw new InvalidOperationException("JWT Settings not configured");
 
-// ============================================
-// 3. Đăng ký Repositories (Catalog)
-// ============================================
+// Configure JWT Authentication
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// Register Services
+// Auth Services
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+
+// User Service
+builder.Services.AddScoped<BookStore.Application.IService.Identity.User.IUserService, BookStore.Application.Services.Identity.UserService>();
+
+// Role & Permission Services
+builder.Services.AddScoped<BookStore.Application.IService.Identity.Role.IRoleService, BookStore.Application.Services.Identity.Role.RoleService>();
+builder.Services.AddScoped<BookStore.Application.IService.Identity.Permission.IPermissionService, BookStore.Application.Services.Identity.Permission.PermissionService>();
+
+// Register Repositories
+// User & Auth
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+builder.Services.AddScoped<IUserProfileRepository, UserProfileRepository>();
+builder.Services.AddScoped<IUserAddressRepository, UserAddressRepository>();
+builder.Services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
+
+// Role & Permission
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
+builder.Services.AddScoped<IRolePermissionRepository, RolePermissionRepository>();
+
+// Tokens
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
+builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+
+// Add Controllers
+builder.Services.AddControllers();
+
+
 builder.Services.AddScoped<IAuthorRepository, AuthorRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IPublisherRepository, PublisherRepository>();
@@ -36,64 +102,50 @@ builder.Services.AddScoped<IBookFormatRepository, BookFormatRepository>();
 // builder.Services.AddScoped<IBookFileRepository, BookFileRepository>();    // Uncomment khi đã tạo repository
 // builder.Services.AddScoped<IBookMetadataRepository, BookMetadataRepository>(); // Uncomment khi đã tạo repository
 
-// ============================================
-// 4. Đăng ký Services (Catalog)
-// ============================================
+
 builder.Services.AddScoped<IAuthorService, AuthorService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPublisherService, PublisherService>();
 builder.Services.AddScoped<IBookService, BookService>();
 
-// ============================================
-// 5. Add Controllers
-// ============================================
+
 builder.Services.AddControllers();
 
-// ============================================
-// 6. Add Swagger/OpenAPI
-// ============================================
+
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddSwaggerGen(c =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "BookStore API", Version = "v1" });
+    
+    // Add JWT Authentication to Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Title = "BookStore API",
-        Version = "v1",
-        Description = "API quản lý cửa hàng sách",
-        Contact = new OpenApiContact
-        {
-            Name = "BookStore Team",
-            Email = "contact@bookstore.com"
-        }
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
     });
 
-    // Enable XML comments for Swagger (optional)
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        options.IncludeXmlComments(xmlPath);
-    }
-});
-
-// ============================================
-// 7. CORS (nếu cần cho frontend)
-// ============================================
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
     });
 });
 
 var app = builder.Build();
 
-// ============================================
-// Configure the HTTP request pipeline
-// ============================================
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -106,14 +158,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Enable CORS
-app.UseCors("AllowAll");
+// Add Authentication & Authorization middleware
+app.UseAuthentication();
+app.UseAuthorization();
 
-// Enable Authentication & Authorization (nếu có)
-// app.UseAuthentication();
-// app.UseAuthorization();
-
-// Map Controllers
 app.MapControllers();
+
+var summaries = new[]
+{
+    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+};
 
 app.Run();

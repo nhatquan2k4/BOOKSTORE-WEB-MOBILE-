@@ -1,5 +1,5 @@
 ﻿using BookStore.Domain.Entities.Identity;
-using BookStore.Domain.Interfaces.Identity.User;
+using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -10,85 +10,92 @@ using System.Threading.Tasks;
 
 namespace BookStore.Infrastructure.Repository.Identity.User
 {
-    public class UserAddressRepository : IUserAddressRepository
+    public class UserAddressRepository : GenericRepository<UserAddress>, IUserAddressRepository
     {
-
-        private readonly AppDbContext _context;
-        public UserAddressRepository(AppDbContext context)
+        public UserAddressRepository(AppDbContext context) : base(context)
         {
-            _context = context;
-        }
-        public async Task AddAsync(UserAddress entity)
-        {
-            if (entity == null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
-            await _context.UserAddresses.AddAsync(entity);
-           
-        }
-        public async void Update(UserAddress entity)
-        {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-            var existingEntity = await _context.UserAddresses.FindAsync(entity.Id);
-            if (existingEntity != null)
-            {
-               _context.UserAddresses.Update(entity);
-            }
-
         }
 
-        public async void Delete(UserAddress entity)
+        public override async Task<IEnumerable<UserAddress>> GetAllAsync()
+        {
+            return await _context.UserAddresses
+                .Include(ua => ua.User)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public override async Task<UserAddress?> GetByIdAsync(Guid id)
+        {
+            if (id == Guid.Empty)
+                throw new ArgumentException("Id cannot be empty", nameof(id));
+
+            return await _context.UserAddresses
+                .Include(ua => ua.User)
+                .FirstOrDefaultAsync(ua => ua.Id == id);
+        }
+
+        public override async Task AddAsync(UserAddress entity)
         {
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
-            var existingEntity = await _context.UserAddresses.FindAsync(entity.Id);
-            if (existingEntity != null)
+
+            if (entity.Id == Guid.Empty)
+                entity.Id = Guid.NewGuid();
+
+            if (entity.IsDefault)
             {
-                _context.UserAddresses.Remove(existingEntity);
+                await UnsetDefaultForUserAsync(entity.UserId);
             }
 
+            await base.AddAsync(entity);
         }
 
-        public async Task<IEnumerable<UserAddress>> GetAllAsync()
+        public override void Update(UserAddress entity)
         {
-            return await _context.UserAddresses.
-                Include(ua => ua.User).
-                ToListAsync();
+            if (entity == null)
+                throw new ArgumentNullException(nameof(entity));
+
+            base.Update(entity);
         }
 
-        public async Task<UserAddress?> GetByIdAsync(Guid id)
+        public override void Delete(UserAddress entity)
         {
-            return await _context.UserAddresses.
-                Include(ua => ua.User).
-                FirstOrDefaultAsync(ua => ua.Id == id);
+            if (entity == null)
+                throw new ArgumentNullException(nameof(entity));
+
+            base.Delete(entity);
         }
 
         public async Task<IEnumerable<UserAddress>> GetByUserIdAsync(Guid userId)
         {
-            return await _context.UserAddresses.
-                Include(ua => ua.User).
-                Where(ua => ua.UserId == userId).
-                ToListAsync();
+            if (userId == Guid.Empty)
+                return Enumerable.Empty<UserAddress>();
+
+            return await _context.UserAddresses
+                .Include(ua => ua.User)
+                .Where(ua => ua.UserId == userId)
+                .OrderByDescending(ua => ua.IsDefault)
+                .AsNoTracking()
+                .ToListAsync();
         }
 
         public async Task<UserAddress?> GetDefaultAddressByUserIdAsync(Guid userId)
         {
-            return await _context.UserAddresses.
-                Include(ua => ua.User).
-                FirstOrDefaultAsync(ua => ua.UserId == userId && ua.IsDefault);
+            if (userId == Guid.Empty)
+                return null;
 
-        }
-
-        public async Task SaveChangesAsync()
-        {
-            await _context.SaveChangesAsync();
+            return await _context.UserAddresses
+                .Include(ua => ua.User)
+                .FirstOrDefaultAsync(ua => ua.UserId == userId && ua.IsDefault);
         }
 
         public async Task SetDefaultAddressAsync(Guid addressId, Guid userId)
         {
-            
+            if (addressId == Guid.Empty || userId == Guid.Empty)
+                return;
+
+            await UnsetDefaultForUserAsync(userId);
+
             var address = await _context.UserAddresses
                 .FirstOrDefaultAsync(a => a.Id == addressId && a.UserId == userId);
 
@@ -97,9 +104,23 @@ namespace BookStore.Infrastructure.Repository.Identity.User
                 address.IsDefault = true;
                 _context.UserAddresses.Update(address);
             }
-
         }
 
-        
+        private async Task UnsetDefaultForUserAsync(Guid userId)
+        {
+            var defaultAddresses = await _context.UserAddresses
+                .Where(a => a.UserId == userId && a.IsDefault)
+                .ToListAsync();
+
+            foreach (var address in defaultAddresses)
+            {
+                address.IsDefault = false;
+            }
+
+            if (defaultAddresses.Any())
+            {
+                _context.UserAddresses.UpdateRange(defaultAddresses);
+            }
+        }
     }
 }
