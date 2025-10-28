@@ -1,4 +1,4 @@
-﻿using BookStore.Domain.Entities.Identity;
+using BookStore.Domain.Entities.Identity;
 
 namespace BookStore.Domain.IRepository.Identity.User
 {

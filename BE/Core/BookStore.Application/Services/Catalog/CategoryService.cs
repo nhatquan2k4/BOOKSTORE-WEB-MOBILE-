@@ -1,7 +1,8 @@
 ﻿using BookStore.Application.Dtos.Catalog.Category;
+using BookStore.Application.IService;
 using BookStore.Application.IService.Catalog;
 using BookStore.Application.Mappers.Catalog.Category;
-using BookStore.Domain.Interfaces.Catalog;
+using BookStore.Domain.IRepository.Catalog;
 
 namespace BookStore.Application.Services.Catalog
 {
@@ -20,6 +21,14 @@ namespace BookStore.Application.Services.Catalog
             return categories.ToDtoList();
         }
 
+        // Explicit implementation for IGenericService (returns CategoryDto)
+        async Task<CategoryDto?> IGenericService<CategoryDto, CreateCategoryDto, UpdateCategoryDto>.GetByIdAsync(Guid id)
+        {
+            var category = await _categoryRepository.GetByIdAsync(id);
+            return category?.ToDto();
+        }
+
+        // Public implementation for ICategoryService (returns CategoryDetailDto)
         public async Task<CategoryDetailDto?> GetByIdAsync(Guid id)
         {
             var category = await _categoryRepository.GetByIdAsync(id);
@@ -73,6 +82,28 @@ namespace BookStore.Application.Services.Catalog
             return breadcrumbs;
         }
 
+        // Explicit implementation for IGenericService (returns CategoryDto)
+        async Task<CategoryDto> IGenericService<CategoryDto, CreateCategoryDto, UpdateCategoryDto>.AddAsync(CreateCategoryDto dto)
+        {
+            // Validate parent exists if provided
+            if (dto.ParentId.HasValue)
+            {
+                var parent = await _categoryRepository.GetByIdAsync(dto.ParentId.Value);
+                if (parent == null)
+                {
+                    throw new InvalidOperationException("Danh mục cha không tồn tại");
+                }
+            }
+
+            var category = dto.ToEntity();
+
+            await _categoryRepository.AddAsync(category);
+            await _categoryRepository.SaveChangesAsync();
+
+            return category.ToDto();
+        }
+
+        // Public implementation for ICategoryService (returns CategoryDetailDto)
         public async Task<CategoryDetailDto> AddAsync(CreateCategoryDto dto)
         {
             // Validate parent exists if provided
@@ -93,6 +124,50 @@ namespace BookStore.Application.Services.Catalog
             return (await GetByIdAsync(category.Id))!;
         }
 
+        // Explicit implementation for IGenericService (returns CategoryDto)
+        async Task<CategoryDto> IGenericService<CategoryDto, CreateCategoryDto, UpdateCategoryDto>.UpdateAsync(UpdateCategoryDto dto)
+        {
+            var category = await _categoryRepository.GetByIdAsync(dto.Id);
+            if (category == null)
+            {
+                throw new InvalidOperationException("Danh mục không tồn tại");
+            }
+
+            // Validate parent exists if provided
+            if (dto.ParentId.HasValue)
+            {
+                if (dto.ParentId.Value == dto.Id)
+                {
+                    throw new InvalidOperationException("Danh mục không thể là danh mục cha của chính nó");
+                }
+
+                var parent = await _categoryRepository.GetByIdAsync(dto.ParentId.Value);
+                if (parent == null)
+                {
+                    throw new InvalidOperationException("Danh mục cha không tồn tại");
+                }
+
+                // Check if new parent is a descendant (would create circular reference)
+                var current = parent;
+                while (current != null)
+                {
+                    if (current.ParentId == dto.Id)
+                    {
+                        throw new InvalidOperationException("Không thể chọn danh mục con làm danh mục cha");
+                    }
+                    current = current.Parent;
+                }
+            }
+
+            category.UpdateFromDto(dto);
+
+            _categoryRepository.Update(category);
+            await _categoryRepository.SaveChangesAsync();
+
+            return category.ToDto();
+        }
+
+        // Public implementation for ICategoryService (returns CategoryDetailDto)
         public async Task<CategoryDetailDto> UpdateAsync(UpdateCategoryDto dto)
         {
             var category = await _categoryRepository.GetByIdAsync(dto.Id);
@@ -167,6 +242,11 @@ namespace BookStore.Application.Services.Catalog
         {
             var category = await _categoryRepository.GetByIdAsync(categoryId);
             return category?.BookCategories?.Any() ?? false;
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _categoryRepository.SaveChangesAsync();
         }
     }
 }

@@ -7,7 +7,7 @@ using BookStore.Application.Mappers.Catalog.Author;
 using BookStore.Application.Mappers.Catalog.Category;
 using BookStore.Application.Mappers.Catalog.Publisher;
 using BookStore.Domain.Entities.Catalog;
-using BookStore.Domain.Interfaces.Catalog;
+using BookStore.Domain.IRepository.Catalog;
 using BookStore.Domain.ValueObjects;
 
 namespace BookStore.Application.Services.Catalog

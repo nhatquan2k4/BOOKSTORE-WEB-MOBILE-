@@ -1,4 +1,5 @@
-﻿using BookStore.Domain.Entities.Identity;
+using BookStore.Domain.Entities.Identity;
+using BookStore.Domain.IRepository;
 using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
