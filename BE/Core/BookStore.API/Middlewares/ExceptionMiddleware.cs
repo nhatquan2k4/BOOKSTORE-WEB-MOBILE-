@@ -1,4 +1,4 @@
-﻿using BookStore.Exceptions;
+﻿using BookStore.Shared.Exceptions;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
@@ -22,7 +22,7 @@ namespace BookStore.API.Middlewares
             {
                 await _next(context); // chuyển sang middleware/controller tiếp theo
             }
-            catch (BookStore.Exceptions.ValidationException vex)
+            catch (BookStore.Shared.Exceptions.ValidationException vex)
             {
                 // 422 Unprocessable Entity + trả danh sách lỗi chi tiết
                 context.Response.ContentType = "application/json";
