@@ -25,6 +25,13 @@ namespace BookStore.Infrastructure.Data.Configurations.Identity
 
             builder.Property(p => p.Description)
                 .HasMaxLength(255);
+
+            builder.HasMany(p => p.RolePermissions)
+                .WithOne(rp => rp.Permission)
+                .HasForeignKey(rp => rp.PermissionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
         }
     }
 }

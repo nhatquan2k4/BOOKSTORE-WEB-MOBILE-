@@ -10,9 +10,9 @@ namespace BookStore.Domain.Entities.Catalog
     {
         public Guid Id { get; set; }
 
-        public string ImageUrl { get; set; } = null!;         // Đường dẫn ảnh lưu trên S3/MinIO
-        public bool IsCover { get; set; }                     // Ảnh này có phải bìa chính không
-        public int DisplayOrder { get; set; }                 // Thứ tự hiển thị ảnh
+        public string ImageUrl { get; set; } = null!;
+        public bool IsCover { get; set; }
+        public int DisplayOrder { get; set; }
 
         public Guid BookId { get; set; }
         public virtual Book Book { get; set; } = null!;
