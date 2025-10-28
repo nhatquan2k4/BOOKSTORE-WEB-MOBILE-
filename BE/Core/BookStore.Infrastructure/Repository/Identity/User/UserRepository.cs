@@ -265,5 +265,132 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         }
 
         #endregion
+
+        #region Authentication Operations
+
+        /// <summary>
+        /// Xác thực user với email và password hash
+        /// </summary>
+        public async Task<Domain.Entities.Identity.User?> AuthenticateAsync(string email, string passwordHash)
+        {
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(passwordHash))
+                return null;
+
+            return await _context.Users
+                .Include(u => u.Profiles)
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                        .ThenInclude(r => r.RolePermissions)
+                            .ThenInclude(rp => rp.Permission)
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(u => 
+                    u.Email.ToLower() == email.ToLower() 
+                    && u.PasswordHash == passwordHash 
+                    && u.IsActive);
+        }
+
+        /// <summary>
+        /// Lấy user với Roles và Permissions
+        /// </summary>
+        public async Task<Domain.Entities.Identity.User?> GetUserWithRolesAndPermissionsAsync(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return null;
+
+            return await _context.Users
+                .Include(u => u.Profiles)
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                        .ThenInclude(r => r.RolePermissions)
+                            .ThenInclude(rp => rp.Permission)
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+        }
+
+        /// <summary>
+        /// Xác minh email của user
+        /// </summary>
+        public async Task<bool> VerifyEmailAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                return false;
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return false;
+
+            user.IsActive = true;
+            user.UpdatedAt = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        #endregion
+
+        #region Password Management
+
+        /// <summary>
+        /// Cập nhật password mới
+        /// </summary>
+        public async Task<bool> UpdatePasswordAsync(Guid userId, string newPasswordHash)
+        {
+            if (userId == Guid.Empty || string.IsNullOrWhiteSpace(newPasswordHash))
+                return false;
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return false;
+
+            user.PasswordHash = newPasswordHash;
+            user.UpdatedAt = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        #endregion
+
+        #region Account Management
+
+        /// <summary>
+        /// Khóa tài khoản user
+        /// </summary>
+        public async Task<bool> LockUserAccountAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                return false;
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return false;
+
+            user.IsActive = false;
+            user.UpdatedAt = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// Mở khóa tài khoản user
+        /// </summary>
+        public async Task<bool> UnlockUserAccountAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                return false;
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return false;
+
+            user.IsActive = true;
+            user.UpdatedAt = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        #endregion
     }
 }

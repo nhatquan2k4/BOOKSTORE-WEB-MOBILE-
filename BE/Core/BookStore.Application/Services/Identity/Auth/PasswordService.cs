@@ -1,5 +1,6 @@
 using BookStore.Application.IService.Identity.Auth;
-using BCrypt.Net;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace BookStore.Application.Services.Identity.Auth
 {
@@ -19,9 +20,14 @@ namespace BookStore.Application.Services.Identity.Auth
         {
             const string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*";
             var random = new Random();
-            return new string(Enumerable.Range(0, length)
-                .Select(_ => validChars[random.Next(validChars.Length)])
-                .ToArray());
+            var chars = new char[length];
+            
+            for (int i = 0; i < length; i++)
+            {
+                chars[i] = validChars[random.Next(validChars.Length)];
+            }
+            
+            return new string(chars);
         }
 
         public bool ValidatePasswordStrength(string password)

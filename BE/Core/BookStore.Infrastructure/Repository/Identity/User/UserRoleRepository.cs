@@ -1,68 +1,46 @@
-﻿using BookStore.Domain.Entities.Identity;
+using BookStore.Domain.Entities.Identity;
 using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BookStore.Infrastructure.Repository.Identity.User
 {
-    public class UserRoleRepository : IUserRoleRepository
+    public class UserRoleRepository : ManyToManyRepository<UserRole>, IUserRoleRepository
     {
-        private readonly AppDbContext _context;
-
-        public UserRoleRepository(AppDbContext context)
+        public UserRoleRepository(AppDbContext context) : base(context)
         {
-            _context = context;
         }
 
-        public async Task<IEnumerable<UserRole>> GetAllAsync()
+        public override async Task<IEnumerable<UserRole>> GetByLeftKeyAsync(Guid userId)
+        {
+            return await GetByUserIdAsync(userId);
+        }
+
+        public override async Task<IEnumerable<UserRole>> GetByRightKeyAsync(Guid roleId)
+        {
+            return await GetByRoleIdAsync(roleId);
+        }
+
+        public override async Task RemoveAsync(Guid userId, Guid roleId)
+        {
+            var userRole = await _context.UserRoles
+                .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
+
+            if (userRole != null)
+            {
+                _context.UserRoles.Remove(userRole);
+            }
+        }
+
+        public override async Task RemoveAllByLeftKeyAsync(Guid userId)
+        {
+            await RemoveAllByUserIdAsync(userId);
+        }
+
+        public override async Task<bool> ExistsAsync(Guid userId, Guid roleId)
         {
             return await _context.UserRoles
-                .Include(ur => ur.User)
-                .Include(ur => ur.Role)
-                .AsNoTracking()
-                .ToListAsync();
-        }
-
-        public async Task<UserRole?> GetByIdAsync(Guid id)
-        {
-            return null;
-        }
-
-        public async Task AddAsync(UserRole entity)
-        {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-
-            if (await ExistsAsync(entity.UserId, entity.RoleId))
-                throw new InvalidOperationException($"User {entity.UserId} already has role {entity.RoleId}");
-
-            await _context.UserRoles.AddAsync(entity);
-        }
-
-        public void Update(UserRole entity)
-        {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-
-            _context.UserRoles.Update(entity);
-        }
-
-        public void Delete(UserRole entity)
-        {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-
-            _context.UserRoles.Remove(entity);
-        }
-
-        public async Task SaveChangesAsync()
-        {
-            await _context.SaveChangesAsync();
+                .AnyAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
         }
 
         public async Task<IEnumerable<UserRole>> GetByUserIdAsync(Guid userId)
@@ -89,14 +67,6 @@ namespace BookStore.Infrastructure.Repository.Identity.User
                 .ToListAsync();
         }
 
-        public async Task AddRangeAsync(IEnumerable<UserRole> userRoles)
-        {
-            if (userRoles == null || !userRoles.Any())
-                throw new ArgumentNullException(nameof(userRoles));
-
-            await _context.UserRoles.AddRangeAsync(userRoles);
-        }
-
         public async Task RemoveAllByUserIdAsync(Guid userId)
         {
             if (userId == Guid.Empty)
@@ -106,19 +76,7 @@ namespace BookStore.Infrastructure.Repository.Identity.User
                 .Where(ur => ur.UserId == userId)
                 .ToListAsync();
 
-            if (userRoles.Any())
-            {
-                _context.UserRoles.RemoveRange(userRoles);
-            }
-        }
-
-        public async Task<bool> ExistsAsync(Guid userId, Guid roleId)
-        {
-            if (userId == Guid.Empty || roleId == Guid.Empty)
-                return false;
-
-            return await _context.UserRoles
-                .AnyAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
+            _context.UserRoles.RemoveRange(userRoles);
         }
     }
 }

@@ -2,8 +2,18 @@
 using BookStore.Application.Settings;
 using BookStore.Application.IService.Identity.Auth;
 using BookStore.Application.Services.Identity.Auth;
+using BookStore.Application.IService.Identity.User;
+using BookStore.Application.Services.Identity;
+using BookStore.Application.IService.Identity.Role;
+using BookStore.Application.Services.Identity.Role;
+using BookStore.Application.IService.Identity.Permission;
+using BookStore.Application.Services.Identity.Permission;
+using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Domain.IRepository.Identity.Auth;
+using BookStore.Domain.IRepository.Identity.RolePermisson;
+using BookStore.Infrastructure.Repository.Identity.User;
 using BookStore.Infrastructure.Repository.Identity.Auth;
+using BookStore.Infrastructure.Repository.Identity.RolePermisson;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -47,12 +57,37 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // Register Services
+// Auth Services
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+
+// User Service
+builder.Services.AddScoped<BookStore.Application.IService.Identity.User.IUserService, BookStore.Application.Services.Identity.UserService>();
+
+// Role & Permission Services
+builder.Services.AddScoped<BookStore.Application.IService.Identity.Role.IRoleService, BookStore.Application.Services.Identity.Role.RoleService>();
+builder.Services.AddScoped<BookStore.Application.IService.Identity.Permission.IPermissionService, BookStore.Application.Services.Identity.Permission.PermissionService>();
 
 // Register Repositories
+// User & Auth
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+builder.Services.AddScoped<IUserProfileRepository, UserProfileRepository>();
+builder.Services.AddScoped<IUserAddressRepository, UserAddressRepository>();
+builder.Services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
+
+// Role & Permission
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
+builder.Services.AddScoped<IRolePermissionRepository, RolePermissionRepository>();
+
+// Tokens
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
+builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
 
 // Add Controllers
 builder.Services.AddControllers();

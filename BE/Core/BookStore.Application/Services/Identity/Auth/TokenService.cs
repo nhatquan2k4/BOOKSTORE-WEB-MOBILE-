@@ -1,7 +1,7 @@
 using BookStore.Application.IService.Identity.Auth;
 using BookStore.Application.Settings;
-using BookStore.Domain.Entities.Identity;
 using BookStore.Domain.IRepository.Identity.Auth;
+using BookStore.Domain.Entities.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -31,7 +31,7 @@ namespace BookStore.Application.Services.Identity.Auth
                 new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString())
+                new Claim("userId", userId.ToString())
             };
 
             foreach (var role in roles)
@@ -60,10 +60,10 @@ namespace BookStore.Application.Services.Identity.Auth
 
         public string GenerateRefreshToken()
         {
-            var randomBytes = new byte[64];
+            var randomNumber = new byte[64];
             using var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(randomBytes);
-            return Convert.ToBase64String(randomBytes);
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
         }
 
         public async Task<string> CreateRefreshTokenAsync(Guid userId, string refreshToken, int expiryDays = 30)
@@ -96,13 +96,16 @@ namespace BookStore.Application.Services.Identity.Auth
 
         public async Task<bool> RevokeRefreshTokenAsync(string refreshToken)
         {
+            var token = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+            if (token == null) return false;
+
             await _refreshTokenRepository.RevokeTokenAsync(refreshToken);
             return true;
         }
 
         public async Task<bool> RevokeAllUserRefreshTokensAsync(Guid userId)
         {
-            await _refreshTokenRepository.RevokeAllByUserIdAsync(userId);
+            await _refreshTokenRepository.RevokeAllUserTokensAsync(userId);
             return true;
         }
 

@@ -1,18 +1,16 @@
 ﻿using BookStore.Domain.Entities.Identity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BookStore.Domain.IRepository.Identity.User
 {
-    public interface IUserRoleRepository : IGenericRepository<UserRole>
+    public interface IUserRoleRepository : IManyToManyRepository<UserRole>
     {
         Task<IEnumerable<UserRole>> GetByUserIdAsync(Guid userId);
+
         Task<IEnumerable<UserRole>> GetByRoleIdAsync(Guid roleId);
-        Task AddRangeAsync(IEnumerable<UserRole> userRoles);
+
         Task RemoveAllByUserIdAsync(Guid userId);
-        Task<bool> ExistsAsync(Guid userId, Guid roleId);
+        
+        // ExistsAsync và AddRangeAsync đã có trong IManyToManyRepository
+        // Không cần khai báo lại
     }
 }
