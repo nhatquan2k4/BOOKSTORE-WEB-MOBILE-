@@ -11,7 +11,7 @@ namespace BookStore.Shared.Exceptions
     {
         public IDictionary<string, string[]> Errors { get; }
 
-        public ValidationException (IDictionary<string, string[]> errors) : base("Dữ liệu không hợp lệ.", 422)
+        public ValidationException(IDictionary<string, string[]> errors) : base("Dữ liệu không hợp lệ.", 422)
         {
             Errors = errors;
         }

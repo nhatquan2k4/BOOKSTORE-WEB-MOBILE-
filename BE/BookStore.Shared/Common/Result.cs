@@ -9,7 +9,7 @@
 
         public T? Value { get; }                // Dữ liệu trả về khi thành công (null khi thất bại)
 
-        
+
         private Result(bool isSuccess, T? value, string? error)//private constructor: bắt buộc tạo qua Success/Failure để tránh sai sót
         {
             IsSuccess = isSuccess;

@@ -1,5 +1,4 @@
-﻿
-using BookStore.Shared.Exceptions;
+﻿using BookStore.Shared.Exceptions;
 
 namespace BookStore.Shared.Utilities;
 

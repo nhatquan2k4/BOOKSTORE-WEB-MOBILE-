@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Exceptions\" />
     <Folder Include="Mappers\Book\" />
     <Folder Include="Mappers\Cart\" />
     <Folder Include="Mappers\User\" />
