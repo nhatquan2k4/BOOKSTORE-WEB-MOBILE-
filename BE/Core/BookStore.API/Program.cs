@@ -1,4 +1,6 @@
-﻿using BookStore.Infrastructure.Data; 
+﻿using BookStore.API.Middlewares;
+using BookStore.Infrastructure.Data;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System;
@@ -26,7 +28,7 @@ if (app.Environment.IsDevelopment())
 
 
 
-
+app.UseMiddleware<ExceptionMiddleware>();
 app.UseHttpsRedirection();
 
 var summaries = new[]

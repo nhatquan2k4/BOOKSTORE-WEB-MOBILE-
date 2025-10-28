@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BookStore.Constants\BookStore.Constants.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="IRepository\Analytics &amp; Activity\" />
     <Folder Include="IRepository\Catalog\" />
     <Folder Include="IRepository\Common\" />
