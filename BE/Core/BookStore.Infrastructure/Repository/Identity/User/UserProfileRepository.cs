@@ -10,68 +10,74 @@ using System.Threading.Tasks;
 
 namespace BookStore.Infrastructure.Repository.Identity.User
 {
-    public class UserProfileRepository : IUserProfileRepository
+    public class UserProfileRepository : GenericRepository<UserProfile>, IUserProfileRepository
     {
-        private readonly AppDbContext _context;
-        public UserProfileRepository(AppDbContext context)
+        public UserProfileRepository(AppDbContext context) : base(context)
         {
-            _context = context;
         }
-        public async Task AddAsync(UserProfile entity)
+
+        public override async Task<IEnumerable<UserProfile>> GetAllAsync()
+        {
+            return await _context.UserProfiles
+                .Include(up => up.User)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public override async Task<UserProfile?> GetByIdAsync(Guid id)
+        {
+            if (id == Guid.Empty)
+                throw new ArgumentException("Id cannot be empty", nameof(id));
+
+            return await _context.UserProfiles
+                .Include(up => up.User)
+                .FirstOrDefaultAsync(up => up.Id == id);
+        }
+
+        public override async Task AddAsync(UserProfile entity)
         {
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            await _context.UserProfiles.AddAsync(entity);
+            if (entity.Id == Guid.Empty)
+                entity.Id = Guid.NewGuid();
+
+            await base.AddAsync(entity);
         }
 
-        public async void Delete(UserProfile entity)
+        public override void Update(UserProfile entity)
         {
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
-            var existingEntity = await _context.UserProfiles.FindAsync(entity.Id);
-            if (existingEntity != null)
-            {
-                _context.UserProfiles.Remove(existingEntity);
-            }
 
+            base.Update(entity);
         }
 
-        public async Task<bool> ExistsByUserIdAsync(Guid userId)
+        public override void Delete(UserProfile entity)
         {
-           return await _context.UserProfiles.AnyAsync(up => up.UserId == userId);
+            if (entity == null)
+                throw new ArgumentNullException(nameof(entity));
 
-        }
-
-        public async Task<IEnumerable<UserProfile>> GetAllAsync()
-        {
-            return await _context.UserProfiles.
-                Include(up => up.User).
-                ToListAsync();
-        }
-
-        public async Task<UserProfile?> GetByIdAsync(Guid id)
-        {
-            return await _context.UserProfiles.
-                Include(up => up.User).
-                FirstOrDefaultAsync(up => up.Id == id);
+            base.Delete(entity);
         }
 
         public async Task<UserProfile?> GetByUserIdAsync(Guid userId)
         {
-            return await _context.UserProfiles.
-                Include(up => up.User).
-                FirstOrDefaultAsync(up => up.UserId == userId);
+            if (userId == Guid.Empty)
+                return null;
+
+            return await _context.UserProfiles
+                .Include(up => up.User)
+                .FirstOrDefaultAsync(up => up.UserId == userId);
         }
 
-        public async Task SaveChangesAsync()
+        public async Task<bool> ExistsByUserIdAsync(Guid userId)
         {
-            await _context.SaveChangesAsync();
-        }
+            if (userId == Guid.Empty)
+                return false;
 
-        public void Update(UserProfile entity)
-        {
-            _context.UserProfiles.Update(entity);
+            return await _context.UserProfiles
+                .AnyAsync(up => up.UserId == userId);
         }
-    }   
+    }
 }

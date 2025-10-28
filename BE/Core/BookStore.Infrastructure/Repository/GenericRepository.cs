@@ -1,4 +1,4 @@
-﻿using BookStore.Domain.IRepository;
+using BookStore.Domain.IRepository;
 using BookStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
