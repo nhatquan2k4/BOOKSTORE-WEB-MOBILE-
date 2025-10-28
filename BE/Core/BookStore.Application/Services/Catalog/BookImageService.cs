@@ -18,7 +18,6 @@ namespace BookStore.Application.Services.Catalog
             _bookRepository = bookRepository;
         }
 
-        // ❌ XÓA GetAllAsync() - Hình ảnh chỉ nên lấy theo BookId
 
         public async Task<BookImageDto?> GetByIdAsync(Guid id)
         {
