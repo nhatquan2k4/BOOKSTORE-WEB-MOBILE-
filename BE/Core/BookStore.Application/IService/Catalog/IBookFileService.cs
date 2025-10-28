@@ -1,6 +1,6 @@
-﻿using BookStore.Application.DTOs.Catalog.Book;
+﻿using BookStore.Application.Dtos.Catalog.Book;
 
-namespace BookStore.Application.Interfaces.Catalog
+namespace BookStore.Application.IService.Catalog
 {
     public interface IBookFileService
     {

@@ -1,6 +1,6 @@
-﻿using BookStore.Application.DTOs.Catalog.Author;
-using BookStore.Application.Interfaces.Catalog;
-using BookStore.Domain.Entities.Catalog;
+﻿using BookStore.Application.Dtos.Catalog.Author;
+using BookStore.Application.IService.Catalog;
+using BookStore.Application.Mappers.Catalog.Author;
 using BookStore.Domain.Interfaces.Catalog;
 
 namespace BookStore.Application.Services.Catalog
@@ -17,56 +17,32 @@ namespace BookStore.Application.Services.Catalog
         public async Task<IEnumerable<AuthorDto>> GetAllAsync()
         {
             var authors = await _authorRepository.GetAllAsync();
-            return authors.Select(a => new AuthorDto
-            {
-                Id = a.Id,
-                Name = a.Name,
-                Biography = a.Biography,
-                AvartarUrl = a.AvartarUrl
-            });
+            return authors.ToDtoList();
         }
 
-        public async Task<AuthorDto?> GetByIdAsync(Guid id)
+        public async Task<AuthorDetailDto?> GetByIdAsync(Guid id)
         {
             var author = await _authorRepository.GetByIdAsync(id);
             if (author == null) return null;
 
-            return new AuthorDto
-            {
-                Id = author.Id,
-                Name = author.Name,
-                Biography = author.Biography,
-                AvartarUrl = author.AvartarUrl
-            };
+            return author.ToDetailDto();
         }
 
-        public async Task<AuthorDto?> GetByNameAsync(string name)
+        public async Task<AuthorDetailDto?> GetByNameAsync(string name)
         {
             var author = await _authorRepository.GetByNameAsync(name);
             if (author == null) return null;
 
-            return new AuthorDto
-            {
-                Id = author.Id,
-                Name = author.Name,
-                Biography = author.Biography,
-                AvartarUrl = author.AvartarUrl
-            };
+            return author.ToDetailDto();
         }
 
         public async Task<IEnumerable<AuthorDto>> SearchByNameAsync(string searchTerm)
         {
             var authors = await _authorRepository.SearchByNameAsync(searchTerm);
-            return authors.Select(a => new AuthorDto
-            {
-                Id = a.Id,
-                Name = a.Name,
-                Biography = a.Biography,
-                AvartarUrl = a.AvartarUrl
-            });
+            return authors.ToDtoList();
         }
 
-        public async Task<AuthorDto> CreateAsync(AuthorDto dto)
+        public async Task<AuthorDetailDto> AddAsync(CreateAuthorDto dto)
         {
             // Validate name exists
             if (await _authorRepository.IsNameExistsAsync(dto.Name))
@@ -74,22 +50,15 @@ namespace BookStore.Application.Services.Catalog
                 throw new InvalidOperationException($"Tác giả với tên '{dto.Name}' đã tồn tại");
             }
 
-            var author = new Author
-            {
-                Id = Guid.NewGuid(),
-                Name = dto.Name,
-                Biography = dto.Biography,
-                AvartarUrl = dto.AvartarUrl
-            };
+            var author = dto.ToEntity();
 
             await _authorRepository.AddAsync(author);
             await _authorRepository.SaveChangesAsync();
 
-            dto.Id = author.Id;
-            return dto;
+            return author.ToDetailDto();
         }
 
-        public async Task<AuthorDto> UpdateAsync(AuthorDto dto)
+        public async Task<AuthorDetailDto> UpdateAsync(UpdateAuthorDto dto)
         {
             var author = await _authorRepository.GetByIdAsync(dto.Id);
             if (author == null)
@@ -103,14 +72,12 @@ namespace BookStore.Application.Services.Catalog
                 throw new InvalidOperationException($"Tác giả với tên '{dto.Name}' đã được sử dụng");
             }
 
-            author.Name = dto.Name;
-            author.Biography = dto.Biography;
-            author.AvartarUrl = dto.AvartarUrl;
+            author.UpdateFromDto(dto);
 
             _authorRepository.Update(author);
             await _authorRepository.SaveChangesAsync();
 
-            return dto;
+            return author.ToDetailDto();
         }
 
         public async Task<bool> DeleteAsync(Guid id)
@@ -122,6 +89,12 @@ namespace BookStore.Application.Services.Catalog
             await _authorRepository.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<bool> ExistsAsync(Guid id)
+        {
+            var author = await _authorRepository.GetByIdAsync(id);
+            return author != null;
         }
 
         public async Task<bool> IsNameExistsAsync(string name, Guid? excludeId = null)

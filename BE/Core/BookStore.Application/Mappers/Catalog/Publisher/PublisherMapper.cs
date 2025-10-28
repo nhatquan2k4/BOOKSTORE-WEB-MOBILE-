@@ -1,7 +1,7 @@
-﻿using BookStore.Application.DTOs.Catalog.Publisher;
-using BookStore.Domain.Entities.Catalog;
+﻿using BookStore.Application.Dtos.Catalog.Publisher;
+using PublisherEntity = BookStore.Domain.Entities.Catalog.Publisher;
 
-namespace BookStore.Application.Mappers.Catalog
+namespace BookStore.Application.Mappers.Catalog.Publisher
 {
     /// <summary>
     /// Mapper thủ công cho Publisher entity
@@ -11,7 +11,7 @@ namespace BookStore.Application.Mappers.Catalog
         /// <summary>
         /// Map Publisher entity sang PublisherDto
         /// </summary>
-        public static PublisherDto ToDto(this Publisher publisher)
+        public static PublisherDto ToDto(this PublisherEntity publisher)
         {
             return new PublisherDto
             {
@@ -19,26 +19,27 @@ namespace BookStore.Application.Mappers.Catalog
                 Name = publisher.Name,
                 Address = publisher.Address,
                 Email = publisher.Email,
-                PhoneNumber = publisher.PhoneNumber
+                PhoneNumber = publisher.PhoneNumber,
+                BookCount = publisher.Books?.Count ?? 0
             };
         }
 
         /// <summary>
         /// Map collection Publisher entities sang collection PublisherDto
         /// </summary>
-        public static List<PublisherDto> ToDtoList(this IEnumerable<Publisher> publishers)
+        public static List<PublisherDto> ToDtoList(this IEnumerable<PublisherEntity> publishers)
         {
-            return publishers.Select(p => p.ToDto()).ToList();
+            return publishers.Select(p => PublisherMapper.ToDto(p)).ToList();
         }
 
         /// <summary>
-        /// Map PublisherDto sang Publisher entity (for Create)
+        /// Map CreatePublisherDto sang Publisher entity (for Create)
         /// </summary>
-        public static Publisher ToEntity(this PublisherDto dto)
+        public static PublisherEntity ToEntity(this CreatePublisherDto dto)
         {
-            return new Publisher
+            return new PublisherEntity
             {
-                Id = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
+                Id = Guid.NewGuid(),
                 Name = dto.Name,
                 Address = dto.Address,
                 Email = dto.Email,
@@ -47,9 +48,9 @@ namespace BookStore.Application.Mappers.Catalog
         }
 
         /// <summary>
-        /// Update Publisher entity từ PublisherDto (for Update)
+        /// Update Publisher entity từ UpdatePublisherDto (for Update)
         /// </summary>
-        public static void UpdateFromDto(this Publisher publisher, PublisherDto dto)
+        public static void UpdateFromDto(this PublisherEntity publisher, UpdatePublisherDto dto)
         {
             publisher.Name = dto.Name;
             publisher.Address = dto.Address;

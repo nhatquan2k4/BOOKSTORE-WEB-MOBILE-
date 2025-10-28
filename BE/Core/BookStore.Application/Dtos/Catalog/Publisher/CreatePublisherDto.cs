@@ -1,12 +1,12 @@
-﻿namespace BookStore.Application.Dtos.Catalog.Publisher
+using System.ComponentModel.DataAnnotations;
+
+namespace BookStore.Application.Dtos.Catalog.Publisher
 {
-    public class PublisherDto
+    public class CreatePublisherDto
     {
-        public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string? Address { get; set; }
         public string? Email { get; set; }
         public string? PhoneNumber { get; set; }
-        public int BookCount { get; set; }
     }
 }

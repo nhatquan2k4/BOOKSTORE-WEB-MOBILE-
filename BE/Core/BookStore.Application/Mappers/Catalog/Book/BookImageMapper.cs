@@ -1,7 +1,7 @@
-﻿using BookStore.Application.DTOs.Catalog.Book;
+﻿using BookStore.Application.Dtos.Catalog.Book;
 using BookStore.Domain.Entities.Catalog;
 
-namespace BookStore.Application.Mappers.Catalog
+namespace BookStore.Application.Mappers.Catalog.Book
 {
     /// <summary>
     /// Mapper thủ công cho BookImage entity

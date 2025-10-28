@@ -1,6 +1,6 @@
-﻿using BookStore.Application.DTOs.Catalog.Publisher;
-using BookStore.Application.Interfaces.Catalog;
-using BookStore.Domain.Entities.Catalog;
+﻿using BookStore.Application.Dtos.Catalog.Publisher;
+using BookStore.Application.IService.Catalog;
+using BookStore.Application.Mappers.Catalog.Publisher;
 using BookStore.Domain.Interfaces.Catalog;
 
 namespace BookStore.Application.Services.Catalog
@@ -17,60 +17,32 @@ namespace BookStore.Application.Services.Catalog
         public async Task<IEnumerable<PublisherDto>> GetAllAsync()
         {
             var publishers = await _publisherRepository.GetAllAsync();
-            return publishers.Select(p => new PublisherDto
-            {
-                Id = p.Id,
-                Name = p.Name,
-                Address = p.Address,
-                Email = p.Email,
-                PhoneNumber = p.PhoneNumber
-            });
+            return publishers.ToDtoList();
         }
 
-        public async Task<PublisherDto?> GetByIdAsync(Guid id)
+        public async Task<PublisherDetailDto?> GetByIdAsync(Guid id)
         {
             var publisher = await _publisherRepository.GetByIdAsync(id);
             if (publisher == null) return null;
 
-            return new PublisherDto
-            {
-                Id = publisher.Id,
-                Name = publisher.Name,
-                Address = publisher.Address,
-                Email = publisher.Email,
-                PhoneNumber = publisher.PhoneNumber
-            };
+            return publisher.ToDetailDto();
         }
 
-        public async Task<PublisherDto?> GetByNameAsync(string name)
+        public async Task<PublisherDetailDto?> GetByNameAsync(string name)
         {
             var publisher = await _publisherRepository.GetByNameAsync(name);
             if (publisher == null) return null;
 
-            return new PublisherDto
-            {
-                Id = publisher.Id,
-                Name = publisher.Name,
-                Address = publisher.Address,
-                Email = publisher.Email,
-                PhoneNumber = publisher.PhoneNumber
-            };
+            return publisher.ToDetailDto();
         }
 
         public async Task<IEnumerable<PublisherDto>> SearchByNameAsync(string searchTerm)
         {
             var publishers = await _publisherRepository.SearchByNameAsync(searchTerm);
-            return publishers.Select(p => new PublisherDto
-            {
-                Id = p.Id,
-                Name = p.Name,
-                Address = p.Address,
-                Email = p.Email,
-                PhoneNumber = p.PhoneNumber
-            });
+            return publishers.ToDtoList();
         }
 
-        public async Task<PublisherDto> CreateAsync(PublisherDto dto)
+        public async Task<PublisherDetailDto> AddAsync(CreatePublisherDto dto)
         {
             // Validate name exists
             if (await _publisherRepository.IsNameExistsAsync(dto.Name))
@@ -78,23 +50,15 @@ namespace BookStore.Application.Services.Catalog
                 throw new InvalidOperationException($"Nhà xuất bản với tên '{dto.Name}' đã tồn tại");
             }
 
-            var publisher = new Publisher
-            {
-                Id = Guid.NewGuid(),
-                Name = dto.Name,
-                Address = dto.Address,
-                Email = dto.Email,
-                PhoneNumber = dto.PhoneNumber
-            };
+            var publisher = dto.ToEntity();
 
             await _publisherRepository.AddAsync(publisher);
             await _publisherRepository.SaveChangesAsync();
 
-            dto.Id = publisher.Id;
-            return dto;
+            return publisher.ToDetailDto();
         }
 
-        public async Task<PublisherDto> UpdateAsync(PublisherDto dto)
+        public async Task<PublisherDetailDto> UpdateAsync(UpdatePublisherDto dto)
         {
             var publisher = await _publisherRepository.GetByIdAsync(dto.Id);
             if (publisher == null)
@@ -108,15 +72,12 @@ namespace BookStore.Application.Services.Catalog
                 throw new InvalidOperationException($"Nhà xuất bản với tên '{dto.Name}' đã được sử dụng");
             }
 
-            publisher.Name = dto.Name;
-            publisher.Address = dto.Address;
-            publisher.Email = dto.Email;
-            publisher.PhoneNumber = dto.PhoneNumber;
+            publisher.UpdateFromDto(dto);
 
             _publisherRepository.Update(publisher);
             await _publisherRepository.SaveChangesAsync();
 
-            return dto;
+            return publisher.ToDetailDto();
         }
 
         public async Task<bool> DeleteAsync(Guid id)
@@ -128,6 +89,12 @@ namespace BookStore.Application.Services.Catalog
             await _publisherRepository.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<bool> ExistsAsync(Guid id)
+        {
+            var publisher = await _publisherRepository.GetByIdAsync(id);
+            return publisher != null;
         }
 
         public async Task<bool> IsNameExistsAsync(string name, Guid? excludeId = null)

@@ -1,8 +1,11 @@
-﻿using BookStore.Application.DTOs.Catalog.Author;
-using BookStore.Application.DTOs.Catalog.Book;
-using BookStore.Application.DTOs.Catalog.Category;
-using BookStore.Application.DTOs.Catalog.Publisher;
-using BookStore.Application.Interfaces.Catalog;
+﻿using BookStore.Application.Dtos.Catalog.Author;
+using BookStore.Application.Dtos.Catalog.Book;
+using BookStore.Application.Dtos.Catalog.Category;
+using BookStore.Application.Dtos.Catalog.Publisher;
+using BookStore.Application.IService.Catalog;
+using BookStore.Application.Mappers.Catalog.Author;
+using BookStore.Application.Mappers.Catalog.Category;
+using BookStore.Application.Mappers.Catalog.Publisher;
 using BookStore.Domain.Entities.Catalog;
 using BookStore.Domain.Interfaces.Catalog;
 using BookStore.Domain.ValueObjects;
@@ -400,33 +403,15 @@ namespace BookStore.Application.Services.Catalog
                 Edition = book.Edition,
                 PageCount = book.PageCount,
                 IsAvailable = book.IsAvailable,
-                Publisher = new PublisherDto
-                {
-                    Id = book.Publisher.Id,
-                    Name = book.Publisher.Name,
-                    Address = book.Publisher.Address,
-                    Email = book.Publisher.Email,
-                    PhoneNumber = book.Publisher.PhoneNumber
-                },
+                Publisher = book.Publisher != null ? PublisherMapper.ToDto(book.Publisher) : null!,
                 BookFormat = book.BookFormat != null ? new BookFormatDto
                 {
                     Id = book.BookFormat.Id,
                     FormatType = book.BookFormat.FormatType,
                     Description = book.BookFormat.Description
                 } : null,
-                Authors = book.BookAuthors?.Select(ba => new AuthorDto
-                {
-                    Id = ba.Author.Id,
-                    Name = ba.Author.Name,
-                    Biography = ba.Author.Biography,
-                    AvartarUrl = ba.Author.AvartarUrl
-                }).ToList() ?? new List<AuthorDto>(),
-                Categories = book.BookCategories?.Select(bc => new CategoryDto
-                {
-                    Id = bc.Category.Id,
-                    Name = bc.Category.Name,
-                    Description = bc.Category.Description
-                }).ToList() ?? new List<CategoryDto>(),
+                Authors = book.BookAuthors?.Select(ba => AuthorMapper.ToDto(ba.Author)).ToList() ?? new List<AuthorDto>(),
+                Categories = book.BookCategories?.Select(bc => CategoryMapper.ToDto(bc.Category)).ToList() ?? new List<CategoryDto>(),
                 Images = book.Images?.Select(img => new BookImageDto
                 {
                     Id = img.Id,

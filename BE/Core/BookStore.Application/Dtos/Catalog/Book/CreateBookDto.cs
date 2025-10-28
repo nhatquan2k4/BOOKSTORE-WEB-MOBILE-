@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Application.DTOs.Catalog.Book
+namespace BookStore.Application.Dtos.Catalog.Book
 {
     public class CreateBookDto
     {
