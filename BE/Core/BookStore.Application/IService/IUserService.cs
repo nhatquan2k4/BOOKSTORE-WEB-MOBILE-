@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Application.Dtos.Books
+namespace BookStore.Application.Interfaces
 {
-    internal class CreateBookDto
+    internal class IUserService
     {
     }
 }

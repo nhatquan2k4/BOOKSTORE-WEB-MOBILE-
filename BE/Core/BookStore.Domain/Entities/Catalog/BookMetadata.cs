@@ -10,8 +10,8 @@ namespace BookStore.Domain.Entities.Catalog
     {
         public Guid Id { get; set; }
 
-        public string Key { get; set; } = null!;              // Tên thuộc tính (VD: Trọng lượng, Kích thước,...)
-        public string Value { get; set; } = null!;            // Giá trị của thuộc tính
+        public string Key { get; set; } = null!;             
+        public string Value { get; set; } = null!;         
 
         public Guid BookId { get; set; }
         public virtual Book Book { get; set; } = null!;

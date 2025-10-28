@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Application.Dtos.Books
+namespace BookStore.Infrastructure.Repository.Catalog
 {
-    internal class BookDtos
+    internal class BookFileRepository
     {
     }
 }

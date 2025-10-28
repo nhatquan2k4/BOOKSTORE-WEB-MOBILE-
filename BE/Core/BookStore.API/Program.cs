@@ -22,11 +22,11 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Đăng ký DbContext
+
 var cs = builder.Configuration.GetConnectionString("UsersDb")
          ?? throw new InvalidOperationException("Missing connection string 'UsersDb'.");
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("UsersDb")));
+    opt.UseSqlServer(cs));
 
 // Configure JWT Settings
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
@@ -92,7 +92,26 @@ builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepo
 // Add Controllers
 builder.Services.AddControllers();
 
-// Add services to the container.
+
+builder.Services.AddScoped<IAuthorRepository, AuthorRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IPublisherRepository, PublisherRepository>();
+builder.Services.AddScoped<IBookRepository, BookRepository>();
+builder.Services.AddScoped<IBookFormatRepository, BookFormatRepository>();
+// builder.Services.AddScoped<IBookImageRepository, BookImageRepository>();  // Uncomment khi đã tạo repository
+// builder.Services.AddScoped<IBookFileRepository, BookFileRepository>();    // Uncomment khi đã tạo repository
+// builder.Services.AddScoped<IBookMetadataRepository, BookMetadataRepository>(); // Uncomment khi đã tạo repository
+
+
+builder.Services.AddScoped<IAuthorService, AuthorService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IPublisherService, PublisherService>();
+builder.Services.AddScoped<IBookService, BookService>();
+
+
+builder.Services.AddControllers();
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -126,10 +145,15 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "BookStore API V1");
+        c.RoutePrefix = string.Empty; // Swagger UI at root: https://localhost:xxxx/
+    });
 }
 
 app.UseHttpsRedirection();
@@ -145,23 +169,4 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
-app.MapGet("/weatherforecast", () =>
-{
-var forecast = Enumerable.Range(1, 5).Select(index =>
-    new WeatherForecast
-    (
-        DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-        Random.Shared.Next(-20, 55),
-        summaries[Random.Shared.Next(summaries.Length)]
-    ))
-    .ToArray();
-return forecast;
-})
-.WithName("GetWeatherForecast");
-
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
