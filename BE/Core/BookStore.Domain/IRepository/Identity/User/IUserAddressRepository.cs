@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Domain.Interfaces.Identity.User
+namespace BookStore.Domain.IRepository.Identity.User
 {
     public interface IUserAddressRepository : IGenericRepository<UserAddress>
     {

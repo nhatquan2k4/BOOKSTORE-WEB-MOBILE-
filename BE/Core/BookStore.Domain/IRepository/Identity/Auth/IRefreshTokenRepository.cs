@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Domain.Interfaces.Identity.Auth
+namespace BookStore.Domain.IRepository.Identity.Auth
 {
     public interface IRefreshTokenRepository : IGenericRepository<RefreshToken>
     {

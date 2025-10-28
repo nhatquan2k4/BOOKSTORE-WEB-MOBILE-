@@ -3,9 +3,14 @@ using BookStore.Application.IService;
 
 namespace BookStore.Application.IService.Catalog
 {
-    public interface ICategoryService : IGenericService<CategoryDto, CategoryDetailDto, CreateCategoryDto, UpdateCategoryDto>
+    public interface ICategoryService : IGenericService<CategoryDto, CreateCategoryDto, UpdateCategoryDto>
     {
-        // Specific queries (GetAllAsync, GetByIdAsync, AddAsync, UpdateAsync, DeleteAsync đã có trong Generic)
+        // Override methods từ IGenericService để trả về CategoryDetailDto
+        new Task<CategoryDetailDto?> GetByIdAsync(Guid id);
+        new Task<CategoryDetailDto> AddAsync(CreateCategoryDto dto);
+        new Task<CategoryDetailDto> UpdateAsync(UpdateCategoryDto dto);
+
+        // Specific queries
         Task<IEnumerable<CategoryDto>> GetSubCategoriesAsync(Guid parentId);
         Task<List<CategoryTreeDto>> GetCategoryTreeAsync();
         Task<List<CategoryBreadcrumbDto>> GetBreadcrumbAsync(Guid categoryId);

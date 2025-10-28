@@ -1,7 +1,7 @@
 ﻿using BookStore.Application.IService.Catalog;
 using BookStore.Application.Services.Catalog;
-using BookStore.Domain.Interfaces;
-using BookStore.Domain.Interfaces.Catalog;
+using BookStore.Domain.IRepository;
+using BookStore.Domain.IRepository.Catalog;
 using BookStore.Infrastructure.Data;
 using BookStore.Infrastructure.Repository;
 using BookStore.Infrastructure.Repository.Catalog;

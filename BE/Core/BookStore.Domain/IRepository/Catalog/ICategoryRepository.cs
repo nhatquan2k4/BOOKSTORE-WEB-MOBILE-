@@ -1,6 +1,6 @@
 ﻿using BookStore.Domain.Entities.Catalog;
 
-namespace BookStore.Domain.Interfaces.Catalog
+namespace BookStore.Domain.IRepository.Catalog
 {
     public interface ICategoryRepository : IGenericRepository<Category>
     {

@@ -1,6 +1,6 @@
 ﻿using BookStore.Domain.Entities.Identity;
-using BookStore.Domain.Interfaces;
-using BookStore.Domain.Interfaces.Identity.User;
+using BookStore.Domain.IRepository;
+using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;

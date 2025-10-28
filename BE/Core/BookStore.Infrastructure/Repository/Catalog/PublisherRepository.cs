@@ -1,5 +1,5 @@
 ﻿using BookStore.Domain.Entities.Catalog;
-using BookStore.Domain.Interfaces.Catalog;
+using BookStore.Domain.IRepository.Catalog;
 using BookStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 

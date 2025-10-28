@@ -11,13 +11,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Interfaces\Analytics &amp; Activity\" />
-    <Folder Include="Interfaces\Common\" />
-    <Folder Include="Interfaces\System\" />
-    <Folder Include="Interfaces\Shipping\" />
-    <Folder Include="Interfaces\Rental\" />
-    <Folder Include="Interfaces\Pricing &amp; Inventory\" />
-    <Folder Include="Interfaces\Ordering &amp; Payment\" />
+    <Folder Include="IRepository\Analytics &amp; Activity\" />
+    <Folder Include="IRepository\Common\" />
+    <Folder Include="IRepository\System\" />
+    <Folder Include="IRepository\Shipping\" />
+    <Folder Include="IRepository\Rental\" />
+    <Folder Include="IRepository\Pricing &amp; Inventory\" />
+    <Folder Include="IRepository\Ordering &amp; Payment\" />
   </ItemGroup>
 
 </Project>
