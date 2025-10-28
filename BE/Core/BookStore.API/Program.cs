@@ -1,23 +1,28 @@
-﻿using BookStore.Infrastructure.Data;
-using BookStore.Application.Settings;
+﻿using BookStore.Application.IService.Catalog;
 using BookStore.Application.IService.Identity.Auth;
-using BookStore.Application.Services.Identity.Auth;
-using BookStore.Application.IService.Identity.User;
-using BookStore.Application.Services.Identity;
-using BookStore.Application.IService.Identity.Role;
-using BookStore.Application.Services.Identity.Role;
 using BookStore.Application.IService.Identity.Permission;
+using BookStore.Application.IService.Identity.Role;
+using BookStore.Application.IService.Identity.User;
+using BookStore.Application.Services.Catalog;
+using BookStore.Application.Services.Identity;
+using BookStore.Application.Services.Identity.Auth;
 using BookStore.Application.Services.Identity.Permission;
-using BookStore.Domain.IRepository.Identity.User;
+using BookStore.Application.Services.Identity.Role;
+using BookStore.Application.Settings;
+using BookStore.Domain.Interfaces.Catalog;
+using BookStore.Domain.IRepository;
 using BookStore.Domain.IRepository.Identity.Auth;
 using BookStore.Domain.IRepository.Identity.RolePermisson;
-using BookStore.Infrastructure.Repository.Identity.User;
+using BookStore.Domain.IRepository.Identity.User;
+using BookStore.Infrastructure.Data;
+using BookStore.Infrastructure.Repository.Catalog;
 using BookStore.Infrastructure.Repository.Identity.Auth;
 using BookStore.Infrastructure.Repository.Identity.RolePermisson;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
+using BookStore.Infrastructure.Repository.Identity.User;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -116,7 +121,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "BookStore API", Version = "v1" });
-    
+
     // Add JWT Authentication to Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {

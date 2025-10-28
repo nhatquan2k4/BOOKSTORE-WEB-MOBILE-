@@ -35,7 +35,7 @@ namespace BookStore.Application.Service
             var entity = await _repository.GetByIdAsync(id);
             return entity == null ? null : MapToDto(entity);
         }
-        
+
         /// Thêm entity mới từ DTO tạo.
         public virtual async Task<TDto> AddAsync(TCreateDto dto)
         {

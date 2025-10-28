@@ -3,9 +3,8 @@ using BookStore.Application.IService;
 
 namespace BookStore.Application.IService.Catalog
 {
-    public interface IPublisherService : IGenericService<PublisherDto, PublisherDetailDto, CreatePublisherDto, UpdatePublisherDto>
+    public interface IPublisherService : IGenericService<PublisherDto, CreatePublisherDto, UpdatePublisherDto>
     {
-        // Specific queries (GetAllAsync, GetByIdAsync, AddAsync, UpdateAsync, DeleteAsync đã có trong Generic)
         Task<IEnumerable<PublisherDto>> SearchByNameAsync(string searchTerm);
         Task<PublisherDetailDto?> GetByNameAsync(string name);
 
