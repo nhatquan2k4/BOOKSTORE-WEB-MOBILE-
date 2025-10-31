@@ -12,8 +12,6 @@ namespace BookStore.Domain.IRepository.Identity.RolePermisson
         Task<Permission?> GetByNameAsync(string name);
         Task<IEnumerable<Permission>> GetPermissionsByRoleIdAsync(Guid roleId);
         Task<IEnumerable<Permission>> GetPermissionsByUserIdAsync(Guid userId);
-        Task<IEnumerable<Permission>> GetPermissionsByRoleIdAsync(Guid roleId);
-        Task<IEnumerable<Permission>> GetPermissionsByUserIdAsync(Guid userId);
         Task<bool> ExistsByNameAsync(string name);
     }
 }

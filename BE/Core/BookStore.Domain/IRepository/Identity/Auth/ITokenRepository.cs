@@ -7,7 +7,6 @@ namespace BookStore.Domain.IRepository.Identity.Auth
     public interface IRefreshTokenRepository : IGenericRepository<RefreshToken>
     {
         Task<RefreshToken?> GetByTokenAsync(string token);
-
         Task<RefreshToken?> GetActiveTokenByUserIdAsync(Guid userId);
 
         Task<IEnumerable<RefreshToken>> GetActiveTokensByUserIdAsync(Guid userId);
