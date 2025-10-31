@@ -4,6 +4,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, use, useRef, useEffect } from "react";
+import { Button, Badge, Alert } from "@/components/ui";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 
 // ============================================================================
 // TYPES
@@ -670,19 +672,39 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
           <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
             <p className="text-2xl font-bold text-red-600">{formatCurrency(book.price)}</p>
             <p className="text-sm text-gray-400 line-through">{formatCurrency(book.originalPrice)}</p>
-            <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-semibold text-red-600 ring-1 ring-red-100">
+            <Badge variant="danger" size="sm">
               -{Math.max(0, Math.round((1 - book.price / book.originalPrice) * 100))}%
-            </span>
-            <p className="text-sm font-medium text-green-600">{book.stock > 0 ? "Còn hàng" : "Hết hàng"}</p>
+            </Badge>
+            {book.stock > 0 ? (
+              <Badge variant={book.stock < 5 ? "warning" : "success"} size="sm">
+                Còn {book.stock} cuốn
+              </Badge>
+            ) : (
+              <Badge variant="danger" size="sm">
+                Hết hàng
+              </Badge>
+            )}
           </div>
+
+          {/* Low stock warning */}
+          {book.stock > 0 && book.stock < 5 && (
+            <Alert variant="warning">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Chỉ còn {book.stock} cuốn! Đặt hàng ngay để không bỏ lỡ</span>
+              </div>
+            </Alert>
+          )}
 
           {/* Hàng nút hành động */}
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-sm transition hover:bg-red-700 active:scale-95">
+            <Button variant="danger" className="shadow-sm">
               Mua ngay
-            </button>
+            </Button>
 
-            <button className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white shadow-sm transition hover:bg-blue-700 active:scale-95">
+            <Button variant="primary" className="shadow-sm">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                    className="lucide lucide-shopping-cart">
@@ -691,9 +713,9 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                 <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
               </svg>
               <span>Thêm vào giỏ hàng</span>
-            </button>
+            </Button>
 
-            <button className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-white shadow-sm transition hover:bg-amber-600 active:scale-95">
+            <Button className="shadow-sm bg-amber-500 hover:bg-amber-600">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                    className="lucide lucide-book-open">
@@ -701,29 +723,26 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                 <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
               </svg>
               <span>Thuê e-book</span>
-            </button>
+            </Button>
 
             {/* Icon-only */}
-            <button onClick={() => setIsLiked((prev) => !prev)} aria-label="Yêu thích" title="Yêu thích"
-                    className="rounded-lg p-2.5 transition hover:bg-gray-100 active:scale-95">
+            <Button onClick={() => setIsLiked((prev) => !prev)} variant="ghost" size="sm" aria-label="Yêu thích" title="Yêu thích">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
                    fill={isLiked ? "red" : "none"} stroke={isLiked ? "red" : "currentColor"}
                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-heart">
                 <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
               </svg>
-            </button>
+            </Button>
 
-            <button onClick={() => setIsSaved((prev) => !prev)} aria-label="Lưu sách" title="Lưu sách"
-                    className="rounded-lg p-2.5 transition hover:bg-gray-100 active:scale-95">
+            <Button onClick={() => setIsSaved((prev) => !prev)} variant="ghost" size="sm" aria-label="Lưu sách" title="Lưu sách">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
                    fill={isSaved ? "gold" : "none"} stroke={isSaved ? "gold" : "currentColor"}
                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bookmark">
                 <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
               </svg>
-            </button>
+            </Button>
 
-            <button onClick={handleShareToFacebook} aria-label="Chia sẻ Facebook" title="Chia sẻ Facebook"
-                    className="rounded-lg p-2.5 transition hover:bg-gray-100 active:scale-95">
+            <Button onClick={handleShareToFacebook} variant="ghost" size="sm" aria-label="Chia sẻ Facebook" title="Chia sẻ Facebook">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
                    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                    className="lucide lucide-share-2">
@@ -733,49 +752,102 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                 <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
                 <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
               </svg>
-            </button>
+            </Button>
           </div>
 
+          {/* Free shipping info */}
+          {book.price >= 200000 && (
+            <Alert variant="success">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Miễn phí vận chuyển cho đơn hàng này</span>
+              </div>
+            </Alert>
+          )}
+
           {/* Thông tin chi tiết */}
-          <div className="mt-6">
-            <h2 className="mb-5 text-2xl font-bold text-gray-800">Thông tin chi tiết sách</h2>
-            <ul className="space-y-5 text-sm">
-              <li><strong>Mã sách:</strong> {book.id}</li>
-              <li><strong>Tác giả:</strong> {book.author}</li>
-              <li><strong>Thể loại:</strong> {book.category}</li>
-              <li><strong>Nhà cung cấp:</strong> BookStore</li>
-              <li><strong>Ngôn ngữ:</strong> {book.language}</li>
-              <li><strong>Nhà xuất bản:</strong> {book.publisher}</li>
-              <li><strong>Năm xuất bản:</strong> {book.year}</li>
-              <li><strong>Tình trạng:</strong> {book.stock > 0 ? "Còn hàng" : "Hết hàng"}</li>
-              <li><strong>Trọng lượng (gram):</strong> {book.weight}</li>
-              <li><strong>Kích thước:</strong> {book.size}</li>
-            </ul>
-          </div>
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Thông tin chi tiết sách</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3 text-sm">
+                <li className="flex justify-between">
+                  <strong className="text-gray-600">Mã sách:</strong>
+                  <span>{book.id}</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="text-gray-600">Tác giả:</strong>
+                  <span>{book.author}</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="text-gray-600">Thể loại:</strong>
+                  <Badge variant="info" size="sm">{book.category}</Badge>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="text-gray-600">Nhà cung cấp:</strong>
+                  <span>BookStore</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="text-gray-600">Ngôn ngữ:</strong>
+                  <span>{book.language}</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="text-gray-600">Nhà xuất bản:</strong>
+                  <span>{book.publisher}</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="text-gray-600">Năm xuất bản:</strong>
+                  <span>{book.year}</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="text-gray-600">Tình trạng:</strong>
+                  {book.stock > 0 ? (
+                    <Badge variant="success" size="sm">Còn hàng</Badge>
+                  ) : (
+                    <Badge variant="danger" size="sm">Hết hàng</Badge>
+                  )}
+                </li>
+                <li className="flex justify-between">
+                  <strong className="text-gray-600">Trọng lượng:</strong>
+                  <span>{book.weight}g</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="text-gray-600">Kích thước:</strong>
+                  <span>{book.size}</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
       {/* Tabs: Mô tả / Đánh giá / Bình luận */}
       <div className="mt-10">
         <div className="mb-4 flex border-b border-gray-200">
-          <button
+          <Button
             onClick={() => setActiveTab("desc")}
-            className={`border-b-2 px-4 py-2 font-medium transition ${activeTab === "desc" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-600 hover:text-gray-800"}`}
+            variant="ghost"
+            className={`border-b-2 rounded-none ${activeTab === "desc" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-600 hover:text-gray-800"}`}
           >
             Mô tả sản phẩm
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setActiveTab("review")}
-            className={`border-b-2 px-4 py-2 font-medium transition ${activeTab === "review" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-600 hover:text-gray-800"}`}
+            variant="ghost"
+            className={`border-b-2 rounded-none ${activeTab === "review" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-600 hover:text-gray-800"}`}
           >
             Đánh giá & nhận xét ({totalReviews})
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setActiveTab("comments")}
-            className={`border-b-2 px-4 py-2 font-medium transition ${activeTab === "comments" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-600 hover:text-gray-800"}`}
+            variant="ghost"
+            className={`border-b-2 rounded-none ${activeTab === "comments" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-600 hover:text-gray-800"}`}
           >
             Bình luận ({commentCountLabel})
-          </button>
+          </Button>
         </div>
 
         {/* MÔ TẢ */}
@@ -785,13 +857,15 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
               {descExpanded ? book.description : shortDesc}
             </p>
             {isLongDesc && (
-              <button
+              <Button
                 onClick={() => setDescExpanded((v) => !v)}
-                className="mt-3 text-sm font-medium text-blue-600 hover:underline"
+                variant="ghost"
+                size="sm"
+                className="mt-3 text-blue-600 hover:underline p-0 h-auto"
                 aria-expanded={descExpanded}
               >
                 {descExpanded ? "Thu gọn" : "Xem thêm"}
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -873,12 +947,14 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                   placeholder="Chia sẻ trải nghiệm của bạn về cuốn sách..."
                   className="min-h-[84px] flex-1 rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none ring-blue-100 focus:ring-4"
                 />
-                <button
+                <Button
                   onClick={addNewReview}
-                  className="h-[40px] shrink-0 rounded-lg bg-blue-600 px-4 text-white transition hover:bg-blue-700 active:scale-95"
+                  variant="primary"
+                  size="sm"
+                  className="shrink-0"
                 >
                   Gửi đánh giá
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -897,23 +973,34 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                     </div>
                     
                     {/* Hiển thị số sao đánh giá */}
-                    <div className="mb-2 flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <svg
-                          key={star}
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill={star <= rv.rating ? "currentColor" : "none"}
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          className={star <= rv.rating ? "text-yellow-400" : "text-gray-300"}
-                        >
-                          <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" />
-                        </svg>
-                      ))}
-                      <span className="ml-1 text-sm font-medium text-gray-700">({rv.rating} sao)</span>
+                    <div className="mb-2 flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <svg
+                            key={star}
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill={star <= rv.rating ? "currentColor" : "none"}
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className={star <= rv.rating ? "text-yellow-400" : "text-gray-300"}
+                          >
+                            <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" />
+                          </svg>
+                        ))}
+                      </div>
+                      <Badge 
+                        variant={
+                          rv.rating >= 4 ? "success" : 
+                          rv.rating >= 3 ? "warning" : 
+                          "danger"
+                        } 
+                        size="sm"
+                      >
+                        {rv.rating} sao
+                      </Badge>
                     </div>
                     
                     <p className="text-sm text-gray-700">{rv.text}</p>
@@ -991,12 +1078,14 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                   }
                 }}
               />
-              <button
+              <Button
                 onClick={addNewComment}
-                className="h-[40px] shrink-0 rounded-lg bg-blue-600 px-4 text-white transition hover:bg-blue-700 active:scale-95"
+                variant="primary"
+                size="sm"
+                className="shrink-0"
               >
                 Gửi
-              </button>
+              </Button>
             </div>
 
             {/* Danh sách bình luận với component đệ quy */}
@@ -1018,12 +1107,13 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
             {/* Xem thêm */}
             {canLoadMore && (
               <div className="mt-4 flex justify-center">
-                <button
+                <Button
                   onClick={() => setVisibleCommentCount((n) => Math.min(n + 3, sortedComments.length))}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm transition hover:bg-gray-50"
+                  variant="outline"
+                  size="sm"
                 >
                   Xem thêm bình luận
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -1049,20 +1139,20 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
 
         <div className="relative">
           {/* Nút trái */}
-          <button
+          <Button
             type="button"
             onClick={() => scrollByStepLike("left")}
             disabled={!canPrevLike}
-            className={`absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full p-2 shadow 
-                        ring-1 ring-gray-200 bg-white/95
-                        hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed`}
+            variant="secondary"
+            size="sm"
+            className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
             aria-label="Xem trước"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6"/>
             </svg>
-          </button>
+          </Button>
 
           {/* Dải sách */}
           <div
@@ -1093,20 +1183,20 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
           </div>
 
           {/* Nút phải */}
-          <button
+          <Button
             type="button"
             onClick={() => scrollByStepLike("right")}
             disabled={!canNextLike}
-            className={`absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full p-2 shadow 
-                        ring-1 ring-gray-200 bg-white/95
-                        hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed`}
+            variant="secondary"
+            size="sm"
+            className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
             aria-label="Xem tiếp"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m9 18 6-6-6-6"/>
             </svg>
-          </button>
+          </Button>
 
           <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
           <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
@@ -1132,20 +1222,20 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
 
         <div className="relative">
           {/* Nút trái */}
-          <button
+          <Button
             type="button"
             onClick={() => scrollByStepPopular("left")}
             disabled={!canPrevPopular}
-            className={`absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full p-2 shadow 
-                        ring-1 ring-gray-200 bg-white/95
-                        hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed`}
+            variant="secondary"
+            size="sm"
+            className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
             aria-label="Xem trước"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6"/>
             </svg>
-          </button>
+          </Button>
 
           {/* Dải sách */}
           <div
@@ -1176,20 +1266,20 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
           </div>
 
           {/* Nút phải */}
-          <button
+          <Button
             type="button"
             onClick={() => scrollByStepPopular("right")}
             disabled={!canNextPopular}
-            className={`absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full p-2 shadow 
-                        ring-1 ring-gray-200 bg-white/95
-                        hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed`}
+            variant="secondary"
+            size="sm"
+            className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
             aria-label="Xem tiếp"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m9 18 6-6-6-6"/>
             </svg>
-          </button>
+          </Button>
 
           <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
           <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
@@ -1216,20 +1306,20 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
 
         <div className="relative">
           {/* Nút trái */}
-          <button
+          <Button
             type="button"
             onClick={() => scrollByStepAuthor("left")}
             disabled={!canPrevAuthor}
-            className={`absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full p-2 shadow 
-                        ring-1 ring-gray-200 bg-white/95
-                        hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed`}
+            variant="secondary"
+            size="sm"
+            className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
             aria-label="Xem trước"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6"/>
             </svg>
-          </button>
+          </Button>
 
           {/* Dải sách */}
           <div
@@ -1260,30 +1350,25 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
           </div>
 
           {/* Nút phải */}
-          <button
+          <Button
             type="button"
             onClick={() => scrollByStepAuthor("right")}
             disabled={!canNextAuthor}
-            className={`absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full p-2 shadow 
-                        ring-1 ring-gray-200 bg-white/95
-                        hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed`}
+            variant="secondary"
+            size="sm"
+            className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
             aria-label="Xem tiếp"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m9 18 6-6-6-6"/>
             </svg>
-          </button>
+          </Button>
 
           <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
           <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="mt-16 text-center text-xs text-gray-500">
-        © 2025 BookStore - Mua & Thuê Sách Trực Tuyến
-      </footer>
     </div>
     </main>
   );

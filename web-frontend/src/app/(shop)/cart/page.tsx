@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
+import { Button, Input, Badge, EmptyState, Alert } from "@/components/ui";
 
 type CartItem = {
   id: string;
@@ -143,6 +144,13 @@ export default function CartPage() {
     }
   };
 
+  const handleClearCart = () => {
+    if (confirm("Bạn có chắc muốn xóa tất cả sản phẩm trong giỏ hàng?")) {
+      setCartItems([]);
+      setAppliedVoucher(null);
+    }
+  };
+
   const handleApplyVoucher = () => {
     setVoucherError("");
     const voucher = MOCK_VOUCHERS.find((v) => v.code === voucherCode.toUpperCase());
@@ -166,17 +174,40 @@ export default function CartPage() {
   };
 
   const allSelected = cartItems.length > 0 && cartItems.every((item) => item.selected);
-  const someSelected = cartItems.some((item) => item.selected);
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Giỏ hàng của bạn</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {cartItems.length} sản phẩm trong giỏ hàng
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Giỏ hàng của bạn</h1>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-sm text-gray-500">
+                  {cartItems.length} sản phẩm trong giỏ hàng
+                </span>
+                {selectedItems.length > 0 && (
+                  <Badge variant="info" size="sm">
+                    {selectedItems.length} đã chọn
+                  </Badge>
+                )}
+              </div>
+            </div>
+            {cartItems.length > 0 && (
+              <Button
+                onClick={handleClearCart}
+                variant="outline"
+                size="sm"
+                className="text-red-600 hover:text-red-700 hover:border-red-300"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Xóa tất cả
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -199,20 +230,20 @@ export default function CartPage() {
 
             {/* Cart Items */}
             {cartItems.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-                <div className="text-gray-400 mb-4">
-                  <svg className="w-24 h-24 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Giỏ hàng trống</h3>
-                <p className="text-gray-500 mb-6">Bạn chưa có sản phẩm nào trong giỏ hàng</p>
-                <Link
-                  href="/books"
-                  className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Mua sắm ngay
-                </Link>
+              <div className="bg-white rounded-lg shadow-sm">
+                <EmptyState
+                  icon={
+                    <svg className="w-24 h-24 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                  }
+                  title="Giỏ hàng trống"
+                  description="Bạn chưa có sản phẩm nào trong giỏ hàng"
+                  action={{
+                    label: 'Mua sắm ngay',
+                    onClick: () => globalThis.location.href = '/books'
+                  }}
+                />
               </div>
             ) : (
               cartItems.map((item) => (
@@ -259,9 +290,9 @@ export default function CartPage() {
                             <span className="text-sm text-gray-400 line-through">
                               {formatCurrency(item.originalPrice)}
                             </span>
-                            <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
+                            <Badge variant="danger" size="sm">
                               -{Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)}%
-                            </span>
+                            </Badge>
                           </>
                         )}
                       </div>
@@ -281,8 +312,8 @@ export default function CartPage() {
                           <input
                             type="number"
                             value={item.quantity}
-                            onChange={(e) => handleUpdateQuantity(item.id, parseInt(e.target.value) || 1)}
-                            className="w-16 text-center border border-gray-300 rounded px-2 py-1"
+                            readOnly
+                            className="w-16 text-center border border-gray-300 rounded px-2 py-1 bg-gray-50 cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             min="1"
                             max={item.stock}
                           />
@@ -295,15 +326,22 @@ export default function CartPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
                           </button>
-                          <span className="text-sm text-gray-500">Còn {item.stock} sản phẩm</span>
+                          <Badge 
+                            variant={item.stock < 5 ? "warning" : "default"} 
+                            size="sm"
+                          >
+                            Còn {item.stock}
+                          </Badge>
                         </div>
 
-                        <button
+                        <Button
                           onClick={() => handleRemoveItem(item.id)}
-                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
                         >
                           Xóa
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -350,53 +388,54 @@ export default function CartPage() {
 
                 {/* Voucher Section */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="voucher-input" className="block text-sm font-medium text-gray-700 mb-2">
                     Mã giảm giá
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={voucherCode}
-                      onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
-                      placeholder="Nhập mã giảm giá"
-                      className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-1">
+                      <Input
+                        id="voucher-input"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                        placeholder="Nhập mã giảm giá"
+                        className={voucherError ? 'border-red-500' : ''}
+                      />
+                    </div>
+                    <Button
                       onClick={handleApplyVoucher}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
+                      variant="primary"
+                      size="lg"
+                      className="flex-shrink-0"
                     >
                       Áp dụng
-                    </button>
+                    </Button>
                   </div>
                   {voucherError && (
-                    <p className="text-red-600 text-sm mt-2">{voucherError}</p>
+                    <p className="mt-1 text-sm text-red-600">{voucherError}</p>
                   )}
                   {appliedVoucher && (
-                    <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-green-800">
-                          Mã {appliedVoucher.code}
-                        </p>
-                        <p className="text-xs text-green-600">
-                          {appliedVoucher.discount > 0
-                            ? `Giảm ${appliedVoucher.discount}% (tối đa ${formatCurrency(appliedVoucher.maxDiscount)})`
-                            : `Miễn phí vận chuyển (tối đa ${formatCurrency(appliedVoucher.maxDiscount)})`}
-                        </p>
-                      </div>
-                      <button
-                        onClick={handleRemoveVoucher}
-                        className="text-green-600 hover:text-green-700"
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <Alert variant="success" onClose={handleRemoveVoucher}>
+                      <div className="flex items-start gap-2">
+                        <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                      </button>
-                    </div>
+                        <div>
+                          <p className="text-sm font-medium">
+                            Đã áp dụng mã {appliedVoucher.code}
+                          </p>
+                          <p className="text-xs mt-1">
+                            {appliedVoucher.discount > 0
+                              ? `Giảm ${appliedVoucher.discount}% (tối đa ${formatCurrency(appliedVoucher.maxDiscount)})`
+                              : `Miễn phí vận chuyển (tối đa ${formatCurrency(appliedVoucher.maxDiscount)})`}
+                          </p>
+                        </div>
+                      </div>
+                    </Alert>
                   )}
 
                   {/* Available Vouchers */}
                   <div className="mt-3 space-y-2">
-                    <p className="text-xs font-medium text-gray-600">Mã khuyến mãi:</p>
+                    <p className="text-xs font-medium text-gray-600 mb-2">Mã khuyến mãi có sẵn:</p>
                     {MOCK_VOUCHERS.map((voucher) => (
                       <button
                         key={voucher.code}
@@ -404,15 +443,28 @@ export default function CartPage() {
                           setVoucherCode(voucher.code);
                           handleApplyVoucher();
                         }}
-                        className="w-full text-left border border-dashed border-gray-300 rounded p-2 hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                        className="w-full text-left border border-dashed border-gray-300 rounded-lg p-3 hover:border-blue-500 hover:bg-blue-50 transition-colors group"
                       >
-                        <p className="text-xs font-semibold text-blue-600">{voucher.code}</p>
-                        <p className="text-xs text-gray-600">
+                        <div className="flex items-start justify-between mb-1">
+                          <Badge variant="info" size="sm">
+                            {voucher.code}
+                          </Badge>
+                          {subtotal >= voucher.minOrder ? (
+                            <Badge variant="success" size="sm">
+                              Có thể dùng
+                            </Badge>
+                          ) : (
+                            <Badge variant="default" size="sm">
+                              Chưa đủ điều kiện
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-700 font-medium mt-2">
                           {voucher.discount > 0
                             ? `Giảm ${voucher.discount}% (tối đa ${formatCurrency(voucher.maxDiscount)})`
-                            : `Miễn phí ship (tối đa ${formatCurrency(voucher.maxDiscount)})`}
+                            : `Miễn phí vận chuyển (tối đa ${formatCurrency(voucher.maxDiscount)})`}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 mt-1">
                           Đơn tối thiểu {formatCurrency(voucher.minOrder)}
                         </p>
                       </button>
@@ -438,7 +490,9 @@ export default function CartPage() {
                     <span className="text-gray-600">Phí vận chuyển</span>
                     <span className="font-medium">
                       {finalShippingFee === 0 ? (
-                        <span className="text-green-600">Miễn phí</span>
+                        <Badge variant="success" size="sm">
+                          Miễn phí
+                        </Badge>
                       ) : (
                         formatCurrency(finalShippingFee)
                       )}
@@ -446,9 +500,16 @@ export default function CartPage() {
                   </div>
                   
                   {subtotal < 500000 && finalShippingFee > 0 && (
-                    <p className="text-xs text-blue-600">
-                      Mua thêm {formatCurrency(500000 - subtotal)} để được miễn phí vận chuyển
-                    </p>
+                    <Alert variant="info">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs">
+                          Mua thêm {formatCurrency(500000 - subtotal)} để được miễn phí vận chuyển
+                        </span>
+                      </div>
+                    </Alert>
                   )}
                   
                   <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
@@ -458,21 +519,21 @@ export default function CartPage() {
                 </div>
 
                 {/* Checkout Button */}
-                <Link
-                  href={selectedItems.length > 0 ? "/checkout" : "#"}
-                  className={`mt-6 block w-full text-center py-3 rounded-lg font-semibold text-white transition-colors ${
-                    selectedItems.length > 0
-                      ? "bg-blue-600 hover:bg-blue-700"
-                      : "bg-gray-300 cursor-not-allowed"
-                  }`}
-                  onClick={(e) => {
-                    if (selectedItems.length === 0) {
-                      e.preventDefault();
-                      alert("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán");
-                    }
-                  }}
-                >
-                  Thanh toán ({selectedItems.length})
+                <Link href={selectedItems.length > 0 ? "/checkout" : "#"}>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="mt-6 w-full"
+                    disabled={selectedItems.length === 0}
+                    onClick={(e) => {
+                      if (selectedItems.length === 0) {
+                        e.preventDefault();
+                        alert("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán");
+                      }
+                    }}
+                  >
+                    Thanh toán ({selectedItems.length})
+                  </Button>
                 </Link>
 
                 {/* Security Badge */}
