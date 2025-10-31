@@ -33,7 +33,7 @@ namespace BookStore.Application.Services.Identity.Auth
         public async Task<LoginResponseDto> LoginAsync(LoginDto loginDto)
         {
             var user = await _userRepository.GetUserWithRolesAndPermissionsAsync(loginDto.Email);
-            
+
             if (user == null)
                 throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
 
@@ -43,8 +43,10 @@ namespace BookStore.Application.Services.Identity.Auth
             if (!user.IsActive)
                 throw new UnauthorizedAccessException("Tài khoản đã bị khóa");
 
-            var roles = user.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)) ?? Enumerable.Empty<string>();
-            
+            var roles = user.UserRoles?
+            .Select(ur => ur.Role?.Name ?? "")
+            .Where(n => !string.IsNullOrEmpty(n)) ?? Enumerable.Empty<string>();
+
             var permissions = user.UserRoles?
                 .SelectMany(ur => ur.Role?.RolePermissions ?? new List<Domain.Entities.Identity.RolePermission>())
                 .Select(rp => rp.Permission?.Name ?? "")
@@ -53,7 +55,7 @@ namespace BookStore.Application.Services.Identity.Auth
 
             var accessToken = _tokenService.GenerateAccessToken(user.Id, user.Email, roles, permissions);
             var refreshToken = _tokenService.GenerateRefreshToken();
-            
+
             var refreshTokenExpiryDays = loginDto.RememberMe ? 30 : 7;
             await _tokenService.CreateRefreshTokenAsync(user.Id, refreshToken, refreshTokenExpiryDays);
 
@@ -109,7 +111,7 @@ namespace BookStore.Application.Services.Identity.Auth
             await _tokenService.RevokeRefreshTokenAsync(refreshTokenDto.RefreshToken);
 
             var roles = user.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)) ?? Enumerable.Empty<string>();
-            
+
             var permissions = user.UserRoles?
                 .SelectMany(ur => ur.Role?.RolePermissions ?? new List<Domain.Entities.Identity.RolePermission>())
                 .Select(rp => rp.Permission?.Name ?? "")
@@ -205,7 +207,7 @@ namespace BookStore.Application.Services.Identity.Auth
         public async Task<ForgotPasswordResponseDto> ForgotPasswordAsync(ForgotPasswordDto forgotPasswordDto)
         {
             var user = await _userRepository.GetByEmailAsync(forgotPasswordDto.Email);
-            
+
             if (user == null)
             {
                 return new ForgotPasswordResponseDto

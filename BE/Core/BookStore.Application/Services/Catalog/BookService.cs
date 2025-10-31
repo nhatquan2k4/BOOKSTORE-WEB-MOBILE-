@@ -2,17 +2,19 @@
 using BookStore.Application.Dtos.Catalog.Book;
 using BookStore.Application.Dtos.Catalog.Category;
 using BookStore.Application.Dtos.Catalog.Publisher;
+using BookStore.Application.IService;
 using BookStore.Application.IService.Catalog;
 using BookStore.Application.Mappers.Catalog.Author;
 using BookStore.Application.Mappers.Catalog.Category;
 using BookStore.Application.Mappers.Catalog.Publisher;
+using BookStore.Application.Service;
 using BookStore.Domain.Entities.Catalog;
 using BookStore.Domain.IRepository.Catalog;
 using BookStore.Domain.ValueObjects;
 
 namespace BookStore.Application.Services.Catalog
 {
-    public class BookService : IBookService
+    public class BookService : GenericService<Book, BookDto, CreateBookDto, UpdateBookDto>, IBookService
     {
         private readonly IBookRepository _bookRepository;
         private readonly IAuthorRepository _authorRepository;
@@ -26,6 +28,7 @@ namespace BookStore.Application.Services.Catalog
             ICategoryRepository categoryRepository,
             IPublisherRepository publisherRepository,
             IBookFormatRepository bookFormatRepository)
+            : base(bookRepository)
         {
             _bookRepository = bookRepository;
             _authorRepository = authorRepository;
@@ -88,7 +91,8 @@ namespace BookStore.Application.Services.Catalog
             return (bookDtos, totalCount);
         }
 
-        public async Task<BookDetailDto?> GetByIdAsync(Guid id)
+        // Override GetByIdAsync from IBookService (returns BookDetailDto)
+        public new async Task<BookDetailDto?> GetByIdAsync(Guid id)
         {
             var book = await _bookRepository.GetDetailByIdAsync(id);
             if (book == null) return null;
@@ -107,6 +111,12 @@ namespace BookStore.Application.Services.Catalog
         public async Task<bool> IsISBNExistsAsync(string isbn, Guid? excludeBookId = null)
         {
             return await _bookRepository.IsISBNExistsAsync(isbn, excludeBookId);
+        }
+
+        // Override AddAsync from IBookService (returns BookDetailDto)
+        public new async Task<BookDetailDto> AddAsync(CreateBookDto dto)
+        {
+            return await CreateAsync(dto);
         }
 
         public async Task<BookDetailDto> CreateAsync(CreateBookDto dto)
@@ -206,7 +216,8 @@ namespace BookStore.Application.Services.Catalog
             return MapToBookDetailDto(createdBook!);
         }
 
-        public async Task<BookDetailDto> UpdateAsync(UpdateBookDto dto)
+        // Override UpdateAsync from IBookService (returns BookDetailDto)
+        public new async Task<BookDetailDto> UpdateAsync(UpdateBookDto dto)
         {
             var book = await _bookRepository.GetDetailByIdAsync(dto.Id);
             if (book == null)
@@ -307,7 +318,8 @@ namespace BookStore.Application.Services.Catalog
             return MapToBookDetailDto(updatedBook!);
         }
 
-        public async Task<bool> DeleteAsync(Guid id)
+        // Override DeleteAsync from GenericService
+        public override async Task<bool> DeleteAsync(Guid id)
         {
             var book = await _bookRepository.GetByIdAsync(id);
             if (book == null) return false;
@@ -353,6 +365,53 @@ namespace BookStore.Application.Services.Catalog
             var books = await _bookRepository.SearchAsync(searchTerm);
             return books.Take(top).Select(MapToBookDto).ToList();
         }
+
+        #region Abstract Methods Implementation from GenericService
+
+        protected override BookDto MapToDto(Book entity)
+        {
+            return MapToBookDto(entity);
+        }
+
+        protected override Book MapToEntity(CreateBookDto dto)
+        {
+            // This is a simplified version - actual creation happens in CreateAsync
+            return new Book
+            {
+                Id = Guid.NewGuid(),
+                Title = dto.Title,
+                ISBN = new ISBN(dto.ISBN),
+                Description = dto.Description,
+                PublicationYear = dto.PublicationYear,
+                Language = dto.Language,
+                Edition = dto.Edition,
+                PageCount = dto.PageCount,
+                IsAvailable = dto.IsAvailable,
+                PublisherId = dto.PublisherId,
+                BookFormatId = dto.BookFormatId
+            };
+        }
+
+        protected override Book MapToEntity(UpdateBookDto dto)
+        {
+            // This is a simplified version - actual update happens in UpdateAsync
+            return new Book
+            {
+                Id = dto.Id,
+                Title = dto.Title,
+                ISBN = new ISBN(dto.ISBN),
+                Description = dto.Description,
+                PublicationYear = dto.PublicationYear,
+                Language = dto.Language,
+                Edition = dto.Edition,
+                PageCount = dto.PageCount,
+                IsAvailable = dto.IsAvailable,
+                PublisherId = dto.PublisherId,
+                BookFormatId = dto.BookFormatId
+            };
+        }
+
+        #endregion
 
         #region Private Helper Methods
 
