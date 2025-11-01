@@ -1,4 +1,4 @@
-﻿namespace BookStore.Application.DTOs.Catalog.Book
+﻿namespace BookStore.Application.Dtos.Catalog.Book
 {
     public class BookImageDto
     {

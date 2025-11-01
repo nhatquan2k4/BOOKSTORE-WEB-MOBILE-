@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using BookStore.Application.DTOs.Catalog.Author;
-using BookStore.Application.DTOs.Catalog.Category;
-using BookStore.Application.DTOs.Catalog.Publisher;
+using BookStore.Application.Dtos.Catalog.Author;
+using BookStore.Application.Dtos.Catalog.Category;
+using BookStore.Application.Dtos.Catalog.Publisher;
 
-namespace BookStore.Application.DTOs.Catalog.Book
+namespace BookStore.Application.Dtos.Catalog.Book
 {
     public class BookDto
     {

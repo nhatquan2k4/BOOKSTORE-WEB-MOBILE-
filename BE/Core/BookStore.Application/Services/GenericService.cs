@@ -1,5 +1,5 @@
-﻿using BookStore.Application.IService;
-using BookStore.Domain.Interfaces;
+using BookStore.Application.IService;
+using BookStore.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;

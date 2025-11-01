@@ -1,9 +1,9 @@
-﻿using BookStore.Application.DTOs.Catalog.Author;
-using BookStore.Application.DTOs.Catalog.Category;
-using BookStore.Application.DTOs.Catalog.Publisher;
-using BookStore.Application.DTOs.Catalog.Review;
+﻿using BookStore.Application.Dtos.Catalog.Author;
+using BookStore.Application.Dtos.Catalog.Category;
+using BookStore.Application.Dtos.Catalog.Publisher;
+// using BookStore.Application.Dtos.Catalog.Review;
 
-namespace BookStore.Application.DTOs.Catalog.Book
+namespace BookStore.Application.Dtos.Catalog.Book
 {
     public class BookDetailDto
     {

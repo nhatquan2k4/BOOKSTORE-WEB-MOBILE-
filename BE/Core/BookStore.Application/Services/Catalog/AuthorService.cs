@@ -1,7 +1,8 @@
-﻿using BookStore.Application.DTOs.Catalog.Author;
-using BookStore.Application.Interfaces.Catalog;
-using BookStore.Domain.Entities.Catalog;
-using BookStore.Domain.Interfaces.Catalog;
+﻿using BookStore.Application.Dtos.Catalog.Author;
+using BookStore.Application.IService;
+using BookStore.Application.IService.Catalog;
+using BookStore.Application.Mappers.Catalog.Author;
+using BookStore.Domain.IRepository.Catalog;
 
 namespace BookStore.Application.Services.Catalog
 {
@@ -17,56 +18,41 @@ namespace BookStore.Application.Services.Catalog
         public async Task<IEnumerable<AuthorDto>> GetAllAsync()
         {
             var authors = await _authorRepository.GetAllAsync();
-            return authors.Select(a => new AuthorDto
-            {
-                Id = a.Id,
-                Name = a.Name,
-                Biography = a.Biography,
-                AvartarUrl = a.AvartarUrl
-            });
+            return authors.ToDtoList();
         }
 
-        public async Task<AuthorDto?> GetByIdAsync(Guid id)
+        // Explicit implementation for IGenericService (returns AuthorDto)
+        async Task<AuthorDto?> IGenericService<AuthorDto, CreateAuthorDto, UpdateAuthorDto>.GetByIdAsync(Guid id)
+        {
+            var author = await _authorRepository.GetByIdAsync(id);
+            return author?.ToDto();
+        }
+
+        // Public implementation for IAuthorService (returns AuthorDetailDto)
+        public async Task<AuthorDetailDto?> GetByIdAsync(Guid id)
         {
             var author = await _authorRepository.GetByIdAsync(id);
             if (author == null) return null;
 
-            return new AuthorDto
-            {
-                Id = author.Id,
-                Name = author.Name,
-                Biography = author.Biography,
-                AvartarUrl = author.AvartarUrl
-            };
+            return author.ToDetailDto();
         }
 
-        public async Task<AuthorDto?> GetByNameAsync(string name)
+        public async Task<AuthorDetailDto?> GetByNameAsync(string name)
         {
             var author = await _authorRepository.GetByNameAsync(name);
             if (author == null) return null;
 
-            return new AuthorDto
-            {
-                Id = author.Id,
-                Name = author.Name,
-                Biography = author.Biography,
-                AvartarUrl = author.AvartarUrl
-            };
+            return author.ToDetailDto();
         }
 
         public async Task<IEnumerable<AuthorDto>> SearchByNameAsync(string searchTerm)
         {
             var authors = await _authorRepository.SearchByNameAsync(searchTerm);
-            return authors.Select(a => new AuthorDto
-            {
-                Id = a.Id,
-                Name = a.Name,
-                Biography = a.Biography,
-                AvartarUrl = a.AvartarUrl
-            });
+            return authors.ToDtoList();
         }
 
-        public async Task<AuthorDto> CreateAsync(AuthorDto dto)
+        // Explicit implementation for IGenericService (returns AuthorDto)
+        async Task<AuthorDto> IGenericService<AuthorDto, CreateAuthorDto, UpdateAuthorDto>.AddAsync(CreateAuthorDto dto)
         {
             // Validate name exists
             if (await _authorRepository.IsNameExistsAsync(dto.Name))
@@ -74,22 +60,33 @@ namespace BookStore.Application.Services.Catalog
                 throw new InvalidOperationException($"Tác giả với tên '{dto.Name}' đã tồn tại");
             }
 
-            var author = new Author
-            {
-                Id = Guid.NewGuid(),
-                Name = dto.Name,
-                Biography = dto.Biography,
-                AvartarUrl = dto.AvartarUrl
-            };
+            var author = dto.ToEntity();
 
             await _authorRepository.AddAsync(author);
             await _authorRepository.SaveChangesAsync();
 
-            dto.Id = author.Id;
-            return dto;
+            return author.ToDto();
         }
 
-        public async Task<AuthorDto> UpdateAsync(AuthorDto dto)
+        // Public implementation for IAuthorService (returns AuthorDetailDto)
+        public async Task<AuthorDetailDto> AddAsync(CreateAuthorDto dto)
+        {
+            // Validate name exists
+            if (await _authorRepository.IsNameExistsAsync(dto.Name))
+            {
+                throw new InvalidOperationException($"Tác giả với tên '{dto.Name}' đã tồn tại");
+            }
+
+            var author = dto.ToEntity();
+
+            await _authorRepository.AddAsync(author);
+            await _authorRepository.SaveChangesAsync();
+
+            return author.ToDetailDto();
+        }
+
+        // Explicit implementation for IGenericService (returns AuthorDto)
+        async Task<AuthorDto> IGenericService<AuthorDto, CreateAuthorDto, UpdateAuthorDto>.UpdateAsync(UpdateAuthorDto dto)
         {
             var author = await _authorRepository.GetByIdAsync(dto.Id);
             if (author == null)
@@ -103,14 +100,35 @@ namespace BookStore.Application.Services.Catalog
                 throw new InvalidOperationException($"Tác giả với tên '{dto.Name}' đã được sử dụng");
             }
 
-            author.Name = dto.Name;
-            author.Biography = dto.Biography;
-            author.AvartarUrl = dto.AvartarUrl;
+            author.UpdateFromDto(dto);
 
             _authorRepository.Update(author);
             await _authorRepository.SaveChangesAsync();
 
-            return dto;
+            return author.ToDto();
+        }
+
+        // Public implementation for IAuthorService (returns AuthorDetailDto)
+        public async Task<AuthorDetailDto> UpdateAsync(UpdateAuthorDto dto)
+        {
+            var author = await _authorRepository.GetByIdAsync(dto.Id);
+            if (author == null)
+            {
+                throw new InvalidOperationException("Tác giả không tồn tại");
+            }
+
+            // Validate name exists (exclude current author)
+            if (await _authorRepository.IsNameExistsAsync(dto.Name, dto.Id))
+            {
+                throw new InvalidOperationException($"Tác giả với tên '{dto.Name}' đã được sử dụng");
+            }
+
+            author.UpdateFromDto(dto);
+
+            _authorRepository.Update(author);
+            await _authorRepository.SaveChangesAsync();
+
+            return author.ToDetailDto();
         }
 
         public async Task<bool> DeleteAsync(Guid id)
@@ -124,9 +142,20 @@ namespace BookStore.Application.Services.Catalog
             return true;
         }
 
+        public async Task<bool> ExistsAsync(Guid id)
+        {
+            var author = await _authorRepository.GetByIdAsync(id);
+            return author != null;
+        }
+
         public async Task<bool> IsNameExistsAsync(string name, Guid? excludeId = null)
         {
             return await _authorRepository.IsNameExistsAsync(name, excludeId);
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _authorRepository.SaveChangesAsync();
         }
     }
 }

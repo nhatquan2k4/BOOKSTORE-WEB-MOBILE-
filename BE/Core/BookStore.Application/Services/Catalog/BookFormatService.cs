@@ -1,7 +1,7 @@
-﻿using BookStore.Application.DTOs.Catalog.Book;
-using BookStore.Application.Interfaces.Catalog;
+﻿using BookStore.Application.Dtos.Catalog.Book;
+using BookStore.Application.IService.Catalog;
 using BookStore.Domain.Entities.Catalog;
-using BookStore.Domain.Interfaces.Catalog;
+using BookStore.Domain.IRepository.Catalog;
 
 namespace BookStore.Application.Services.Catalog
 {
