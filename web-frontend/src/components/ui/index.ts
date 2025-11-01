@@ -9,8 +9,6 @@ export { Pagination } from './Pagination';
 export { EmptyState } from './EmptyState';
 export { NotificationDropdown, useNotifications } from './Notification';
 export type { NotificationItem } from './Notification';
-<<<<<<< HEAD
 export { CheckIcon } from "./CheckIcon";
-=======
 export { Breadcrumb } from './Breadcrumb';
->>>>>>> e44fece (update qr)
+
