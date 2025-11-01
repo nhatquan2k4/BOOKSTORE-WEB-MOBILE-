@@ -2,46 +2,46 @@
 export const API_ENDPOINTS = {
   // Auth
   AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    LOGOUT: '/auth/logout',
-    REFRESH: '/auth/refresh',
-    ME: '/auth/me',
+    LOGIN: "/Auth/login",
+    REGISTER: "/Auth/register",
+    LOGOUT: "/Auth/logout",
+    REFRESH: "/Auth/refresh-token",
+    ME: "/Auth/me",
   },
 
   // Books
   BOOKS: {
-    BASE: '/books',
+    BASE: "/books",
     BY_ID: (id: string) => `/books/${id}`,
-    SEARCH: '/books/search',
+    SEARCH: "/books/search",
     BY_CATEGORY: (categoryId: string) => `/books/category/${categoryId}`,
     BY_AUTHOR: (authorId: string) => `/books/author/${authorId}`,
   },
 
   // Authors
   AUTHORS: {
-    BASE: '/authors',
+    BASE: "/authors",
     BY_ID: (id: string) => `/authors/${id}`,
-    SEARCH: '/authors/search',
+    SEARCH: "/authors/search",
   },
 
   // Categories
   CATEGORIES: {
-    BASE: '/categories',
+    BASE: "/categories",
     BY_ID: (id: string) => `/categories/${id}`,
   },
 
   // Publishers
   PUBLISHERS: {
-    BASE: '/publishers',
+    BASE: "/publishers",
     BY_ID: (id: string) => `/publishers/${id}`,
   },
 
   // Cart
   CART: {
-    BASE: '/cart',
+    BASE: "/cart",
     BY_USER: (userId: string) => `/cart/${userId}`,
-    ADD_ITEM: '/cart/items',
+    ADD_ITEM: "/cart/items",
     UPDATE_ITEM: (id: string) => `/cart/items/${id}`,
     REMOVE_ITEM: (id: string) => `/cart/items/${id}`,
     CLEAR: (userId: string) => `/cart/${userId}/clear`,
@@ -49,7 +49,7 @@ export const API_ENDPOINTS = {
 
   // Orders
   ORDERS: {
-    BASE: '/orders',
+    BASE: "/orders",
     BY_ID: (id: string) => `/orders/${id}`,
     BY_USER: (userId: string) => `/orders/user/${userId}`,
     CANCEL: (id: string) => `/orders/${id}/cancel`,
@@ -57,13 +57,13 @@ export const API_ENDPOINTS = {
 
   // Payments
   PAYMENTS: {
-    WEBHOOK: '/payments/webhook',
+    WEBHOOK: "/payments/webhook",
     BY_ORDER: (orderId: string) => `/payments/order/${orderId}`,
   },
 
   // Rentals
   RENTALS: {
-    BASE: '/rentals',
+    BASE: "/rentals",
     BY_ID: (id: string) => `/rentals/${id}`,
     BY_USER: (userId: string) => `/rentals/user/${userId}`,
     RETURN: (id: string) => `/rentals/${id}/return`,
@@ -71,10 +71,10 @@ export const API_ENDPOINTS = {
 
   // User Profile
   USERS: {
-    BASE: '/users',
+    BASE: "/users",
     BY_ID: (id: string) => `/users/${id}`,
-    PROFILE: '/users/profile',
-    ADDRESSES: '/users/addresses',
+    PROFILE: "/users/profile",
+    ADDRESSES: "/users/addresses",
     ADDRESS_BY_ID: (id: string) => `/users/addresses/${id}`,
   },
 } as const;

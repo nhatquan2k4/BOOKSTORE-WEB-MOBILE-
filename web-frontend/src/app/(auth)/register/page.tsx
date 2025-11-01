@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { authApi } from "@/lib/api/auth";
+import { useAuth } from "@/contexts";
 import type { RegisterRequest } from "@/types/user";
 import { AuthCard } from "@/components/auth";
 import { FormField, FormLabel, FormError } from "@/components/auth";
@@ -20,12 +20,12 @@ import {
 } from "@/constants/authStyles";
 
 type RegisterFormData = RegisterRequest & {
-  confirmPassword: string;
   agreeTerms?: boolean;
 };
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register: registerUser } = useAuth();
   const {
     register,
     handleSubmit,
@@ -34,11 +34,13 @@ export default function RegisterPage() {
   } = useForm<RegisterFormData>();
   
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   
   const password = watch("password");
 
   const onSubmit = async (data: RegisterFormData) => {
     setErrorMessage("");
+    setSuccessMessage("");
     
     if (!data.agreeTerms) {
       setErrorMessage("Bạn cần đồng ý với điều khoản sử dụng");
@@ -46,18 +48,22 @@ export default function RegisterPage() {
     }
     
     try {
-      await authApi.register({
+      // Use auth context register - includes confirmPassword
+      await registerUser({
         email: data.email,
         password: data.password,
+        confirmPassword: data.confirmPassword,
         fullName: data.fullName,
         phoneNumber: data.phoneNumber,
       });
       
-      // Redirect to login after successful registration
-      router.push("/login?registered=true");
+      // Show success message and redirect
+      setSuccessMessage("Đăng ký thành công! Đang chuyển hướng...");
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
     } catch (err: any) {
       setErrorMessage(
-        err?.response?.data?.message || 
         err?.message || 
         "Đăng ký thất bại. Vui lòng thử lại."
       );
@@ -66,6 +72,13 @@ export default function RegisterPage() {
 
   return (
     <AuthCard title="Đăng ký" subtitle="Tạo tài khoản mới để bắt đầu">
+      {/* Success Alert */}
+      {successMessage && (
+        <Alert variant="success" className="mb-6">
+          {successMessage}
+        </Alert>
+      )}
+
       {/* Error Alert */}
       {errorMessage && (
         <Alert variant="danger" className="mb-6" onClose={() => setErrorMessage("")}>
@@ -148,15 +161,18 @@ export default function RegisterPage() {
             {...register("password", {
               required: "Mật khẩu là bắt buộc",
               minLength: {
-                value: 6,
-                message: "Mật khẩu phải có ít nhất 6 ký tự",
+                value: 8,
+                message: "Mật khẩu phải có ít nhất 8 ký tự",
               },
               pattern: {
-                value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                message: "Mật khẩu phải có chữ hoa, chữ thường và số",
+                value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>_\-+=[\]\\/'`~;])/,
+                message: "Mật khẩu phải có chữ hoa, chữ thường, số và ký tự đặc biệt",
               },
             })}
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt (vd: !@#$%^&*.,-)
+          </p>
         </FormField>
 
         {/* Confirm Password Field */}

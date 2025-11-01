@@ -43,11 +43,12 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
           const response = await axios.post(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276/api'}/Auth/refresh-token`,
             { refreshToken }
           );
 
-          const { accessToken, refreshToken: newRefreshToken } = response.data;
+          const { data } = response.data;
+          const { accessToken, refreshToken: newRefreshToken } = data;
 
           // Save new tokens
           localStorage.setItem('accessToken', accessToken);
@@ -64,6 +65,7 @@ api.interceptors.response.use(
         if (typeof window !== 'undefined') {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);

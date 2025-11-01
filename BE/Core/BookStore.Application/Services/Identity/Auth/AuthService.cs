@@ -82,8 +82,24 @@ namespace BookStore.Application.Services.Identity.Auth
             await _userRepository.AddAsync(user);
             await _userRepository.SaveChangesAsync();
 
-            var roles = new List<string>();
-            var permissions = new List<string>();
+            // Tự động gán role "User" cho user mới đăng ký
+            var userRole_entity = await _roleRepository.GetByNameAsync("User");
+            if (userRole_entity != null)
+            {
+                var userRole = new Domain.Entities.Identity.UserRole
+                {
+                    UserId = user.Id,
+                    RoleId = userRole_entity.Id
+                };
+                user.UserRoles.Add(userRole);
+                await _userRepository.SaveChangesAsync();
+            }
+
+            var roles = userRole_entity != null ? new List<string> { "User" } : new List<string>();
+            var permissions = userRole_entity?.RolePermissions?
+                .Select(rp => rp.Permission?.Name ?? "")
+                .Where(n => !string.IsNullOrEmpty(n))
+                .ToList() ?? new List<string>();
 
             var accessToken = _tokenService.GenerateAccessToken(user.Id, user.Email, roles, permissions);
             var refreshToken = _tokenService.GenerateRefreshToken();

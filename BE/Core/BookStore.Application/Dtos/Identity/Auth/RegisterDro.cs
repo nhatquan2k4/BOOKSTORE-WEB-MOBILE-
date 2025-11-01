@@ -13,7 +13,7 @@ namespace BookStore.Application.Dtos.Identity.Auth
         public string ConfirmPassword { get; set; } = null!;
         public string FullName { get; set; } = null!;
         public string? PhoneNumber { get; set; }
-        public DateTime? DateOfBirth { get; set; }
+        
        
     }
 }

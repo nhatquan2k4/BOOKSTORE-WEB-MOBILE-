@@ -50,21 +50,49 @@ export interface Role {
 export interface LoginRequest {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface RegisterRequest {
   email: string;
   password: string;
+  confirmPassword: string;
   fullName: string;
   phoneNumber?: string;
 }
 
+// Backend response structure
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+// Auth Response from backend (data field)
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
-  user: User;
+  accessTokenExpiresAt: string;
+  refreshTokenExpiresAt: string;
+  user: UserInfo;
+}
+
+export interface UserInfo {
+  id: string;
+  userName: string;
+  email: string;
+  isActive: boolean;
+  roles: string[];
+  permissions: string[];
 }
 
 export interface RefreshTokenRequest {
   refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAt: string;
+  refreshTokenExpiresAt: string;
 }

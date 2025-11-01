@@ -5,22 +5,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Badge, NotificationDropdown, useNotifications } from '@/components/ui';
 import { useCartStore } from '@/store/cartStore';
+import { useAuth } from '@/contexts';
 
-interface HeaderProps {
-  isLoggedIn?: boolean;
-  user?: {
-    name: string;
-    email: string;
-    avatar?: string;
-  };
-}
-
-export function Header({ isLoggedIn = false, user }: HeaderProps) {
+export function Header() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  
+  // Get auth state from context
+  const { user: currentUser, isLoggedIn, logout } = useAuth();
   
   // Get cart count from store
   const cartItems = useCartStore((state) => state.cartItems);
@@ -37,9 +32,13 @@ export function Header({ isLoggedIn = false, user }: HeaderProps) {
     }
   };
 
-  const handleLogout = () => {
-    // TODO: Implement logout logic
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
@@ -165,22 +164,20 @@ export function Header({ isLoggedIn = false, user }: HeaderProps) {
             </Link>
 
             {/* User Menu or Login */}
-            {isLoggedIn && user ? (
+            {isLoggedIn && currentUser ? (
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-semibold">
-                        {user.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <span className="hidden lg:block text-sm font-medium text-gray-700">{user.name}</span>
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-semibold">
+                      {currentUser.userName?.charAt(0).toUpperCase() || currentUser.email.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="hidden lg:block text-sm font-medium text-gray-700">
+                    {currentUser.userName || currentUser.email.split('@')[0]}
+                  </span>
                   <svg className="hidden lg:block w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -195,8 +192,10 @@ export function Header({ isLoggedIn = false, user }: HeaderProps) {
                     />
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
                       <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {currentUser.userName || currentUser.email.split('@')[0]}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">{currentUser.email}</p>
                       </div>
                       <Link
                         href="/account/profile"

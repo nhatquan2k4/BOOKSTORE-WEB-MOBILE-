@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { authService } from "@/lib/auth/session";
+import { useAuth } from "@/contexts";
 import type { LoginRequest } from "@/types/user";
 import { AuthCard } from "@/components/auth";
 import { FormField, FormLabel, FormError } from "@/components/auth";
@@ -25,6 +25,7 @@ type LoginFormData = LoginRequest & {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const {
     register,
     handleSubmit,
@@ -36,17 +37,17 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setErrorMessage("");
     try {
-      // Use centralized auth service which handles storage/session
-      await authService.login({
+      // Use auth context login - this will update state automatically
+      await login({
         email: data.email,
         password: data.password,
+        rememberMe: data.remember || false,
       });
 
-      // Redirect to shop
+      // Redirect to home - header will update automatically via context
       router.push("/");
     } catch (err: any) {
       setErrorMessage(
-        err?.response?.data?.message || 
         err?.message || 
         "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin."
       );

@@ -63,6 +63,18 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // Next.js frontend URL
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // Register Services
 // Auth Services
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -164,6 +176,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Enable CORS (must be before Authentication & Authorization)
+app.UseCors("AllowFrontend");
 
 // Add Authentication & Authorization middleware
 app.UseAuthentication();
