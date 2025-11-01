@@ -10,7 +10,8 @@ namespace BookStore.API.Controllers.Book
     {
         private readonly IBookService _bookService;
 
-        public BookController(IBookService bookService)
+        public BookController(
+            IBookService bookService)
         {
             _bookService = bookService;
         }
