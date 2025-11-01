@@ -4,6 +4,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, use, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { 
+  ShoppingCart, BookOpen, Heart, Bookmark, Share2, 
+  AlertTriangle, Check, Package, Users, Award, Shield 
+} from "lucide-react";
 import { Button, Badge, Alert } from "@/components/ui";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 
@@ -322,6 +327,7 @@ function CommentTree({
 
 export default function BookDetailPage({ params }: { params: Promise<Params> }) {
   const { id } = use(params);
+  const router = useRouter();
 
   // -------- UI States --------
   const [activeTab, setActiveTab] = useState<"desc" | "review" | "comments">("desc");
@@ -619,6 +625,22 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
     );
   }
 
+  // -------- Mua ngay --------
+  function handleBuyNow() {
+    // Chuyển hướng đến trang QR payment
+    const orderId = `ORD${Date.now()}`;
+    const queryParams = new URLSearchParams({
+      type: 'buy',
+      bookId: String(id),
+      bookTitle: book.title,
+      bookCover: book.cover,
+      orderId: orderId,
+      price: String(book.price),
+      amount: String(book.price),
+    });
+    router.push(`/payment/qr?${queryParams.toString()}`);
+  }
+
   // -------- Share Facebook --------
   function handleShareToFacebook() {
     const url =
@@ -700,11 +722,20 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
 
           {/* Hàng nút hành động */}
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <Button variant="danger" className="shadow-sm">
+            <Button 
+              variant="danger" 
+              className="shadow-sm"
+              onClick={handleBuyNow}
+              disabled={book.stock === 0}
+            >
               Mua ngay
             </Button>
 
-            <Button variant="primary" className="shadow-sm">
+            <Button 
+              variant="primary" 
+              className="shadow-sm"
+              disabled={book.stock === 0}
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                    className="lucide lucide-shopping-cart">
@@ -715,15 +746,17 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
               <span>Thêm vào giỏ hàng</span>
             </Button>
 
-            <Button className="shadow-sm bg-amber-500 hover:bg-amber-600">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                   fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                   className="lucide lucide-book-open">
-                <path d="M12 7v14" />
-                <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
-              </svg>
-              <span>Thuê e-book</span>
-            </Button>
+            <Link href={`/rent/${id}`}>
+              <Button className="shadow-sm bg-amber-500 hover:bg-amber-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                     className="lucide lucide-book-open">
+                  <path d="M12 7v14" />
+                  <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                </svg>
+                <span>Thuê e-book</span>
+              </Button>
+            </Link>
 
             {/* Icon-only */}
             <Button onClick={() => setIsLiked((prev) => !prev)} variant="ghost" size="sm" aria-label="Yêu thích" title="Yêu thích">

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Alert, Badge } from '@/components/ui';
+import { Button, Input, Alert, Badge, Breadcrumb } from '@/components/ui';
 
 // Mock data - sẽ thay bằng API thực tế
 const mockCartItems = [
@@ -13,7 +13,7 @@ const mockCartItems = [
     bookId: '1',
     title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
     author: 'Robert C. Martin',
-    image: '/image/book-placeholder.jpg',
+    image: '/image/anh.png',
     price: 450000,
     quantity: 1,
     format: 'Paperback'
@@ -23,7 +23,7 @@ const mockCartItems = [
     bookId: '2',
     title: 'Design Patterns: Elements of Reusable Object-Oriented Software',
     author: 'Erich Gamma, Richard Helm',
-    image: '/image/book-placeholder.jpg',
+    image: '/image/anh.png',
     price: 520000,
     quantity: 2,
     format: 'Hardcover'
@@ -82,25 +82,20 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Breadcrumb */}
+      <Breadcrumb items={[
+        { label: "Giỏ hàng", href: "/cart" },
+        { label: "Thanh toán" }
+      ]} />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-            <Link href="/" className="hover:text-blue-600 transition-colors">
-              Trang chủ
-            </Link>
-            <span>/</span>
-            <Link href="/cart" className="hover:text-blue-600 transition-colors">
-              Giỏ hàng
-            </Link>
-            <span>/</span>
-            <span className="text-gray-900 font-medium">Thanh toán</span>
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+        <div className="mb-10">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
             Thanh toán đơn hàng
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-lg">
             Vui lòng kiểm tra thông tin và hoàn tất đơn hàng
           </p>
         </div>
@@ -109,10 +104,10 @@ export default function CheckoutPage() {
           {/* Left Column - Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Customer Information */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
+            <div className="bg-white rounded-xl shadow-md border border-gray-100 hover:border-blue-200 transition-colors p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 font-bold text-lg">1</span>
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-lg">1</span>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Thông tin khách hàng</h2>
               </div>
@@ -153,23 +148,23 @@ export default function CheckoutPage() {
             </div>
 
             {/* Shipping Address */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
+            <div className="bg-white rounded-xl shadow-md border border-gray-100 hover:border-blue-200 transition-colors p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 font-bold text-lg">2</span>
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-lg">2</span>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Địa chỉ giao hàng</h2>
               </div>
 
               <div className="mb-6">
-                <label className="flex items-center gap-3 cursor-pointer">
+                <label className="flex items-center gap-3 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={useDefaultAddress}
                     onChange={(e) => setUseDefaultAddress(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    className="w-5 h-5 text-blue-600 rounded border-2 border-gray-300 focus:ring-2 focus:ring-blue-200"
                   />
-                  <span className="text-gray-700 font-medium">Sử dụng địa chỉ mặc định</span>
+                  <span className="text-gray-700 font-semibold group-hover:text-blue-600 transition-colors">Sử dụng địa chỉ mặc định</span>
                 </label>
               </div>
 
@@ -255,24 +250,28 @@ export default function CheckoutPage() {
             </div>
 
             {/* Payment Method */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
+            <div className="bg-white rounded-xl shadow-md border border-gray-100 hover:border-blue-200 transition-colors p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 font-bold text-lg">3</span>
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-lg">3</span>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Phương thức thanh toán</h2>
               </div>
 
               <div className="space-y-4">
                 {/* COD */}
-                <label className="flex items-start gap-4 p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 transition-all">
+                <label className={`flex items-start gap-4 p-5 border-2 rounded-xl cursor-pointer transition-all ${
+                  paymentMethod === 'cod' 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                }`}>
                   <input
                     type="radio"
                     name="payment"
                     value="cod"
                     checked={paymentMethod === 'cod'}
                     onChange={(e) => setPaymentMethod(e.target.value as 'cod')}
-                    className="mt-1 w-5 h-5 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 w-5 h-5 text-blue-600 focus:ring-2 focus:ring-blue-200 border-2 border-gray-300"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
