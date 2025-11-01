@@ -1,7 +1,7 @@
 // app/books/page.tsx - Trang hiển thị tất cả sách
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button, Badge, Alert, Input } from "@/components/ui";
@@ -204,6 +204,7 @@ export default function BooksPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
   const [showFilters, setShowFilters] = useState(true);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const itemsPerPage = 12;
 
@@ -259,11 +260,18 @@ export default function BooksPage() {
   };
 
   // Handle scroll for scroll-to-top button
-  if (typeof window !== "undefined") {
-    window.addEventListener("scroll", () => {
+  useEffect(() => {
+    const handleScroll = () => {
       setShowScrollTop(window.scrollY > 400);
-    });
-  }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   // Clear all filters
   const clearFilters = () => {

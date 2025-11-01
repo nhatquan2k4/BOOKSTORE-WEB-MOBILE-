@@ -10,3 +10,4 @@ export { Pagination } from './Pagination';
 export { EmptyState } from './EmptyState';
 export { NotificationDropdown, useNotifications } from './Notification';
 export type { NotificationItem } from './Notification';
+export { CheckIcon } from "./CheckIcon";

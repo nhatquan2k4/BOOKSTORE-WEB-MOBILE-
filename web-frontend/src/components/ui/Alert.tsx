@@ -54,6 +54,7 @@ export function Alert({ children, variant = 'info', className, icon, onClose }: 
 
   return (
     <div
+      suppressHydrationWarning
       className={cn(
         'relative border rounded-lg p-4 flex items-start gap-3',
         variants[variant].container,

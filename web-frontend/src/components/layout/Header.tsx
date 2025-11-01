@@ -43,7 +43,7 @@ export function Header({ isLoggedIn = false, user }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
+    <header className="bg-white shadow-sm sticky top-0 z-50" suppressHydrationWarning>
       {/* Top Bar */}
       <div className="bg-blue-600 text-white py-2">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -7,9 +7,9 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex bg-[#F1EEE3]" suppressHydrationWarning>
+    <div className="min-h-screen flex from-blue-600 to-blue-700" suppressHydrationWarning>
       {/* Left side - Branding/Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[#8B4513] via-[#A0522D] to-[#D2691E] p-12 items-center justify-center">
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br  from-blue-600 to-blue-800 p-12 items-center justify-center">
         <div className="relative z-10 text-white max-w-lg">
           <h1 className="text-5xl font-bold mb-4">BookStore</h1>
           <p className="text-xl mb-8 opacity-90">
