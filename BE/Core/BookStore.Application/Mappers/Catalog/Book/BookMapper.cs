@@ -1,7 +1,9 @@
 ﻿using BookStore.Application.Dtos.Catalog.Book;
+using BookStore.Application.Dtos.Catalog.BookImages;
 using BookStore.Application.Mappers.Catalog.Author;
 using BookStore.Application.Mappers.Catalog.Category;
 using BookStore.Application.Mappers.Catalog.Publisher;
+using BookStore.Application.Mappers.Catalog.BookImages;
 using BookStore.Domain.ValueObjects;
 using BookEntity = BookStore.Domain.Entities.Catalog.Book;
 
@@ -64,7 +66,7 @@ namespace BookStore.Application.Mappers.Catalog.Book
                     ?? new List<Dtos.Catalog.Category.CategoryDto>(),
 
                 // Images - sử dụng BookImageMapper
-                Images = book.Images?.ToDtoList() ?? new List<BookImageDto>(),
+                Images = book.Images?.ToDtoList() ?? new List<Dtos.Catalog.BookImages.BookImageDto>(),
 
                 // Files - sử dụng BookFileMapper
                 Files = book.Files?.ToDtoList() ?? new List<BookFileDto>(),

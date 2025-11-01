@@ -1,26 +1,26 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   # SQL Server Database
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: bookstore-sqlserver
-    environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=YourStrong@Password123
-      - MSSQL_PID=Developer
-    ports:
-      - "1433:1433"
-    volumes:
-      - sqlserver_data:/var/opt/mssql
-    networks:
-      - bookstore-network
-    healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Password123 -Q "SELECT 1" -C || exit 1
-      interval: 10s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
+  # sqlserver:
+  #   image: mcr.microsoft.com/mssql/server:2022-latest
+  #   container_name: bookstore-sqlserver
+  #   environment:
+  #     - ACCEPT_EULA=Y
+  #     - SA_PASSWORD=YourStrong@Password123
+  #     - MSSQL_PID=Developer
+  #   ports:
+  #     - "1433:1433"
+  #   volumes:
+  #     - sqlserver_data:/var/opt/mssql
+  #   networks:
+  #     - bookstore-network
+  #   healthcheck:
+  #     test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Password123 -Q "SELECT 1" -C || exit 1
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 10
+  #     start_period: 10s
 
   # MinIO Object Storage
   minio:
@@ -30,15 +30,15 @@ services:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin123
     ports:
-      - "9000:9000"      # MinIO API
-      - "9001:9001"      # MinIO Console (Web UI)
+      - "9000:9000" # MinIO API
+      - "9001:9001" # MinIO Console (Web UI)
     volumes:
       - minio_data:/data
     networks:
       - bookstore-network
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -54,42 +54,32 @@ services:
     networks:
       - bookstore-network
     entrypoint: >
-      /bin/sh -c "
-      mc alias set myminio http://minio:9000 minioadmin minioadmin123;
-      mc mb myminio/bookstore-images --ignore-existing;
-      mc mb myminio/ebook-files --ignore-existing;
-      mc mb myminio/user-avatars --ignore-existing;
-      mc anonymous set download myminio/bookstore-images;
-      mc anonymous set download myminio/ebook-files;
-      mc anonymous set download myminio/user-avatars;
-      echo 'MinIO buckets created successfully!';
-      "
-
+      /bin/sh -c " mc alias set myminio http://minio:9000 minioadmin minioadmin123; mc mb myminio/bookstore-images --ignore-existing; mc mb myminio/ebook-files --ignore-existing; mc mb myminio/user-avatars --ignore-existing; mc anonymous set download myminio/bookstore-images; mc anonymous set download myminio/ebook-files; mc anonymous set download myminio/user-avatars; echo 'MinIO buckets created successfully!'; "
   # BookStore API
-  bookstore-api:
-    build:
-      context: ..
-      dockerfile: Dockerfile
-    container_name: bookstore-api
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__UsersDb=Server=sqlserver;Database=ChuyenDeTongHop;User Id=sa;Password=YourStrong@Password123;MultipleActiveResultSets=true;TrustServerCertificate=True
-      - MinIO__Endpoint=minio:9000
-      - MinIO__AccessKey=minioadmin
-      - MinIO__SecretKey=minioadmin123
-      - MinIO__BucketName=bookstore-images
-      - MinIO__UseSSL=false
-    ports:
-      - "5276:8080"
-    depends_on:
-      sqlserver:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    networks:
-      - bookstore-network
-    restart: on-failure
+  # bookstore-api:
+  #   build:
+  #     context: ..
+  #     dockerfile: Dockerfile
+  #   container_name: bookstore-api
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ASPNETCORE_URLS=http://+:8080
+  #     - ConnectionStrings__UsersDb=Server=sqlserver;Database=ChuyenDeTongHop;User Id=sa;Password=YourStrong@Password123;MultipleActiveResultSets=true;TrustServerCertificate=True
+  #     - MinIO__Endpoint=minio:9000
+  #     - MinIO__AccessKey=minioadmin
+  #     - MinIO__SecretKey=minioadmin123
+  #     - MinIO__BucketName=bookstore-images
+  #     - MinIO__UseSSL=false
+  #   ports:
+  #     - "5276:8080"
+  #   depends_on:
+  #     sqlserver:
+  #       condition: service_healthy
+  #     minio:
+  #       condition: service_healthy
+  #   networks:
+  #     - bookstore-network
+  #   restart: on-failure
 
 volumes:
   sqlserver_data:

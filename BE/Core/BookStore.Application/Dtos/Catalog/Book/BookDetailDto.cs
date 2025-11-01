@@ -1,6 +1,7 @@
 ﻿using BookStore.Application.Dtos.Catalog.Author;
 using BookStore.Application.Dtos.Catalog.Category;
 using BookStore.Application.Dtos.Catalog.Publisher;
+using BookStore.Application.Dtos.Catalog.BookImages;
 // using BookStore.Application.Dtos.Catalog.Review;
 
 namespace BookStore.Application.Dtos.Catalog.Book

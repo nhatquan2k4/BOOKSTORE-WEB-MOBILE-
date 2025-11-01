@@ -1,15 +1,12 @@
-﻿using BookStore.Application.Dtos.Catalog.Book;
+using BookStore.Application.Dtos.Catalog.BookImages;
 using BookStore.Domain.Entities.Catalog;
 
-namespace BookStore.Application.Mappers.Catalog.Book
+namespace BookStore.Application.Mappers.Catalog.BookImages
 {
-    /// <summary>
-    /// Mapper thủ công cho BookImage entity
-    /// </summary>
     public static class BookImageMapper
     {
         /// <summary>
-        /// Map BookImage entity sang BookImageDto
+        /// Entity → BookImageDto (Response)
         /// </summary>
         public static BookImageDto ToDto(this BookImage bookImage)
         {
@@ -24,7 +21,7 @@ namespace BookStore.Application.Mappers.Catalog.Book
         }
 
         /// <summary>
-        /// Map collection BookImage entities sang collection BookImageDto
+        /// Collection mapping
         /// </summary>
         public static List<BookImageDto> ToDtoList(this IEnumerable<BookImage> bookImages)
         {
@@ -32,29 +29,29 @@ namespace BookStore.Application.Mappers.Catalog.Book
         }
 
         /// <summary>
-        /// Map BookImageDto sang BookImage entity (for Create)
+        /// CreateBookImageDto → Entity (Create)
+        /// imageUrl sẽ được set sau khi upload lên MinIO
         /// </summary>
-        public static BookImage ToEntity(this BookImageDto dto)
+        public static BookImage ToEntity(this CreateBookImageDto dto, string imageUrl)
         {
             return new BookImage
             {
-                Id = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
-                ImageUrl = dto.ImageUrl,
+                Id = Guid.NewGuid(),
+                BookId = dto.BookId,
+                ImageUrl = imageUrl,
                 IsCover = dto.IsCover,
-                DisplayOrder = dto.DisplayOrder,
-                BookId = dto.BookId
+                DisplayOrder = dto.DisplayOrder
             };
         }
 
         /// <summary>
-        /// Update BookImage entity từ BookImageDto (for Update)
+        /// UpdateBookImageDto → Update existing entity
+        /// Chỉ update metadata, không update ImageUrl
         /// </summary>
-        public static void UpdateFromDto(this BookImage bookImage, BookImageDto dto)
+        public static void UpdateFromDto(this BookImage bookImage, UpdateBookImageDto dto)
         {
-            bookImage.ImageUrl = dto.ImageUrl;
             bookImage.IsCover = dto.IsCover;
             bookImage.DisplayOrder = dto.DisplayOrder;
-            bookImage.BookId = dto.BookId;
         }
     }
 }

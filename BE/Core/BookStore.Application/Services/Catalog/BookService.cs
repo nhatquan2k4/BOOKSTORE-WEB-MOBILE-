@@ -1,10 +1,12 @@
 ﻿using BookStore.Application.Dtos.Catalog.Author;
 using BookStore.Application.Dtos.Catalog.Book;
+using BookStore.Application.Dtos.Catalog.BookImages;
 using BookStore.Application.Dtos.Catalog.Category;
 using BookStore.Application.Dtos.Catalog.Publisher;
 using BookStore.Application.IService;
 using BookStore.Application.IService.Catalog;
 using BookStore.Application.Mappers.Catalog.Author;
+using BookStore.Application.Mappers.Catalog.BookImages;
 using BookStore.Application.Mappers.Catalog.Category;
 using BookStore.Application.Mappers.Catalog.Publisher;
 using BookStore.Application.Service;
@@ -471,14 +473,7 @@ namespace BookStore.Application.Services.Catalog
                 } : null,
                 Authors = book.BookAuthors?.Select(ba => AuthorMapper.ToDto(ba.Author)).ToList() ?? new List<AuthorDto>(),
                 Categories = book.BookCategories?.Select(bc => CategoryMapper.ToDto(bc.Category)).ToList() ?? new List<CategoryDto>(),
-                Images = book.Images?.Select(img => new BookImageDto
-                {
-                    Id = img.Id,
-                    BookId = img.BookId,
-                    ImageUrl = img.ImageUrl,
-                    IsCover = img.IsCover,
-                    DisplayOrder = img.DisplayOrder
-                }).ToList() ?? new List<BookImageDto>(),
+                Images = book.Images?.Select(img => img.ToDto()).ToList() ?? new List<BookImageDto>(),
                 Files = book.Files?.Select(f => new BookFileDto
                 {
                     Id = f.Id,
