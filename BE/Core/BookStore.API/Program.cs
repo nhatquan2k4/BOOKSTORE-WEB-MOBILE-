@@ -5,8 +5,9 @@ using BookStore.Domain.IRepository.Catalog;
 using BookStore.Infrastructure.Data;
 using BookStore.Infrastructure.Repository;
 using BookStore.Infrastructure.Repository.Catalog;
-using BookStore.Infrastructure.Data;
 using BookStore.Application.Settings;
+using BookStore.Application.IService;
+using BookStore.Application.Services;
 using BookStore.Application.IService.Identity.Auth;
 using BookStore.Application.Services.Identity.Auth;
 using BookStore.Application.IService.Identity.User;
@@ -21,6 +22,7 @@ using BookStore.Domain.IRepository.Identity.RolePermisson;
 using BookStore.Infrastructure.Repository.Identity.User;
 using BookStore.Infrastructure.Repository.Identity.Auth;
 using BookStore.Infrastructure.Repository.Identity.RolePermisson;
+using BookStore.API.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -39,6 +41,9 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
     ?? throw new InvalidOperationException("JWT Settings not configured");
+
+// Configure MinIO Settings
+builder.Services.Configure<MinIOSettings>(builder.Configuration.GetSection("MinIO"));
 
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
@@ -64,6 +69,9 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // Register Services
+// MinIO Service
+builder.Services.AddScoped<IMinIOService, MinIOService>();
+
 // Auth Services
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
@@ -123,7 +131,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "BookStore API", Version = "v1" });
-    
+
     // Add JWT Authentication to Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -152,6 +160,26 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// Auto-apply database migrations
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
+
+        logger.LogInformation("Applying database migrations...");
+        context.Database.Migrate();
+        logger.LogInformation("Database migrations completed successfully");
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database");
+        throw;
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -159,11 +187,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "BookStore API V1");
-        c.RoutePrefix = string.Empty; // Swagger UI at root: https://localhost:xxxx/
+        c.RoutePrefix = "swagger"; // Swagger UI at /swagger
     });
 }
 
-app.UseHttpsRedirection();
+// Only use HTTPS redirection in production
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // Add Authentication & Authorization middleware
 app.UseAuthentication();
