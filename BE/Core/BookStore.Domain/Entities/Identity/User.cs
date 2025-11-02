@@ -12,7 +12,7 @@ namespace BookStore.Domain.Entities.Identity
 
         public string Email { get; set; } = null!;  // Email duy nhất dùng làm tên đăng nhập
         public string PasswordHash { get; set; } = null!; // Mật khẩu đã được băm
-        public bool IsActive { get; set; } = true; // Trạng thái kích hoạt tài khoản
+        public bool IsActive { get; set; } = false; // Trạng thái kích hoạt tài khoản
         public DateTime CreateAt { get; set; } = DateTime.UtcNow; // Thời gian tạo tài khoản
         public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow; // Thời gian cập nhật tài khoản gần nhất
 
@@ -27,6 +27,9 @@ namespace BookStore.Domain.Entities.Identity
 
         // 1-n vs RefreshTokens
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>(); // Danh sách token làm mới
+
+        // 1-n vs EmailVerificationTokens
+        public virtual ICollection<EmailVerificationToken> EmailVerificationTokens { get; set; } = new List<EmailVerificationToken>(); // Danh sách token xác minh email
 
         // 1-n vs Role
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>(); // Danh sách vai trò người dùng

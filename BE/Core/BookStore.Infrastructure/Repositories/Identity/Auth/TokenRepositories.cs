@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BookStore.Infrastructure.Repository.Identity.Auth
 {
-    // ===================== REFRESH TOKEN REPOSITORY =====================
-
+    //REFRESH TOKEN REPOSITORY
+    
     public class RefreshTokenRepository : GenericRepository<RefreshToken>, IRefreshTokenRepository
     {
         public RefreshTokenRepository(AppDbContext context) : base(context)
@@ -103,7 +103,7 @@ namespace BookStore.Infrastructure.Repository.Identity.Auth
         }
     }
 
-    // ===================== EMAIL VERIFICATION TOKEN REPOSITORY =====================
+    // EMAIL VERIFICATION TOKEN REPOSITORY
 
     public class EmailVerificationTokenRepository : GenericRepository<EmailVerificationToken>, IEmailVerificationTokenRepository
     {
