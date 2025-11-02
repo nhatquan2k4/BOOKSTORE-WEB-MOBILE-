@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils/format";
-import { Button, Input, Badge, EmptyState, Alert } from "@/components/ui";
+import { Button, Input, Badge, EmptyState, Alert, Breadcrumb } from "@/components/ui";
 
 type CartItem = {
   id: string;
@@ -96,6 +97,7 @@ const MOCK_SUGGESTED_BOOKS = [
 // MAIN COMPONENT
 // ============================================================================
 export default function CartPage() {
+  const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>(MOCK_CART_ITEMS);
   const [voucherCode, setVoucherCode] = useState("");
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null);
@@ -176,21 +178,27 @@ export default function CartPage() {
   const allSelected = cartItems.length > 0 && cartItems.every((item) => item.selected);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Breadcrumb */}
+      <Breadcrumb items={[{ label: "Giỏ hàng" }]} />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Giỏ hàng của bạn</h1>
-              <div className="mt-1 flex items-center gap-2">
-                <span className="text-sm text-gray-500">
-                  {cartItems.length} sản phẩm trong giỏ hàng
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Giỏ hàng của bạn</h1>
+              <div className="flex items-center gap-3">
+                <span className="text-gray-600">
+                  {cartItems.length} sản phẩm
                 </span>
                 {selectedItems.length > 0 && (
-                  <Badge variant="info" size="sm">
-                    {selectedItems.length} đã chọn
-                  </Badge>
+                  <>
+                    <span className="text-gray-300">|</span>
+                    <Badge variant="info" className="bg-blue-100 text-blue-700">
+                      {selectedItems.length} đã chọn
+                    </Badge>
+                  </>
                 )}
               </div>
             </div>
@@ -199,9 +207,9 @@ export default function CartPage() {
                 onClick={handleClearCart}
                 variant="outline"
                 size="sm"
-                className="text-red-600 hover:text-red-700 hover:border-red-300"
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
               >
-                <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
                 Xóa tất cả
@@ -209,22 +217,19 @@ export default function CartPage() {
             )}
           </div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             {/* Select All */}
             {cartItems.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm p-4 flex items-center gap-3">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-3 hover:border-blue-200 transition-colors">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="w-5 h-5 text-blue-600 rounded"
+                  className="w-5 h-5 text-blue-600 rounded border-2 border-gray-300 focus:ring-2 focus:ring-blue-200"
                 />
-                <span className="font-medium">Chọn tất cả ({cartItems.length} sản phẩm)</span>
+                <span className="font-semibold text-gray-900">Chọn tất cả ({cartItems.length} sản phẩm)</span>
               </div>
             )}
 
@@ -247,27 +252,29 @@ export default function CartPage() {
               </div>
             ) : (
               cartItems.map((item) => (
-                <div key={item.id} className="bg-white rounded-lg shadow-sm p-4">
-                  <div className="flex gap-4">
+                <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all p-5">
+                  <div className="flex gap-5">
                     {/* Checkbox */}
                     <div className="flex-shrink-0 pt-2">
                       <input
                         type="checkbox"
                         checked={item.selected}
                         onChange={(e) => handleSelectItem(item.id, e.target.checked)}
-                        className="w-5 h-5 text-blue-600 rounded"
+                        className="w-5 h-5 text-blue-600 rounded border-2 border-gray-300 focus:ring-2 focus:ring-blue-200"
                       />
                     </div>
 
                     {/* Book Cover */}
-                    <Link href={`/books/${item.bookId}`} className="flex-shrink-0">
-                      <Image
-                        src={item.cover}
-                        alt={item.title}
-                        width={120}
-                        height={160}
-                        className="rounded-lg object-cover"
-                      />
+                    <Link href={`/books/${item.bookId}`} className="flex-shrink-0 group">
+                      <div className="relative overflow-hidden rounded-xl">
+                        <Image
+                          src={item.cover}
+                          alt={item.title}
+                          width={120}
+                          height={160}
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
                     </Link>
 
                     {/* Book Info */}
@@ -303,7 +310,7 @@ export default function CartPage() {
                           <button
                             onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                             disabled={item.quantity <= 1}
-                            className="w-8 h-8 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            className="w-9 h-9 rounded-lg border-2 border-gray-300 hover:border-blue-400 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:bg-transparent flex items-center justify-center transition-colors"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
@@ -313,14 +320,14 @@ export default function CartPage() {
                             type="number"
                             value={item.quantity}
                             readOnly
-                            className="w-16 text-center border border-gray-300 rounded px-2 py-1 bg-gray-50 cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-16 text-center border-2 border-gray-300 rounded-lg px-2 py-1.5 bg-gray-50 cursor-default font-semibold text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             min="1"
                             max={item.stock}
                           />
                           <button
                             onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                             disabled={item.quantity >= item.stock}
-                            className="w-8 h-8 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            className="w-9 h-9 rounded-lg border-2 border-gray-300 hover:border-blue-400 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:bg-transparent flex items-center justify-center transition-colors"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -329,6 +336,7 @@ export default function CartPage() {
                           <Badge 
                             variant={item.stock < 5 ? "warning" : "default"} 
                             size="sm"
+                            className="ml-1"
                           >
                             Còn {item.stock}
                           </Badge>
@@ -338,7 +346,7 @@ export default function CartPage() {
                           onClick={() => handleRemoveItem(item.id)}
                           variant="ghost"
                           size="sm"
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border border-transparent hover:border-red-200"
                         >
                           Xóa
                         </Button>
@@ -383,8 +391,8 @@ export default function CartPage() {
           {/* Right Column - Order Summary */}
           {cartItems.length > 0 && (
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Thông tin đơn hàng</h3>
+              <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 sticky top-4">
+                <h3 className="text-2xl font-bold text-gray-900 mb-6 pb-4 border-b border-gray-100">Thông tin đơn hàng</h3>
 
                 {/* Voucher Section */}
                 <div className="mb-6">
@@ -473,24 +481,24 @@ export default function CartPage() {
                 </div>
 
                 {/* Order Summary */}
-                <div className="border-t border-gray-200 pt-4 space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Tạm tính ({totalQuantity} sản phẩm)</span>
-                    <span className="font-medium">{formatCurrency(subtotal)}</span>
+                <div className="border-t border-gray-200 pt-6 space-y-4">
+                  <div className="flex justify-between text-base">
+                    <span className="text-gray-700">Tạm tính ({totalQuantity} sản phẩm)</span>
+                    <span className="font-semibold text-gray-900">{formatCurrency(subtotal)}</span>
                   </div>
                   
                   {discount > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Giảm giá</span>
-                      <span className="font-medium text-green-600">-{formatCurrency(discount)}</span>
+                    <div className="flex justify-between text-base">
+                      <span className="text-gray-700">Giảm giá</span>
+                      <span className="font-semibold text-green-600">-{formatCurrency(discount)}</span>
                     </div>
                   )}
                   
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Phí vận chuyển</span>
-                    <span className="font-medium">
+                  <div className="flex justify-between text-base">
+                    <span className="text-gray-700">Phí vận chuyển</span>
+                    <span className="font-semibold text-gray-900">
                       {finalShippingFee === 0 ? (
-                        <Badge variant="success" size="sm">
+                        <Badge variant="success" size="sm" className="text-xs px-2 py-1">
                           Miễn phí
                         </Badge>
                       ) : (
@@ -500,48 +508,60 @@ export default function CartPage() {
                   </div>
                   
                   {subtotal < 500000 && finalShippingFee > 0 && (
-                    <Alert variant="info">
+                    <Alert variant="info" className="bg-blue-50 border-blue-200">
                       <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="text-xs">
+                        <span className="text-xs text-blue-800">
                           Mua thêm {formatCurrency(500000 - subtotal)} để được miễn phí vận chuyển
                         </span>
                       </div>
                     </Alert>
                   )}
                   
-                  <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
-                    <span className="text-lg font-semibold text-gray-900">Tổng cộng</span>
-                    <span className="text-2xl font-bold text-red-600">{formatCurrency(total)}</span>
+                  <div className="border-t-2 border-gray-200 pt-4 flex justify-between items-center">
+                    <span className="text-xl font-bold text-gray-900">Tổng cộng</span>
+                    <span className="text-3xl font-bold text-red-600">{formatCurrency(total)}</span>
                   </div>
                 </div>
 
                 {/* Checkout Button */}
-                <Link href={selectedItems.length > 0 ? "/checkout" : "#"}>
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="mt-6 w-full"
-                    disabled={selectedItems.length === 0}
-                    onClick={(e) => {
-                      if (selectedItems.length === 0) {
-                        e.preventDefault();
-                        alert("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán");
-                      }
-                    }}
-                  >
-                    Thanh toán ({selectedItems.length})
-                  </Button>
-                </Link>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="mt-6 w-full text-lg font-semibold shadow-lg hover:shadow-xl transition-shadow"
+                  disabled={selectedItems.length === 0}
+                  onClick={(e) => {
+                    if (selectedItems.length === 0) {
+                      e.preventDefault();
+                      alert("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán");
+                      return;
+                    }
+                    
+                    // Chuyển hướng đến trang QR payment cho mua sách
+                    const orderId = `ORD${Date.now()}`;
+                    const queryParams = new URLSearchParams({
+                      type: 'buy',
+                      orderId: orderId,
+                      amount: String(total),
+                      items: String(selectedItems.length),
+                      subtotal: String(subtotal),
+                      discount: String(discount),
+                      shipping: String(finalShippingFee),
+                    });
+                    router.push(`/payment/qr?${queryParams.toString()}`);
+                  }}
+                >
+                  Thanh toán ({selectedItems.length})
+                </Button>
 
                 {/* Security Badge */}
-                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="mt-5 flex items-center justify-center gap-2 text-sm text-gray-600 bg-green-50 border border-green-200 rounded-lg p-3">
+                  <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  <span>Thanh toán an toàn và bảo mật</span>
+                  <span className="font-medium">Thanh toán an toàn và bảo mật</span>
                 </div>
               </div>
             </div>

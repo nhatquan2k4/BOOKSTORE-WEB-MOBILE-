@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Button, Badge, Alert, Input } from "@/components/ui";
+import { Button, Badge, Alert, Input, Breadcrumb } from "@/components/ui";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -283,6 +283,9 @@ export default function BooksPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Breadcrumb */}
+      <Breadcrumb items={[{ label: "Tất cả sách" }]} />
+      
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">

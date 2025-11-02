@@ -71,14 +71,14 @@ const featuredBooks = [
 ];
 
 const categories = [
-  { id: 1, name: "Lập trình", count: 1234, color: "from-blue-500 to-cyan-500" },
-  { id: 2, name: "Kinh doanh", count: 856, color: "from-purple-500 to-pink-500" },
-  { id: 3, name: "Thiết kế", count: 645, color: "from-orange-500 to-red-500" },
-  { id: 4, name: "Khoa học", count: 432, color: "from-green-500 to-teal-500" },
-  { id: 5, name: "Văn học", count: 1567, color: "from-indigo-500 to-purple-500" },
-  { id: 6, name: "Kỹ năng sống", count: 892, color: "from-pink-500 to-rose-500" },
-  { id: 7, name: "Thiếu nhi", count: 543, color: "from-yellow-500 to-orange-500" },
-  { id: 8, name: "Ngoại ngữ", count: 721, color: "from-cyan-500 to-blue-500" },
+  { id: 1, name: "Lập trình", count: 1234, color: "from-blue-500 to-cyan-500", image: "/image/lap_trinh.jpg" },
+  { id: 2, name: "Kinh doanh", count: 856, color: "from-purple-500 to-pink-500", image: "/image/kinh_doanh.jpg" },
+  { id: 3, name: "Thiết kế", count: 645, color: "from-orange-500 to-red-500", image: "/image/thiet_ke.jpg" },
+  { id: 4, name: "Khoa học", count: 432, color: "from-green-500 to-teal-500", image: "/image/khoa_hoc.png" },
+  { id: 5, name: "Văn học", count: 1567, color: "from-indigo-500 to-purple-500", image: "/image/van_hoc.jpg" },
+  { id: 6, name: "Kỹ năng sống", count: 892, color: "from-pink-500 to-rose-500", image: "/image/ky_nang_song.jpg" },
+  { id: 7, name: "Thiếu nhi", count: 543, color: "from-yellow-500 to-orange-500", image: "/image/thieu_nhi.jpg" },
+  { id: 8, name: "Ngoại ngữ", count: 721, color: "from-cyan-500 to-blue-500", image: "/image/ngoai_ngu.jpg" },
 ];
 
 const popularBooks = [
@@ -262,7 +262,7 @@ export default function HomePage() {
                   Khám phá ngay
                 </Button>
               </Link>
-              <Link href="/rental">
+              <Link href="/rent">
                 <Button variant="outline" size="lg" className="border-2 border-white text-white hover:bg-white/10">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
                     <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
@@ -295,19 +295,19 @@ export default function HomePage() {
             {categories.slice(0, 8).map((cat) => (
               <Link key={cat.id} href={`/books?category=${cat.name}`}>
                 <div className="relative h-48 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 group">
-                  {/* Background Image with Overlay - Full size and blurred */}
+                  {/* Background Image with Overlay - Less blur for better visibility */}
                   <div className="absolute inset-0">
                     <Image
-                      src="/image/anh.png"
+                      src={cat.image}
                       alt={cat.name}
                       fill
                       sizes="(max-width: 768px) 50vw, 25vw"
-                      className="object-cover blur-sm group-hover:scale-110 transition-transform duration-300"
+                      className="object-cover blur-[1px] group-hover:scale-110 transition-transform duration-300"
                     />
                     {/* Lighter Gradient Overlay - reduced opacity */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-30`}></div>
+                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-20`}></div>
                     {/* Lighter dark overlay */}
-                    <div className="absolute inset-0 bg-black/10"></div>
+                    <div className="absolute inset-0 bg-black/5"></div>
                   </div>
                   
                   {/* Content */}

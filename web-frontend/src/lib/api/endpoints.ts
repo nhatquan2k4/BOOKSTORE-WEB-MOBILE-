@@ -59,6 +59,8 @@ export const API_ENDPOINTS = {
   PAYMENTS: {
     WEBHOOK: "/payments/webhook",
     BY_ORDER: (orderId: string) => `/payments/order/${orderId}`,
+    CREATE_QR: '/api/payment/vietqr/create-qr',
+    CHECK_STATUS: (orderId: string) => `/api/payment/check-status?orderId=${orderId}`,
   },
 
   // Rentals
