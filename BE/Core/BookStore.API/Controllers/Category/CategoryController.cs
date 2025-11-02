@@ -1,12 +1,13 @@
 using BookStore.Application.Dtos.Catalog.Category;
 using BookStore.Application.IService.Catalog;
+using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers.Category
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CategoryController : ControllerBase
+    public class CategoryController : ApiControllerBase
     {
         private readonly ICategoryService _categoryService;
 

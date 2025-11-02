@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Infrastructure.Repository.Identity.User
 {
@@ -26,8 +27,7 @@ namespace BookStore.Infrastructure.Repository.Identity.User
 
         public override async Task<UserAddress?> GetByIdAsync(Guid id)
         {
-            if (id == Guid.Empty)
-                throw new ArgumentException("Id cannot be empty", nameof(id));
+            Guard.Against(id == Guid.Empty, "Id không được để trống");
 
             return await _context.UserAddresses
                 .Include(ua => ua.User)
@@ -36,10 +36,9 @@ namespace BookStore.Infrastructure.Repository.Identity.User
 
         public override async Task AddAsync(UserAddress entity)
         {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
+            Guard.Against(entity == null, "Entity không được null");
 
-            if (entity.Id == Guid.Empty)
+            if (entity!.Id == Guid.Empty)
                 entity.Id = Guid.NewGuid();
 
             if (entity.IsDefault)
@@ -52,18 +51,16 @@ namespace BookStore.Infrastructure.Repository.Identity.User
 
         public override void Update(UserAddress entity)
         {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
+            Guard.Against(entity == null, "Entity không được null");
 
-            base.Update(entity);
+            base.Update(entity!);
         }
 
         public override void Delete(UserAddress entity)
         {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
+            Guard.Against(entity == null, "Entity không được null");
 
-            base.Delete(entity);
+            base.Delete(entity!);
         }
 
         public async Task<IEnumerable<UserAddress>> GetByUserIdAsync(Guid userId)

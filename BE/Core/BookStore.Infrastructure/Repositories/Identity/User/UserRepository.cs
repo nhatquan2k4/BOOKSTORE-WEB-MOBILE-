@@ -1,4 +1,4 @@
-﻿using BookStore.Domain.Entities.Identity;
+using BookStore.Domain.Entities.Identity;
 using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -6,17 +6,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Infrastructure.Repository.Identity.User
 {
     /// <summary>
-    /// Repository để quản lý các thao tác database với User entity
-    /// Kế thừa từ GenericRepository và implement IUserRepository
+    /// Repository d? qu?n l� c�c thao t�c database v?i User entity
+    /// K? th?a t? GenericRepository v� implement IUserRepository
     /// </summary>
     public class UserRepository : GenericRepository<Domain.Entities.Identity.User>, IUserRepository
     {
         /// <summary>
-        /// Constructor nhận AppDbContext từ DI container
+        /// Constructor nh?n AppDbContext t? DI container
         /// </summary>
         public UserRepository(AppDbContext context) : base(context)
         {
@@ -25,8 +26,8 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         #region Override Generic Repository Methods
 
         /// <summary>
-        /// Override GetAllAsync để eager load các navigation properties
-        /// Include: Profiles, UserRoles với Role
+        /// Override GetAllAsync d? eager load c�c navigation properties
+        /// Include: Profiles, UserRoles v?i Role
         /// </summary>
         public override async Task<IEnumerable<Domain.Entities.Identity.User>> GetAllAsync()
         {
@@ -39,12 +40,12 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         }
 
         /// <summary>
-        /// Override GetByIdAsync để eager load các navigation properties
-        /// Include: Profiles, UserRoles với Role
+        /// Override GetByIdAsync d? eager load c�c navigation properties
+        /// Include: Profiles, UserRoles v?i Role
         /// </summary>
         /// <param name="id">User ID</param>
-        /// <returns>User entity hoặc null nếu không tìm thấy</returns>
-        /// <exception cref="ArgumentException">Khi id là Guid.Empty</exception>
+        /// <returns>User entity ho?c null n?u kh�ng t�m th?y</returns>
+        /// <exception cref="ArgumentException">Khi id l� Guid.Empty</exception>
         public override async Task<Domain.Entities.Identity.User?> GetByIdAsync(Guid id)
         {
             if (id == Guid.Empty)
@@ -58,16 +59,16 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         }
 
         /// <summary>
-        /// Override AddAsync để validate và set default values
+        /// Override AddAsync d? validate v� set default values
         /// </summary>
-        /// <param name="entity">User entity cần thêm</param>
-        /// <exception cref="ArgumentNullException">Khi entity là null</exception>
+        /// <param name="entity">User entity c?n th�m</param>
+        /// <exception cref="ArgumentNullException">Khi entity l� null</exception>
         public override async Task AddAsync(Domain.Entities.Identity.User entity)
         {
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            // Set default values nếu chưa có
+            // Set default values n?u chua c�
             if (entity.Id == Guid.Empty)
                 entity.Id = Guid.NewGuid();
 
@@ -81,26 +82,26 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         }
 
         /// <summary>
-        /// Override Update để tự động cập nhật UpdatedAt timestamp
+        /// Override Update d? t? d?ng c?p nh?t UpdatedAt timestamp
         /// </summary>
-        /// <param name="entity">User entity cần update</param>
-        /// <exception cref="ArgumentNullException">Khi entity là null</exception>
+        /// <param name="entity">User entity c?n update</param>
+        /// <exception cref="ArgumentNullException">Khi entity l� null</exception>
         public override void Update(Domain.Entities.Identity.User entity)
         {
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            // Tự động set UpdatedAt
+            // T? d?ng set UpdatedAt
             entity.UpdatedAt = DateTime.UtcNow;
 
             base.Update(entity);
         }
 
         /// <summary>
-        /// Override Delete để validate
+        /// Override Delete d? validate
         /// </summary>
-        /// <param name="entity">User entity cần xóa</param>
-        /// <exception cref="ArgumentNullException">Khi entity là null</exception>
+        /// <param name="entity">User entity c?n x�a</param>
+        /// <exception cref="ArgumentNullException">Khi entity l� null</exception>
         public override void Delete(Domain.Entities.Identity.User entity)
         {
             if (entity == null)
@@ -114,11 +115,11 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         #region IUserRepository Specific Methods
 
         /// <summary>
-        /// Tìm user theo email
+        /// T�m user theo email
         /// Include: Profiles
         /// </summary>
-        /// <param name="email">Email cần tìm</param>
-        /// <returns>User entity hoặc null nếu không tìm thấy</returns>
+        /// <param name="email">Email c?n t�m</param>
+        /// <returns>User entity ho?c null n?u kh�ng t�m th?y</returns>
         public async Task<Domain.Entities.Identity.User?> GetByEmailAsync(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
@@ -130,11 +131,11 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         }
 
         /// <summary>
-        /// Lấy user với TẤT CẢ thông tin chi tiết
+        /// L?y user v?i T?T C? th�ng tin chi ti?t
         /// Include: Profiles, Addresses, Devices, UserRoles > Role > RolePermissions > Permission, RefreshTokens
         /// </summary>
         /// <param name="id">User ID</param>
-        /// <returns>User entity với đầy đủ thông tin hoặc null</returns>
+        /// <returns>User entity v?i d?y d? th�ng tin ho?c null</returns>
         public async Task<Domain.Entities.Identity.User?> GetByIdWithAllDetailsAsync(Guid id)
         {
             if (id == Guid.Empty)
@@ -149,19 +150,19 @@ namespace BookStore.Infrastructure.Repository.Identity.User
                         .ThenInclude(r => r.RolePermissions)
                             .ThenInclude(rp => rp.Permission)
                 .Include(u => u.RefreshTokens)
-                .AsSplitQuery() // Tối ưu performance khi include nhiều collection
+                .AsSplitQuery() // T?i uu performance khi include nhi?u collection
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
         /// <summary>
-        /// Lấy danh sách user có phân trang và tìm kiếm
-        /// Tìm kiếm theo: Email hoặc FullName trong Profile
-        /// Sắp xếp: Mới nhất lên đầu (CreateAt DESC)
+        /// L?y danh s�ch user c� ph�n trang v� t�m ki?m
+        /// T�m ki?m theo: Email ho?c FullName trong Profile
+        /// S?p x?p: M?i nh?t l�n d?u (CreateAt DESC)
         /// </summary>
-        /// <param name="pageNumber">Số trang (bắt đầu từ 1)</param>
-        /// <param name="pageSize">Số lượng item mỗi trang</param>
-        /// <param name="searchTerm">Từ khóa tìm kiếm (optional)</param>
-        /// <returns>Tuple chứa danh sách User và tổng số record</returns>
+        /// <param name="pageNumber">S? trang (b?t d?u t? 1)</param>
+        /// <param name="pageSize">S? lu?ng item m?i trang</param>
+        /// <param name="searchTerm">T? kh�a t�m ki?m (optional)</param>
+        /// <returns>Tuple ch?a danh s�ch User v� t?ng s? record</returns>
         public async Task<(IEnumerable<Domain.Entities.Identity.User> Users, int TotalCount)> GetPagedAsync(
             int pageNumber,
             int pageSize,
@@ -175,7 +176,7 @@ namespace BookStore.Infrastructure.Repository.Identity.User
                 pageSize = 10;
 
             if (pageSize > 20)
-                pageSize = 20; // Giới hạn tối đa 20 items/page
+                pageSize = 20; // Gi?i h?n t?i da 20 items/page
 
             var query = _context.Users
                 .Include(u => u.Profiles)
@@ -208,10 +209,10 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         }
 
         /// <summary>
-        /// Kiểm tra email đã tồn tại trong hệ thống chưa
+        /// Ki?m tra email d� t?n t?i trong h? th?ng chua
         /// </summary>
-        /// <param name="email">Email cần kiểm tra</param>
-        /// <returns>true nếu email đã tồn tại, false nếu chưa</returns>
+        /// <param name="email">Email c?n ki?m tra</param>
+        /// <returns>true n?u email d� t?n t?i, false n?u chua</returns>
         public async Task<bool> ExistsByEmailAsync(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
@@ -222,12 +223,12 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         }
 
         /// <summary>
-        /// Lấy thông tin user cho mục đích authentication
-        /// Chỉ lấy user có IsActive = true
+        /// L?y th�ng tin user cho m?c d�ch authentication
+        /// Ch? l?y user c� IsActive = true
         /// Include: Profiles, UserRoles > Role > RolePermissions > Permission
         /// </summary>
-        /// <param name="email">Email của user</param>
-        /// <returns>User entity với đầy đủ roles và permissions hoặc null</returns>
+        /// <param name="email">Email c?a user</param>
+        /// <returns>User entity v?i d?y d? roles v� permissions ho?c null</returns>
         public async Task<Domain.Entities.Identity.User?> GetUserForAuthenticationAsync(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
@@ -244,11 +245,11 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         }
 
         /// <summary>
-        /// Lấy danh sách tên các permissions của user
-        /// Lấy thông qua UserRoles > Role > RolePermissions > Permission
+        /// L?y danh s�ch t�n c�c permissions c?a user
+        /// L?y th�ng qua UserRoles > Role > RolePermissions > Permission
         /// </summary>
         /// <param name="userId">User ID</param>
-        /// <returns>Danh sách tên permissions (unique)</returns>
+        /// <returns>Danh s�ch t�n permissions (unique)</returns>
         public async Task<IEnumerable<string>> GetUserPermissionNamesAsync(Guid userId)
         {
             if (userId == Guid.Empty)
@@ -269,7 +270,7 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         #region Authentication Operations
 
         /// <summary>
-        /// Xác thực user với email và password hash
+        /// X�c th?c user v?i email v� password hash
         /// </summary>
         public async Task<Domain.Entities.Identity.User?> AuthenticateAsync(string email, string passwordHash)
         {
@@ -290,7 +291,7 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         }
 
         /// <summary>
-        /// Lấy user với Roles và Permissions
+        /// L?y user v?i Roles v� Permissions
         /// </summary>
         public async Task<Domain.Entities.Identity.User?> GetUserWithRolesAndPermissionsAsync(string email)
         {
@@ -308,7 +309,7 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         }
 
         /// <summary>
-        /// Xác minh email của user
+        /// X�c minh email c?a user
         /// </summary>
         public async Task<bool> VerifyEmailAsync(Guid userId)
         {
@@ -331,7 +332,7 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         #region Password Management
 
         /// <summary>
-        /// Cập nhật password mới
+        /// C?p nh?t password m?i
         /// </summary>
         public async Task<bool> UpdatePasswordAsync(Guid userId, string newPasswordHash)
         {
@@ -354,7 +355,7 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         #region Account Management
 
         /// <summary>
-        /// Khóa tài khoản user
+        /// Kh�a t�i kho?n user
         /// </summary>
         public async Task<bool> LockUserAccountAsync(Guid userId)
         {
@@ -373,7 +374,7 @@ namespace BookStore.Infrastructure.Repository.Identity.User
         }
 
         /// <summary>
-        /// Mở khóa tài khoản user
+        /// M? kh�a t�i kho?n user
         /// </summary>
         public async Task<bool> UnlockUserAccountAsync(Guid userId)
         {

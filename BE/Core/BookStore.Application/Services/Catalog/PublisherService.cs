@@ -1,8 +1,10 @@
-﻿using BookStore.Application.Dtos.Catalog.Publisher;
+using BookStore.Application.Dtos.Catalog.Publisher;
 using BookStore.Application.IService;
 using BookStore.Application.IService.Catalog;
 using BookStore.Application.Mappers.Catalog.Publisher;
 using BookStore.Domain.IRepository.Catalog;
+using BookStore.Shared.Exceptions;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Application.Services.Catalog
 {
@@ -54,10 +56,13 @@ namespace BookStore.Application.Services.Catalog
         // Explicit implementation for IGenericService (returns PublisherDto)
         async Task<PublisherDto> IGenericService<PublisherDto, CreatePublisherDto, UpdatePublisherDto>.AddAsync(CreatePublisherDto dto)
         {
+            // Validate name
+            Guard.AgainstNullOrWhiteSpace(dto.Name, nameof(dto.Name));
+
             // Validate name exists
             if (await _publisherRepository.IsNameExistsAsync(dto.Name))
             {
-                throw new InvalidOperationException($"Nhà xuất bản với tên '{dto.Name}' đã tồn tại");
+                throw new UserFriendlyException($"Nhà xuất bản với tên '{dto.Name}' đã tồn tại");
             }
 
             var publisher = dto.ToEntity();
@@ -71,10 +76,13 @@ namespace BookStore.Application.Services.Catalog
         // Public implementation for IPublisherService (returns PublisherDetailDto)
         public async Task<PublisherDetailDto> AddAsync(CreatePublisherDto dto)
         {
+            // Validate name
+            Guard.AgainstNullOrWhiteSpace(dto.Name, nameof(dto.Name));
+
             // Validate name exists
             if (await _publisherRepository.IsNameExistsAsync(dto.Name))
             {
-                throw new InvalidOperationException($"Nhà xuất bản với tên '{dto.Name}' đã tồn tại");
+                throw new UserFriendlyException($"Nhà xuất bản với tên '{dto.Name}' đã tồn tại");
             }
 
             var publisher = dto.ToEntity();
@@ -91,13 +99,16 @@ namespace BookStore.Application.Services.Catalog
             var publisher = await _publisherRepository.GetByIdAsync(dto.Id);
             if (publisher == null)
             {
-                throw new InvalidOperationException("Nhà xuất bản không tồn tại");
+                throw new NotFoundException("Không tìm thấy nhà xuất bản");
             }
+
+            // Validate name
+            Guard.AgainstNullOrWhiteSpace(dto.Name, nameof(dto.Name));
 
             // Validate name exists (exclude current publisher)
             if (await _publisherRepository.IsNameExistsAsync(dto.Name, dto.Id))
             {
-                throw new InvalidOperationException($"Nhà xuất bản với tên '{dto.Name}' đã được sử dụng");
+                throw new UserFriendlyException($"Nhà xuất bản với tên '{dto.Name}' đã tồn tại");
             }
 
             publisher.UpdateFromDto(dto);
@@ -114,13 +125,13 @@ namespace BookStore.Application.Services.Catalog
             var publisher = await _publisherRepository.GetByIdAsync(dto.Id);
             if (publisher == null)
             {
-                throw new InvalidOperationException("Nhà xuất bản không tồn tại");
+                throw new NotFoundException("Không tìm thấy nhà xuất bản");
             }
 
             // Validate name exists (exclude current publisher)
             if (await _publisherRepository.IsNameExistsAsync(dto.Name, dto.Id))
             {
-                throw new InvalidOperationException($"Nhà xuất bản với tên '{dto.Name}' đã được sử dụng");
+                throw new UserFriendlyException($"Nhà xuất bản với tên '{dto.Name}' đã được sử dụng");
             }
 
             publisher.UpdateFromDto(dto);

@@ -1,5 +1,6 @@
 ﻿using BookStore.Application.Dtos.Catalog.Book;
 using BookStore.Application.IService;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Application.IService.Catalog
 {
@@ -11,7 +12,7 @@ namespace BookStore.Application.IService.Catalog
         new Task<BookDetailDto> UpdateAsync(UpdateBookDto dto);
 
         // Custom GetAllAsync with pagination and filters
-        Task<(List<BookDto> Items, int TotalCount)> GetAllAsync(
+        Task<PagedResult<BookDto>> GetAllAsync(
             int pageNumber = 1,
             int pageSize = 10,
             string? searchTerm = null,

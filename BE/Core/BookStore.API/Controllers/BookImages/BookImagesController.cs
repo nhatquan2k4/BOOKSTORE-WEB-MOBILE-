@@ -1,12 +1,12 @@
 using BookStore.Application.Dtos.Catalog.BookImages;
 using BookStore.Application.IService.Catalog;
+using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers.BookImages
 {
-    [ApiController]
     [Route("api/books/{bookId:guid}/images")]
-    public class BookImagesController : ControllerBase
+    public class BookImagesController : ApiControllerBase
     {
         private readonly IBookImageService _bookImageService;
 
@@ -145,9 +145,8 @@ namespace BookStore.API.Controllers.BookImages
     /// <summary>
     /// Controller riêng cho các operations trên individual image
     /// </summary>
-    [ApiController]
     [Route("api/images")]
-    public class BookImageController : ControllerBase
+    public class BookImageController : ApiControllerBase
     {
         private readonly IBookImageService _bookImageService;
 

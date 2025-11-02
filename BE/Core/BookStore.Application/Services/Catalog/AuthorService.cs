@@ -3,6 +3,8 @@ using BookStore.Application.IService;
 using BookStore.Application.IService.Catalog;
 using BookStore.Application.Mappers.Catalog.Author;
 using BookStore.Domain.IRepository.Catalog;
+using BookStore.Shared.Exceptions;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Application.Services.Catalog
 {
@@ -54,10 +56,13 @@ namespace BookStore.Application.Services.Catalog
         // Explicit implementation for IGenericService (returns AuthorDto)
         async Task<AuthorDto> IGenericService<AuthorDto, CreateAuthorDto, UpdateAuthorDto>.AddAsync(CreateAuthorDto dto)
         {
+            // Validate name
+            Guard.AgainstNullOrWhiteSpace(dto.Name, nameof(dto.Name));
+
             // Validate name exists
             if (await _authorRepository.IsNameExistsAsync(dto.Name))
             {
-                throw new InvalidOperationException($"Tác giả với tên '{dto.Name}' đã tồn tại");
+                throw new UserFriendlyException($"Tác giả với tên '{dto.Name}' đã tồn tại");
             }
 
             var author = dto.ToEntity();
@@ -71,10 +76,13 @@ namespace BookStore.Application.Services.Catalog
         // Public implementation for IAuthorService (returns AuthorDetailDto)
         public async Task<AuthorDetailDto> AddAsync(CreateAuthorDto dto)
         {
+            // Validate name
+            Guard.AgainstNullOrWhiteSpace(dto.Name, nameof(dto.Name));
+
             // Validate name exists
             if (await _authorRepository.IsNameExistsAsync(dto.Name))
             {
-                throw new InvalidOperationException($"Tác giả với tên '{dto.Name}' đã tồn tại");
+                throw new UserFriendlyException($"Tác giả với tên '{dto.Name}' đã tồn tại");
             }
 
             var author = dto.ToEntity();
@@ -91,13 +99,16 @@ namespace BookStore.Application.Services.Catalog
             var author = await _authorRepository.GetByIdAsync(dto.Id);
             if (author == null)
             {
-                throw new InvalidOperationException("Tác giả không tồn tại");
+                throw new NotFoundException($"Không tìm thấy tác giả với ID {dto.Id}");
             }
+
+            // Validate name
+            Guard.AgainstNullOrWhiteSpace(dto.Name, nameof(dto.Name));
 
             // Validate name exists (exclude current author)
             if (await _authorRepository.IsNameExistsAsync(dto.Name, dto.Id))
             {
-                throw new InvalidOperationException($"Tác giả với tên '{dto.Name}' đã được sử dụng");
+                throw new UserFriendlyException($"Tác giả với tên '{dto.Name}' đã được sử dụng");
             }
 
             author.UpdateFromDto(dto);
@@ -114,13 +125,16 @@ namespace BookStore.Application.Services.Catalog
             var author = await _authorRepository.GetByIdAsync(dto.Id);
             if (author == null)
             {
-                throw new InvalidOperationException("Tác giả không tồn tại");
+                throw new NotFoundException($"Không tìm thấy tác giả với ID {dto.Id}");
             }
+
+            // Validate name
+            Guard.AgainstNullOrWhiteSpace(dto.Name, nameof(dto.Name));
 
             // Validate name exists (exclude current author)
             if (await _authorRepository.IsNameExistsAsync(dto.Name, dto.Id))
             {
-                throw new InvalidOperationException($"Tác giả với tên '{dto.Name}' đã được sử dụng");
+                throw new UserFriendlyException($"Tác giả với tên '{dto.Name}' đã được sử dụng");
             }
 
             author.UpdateFromDto(dto);

@@ -1,4 +1,5 @@
 ﻿using BookStore.Application.Dtos.Catalog.Category;
+using BookStore.Shared.Utilities;
 using CategoryEntity = BookStore.Domain.Entities.Catalog.Category;
 
 namespace BookStore.Application.Mappers.Catalog.Category
@@ -41,8 +42,8 @@ namespace BookStore.Application.Mappers.Catalog.Category
             return new CategoryEntity
             {
                 Id = Guid.NewGuid(),
-                Name = dto.Name,
-                Description = dto.Description,
+                Name = dto.Name.NormalizeSpace(),
+                Description = dto.Description?.NormalizeSpace(),
                 ParentId = dto.ParentId
             };
         }
@@ -52,8 +53,8 @@ namespace BookStore.Application.Mappers.Catalog.Category
         /// </summary>
         public static void UpdateFromDto(this CategoryEntity category, UpdateCategoryDto dto)
         {
-            category.Name = dto.Name;
-            category.Description = dto.Description;
+            category.Name = dto.Name.NormalizeSpace();
+            category.Description = dto.Description?.NormalizeSpace();
             category.ParentId = dto.ParentId;
         }
 

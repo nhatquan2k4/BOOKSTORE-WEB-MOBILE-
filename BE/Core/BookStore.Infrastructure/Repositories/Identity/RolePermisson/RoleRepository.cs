@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BookStore.Shared.Utilities;
+using BookStore.Shared.Exceptions;
 
 namespace BookStore.Infrastructure.Repository.Identity.RolePermisson
 {
@@ -27,8 +29,7 @@ namespace BookStore.Infrastructure.Repository.Identity.RolePermisson
 
         public override async Task<Role?> GetByIdAsync(Guid id)
         {
-            if (id == Guid.Empty)
-                throw new ArgumentException("Id cannot be empty", nameof(id));
+            Guard.Against(id == Guid.Empty, "Id không được để trống");
 
             return await _context.Roles
                 .Include(r => r.RolePermissions)
@@ -38,32 +39,30 @@ namespace BookStore.Infrastructure.Repository.Identity.RolePermisson
 
         public override async Task AddAsync(Role entity)
         {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
+            Guard.Against(entity == null, "Entity không được null");
+            Guard.AgainstNullOrWhiteSpace(entity!.Name, nameof(entity.Name));
 
             if (entity.Id == Guid.Empty)
                 entity.Id = Guid.NewGuid();
 
             if (await ExistsByNameAsync(entity.Name))
-                throw new InvalidOperationException($"Role with name '{entity.Name}' already exists");
+                throw new UserFriendlyException($"Role với tên '{entity.Name}' đã tồn tại");
 
             await base.AddAsync(entity);
         }
 
         public override void Update(Role entity)
         {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
+            Guard.Against(entity == null, "Entity không được null");
 
-            base.Update(entity);
+            base.Update(entity!);
         }
 
         public override void Delete(Role entity)
         {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
+            Guard.Against(entity == null, "Entity không được null");
 
-            base.Delete(entity);
+            base.Delete(entity!);
         }
 
         public async Task<Role?> GetByNameAsync(string name)

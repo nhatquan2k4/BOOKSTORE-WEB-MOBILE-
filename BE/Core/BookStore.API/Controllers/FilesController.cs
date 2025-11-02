@@ -1,12 +1,13 @@
 using BookStore.Application.IService;
 using Microsoft.AspNetCore.Authorization;
+using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class FilesController : ControllerBase
+public class FilesController : ApiControllerBase
 {
     private readonly IMinIOService _minioService;
     private readonly ILogger<FilesController> _logger;

@@ -1,12 +1,11 @@
-﻿using BookStore.Application.Dtos.Catalog.Author;
+﻿using BookStore.API.Base;
+using BookStore.Application.Dtos.Catalog.Author;
 using BookStore.Application.IService.Catalog;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers.Author
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthorController : ControllerBase
+    public class AuthorController : ApiControllerBase
     {
         private readonly IAuthorService _authorService;
 
