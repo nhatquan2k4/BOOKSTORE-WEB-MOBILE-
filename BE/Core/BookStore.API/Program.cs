@@ -191,11 +191,9 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
-        var logger = services.GetRequiredService<ILogger<Program>>();
-
-        logger.LogInformation("Applying database migrations...");
+        
+        // Apply migrations silently
         context.Database.Migrate();
-        logger.LogInformation("Database migrations completed successfully");
     }
     catch (Exception ex)
     {

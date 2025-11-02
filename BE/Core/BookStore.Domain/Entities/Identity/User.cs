@@ -12,7 +12,7 @@ namespace BookStore.Domain.Entities.Identity
 
         public string Email { get; set; } = null!;  // Email duy nhất dùng làm tên đăng nhập
         public string PasswordHash { get; set; } = null!; // Mật khẩu đã được băm
-        public bool IsActive { get; set; } = false; // Trạng thái kích hoạt tài khoản
+        public bool IsActive { get; set; } = true; // Trạng thái kích hoạt tài khoản
         public DateTime CreateAt { get; set; } = DateTime.UtcNow; // Thời gian tạo tài khoản
         public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow; // Thời gian cập nhật tài khoản gần nhất
 

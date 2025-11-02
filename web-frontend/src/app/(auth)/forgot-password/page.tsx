@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
+import { authApi } from "@/lib/api/auth";
 import { AuthCard, AuthCardIcon } from "@/components/auth";
 import { FormField, FormLabel, FormError } from "@/components/auth";
 import { Button } from "@/components/ui/Button";
@@ -35,16 +36,17 @@ export default function ForgotPasswordPage() {
     setSuccessMessage("");
     
     try {
-      // TODO: Replace with actual API call
-      // await authApi.forgotPassword(data.email);
+      const response = await authApi.forgotPassword(data.email);
       
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
-      setEmailSent(true);
-      setSuccessMessage(
-        `Chúng tôi đã gửi email hướng dẫn đặt lại mật khẩu đến ${data.email}. Vui lòng kiểm tra hộp thư của bạn.`
-      );
+      if (response.success) {
+        setEmailSent(true);
+        setSuccessMessage(
+          response.message || 
+          `Chúng tôi đã gửi email hướng dẫn đặt lại mật khẩu đến ${data.email}. Vui lòng kiểm tra hộp thư của bạn.`
+        );
+      } else {
+        setErrorMessage(response.message || "Có lỗi xảy ra. Vui lòng thử lại.");
+      }
     } catch (err: any) {
       setErrorMessage(
         err?.response?.data?.message || 
