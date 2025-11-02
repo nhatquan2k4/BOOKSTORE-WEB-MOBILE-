@@ -1,12 +1,13 @@
 using BookStore.Application.Dtos.Catalog.Publisher;
 using BookStore.Application.IService.Catalog;
+using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers.Publisher
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PublisherController : ControllerBase
+    public class PublisherController : ApiControllerBase
     {
         private readonly IPublisherService _publisherService;
 

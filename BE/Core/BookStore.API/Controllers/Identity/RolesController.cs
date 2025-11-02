@@ -1,6 +1,7 @@
 using BookStore.Application.Dtos.Identity.Role;
 using BookStore.Application.IService.Identity.Role;
 using Microsoft.AspNetCore.Authorization;
+using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers
@@ -8,7 +9,7 @@ namespace BookStore.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(Roles = "Admin")]
-    public class RolesController : ControllerBase
+    public class RolesController : ApiControllerBase
     {
         private readonly IRoleService _roleService;
 

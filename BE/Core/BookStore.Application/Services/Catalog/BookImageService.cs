@@ -4,6 +4,8 @@ using BookStore.Application.IService.Catalog;
 using BookStore.Application.Mappers.Catalog.BookImages;
 using BookStore.Domain.Entities.Catalog;
 using BookStore.Domain.IRepository.Catalog;
+using BookStore.Shared.Exceptions;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Application.Services.Catalog
 {
@@ -44,17 +46,14 @@ namespace BookStore.Application.Services.Catalog
 
         public async Task<BookImageDto> UploadImageAsync(CreateBookImageDto dto)
         {
+            // Validate ImageUrl
+            Guard.AgainstNullOrWhiteSpace(dto.ImageUrl, nameof(dto.ImageUrl));
+
             // Validate book exists
             var book = await _bookRepository.GetByIdAsync(dto.BookId);
             if (book == null)
             {
-                throw new InvalidOperationException($"Book with ID {dto.BookId} not found");
-            }
-
-            // Validate ImageUrl
-            if (string.IsNullOrWhiteSpace(dto.ImageUrl))
-            {
-                throw new InvalidOperationException("ImageUrl is required");
+                throw new NotFoundException($"Không tìm thấy sách với ID {dto.BookId}");
             }
 
             // If this image is set as cover, unset previous cover
@@ -82,22 +81,15 @@ namespace BookStore.Application.Services.Catalog
 
         public async Task<IEnumerable<BookImageDto>> UploadImagesAsync(UploadBookImagesDto dto)
         {
+            // Validate all URLs
+            Guard.Against(dto.ImageUrls == null || !dto.ImageUrls.Any(), "Phải cung cấp ít nhất một URL hình ảnh");
+            Guard.Against(dto.ImageUrls!.Count > 10, "Chỉ có thể upload tối đa 10 hình ảnh cùng lúc");
+
             // Validate book exists
             var book = await _bookRepository.GetByIdAsync(dto.BookId);
             if (book == null)
             {
-                throw new InvalidOperationException($"Book with ID {dto.BookId} not found");
-            }
-
-            // Validate all URLs
-            if (dto.ImageUrls == null || !dto.ImageUrls.Any())
-            {
-                throw new InvalidOperationException("No image URLs provided");
-            }
-
-            if (dto.ImageUrls.Count > 10)
-            {
-                throw new InvalidOperationException("Maximum 10 images can be uploaded at once");
+                throw new NotFoundException($"Không tìm thấy sách với ID {dto.BookId}");
             }
 
             // Unset current cover if a new cover will be set
@@ -149,7 +141,7 @@ namespace BookStore.Application.Services.Catalog
             var bookImage = await _bookImageRepository.GetByIdAsync(dto.Id);
             if (bookImage == null)
             {
-                throw new InvalidOperationException($"Book image with ID {dto.Id} not found");
+                throw new NotFoundException($"Không tìm thấy hình ảnh sách với ID {dto.Id}");
             }
 
             // If setting as cover, unset previous cover
@@ -230,9 +222,14 @@ namespace BookStore.Application.Services.Catalog
         {
             // Validate image exists and belongs to the book
             var image = await _bookImageRepository.GetByIdAsync(dto.ImageId);
-            if (image == null || image.BookId != dto.BookId)
+            if (image == null)
             {
-                throw new InvalidOperationException("Image not found or does not belong to this book");
+                throw new NotFoundException($"Không tìm thấy hình ảnh với ID {dto.ImageId}");
+            }
+
+            if (image.BookId != dto.BookId)
+            {
+                throw new UserFriendlyException($"Hình ảnh không thuộc về sách với ID {dto.BookId}");
             }
 
             // Unset current cover

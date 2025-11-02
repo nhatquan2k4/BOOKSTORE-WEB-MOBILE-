@@ -1,8 +1,10 @@
-﻿using BookStore.Application.Dtos.Catalog.Category;
+using BookStore.Application.Dtos.Catalog.Category;
 using BookStore.Application.IService;
 using BookStore.Application.IService.Catalog;
 using BookStore.Application.Mappers.Catalog.Category;
 using BookStore.Domain.IRepository.Catalog;
+using BookStore.Shared.Exceptions;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Application.Services.Catalog
 {
@@ -85,13 +87,16 @@ namespace BookStore.Application.Services.Catalog
         // Explicit implementation for IGenericService (returns CategoryDto)
         async Task<CategoryDto> IGenericService<CategoryDto, CreateCategoryDto, UpdateCategoryDto>.AddAsync(CreateCategoryDto dto)
         {
+            // Validate name
+            Guard.AgainstNullOrWhiteSpace(dto.Name, nameof(dto.Name));
+
             // Validate parent exists if provided
             if (dto.ParentId.HasValue)
             {
                 var parent = await _categoryRepository.GetByIdAsync(dto.ParentId.Value);
                 if (parent == null)
                 {
-                    throw new InvalidOperationException("Danh mục cha không tồn tại");
+                    throw new NotFoundException("Không tìm thấy danh mục cha");
                 }
             }
 
@@ -106,13 +111,16 @@ namespace BookStore.Application.Services.Catalog
         // Public implementation for ICategoryService (returns CategoryDetailDto)
         public async Task<CategoryDetailDto> AddAsync(CreateCategoryDto dto)
         {
+            // Validate name
+            Guard.AgainstNullOrWhiteSpace(dto.Name, nameof(dto.Name));
+
             // Validate parent exists if provided
             if (dto.ParentId.HasValue)
             {
                 var parent = await _categoryRepository.GetByIdAsync(dto.ParentId.Value);
                 if (parent == null)
                 {
-                    throw new InvalidOperationException("Danh mục cha không tồn tại");
+                    throw new NotFoundException("Không tìm thấy danh mục cha");
                 }
             }
 
@@ -130,21 +138,24 @@ namespace BookStore.Application.Services.Catalog
             var category = await _categoryRepository.GetByIdAsync(dto.Id);
             if (category == null)
             {
-                throw new InvalidOperationException("Danh mục không tồn tại");
+                throw new NotFoundException("Không tìm thấy danh mục");
             }
+
+            // Validate name
+            Guard.AgainstNullOrWhiteSpace(dto.Name, nameof(dto.Name));
 
             // Validate parent exists if provided
             if (dto.ParentId.HasValue)
             {
                 if (dto.ParentId.Value == dto.Id)
                 {
-                    throw new InvalidOperationException("Danh mục không thể là danh mục cha của chính nó");
+                    throw new UserFriendlyException("Danh mục không thể là danh mục cha của chính nó");
                 }
 
                 var parent = await _categoryRepository.GetByIdAsync(dto.ParentId.Value);
                 if (parent == null)
                 {
-                    throw new InvalidOperationException("Danh mục cha không tồn tại");
+                    throw new NotFoundException("Không tìm thấy danh mục cha");
                 }
 
                 // Check if new parent is a descendant (would create circular reference)
@@ -153,7 +164,7 @@ namespace BookStore.Application.Services.Catalog
                 {
                     if (current.ParentId == dto.Id)
                     {
-                        throw new InvalidOperationException("Không thể chọn danh mục con làm danh mục cha");
+                        throw new UserFriendlyException("Không thể chọn danh mục con làm danh mục cha");
                     }
                     current = current.Parent;
                 }
@@ -173,7 +184,7 @@ namespace BookStore.Application.Services.Catalog
             var category = await _categoryRepository.GetByIdAsync(dto.Id);
             if (category == null)
             {
-                throw new InvalidOperationException("Danh mục không tồn tại");
+                throw new NotFoundException("Không tìm thấy danh mục");
             }
 
             // Validate parent exists if provided
@@ -181,13 +192,13 @@ namespace BookStore.Application.Services.Catalog
             {
                 if (dto.ParentId.Value == dto.Id)
                 {
-                    throw new InvalidOperationException("Danh mục không thể là danh mục cha của chính nó");
+                    throw new UserFriendlyException("Danh mục không thể là danh mục cha của chính nó");
                 }
 
                 var parent = await _categoryRepository.GetByIdAsync(dto.ParentId.Value);
                 if (parent == null)
                 {
-                    throw new InvalidOperationException("Danh mục cha không tồn tại");
+                    throw new NotFoundException("Không tìm thấy danh mục cha");
                 }
 
                 // Check if new parent is a descendant (would create circular reference)
@@ -196,7 +207,7 @@ namespace BookStore.Application.Services.Catalog
                 {
                     if (current.ParentId == dto.Id)
                     {
-                        throw new InvalidOperationException("Không thể chọn danh mục con làm danh mục cha");
+                        throw new UserFriendlyException("Không thể chọn danh mục con làm danh mục cha");
                     }
                     current = current.Parent;
                 }
@@ -215,7 +226,7 @@ namespace BookStore.Application.Services.Catalog
             // Check if category has subcategories
             if (await _categoryRepository.HasSubCategoriesAsync(id))
             {
-                throw new InvalidOperationException("Không thể xóa danh mục có danh mục con");
+                throw new UserFriendlyException("Không thể xóa danh mục có danh mục con");
             }
 
             var category = await _categoryRepository.GetByIdAsync(id);

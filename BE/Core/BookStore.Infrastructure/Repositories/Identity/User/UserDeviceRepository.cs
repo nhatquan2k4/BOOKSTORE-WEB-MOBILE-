@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Infrastructure.Repository.Identity.User
 {
@@ -27,8 +28,7 @@ namespace BookStore.Infrastructure.Repository.Identity.User
 
         public override async Task<UserDevice?> GetByIdAsync(Guid id)
         {
-            if (id == Guid.Empty)
-                throw new ArgumentException("Id cannot be empty", nameof(id));
+            Guard.Against(id == Guid.Empty, "Id không được để trống");
 
             return await _context.UserDevices
                 .Include(ud => ud.User)
@@ -37,10 +37,9 @@ namespace BookStore.Infrastructure.Repository.Identity.User
 
         public override async Task AddAsync(UserDevice entity)
         {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
+            Guard.Against(entity == null, "Entity không được null");
 
-            if (entity.Id == Guid.Empty)
+            if (entity!.Id == Guid.Empty)
                 entity.Id = Guid.NewGuid();
 
             await base.AddAsync(entity);
@@ -48,18 +47,16 @@ namespace BookStore.Infrastructure.Repository.Identity.User
 
         public override void Update(UserDevice entity)
         {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
+            Guard.Against(entity == null, "Entity không được null");
 
-            base.Update(entity);
+            base.Update(entity!);
         }
 
         public override void Delete(UserDevice entity)
         {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
+            Guard.Against(entity == null, "Entity không được null");
 
-            base.Delete(entity);
+            base.Delete(entity!);
         }
 
         public async Task<IEnumerable<UserDevice>> GetByUserIdAsync(Guid userId)
@@ -94,7 +91,7 @@ namespace BookStore.Infrastructure.Repository.Identity.User
             if (userDevice != null)
             {
                 userDevice.LastLoginAt = DateTime.UtcNow;
-                
+
                 if (!string.IsNullOrWhiteSpace(ipAddress))
                 {
                     userDevice.LastLoginIp = ipAddress;
