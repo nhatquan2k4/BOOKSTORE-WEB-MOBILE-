@@ -36,9 +36,16 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
 
-  // Check if redirected due to token expiry
+  // Check if redirected due to token expiry or email verification
   useEffect(() => {
-    // Check URL parameter
+    // Check URL parameter for email verification
+    if (searchParams.get('verified') === 'true') {
+      setInfoMessage("🎉 Email đã được xác minh thành công! Bạn có thể đăng nhập ngay bây giờ.");
+      // Clear the parameter from URL
+      router.replace('/login');
+    }
+    
+    // Check URL parameter for expired session
     if (searchParams.get('expired') === 'true') {
       setInfoMessage("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
       // Clear the parameter from URL

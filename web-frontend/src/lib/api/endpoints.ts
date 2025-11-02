@@ -7,6 +7,8 @@ export const API_ENDPOINTS = {
     LOGOUT: "/Auth/logout",
     REFRESH: "/Auth/refresh-token",
     ME: "/Auth/me",
+    VERIFY_EMAIL: "/EmailVerification/verify",
+    RESEND_VERIFICATION: "/EmailVerification/resend",
   },
 
   // Books
@@ -59,8 +61,9 @@ export const API_ENDPOINTS = {
   PAYMENTS: {
     WEBHOOK: "/payments/webhook",
     BY_ORDER: (orderId: string) => `/payments/order/${orderId}`,
-    CREATE_QR: '/api/payment/vietqr/create-qr',
-    CHECK_STATUS: (orderId: string) => `/api/payment/check-status?orderId=${orderId}`,
+    CREATE_QR: "/api/payment/vietqr/create-qr",
+    CHECK_STATUS: (orderId: string) =>
+      `/api/payment/check-status?orderId=${orderId}`,
   },
 
   // Rentals

@@ -445,7 +445,7 @@ namespace BookStore.Application.Services.Catalog
                                                         p.DiscountId.HasValue)
                                            .OrderByDescending(p => p.EffectiveFrom)
                                            .FirstOrDefault()?.Amount,
-                StockQuantity = book.StockItem?.Quantity,
+                StockQuantity = book.StockItem?.QuantityOnHand,
                 AverageRating = book.Reviews?.Any() == true ? book.Reviews.Average(r => r.Rating) : null,
                 TotalReviews = book.Reviews?.Count ?? 0
             };

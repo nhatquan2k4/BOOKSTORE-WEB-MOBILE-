@@ -50,4 +50,20 @@ export const authApi = {
   me: async (): Promise<ApiResponse<UserInfo>> => {
     return api.get(API_ENDPOINTS.AUTH.ME);
   },
+
+  /**
+   * Verify email with token
+   */
+  verifyEmail: async (token: string): Promise<ApiResponse<void>> => {
+    return api.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, { token });
+  },
+
+  /**
+   * Resend verification email
+   */
+  resendVerificationEmail: async (
+    email: string
+  ): Promise<ApiResponse<void>> => {
+    return api.post(API_ENDPOINTS.AUTH.RESEND_VERIFICATION, { email });
+  },
 };

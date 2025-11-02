@@ -57,11 +57,16 @@ export default function RegisterPage() {
         phoneNumber: data.phoneNumber,
       });
       
-      // Show success message and redirect
-      setSuccessMessage("Đăng ký thành công! Đang chuyển hướng...");
-      setTimeout(() => {
-        router.push("/");
-      }, 1500);
+      // Show success message with email verification notice
+      setSuccessMessage(
+        "✅ Đăng ký thành công! Chúng tôi đã gửi email xác minh đến " + data.email + 
+        ". Vui lòng kiểm tra hộp thư và xác minh email để kích hoạt tài khoản."
+      );
+      
+      // Don't auto-redirect, let user read the message
+      // setTimeout(() => {
+      //   router.push("/login");
+      // }, 5000);
     } catch (err: any) {
       setErrorMessage(
         err?.message || 

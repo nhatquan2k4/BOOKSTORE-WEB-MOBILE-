@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BookStore.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class updateWarehouse : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -317,7 +317,7 @@ namespace BookStore.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
                     ISBN = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: true),
                     PublicationYear = table.Column<int>(type: "int", nullable: false),
                     Language = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false, defaultValue: "vi"),
                     IsAvailable = table.Column<bool>(type: "bit", nullable: false),
@@ -419,6 +419,29 @@ namespace BookStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "EmailVerificationTokens",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Token = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ExpiryDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsUsed = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EmailVerificationTokens", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_EmailVerificationTokens_Users_UserId",
+                        column: x => x.UserId,
+                        principalSchema: "identity",
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Notifications",
                 schema: "system",
                 columns: table => new
@@ -437,6 +460,29 @@ namespace BookStore.Infrastructure.Migrations
                     table.PrimaryKey("PK_Notifications", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Notifications_Users_UserId",
+                        column: x => x.UserId,
+                        principalSchema: "identity",
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PasswordResetTokens",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Token = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ExpiryDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsUsed = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PasswordResetTokens", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PasswordResetTokens_Users_UserId",
                         column: x => x.UserId,
                         principalSchema: "identity",
                         principalTable: "Users",
@@ -900,8 +946,7 @@ namespace BookStore.Infrastructure.Migrations
                     QuantityOnHand = table.Column<int>(type: "int", nullable: false),
                     ReservedQuantity = table.Column<int>(type: "int", nullable: false),
                     SoldQuantity = table.Column<int>(type: "int", nullable: false),
-                    LastUpdated = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    BookId1 = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    LastUpdated = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -913,12 +958,6 @@ namespace BookStore.Infrastructure.Migrations
                         principalTable: "Books",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_StockItems_Books_BookId1",
-                        column: x => x.BookId1,
-                        principalSchema: "catalog",
-                        principalTable: "Books",
-                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_StockItems_Warehouses_WarehouseId",
                         column: x => x.WarehouseId,
@@ -1337,13 +1376,6 @@ namespace BookStore.Infrastructure.Migrations
                 column: "BookFormatId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Books_ISBN",
-                schema: "catalog",
-                table: "Books",
-                column: "ISBN",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Books_PublisherId",
                 schema: "catalog",
                 table: "Books",
@@ -1404,6 +1436,11 @@ namespace BookStore.Infrastructure.Migrations
                 table: "Discounts",
                 column: "Code",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmailVerificationTokens_UserId",
+                table: "EmailVerificationTokens",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ErrorLogs_IsResolved_CreatedAt",
@@ -1476,6 +1513,11 @@ namespace BookStore.Infrastructure.Migrations
                 schema: "ordering",
                 table: "OrderStatusLogs",
                 column: "OrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PasswordResetTokens_UserId",
+                table: "PasswordResetTokens",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PaymentTransactions_OrderId",
@@ -1613,14 +1655,8 @@ namespace BookStore.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_StockItems_BookId",
                 table: "StockItems",
-                column: "BookId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_StockItems_BookId1",
-                table: "StockItems",
-                column: "BookId1",
-                unique: true,
-                filter: "[BookId1] IS NOT NULL");
+                column: "BookId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_StockItems_WarehouseId_BookId",
@@ -1703,6 +1739,9 @@ namespace BookStore.Infrastructure.Migrations
                 schema: "ordering");
 
             migrationBuilder.DropTable(
+                name: "EmailVerificationTokens");
+
+            migrationBuilder.DropTable(
                 name: "ErrorLogs",
                 schema: "system");
 
@@ -1724,6 +1763,9 @@ namespace BookStore.Infrastructure.Migrations
             migrationBuilder.DropTable(
                 name: "OrderStatusLogs",
                 schema: "ordering");
+
+            migrationBuilder.DropTable(
+                name: "PasswordResetTokens");
 
             migrationBuilder.DropTable(
                 name: "PaymentProviders",

@@ -175,16 +175,10 @@ namespace BookStore.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
                     b.Property<string>("Edition")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ISBN")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -217,9 +211,6 @@ namespace BookStore.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BookFormatId");
-
-                    b.HasIndex("ISBN")
-                        .IsUnique();
 
                     b.HasIndex("PublisherId");
 
@@ -469,6 +460,64 @@ namespace BookStore.Infrastructure.Migrations
                     b.HasIndex("BookId", "UserId");
 
                     b.ToTable("Reviews", "common");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Identity.EmailVerificationToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EmailVerificationTokens");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Identity.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetTokens");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Identity.Permission", b =>
@@ -1169,9 +1218,6 @@ namespace BookStore.Infrastructure.Migrations
                     b.Property<Guid>("BookId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("BookId1")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("LastUpdated")
                         .HasColumnType("datetime2");
 
@@ -1189,11 +1235,8 @@ namespace BookStore.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BookId");
-
-                    b.HasIndex("BookId1")
-                        .IsUnique()
-                        .HasFilter("[BookId1] IS NOT NULL");
+                    b.HasIndex("BookId")
+                        .IsUnique();
 
                     b.HasIndex("WarehouseId", "BookId")
                         .IsUnique();
@@ -1844,7 +1887,7 @@ namespace BookStore.Infrastructure.Migrations
 
             modelBuilder.Entity("BookStore.Domain.Entities.Catalog.Book", b =>
                 {
-                    b.HasOne("BookStore.Domain.Entities.Catalog.BookFormat", null)
+                    b.HasOne("BookStore.Domain.Entities.Catalog.BookFormat", "BookFormat")
                         .WithMany("Books")
                         .HasForeignKey("BookFormatId");
 
@@ -1854,13 +1897,37 @@ namespace BookStore.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.OwnsOne("BookStore.Domain.ValueObjects.ISBN", "ISBN", b1 =>
+                        {
+                            b1.Property<Guid>("BookId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("nvarchar(50)")
+                                .HasColumnName("ISBN");
+
+                            b1.HasKey("BookId");
+
+                            b1.ToTable("Books", "catalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookId");
+                        });
+
+                    b.Navigation("BookFormat");
+
+                    b.Navigation("ISBN")
+                        .IsRequired();
+
                     b.Navigation("Publisher");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Catalog.BookAuthor", b =>
                 {
                     b.HasOne("BookStore.Domain.Entities.Catalog.Author", "Author")
-                        .WithMany("BookAuthor")
+                        .WithMany("BookAuthors")
                         .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1953,6 +2020,28 @@ namespace BookStore.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Book");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Identity.EmailVerificationToken", b =>
+                {
+                    b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
+                        .WithMany("EmailVerificationTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Identity.PasswordResetToken", b =>
+                {
+                    b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -2165,14 +2254,10 @@ namespace BookStore.Infrastructure.Migrations
             modelBuilder.Entity("BookStore.Domain.Entities.Pricing_Inventory.StockItem", b =>
                 {
                     b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
-                        .WithMany()
-                        .HasForeignKey("BookId")
+                        .WithOne("StockItem")
+                        .HasForeignKey("BookStore.Domain.Entities.Pricing_Inventory.StockItem", "BookId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("BookStore.Domain.Entities.Catalog.Book", null)
-                        .WithOne("StockItem")
-                        .HasForeignKey("BookStore.Domain.Entities.Pricing_Inventory.StockItem", "BookId1");
 
                     b.HasOne("BookStore.Domain.Entities.Pricing___Inventory.Warehouse", null)
                         .WithMany("StockItems")
@@ -2341,7 +2426,7 @@ namespace BookStore.Infrastructure.Migrations
 
             modelBuilder.Entity("BookStore.Domain.Entities.Catalog.Author", b =>
                 {
-                    b.Navigation("BookAuthor");
+                    b.Navigation("BookAuthors");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Catalog.Book", b =>
@@ -2405,6 +2490,8 @@ namespace BookStore.Infrastructure.Migrations
                     b.Navigation("Carts");
 
                     b.Navigation("Devices");
+
+                    b.Navigation("EmailVerificationTokens");
 
                     b.Navigation("Notifications");
 
