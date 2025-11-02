@@ -4,7 +4,6 @@ namespace BookStore.Application.IService.Catalog
 {
     public interface IBookMetadataService
     {
-        Task<IEnumerable<BookMetadataDto>> GetAllAsync();
         Task<BookMetadataDto?> GetByIdAsync(Guid id);
         Task<IEnumerable<BookMetadataDto>> GetByBookIdAsync(Guid bookId);
         Task<BookMetadataDto> CreateAsync(BookMetadataDto dto);

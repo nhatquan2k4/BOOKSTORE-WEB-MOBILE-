@@ -1,4 +1,5 @@
 using BookStore.Application.Dtos.Identity.Auth;
+using BookStore.Application.IService.Identity;
 using BookStore.Application.IService.Identity.Auth;
 using BookStore.Application.Mappers.Identity.Auth;
 using BookStore.Application.Settings;
@@ -14,6 +15,7 @@ namespace BookStore.Application.Services.Identity.Auth
         private readonly IRoleRepository _roleRepository;
         private readonly IPasswordService _passwordService;
         private readonly ITokenService _tokenService;
+        private readonly IEmailVerificationService _emailVerificationService;
         private readonly JwtSettings _jwtSettings;
 
         public AuthService(
@@ -21,12 +23,14 @@ namespace BookStore.Application.Services.Identity.Auth
             IRoleRepository roleRepository,
             IPasswordService passwordService,
             ITokenService tokenService,
+            IEmailVerificationService emailVerificationService,
             IOptions<JwtSettings> jwtSettings)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _passwordService = passwordService;
             _tokenService = tokenService;
+            _emailVerificationService = emailVerificationService;
             _jwtSettings = jwtSettings.Value;
         }
 
@@ -78,12 +82,32 @@ namespace BookStore.Application.Services.Identity.Auth
 
             var user = registerDto.ToEntity();
             user.PasswordHash = _passwordService.HashPassword(registerDto.Password);
+            user.IsActive = false; // User chưa active cho đến khi verify email
 
             await _userRepository.AddAsync(user);
             await _userRepository.SaveChangesAsync();
 
-            var roles = new List<string>();
-            var permissions = new List<string>();
+            // Tự động gán role "User" cho user mới đăng ký
+            var userRole_entity = await _roleRepository.GetByNameAsync("User");
+            if (userRole_entity != null)
+            {
+                var userRole = new Domain.Entities.Identity.UserRole
+                {
+                    UserId = user.Id,
+                    RoleId = userRole_entity.Id
+                };
+                user.UserRoles.Add(userRole);
+                await _userRepository.SaveChangesAsync();
+            }
+
+            // Generate and send email verification token
+            await _emailVerificationService.GenerateVerificationTokenAsync(user.Id);
+
+            var roles = userRole_entity != null ? new List<string> { "User" } : new List<string>();
+            var permissions = userRole_entity?.RolePermissions?
+                .Select(rp => rp.Permission?.Name ?? "")
+                .Where(n => !string.IsNullOrEmpty(n))
+                .ToList() ?? new List<string>();
 
             var accessToken = _tokenService.GenerateAccessToken(user.Id, user.Email, roles, permissions);
             var refreshToken = _tokenService.GenerateRefreshToken();

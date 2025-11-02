@@ -95,7 +95,7 @@ namespace BookStore.Application.Mappers.Identity.Auth
                     UserId = user.Id,
                     FullName = dto.FullName,
                     PhoneNumber = dto.PhoneNumber,
-                    DateOfBirth = dto.DateOfBirth
+                    
                 };
             }
 

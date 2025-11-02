@@ -16,9 +16,11 @@ using BookStore.Application.IService.Identity.Role;
 using BookStore.Application.Services.Identity.Role;
 using BookStore.Application.IService.Identity.Permission;
 using BookStore.Application.Services.Identity.Permission;
+using BookStore.Domain.IRepository.Identity;
 using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Domain.IRepository.Identity.Auth;
 using BookStore.Domain.IRepository.Identity.RolePermisson;
+using BookStore.Infrastructure.Repository.Identity;
 using BookStore.Infrastructure.Repository.Identity.User;
 using BookStore.Infrastructure.Repository.Identity.Auth;
 using BookStore.Infrastructure.Repository.Identity.RolePermisson;
@@ -68,6 +70,21 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // Next.js frontend URL
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// Configure Email Settings
+builder.Services.Configure<BookStore.Application.Settings.EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+
 // Register Services
 // MinIO Service
 builder.Services.AddScoped<IMinIOService, MinIOService>();
@@ -76,7 +93,11 @@ builder.Services.AddScoped<IMinIOService, MinIOService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
+
+// Email Services
+builder.Services.AddScoped<BookStore.Application.IService.Identity.IEmailService, BookStore.Application.Services.Identity.Email.EmailService>();
+builder.Services.AddScoped<BookStore.Application.IService.Identity.IEmailVerificationService, BookStore.Application.Services.Identity.Email.EmailVerificationService>();
+
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 
 // User Service
@@ -197,6 +218,9 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+// Enable CORS (must be before Authentication & Authorization)
+app.UseCors("AllowFrontend");
 
 // Add Authentication & Authorization middleware
 app.UseAuthentication();

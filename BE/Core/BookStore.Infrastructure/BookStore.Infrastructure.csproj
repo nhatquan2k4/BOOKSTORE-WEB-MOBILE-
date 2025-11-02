@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Repository\**" />
+    <EmbeddedResource Remove="Repository\**" />
+    <None Remove="Repository\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.17" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.17" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.17">
@@ -31,13 +37,6 @@
 
   <ItemGroup>
     <Folder Include="Migrations\" />
-    <Folder Include="Repository\Analytics &amp; Activity\" />
-    <Folder Include="Repository\Common\" />
-    <Folder Include="Repository\System\" />
-    <Folder Include="Repository\Shipping\" />
-    <Folder Include="Repository\Rental\" />
-    <Folder Include="Repository\Pricing &amp; Inventory\" />
-    <Folder Include="Repository\Ordering &amp; Payment\" />
   </ItemGroup>
 
 </Project>
