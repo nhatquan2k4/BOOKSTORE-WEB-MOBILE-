@@ -1,12 +1,13 @@
 using BookStore.Application.IService.Identity;
 using Microsoft.AspNetCore.Authorization;
+using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EmailVerificationController : ControllerBase
+    public class EmailVerificationController : ApiControllerBase
     {
         private readonly IEmailVerificationService _emailVerificationService;
 

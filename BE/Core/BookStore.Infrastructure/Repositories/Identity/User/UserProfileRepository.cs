@@ -1,4 +1,4 @@
-﻿using BookStore.Domain.Entities.Identity;
+using BookStore.Domain.Entities.Identity;
 using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Infrastructure.Repository.Identity.User
 {

@@ -2,6 +2,8 @@
 using BookStore.Application.IService.Catalog;
 using BookStore.Domain.Entities.Catalog;
 using BookStore.Domain.IRepository.Catalog;
+using BookStore.Shared.Exceptions;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Application.Services.Catalog
 {
@@ -46,6 +48,10 @@ namespace BookStore.Application.Services.Catalog
 
         public async Task<BookFileDto> CreateAsync(BookFileDto dto)
         {
+            // Validate inputs
+            Guard.AgainstNullOrWhiteSpace(dto.FileUrl, nameof(dto.FileUrl));
+            Guard.AgainstNullOrWhiteSpace(dto.FileType, nameof(dto.FileType));
+
             var file = new BookFile
             {
                 Id = Guid.NewGuid(),
@@ -68,8 +74,12 @@ namespace BookStore.Application.Services.Catalog
             var file = await _bookFileRepository.GetByIdAsync(dto.Id);
             if (file == null)
             {
-                throw new InvalidOperationException("File sách không tồn tại");
+                throw new NotFoundException($"Không tìm thấy file sách với ID {dto.Id}");
             }
+
+            // Validate inputs
+            Guard.AgainstNullOrWhiteSpace(dto.FileUrl, nameof(dto.FileUrl));
+            Guard.AgainstNullOrWhiteSpace(dto.FileType, nameof(dto.FileType));
 
             file.FileUrl = dto.FileUrl;
             file.FileType = dto.FileType;

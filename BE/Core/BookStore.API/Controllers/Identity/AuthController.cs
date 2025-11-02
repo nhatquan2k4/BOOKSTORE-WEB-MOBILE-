@@ -1,6 +1,7 @@
 using BookStore.Application.Dtos.Identity.Auth;
 using BookStore.Application.IService.Identity.Auth;
 using Microsoft.AspNetCore.Authorization;
+using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -8,7 +9,7 @@ namespace BookStore.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthController : ApiControllerBase
     {
         private readonly IAuthService _authService;
         private readonly ITokenService _tokenService;
@@ -257,7 +258,7 @@ namespace BookStore.API.Controllers
 
         /// <summary>
         /// Quên mật khẩu - Gửi email reset
-        /// </summary>
+        
         [HttpPost("forgot-password")]
         [AllowAnonymous]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)

@@ -1,6 +1,7 @@
 using BookStore.Application.Dtos.Identity.User;
 using BookStore.Application.IService.Identity.User;
 using Microsoft.AspNetCore.Authorization;
+using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers
@@ -8,7 +9,7 @@ namespace BookStore.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class UsersController : ControllerBase
+    public class UsersController : ApiControllerBase
     {
         private readonly IUserService _userService;
 

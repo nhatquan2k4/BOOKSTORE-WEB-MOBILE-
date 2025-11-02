@@ -1,4 +1,5 @@
 ﻿using BookStore.Application.Dtos.Catalog.Publisher;
+using BookStore.Shared.Utilities;
 using PublisherEntity = BookStore.Domain.Entities.Catalog.Publisher;
 
 namespace BookStore.Application.Mappers.Catalog.Publisher
@@ -40,10 +41,10 @@ namespace BookStore.Application.Mappers.Catalog.Publisher
             return new PublisherEntity
             {
                 Id = Guid.NewGuid(),
-                Name = dto.Name,
-                Address = dto.Address,
-                Email = dto.Email,
-                PhoneNumber = dto.PhoneNumber
+                Name = dto.Name.NormalizeSpace(),
+                Address = dto.Address?.NormalizeSpace(),
+                Email = dto.Email?.Trim(),
+                PhoneNumber = dto.PhoneNumber?.Trim()
             };
         }
 
@@ -52,10 +53,10 @@ namespace BookStore.Application.Mappers.Catalog.Publisher
         /// </summary>
         public static void UpdateFromDto(this PublisherEntity publisher, UpdatePublisherDto dto)
         {
-            publisher.Name = dto.Name;
-            publisher.Address = dto.Address;
-            publisher.Email = dto.Email;
-            publisher.PhoneNumber = dto.PhoneNumber;
+            publisher.Name = dto.Name.NormalizeSpace();
+            publisher.Address = dto.Address?.NormalizeSpace();
+            publisher.Email = dto.Email?.Trim();
+            publisher.PhoneNumber = dto.PhoneNumber?.Trim();
         }
     }
 }

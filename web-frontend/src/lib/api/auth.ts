@@ -66,4 +66,25 @@ export const authApi = {
   ): Promise<ApiResponse<void>> => {
     return api.post(API_ENDPOINTS.AUTH.RESEND_VERIFICATION, { email });
   },
+
+  /**
+   * Forgot password - Send reset password email
+   */
+  forgotPassword: async (
+    email: string
+  ): Promise<ApiResponse<{ success: boolean; message: string }>> => {
+    return api.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
+  },
+
+  /**
+   * Reset password with token
+   */
+  resetPassword: async (data: {
+    email: string;
+    token: string;
+    newPassword: string;
+    confirmNewPassword: string;
+  }): Promise<ApiResponse<{ success: boolean; message: string }>> => {
+    return api.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, data);
+  },
 };

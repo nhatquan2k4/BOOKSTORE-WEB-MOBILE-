@@ -4,11 +4,10 @@ export interface User {
   email: string;
   phoneNumber?: string;
   fullName?: string;
-  isEmailVerified: boolean;
   status: UserStatus;
   createdAt: string;
   lastLoginAt?: string;
-  
+
   // Relations
   profile?: UserProfile;
   addresses?: UserAddress[];

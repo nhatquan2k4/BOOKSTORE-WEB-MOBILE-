@@ -110,8 +110,7 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                 Name = dto.Name,
                 Description = dto.Description ?? string.Empty
                 
-                // PermissionIds sẽ được xử lý riêng để tạo RolePermission
-                // IsActive không có trong Entity
+                
             };
         }
 
@@ -136,7 +135,7 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                 role.Description = dto.Description;
             }
 
-            // PermissionIds và IsActive sẽ được xử lý riêng ở service layer
+            
         }
 
         #endregion

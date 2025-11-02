@@ -9,7 +9,10 @@ namespace BookStore.API.Base
     [ApiController]
     public class ApiControllerBase : ControllerBase
     {
-        //gom logic convert Result<T> to IActionResult sau này nếu cần
+        /// <summary>
+        /// Xử lý Result<T> và trả về IActionResult tương ứng
+        /// Sử dụng cho pattern Result<T> trong tương lai
+        /// </summary>
         protected IActionResult HandleResult<T>(Result<T> result)
         {
             if (result.IsSuccess)

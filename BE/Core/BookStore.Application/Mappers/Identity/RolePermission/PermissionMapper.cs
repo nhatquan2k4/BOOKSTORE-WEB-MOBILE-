@@ -88,8 +88,6 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                 Name = dto.Name,
                 Description = dto.Description ?? string.Empty
                 
-                // Module, Action, Resource, IsActive không có trong Entity
-                // Có thể lưu vào bảng mở rộng hoặc bỏ qua
             };
         }
 
@@ -116,7 +114,7 @@ namespace BookStore.Application.Mappers.Identity.RolePermission
                 permission.Description = dto.Description;
             }
 
-            // Module, Action, Resource, IsActive không có trong Entity
+            
         }
 
         #endregion

@@ -13,6 +13,8 @@ using BookStore.Application.Service;
 using BookStore.Domain.Entities.Catalog;
 using BookStore.Domain.IRepository.Catalog;
 using BookStore.Domain.ValueObjects;
+using BookStore.Shared.Exceptions;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Application.Services.Catalog
 {
@@ -39,7 +41,7 @@ namespace BookStore.Application.Services.Catalog
             _bookFormatRepository = bookFormatRepository;
         }
 
-        public async Task<(List<BookDto> Items, int TotalCount)> GetAllAsync(
+        public async Task<PagedResult<BookDto>> GetAllAsync(
             int pageNumber = 1,
             int pageSize = 10,
             string? searchTerm = null,
@@ -90,7 +92,7 @@ namespace BookStore.Application.Services.Catalog
 
             var bookDtos = books.Select(MapToBookDto).ToList();
 
-            return (bookDtos, totalCount);
+            return new PagedResult<BookDto>(bookDtos, totalCount, pageNumber, pageSize);
         }
 
         // Override GetByIdAsync from IBookService (returns BookDetailDto)
@@ -123,17 +125,23 @@ namespace BookStore.Application.Services.Catalog
 
         public async Task<BookDetailDto> CreateAsync(CreateBookDto dto)
         {
+            // Validate inputs
+            Guard.AgainstNullOrWhiteSpace(dto.Title, nameof(dto.Title));
+            Guard.AgainstNullOrWhiteSpace(dto.ISBN, nameof(dto.ISBN));
+            Guard.Against(dto.AuthorIds == null || !dto.AuthorIds.Any(), "Phải có ít nhất một tác giả");
+            Guard.Against(dto.CategoryIds == null || !dto.CategoryIds.Any(), "Phải có ít nhất một thể loại");
+
             // Validate ISBN exists
             if (await _bookRepository.IsISBNExistsAsync(dto.ISBN))
             {
-                throw new InvalidOperationException($"Sách với ISBN '{dto.ISBN}' đã tồn tại");
+                throw new UserFriendlyException($"Sách với ISBN '{dto.ISBN}' đã tồn tại");
             }
 
             // Validate Publisher exists
             var publisher = await _publisherRepository.GetByIdAsync(dto.PublisherId);
             if (publisher == null)
             {
-                throw new InvalidOperationException("Nhà xuất bản không tồn tại");
+                throw new NotFoundException($"Không tìm thấy nhà xuất bản với ID {dto.PublisherId}");
             }
 
             // Validate BookFormat if provided
@@ -142,30 +150,30 @@ namespace BookStore.Application.Services.Catalog
                 var bookFormat = await _bookFormatRepository.GetByIdAsync(dto.BookFormatId.Value);
                 if (bookFormat == null)
                 {
-                    throw new InvalidOperationException("Định dạng sách không tồn tại");
+                    throw new NotFoundException($"Không tìm thấy định dạng sách với ID {dto.BookFormatId.Value}");
                 }
             }
 
             // Validate Authors exist
             var authors = new List<Author>();
-            foreach (var authorId in dto.AuthorIds)
+            foreach (var authorId in dto.AuthorIds!)
             {
                 var author = await _authorRepository.GetByIdAsync(authorId);
                 if (author == null)
                 {
-                    throw new InvalidOperationException($"Tác giả với ID {authorId} không tồn tại");
+                    throw new NotFoundException($"Không tìm thấy tác giả với ID {authorId}");
                 }
                 authors.Add(author);
             }
 
             // Validate Categories exist
             var categories = new List<Category>();
-            foreach (var categoryId in dto.CategoryIds)
+            foreach (var categoryId in dto.CategoryIds!)
             {
                 var category = await _categoryRepository.GetByIdAsync(categoryId);
                 if (category == null)
                 {
-                    throw new InvalidOperationException($"Thể loại với ID {categoryId} không tồn tại");
+                    throw new NotFoundException($"Không tìm thấy thể loại với ID {categoryId}");
                 }
                 categories.Add(category);
             }
@@ -174,12 +182,12 @@ namespace BookStore.Application.Services.Catalog
             var book = new Book
             {
                 Id = Guid.NewGuid(),
-                Title = dto.Title,
-                ISBN = new ISBN(dto.ISBN),
-                Description = dto.Description,
+                Title = dto.Title.NormalizeSpace(),
+                ISBN = new ISBN(dto.ISBN.Trim()),
+                Description = dto.Description?.NormalizeSpace(),
                 PublicationYear = dto.PublicationYear,
-                Language = dto.Language,
-                Edition = dto.Edition,
+                Language = dto.Language?.Trim() ?? string.Empty,
+                Edition = dto.Edition?.Trim(),
                 PageCount = dto.PageCount,
                 IsAvailable = dto.IsAvailable,
                 PublisherId = dto.PublisherId,
@@ -224,20 +232,26 @@ namespace BookStore.Application.Services.Catalog
             var book = await _bookRepository.GetDetailByIdAsync(dto.Id);
             if (book == null)
             {
-                throw new InvalidOperationException("Sách không tồn tại");
+                throw new NotFoundException($"Không tìm thấy sách với ID {dto.Id}");
             }
+
+            // Validate inputs
+            Guard.AgainstNullOrWhiteSpace(dto.Title, nameof(dto.Title));
+            Guard.AgainstNullOrWhiteSpace(dto.ISBN, nameof(dto.ISBN));
+            Guard.Against(dto.AuthorIds == null || !dto.AuthorIds.Any(), "Phải có ít nhất một tác giả");
+            Guard.Against(dto.CategoryIds == null || !dto.CategoryIds.Any(), "Phải có ít nhất một thể loại");
 
             // Validate ISBN exists (exclude current book)
             if (await _bookRepository.IsISBNExistsAsync(dto.ISBN, dto.Id))
             {
-                throw new InvalidOperationException($"Sách với ISBN '{dto.ISBN}' đã tồn tại");
+                throw new UserFriendlyException($"Sách với ISBN '{dto.ISBN}' đã tồn tại");
             }
 
             // Validate Publisher exists
             var publisher = await _publisherRepository.GetByIdAsync(dto.PublisherId);
             if (publisher == null)
             {
-                throw new InvalidOperationException("Nhà xuất bản không tồn tại");
+                throw new NotFoundException($"Không tìm thấy nhà xuất bản với ID {dto.PublisherId}");
             }
 
             // Validate BookFormat if provided
@@ -246,41 +260,41 @@ namespace BookStore.Application.Services.Catalog
                 var bookFormat = await _bookFormatRepository.GetByIdAsync(dto.BookFormatId.Value);
                 if (bookFormat == null)
                 {
-                    throw new InvalidOperationException("Định dạng sách không tồn tại");
+                    throw new NotFoundException($"Không tìm thấy định dạng sách với ID {dto.BookFormatId.Value}");
                 }
             }
 
             // Validate Authors exist
             var authors = new List<Author>();
-            foreach (var authorId in dto.AuthorIds)
+            foreach (var authorId in dto.AuthorIds!)
             {
                 var author = await _authorRepository.GetByIdAsync(authorId);
                 if (author == null)
                 {
-                    throw new InvalidOperationException($"Tác giả với ID {authorId} không tồn tại");
+                    throw new NotFoundException($"Không tìm thấy tác giả với ID {authorId}");
                 }
                 authors.Add(author);
             }
 
             // Validate Categories exist
             var categories = new List<Category>();
-            foreach (var categoryId in dto.CategoryIds)
+            foreach (var categoryId in dto.CategoryIds!)
             {
                 var category = await _categoryRepository.GetByIdAsync(categoryId);
                 if (category == null)
                 {
-                    throw new InvalidOperationException($"Thể loại với ID {categoryId} không tồn tại");
+                    throw new NotFoundException($"Không tìm thấy thể loại với ID {categoryId}");
                 }
                 categories.Add(category);
             }
 
             // Update basic properties
-            book.Title = dto.Title;
-            book.ISBN = new ISBN(dto.ISBN);
-            book.Description = dto.Description;
+            book.Title = dto.Title.NormalizeSpace();
+            book.ISBN = new ISBN(dto.ISBN.Trim());
+            book.Description = dto.Description?.NormalizeSpace();
             book.PublicationYear = dto.PublicationYear;
-            book.Language = dto.Language;
-            book.Edition = dto.Edition;
+            book.Language = dto.Language?.Trim() ?? string.Empty;
+            book.Edition = dto.Edition?.Trim();
             book.PageCount = dto.PageCount;
             book.IsAvailable = dto.IsAvailable;
             book.PublisherId = dto.PublisherId;

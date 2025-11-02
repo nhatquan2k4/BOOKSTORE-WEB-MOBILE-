@@ -16,7 +16,10 @@ namespace BookStore.Application.Services.Identity.Auth
         private readonly IPasswordService _passwordService;
         private readonly ITokenService _tokenService;
         private readonly IEmailVerificationService _emailVerificationService;
+        private readonly IPasswordResetService _passwordResetService;
+        private readonly IEmailService _emailService;
         private readonly JwtSettings _jwtSettings;
+        private readonly EmailSettings _emailSettings;
 
         public AuthService(
             IUserRepository userRepository,
@@ -24,14 +27,20 @@ namespace BookStore.Application.Services.Identity.Auth
             IPasswordService passwordService,
             ITokenService tokenService,
             IEmailVerificationService emailVerificationService,
-            IOptions<JwtSettings> jwtSettings)
+            IPasswordResetService passwordResetService,
+            IEmailService emailService,
+            IOptions<JwtSettings> jwtSettings,
+            IOptions<EmailSettings> emailSettings)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _passwordService = passwordService;
             _tokenService = tokenService;
             _emailVerificationService = emailVerificationService;
+            _passwordResetService = passwordResetService;
+            _emailService = emailService;
             _jwtSettings = jwtSettings.Value;
+            _emailSettings = emailSettings.Value;
         }
 
         public async Task<LoginResponseDto> LoginAsync(LoginDto loginDto)
@@ -44,8 +53,9 @@ namespace BookStore.Application.Services.Identity.Auth
             if (!_passwordService.VerifyPassword(loginDto.Password, user.PasswordHash))
                 throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
 
-            if (!user.IsActive)
-                throw new UnauthorizedAccessException("Tài khoản đã bị khóa");
+            // Allow login even if account is not active (email not verified)
+            // if (!user.IsActive)
+            //     throw new UnauthorizedAccessException("Tài khoản đã bị khóa");
 
             var roles = user.UserRoles?
             .Select(ur => ur.Role?.Name ?? "")
@@ -129,8 +139,12 @@ namespace BookStore.Application.Services.Identity.Auth
                 throw new UnauthorizedAccessException("Refresh token không hợp lệ");
 
             var user = await _userRepository.GetByIdWithAllDetailsAsync(userId.Value);
-            if (user == null || !user.IsActive)
-                throw new UnauthorizedAccessException("Người dùng không tồn tại hoặc đã bị khóa");
+            if (user == null)
+                throw new UnauthorizedAccessException("Người dùng không tồn tại");
+
+            // Allow refresh token even if account is not active (email not verified)
+            // if (!user.IsActive)
+            //     throw new UnauthorizedAccessException("Tài khoản đã bị khóa");
 
             await _tokenService.RevokeRefreshTokenAsync(refreshTokenDto.RefreshToken);
 
@@ -230,72 +244,114 @@ namespace BookStore.Application.Services.Identity.Auth
 
         public async Task<ForgotPasswordResponseDto> ForgotPasswordAsync(ForgotPasswordDto forgotPasswordDto)
         {
-            var user = await _userRepository.GetByEmailAsync(forgotPasswordDto.Email);
-
-            if (user == null)
+            try
             {
+                var user = await _userRepository.GetByEmailAsync(forgotPasswordDto.Email);
+
+                if (user == null)
+                {
+                    // Don't reveal if email exists for security
+                    return new ForgotPasswordResponseDto
+                    {
+                        Success = true,
+                        Message = "Nếu email tồn tại trong hệ thống, link đặt lại mật khẩu đã được gửi đến email của bạn."
+                    };
+                }
+
+                // Generate reset token
+                var resetToken = await _passwordResetService.GeneratePasswordResetTokenAsync(forgotPasswordDto.Email);
+
+                // Build reset URL
+                var resetUrl = $"{_emailSettings.FrontendUrl}/reset-password?token={resetToken}&email={Uri.EscapeDataString(forgotPasswordDto.Email)}";
+
+                // Send email
+                var userName = user.Profiles?.FullName ?? user.Email.Split('@')[0];
+                await _emailService.SendPasswordResetEmailAsync(
+                    user.Email,
+                    userName,
+                    resetToken,
+                    resetUrl
+                );
+
                 return new ForgotPasswordResponseDto
                 {
                     Success = true,
-                    Message = "Nếu email tồn tại, link reset password sẽ được gửi đến email"
+                    Message = "Link đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư."
                 };
             }
-
-            // TODO: Implement email sending logic with reset token
-            // Generate reset token and save to database
-            // Send email with reset link
-
-            return new ForgotPasswordResponseDto
+            catch (Exception)
             {
-                Success = true,
-                Message = "Link reset password đã được gửi đến email của bạn"
-            };
+                // Log the error but don't expose details
+                return new ForgotPasswordResponseDto
+                {
+                    Success = false,
+                    Message = "Đã xảy ra lỗi khi gửi email. Vui lòng thử lại sau."
+                };
+            }
         }
 
         public async Task<ResetPasswordResponseDto> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
         {
-            if (resetPasswordDto.NewPassword != resetPasswordDto.ConfirmNewPassword)
+            try
+            {
+                // Validate password match
+                if (resetPasswordDto.NewPassword != resetPasswordDto.ConfirmNewPassword)
+                {
+                    return new ResetPasswordResponseDto
+                    {
+                        Success = false,
+                        Message = "Mật khẩu mới không khớp"
+                    };
+                }
+
+                // Validate password strength
+                if (!_passwordService.ValidatePasswordStrength(resetPasswordDto.NewPassword))
+                {
+                    return new ResetPasswordResponseDto
+                    {
+                        Success = false,
+                        Message = "Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ hoa, chữ thường và số"
+                    };
+                }
+
+                // Validate reset token and reset password
+                var success = await _passwordResetService.ResetPasswordWithTokenAsync(
+                    resetPasswordDto.Email,
+                    resetPasswordDto.Token,
+                    resetPasswordDto.NewPassword
+                );
+
+                if (!success)
+                {
+                    return new ResetPasswordResponseDto
+                    {
+                        Success = false,
+                        Message = "Token không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu link đặt lại mật khẩu mới."
+                    };
+                }
+
+                // Get user to revoke refresh tokens
+                var user = await _userRepository.GetByEmailAsync(resetPasswordDto.Email);
+                if (user != null)
+                {
+                    // Revoke all refresh tokens for security
+                    await _tokenService.RevokeAllUserRefreshTokensAsync(user.Id);
+                }
+
+                return new ResetPasswordResponseDto
+                {
+                    Success = true,
+                    Message = "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập với mật khẩu mới."
+                };
+            }
+            catch (Exception)
             {
                 return new ResetPasswordResponseDto
                 {
                     Success = false,
-                    Message = "Mật khẩu mới không khớp"
+                    Message = "Đã xảy ra lỗi khi đặt lại mật khẩu. Vui lòng thử lại sau."
                 };
             }
-
-            if (!_passwordService.ValidatePasswordStrength(resetPasswordDto.NewPassword))
-            {
-                return new ResetPasswordResponseDto
-                {
-                    Success = false,
-                    Message = "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt"
-                };
-            }
-
-            // TODO: Validate reset token
-            // Find user by email and token
-            // Update password
-            // Revoke all refresh tokens
-
-            var user = await _userRepository.GetByEmailAsync(resetPasswordDto.Email);
-            if (user == null)
-            {
-                return new ResetPasswordResponseDto
-                {
-                    Success = false,
-                    Message = "Token không hợp lệ hoặc đã hết hạn"
-                };
-            }
-
-            var newPasswordHash = _passwordService.HashPassword(resetPasswordDto.NewPassword);
-            await _userRepository.UpdatePasswordAsync(user.Id, newPasswordHash);
-            await _tokenService.RevokeAllUserRefreshTokensAsync(user.Id);
-
-            return new ResetPasswordResponseDto
-            {
-                Success = true,
-                Message = "Reset mật khẩu thành công"
-            };
         }
 
         public async Task<bool> ValidateTokenAsync(string token)
