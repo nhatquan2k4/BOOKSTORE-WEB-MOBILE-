@@ -53,8 +53,9 @@ namespace BookStore.Application.Services.Identity.Auth
             if (!_passwordService.VerifyPassword(loginDto.Password, user.PasswordHash))
                 throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
 
-            if (!user.IsActive)
-                throw new UnauthorizedAccessException("Tài khoản đã bị khóa");
+            // Allow login even if account is not active (email not verified)
+            // if (!user.IsActive)
+            //     throw new UnauthorizedAccessException("Tài khoản đã bị khóa");
 
             var roles = user.UserRoles?
             .Select(ur => ur.Role?.Name ?? "")
@@ -138,8 +139,12 @@ namespace BookStore.Application.Services.Identity.Auth
                 throw new UnauthorizedAccessException("Refresh token không hợp lệ");
 
             var user = await _userRepository.GetByIdWithAllDetailsAsync(userId.Value);
-            if (user == null || !user.IsActive)
-                throw new UnauthorizedAccessException("Người dùng không tồn tại hoặc đã bị khóa");
+            if (user == null)
+                throw new UnauthorizedAccessException("Người dùng không tồn tại");
+
+            // Allow refresh token even if account is not active (email not verified)
+            // if (!user.IsActive)
+            //     throw new UnauthorizedAccessException("Tài khoản đã bị khóa");
 
             await _tokenService.RevokeRefreshTokenAsync(refreshTokenDto.RefreshToken);
 
