@@ -43,6 +43,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser();
   }, []);
 
+  // Listen for automatic logout events (from axios interceptor)
+  useEffect(() => {
+    const handleAutoLogout = (event: CustomEvent) => {
+      const reason = event.detail?.reason;
+      console.log('Auto logout triggered:', reason);
+      
+      // Clear user state
+      setUser(null);
+      setIsLoading(false);
+      
+      // Show notification to user
+      if (reason === 'token_expired') {
+        // Store message in sessionStorage to show on login page
+        sessionStorage.setItem('logoutReason', 'expired');
+      }
+    };
+
+    window.addEventListener('auth:logout', handleAutoLogout as EventListener);
+    
+    return () => {
+      window.removeEventListener('auth:logout', handleAutoLogout as EventListener);
+    };
+  }, []);
+
+  // Periodically check token validity
+  useEffect(() => {
+    if (!user) return;
+
+    const checkTokenValidity = () => {
+      const authenticated = authService.isAuthenticated();
+      if (!authenticated && user) {
+        console.log('Token expired, logging out...');
+        logout();
+      }
+    };
+
+    // Check every 5 minutes
+    const interval = setInterval(checkTokenValidity, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   const login = async (credentials: LoginRequest) => {
     setIsLoading(true);
     try {

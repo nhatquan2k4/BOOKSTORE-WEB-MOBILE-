@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/contexts";
 import type { LoginRequest } from "@/types/user";
@@ -25,6 +25,7 @@ type LoginFormData = LoginRequest & {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
   const {
     register,
@@ -33,6 +34,24 @@ export default function LoginPage() {
   } = useForm<LoginFormData>();
   
   const [errorMessage, setErrorMessage] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
+
+  // Check if redirected due to token expiry
+  useEffect(() => {
+    // Check URL parameter
+    if (searchParams.get('expired') === 'true') {
+      setInfoMessage("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      // Clear the parameter from URL
+      router.replace('/login');
+    }
+    
+    // Check sessionStorage for logout reason
+    const logoutReason = sessionStorage.getItem('logoutReason');
+    if (logoutReason === 'expired') {
+      setInfoMessage("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      sessionStorage.removeItem('logoutReason');
+    }
+  }, [searchParams, router]);
 
   const onSubmit = async (data: LoginFormData) => {
     setErrorMessage("");
@@ -56,6 +75,13 @@ export default function LoginPage() {
 
   return (
     <AuthCard title="Đăng nhập" subtitle="Chào mừng bạn trở lại!">
+      {/* Info Alert for expired session */}
+      {infoMessage && (
+        <Alert variant="warning" className="mb-6" onClose={() => setInfoMessage("")}>
+          {infoMessage}
+        </Alert>
+      )}
+
       {/* Error Alert */}
       {errorMessage && (
         <Alert variant="danger" className="mb-6" onClose={() => setErrorMessage("")}>

@@ -72,10 +72,16 @@ class AuthService {
    */
   async logout(): Promise<void> {
     try {
+      // Try to call logout API to invalidate server-side tokens
       await authApi.logout();
-    } catch (error) {
-      console.error("Logout API error:", error);
+    } catch (error: any) {
+      // Ignore 401 errors during logout (token might be expired)
+      // The important thing is to clear local session
+      if (error?.response?.status !== 401) {
+        console.error("Logout API error:", error);
+      }
     } finally {
+      // Always clear session regardless of API call result
       this.clearSession();
     }
   }
@@ -123,7 +129,48 @@ class AuthService {
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    return !!this.getAccessToken() && !!this.getCurrentUser();
+    const token = this.getAccessToken();
+    const user = this.getCurrentUser();
+    
+    if (!token || !user) return false;
+
+    // Check if token is expired
+    try {
+      const tokenData = this.decodeToken(token);
+      const currentTime = Date.now() / 1000; // Convert to seconds
+      
+      // Token expired
+      if (tokenData.exp && tokenData.exp < currentTime) {
+        console.log('Token expired, clearing session...');
+        this.clearSession();
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking token validity:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Decode JWT token
+   */
+  private decodeToken(token: string): any {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      throw error;
+    }
   }
 
   /**

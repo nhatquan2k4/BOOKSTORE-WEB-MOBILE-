@@ -61,12 +61,22 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // Refresh failed - redirect to login
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
-          window.location.href = '/login';
+        // Refresh failed - force logout
+        if (typeof window !== "undefined") {
+          // Clear all auth data
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("user");
+
+          // Dispatch custom event for logout
+          window.dispatchEvent(
+            new CustomEvent("auth:logout", {
+              detail: { reason: "token_expired" },
+            })
+          );
+
+          // Redirect to login
+          window.location.href = "/login?expired=true";
         }
         return Promise.reject(refreshError);
       }
