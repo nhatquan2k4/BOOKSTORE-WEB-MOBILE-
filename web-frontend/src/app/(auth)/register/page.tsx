@@ -59,14 +59,14 @@ export default function RegisterPage() {
       
       // Show success message with email verification notice
       setSuccessMessage(
-        "✅ Đăng ký thành công! Chúng tôi đã gửi email xác minh đến " + data.email + 
+        "Đăng ký thành công! Chúng tôi đã gửi email xác minh đến " + data.email + 
         ". Vui lòng kiểm tra hộp thư và xác minh email để kích hoạt tài khoản."
       );
       
-      // Don't auto-redirect, let user read the message
-      // setTimeout(() => {
-      //   router.push("/login");
-      // }, 5000);
+      // Redirect to login page after 3 seconds
+      setTimeout(() => {
+        router.push("/login?registered=true");
+      }, 3000);
     } catch (err: any) {
       setErrorMessage(
         err?.message || 
@@ -79,9 +79,21 @@ export default function RegisterPage() {
     <AuthCard title="Đăng ký" subtitle="Tạo tài khoản mới để bắt đầu">
       {/* Success Alert */}
       {successMessage && (
-        <Alert variant="success" className="mb-6">
-          {successMessage}
-        </Alert>
+        <div className="mb-6">
+          <Alert variant="success">
+            {successMessage}
+          </Alert>
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-600 mb-3">
+              Đang chuyển đến trang đăng nhập sau 3 giây...
+            </p>
+            <Link href="/login?registered=true">
+              <Button variant="primary" className={authButtonStyles.primary}>
+                Đăng nhập ngay
+              </Button>
+            </Link>
+          </div>
+        </div>
       )}
 
       {/* Error Alert */}
@@ -91,8 +103,9 @@ export default function RegisterPage() {
         </Alert>
       )}
 
-      {/* Register Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      {/* Register Form - Hide when success */}
+      {!successMessage && (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {/* Full Name Field */}
         <FormField>
           <FormLabel htmlFor="fullName" required>
@@ -226,8 +239,11 @@ export default function RegisterPage() {
           Đăng ký
         </Button>
       </form>
+      )}
 
-      {/* Divider */}
+      {/* Divider - Show only when not success */}
+      {!successMessage && (
+        <>
       <div className={authContainerStyles.divider}>
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-200"></div>
@@ -262,6 +278,8 @@ export default function RegisterPage() {
           Quay về trang chủ
         </Link>
       </div>
+      </>
+      )}
     </AuthCard>
   );
 }

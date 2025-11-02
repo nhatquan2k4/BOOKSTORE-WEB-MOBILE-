@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { authApi } from "@/lib/api/auth";
 import { AuthCard, AuthCardIcon } from "@/components/auth";
 import { FormField } from "@/components/auth";
 import { PasswordInput } from "@/components/auth";
@@ -18,6 +19,7 @@ import {
 } from "@/constants/authStyles";
 
 type ResetPasswordFormData = {
+  email: string;
   password: string;
   confirmPassword: string;
 };
@@ -26,13 +28,18 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const email = searchParams.get("email");
   
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<ResetPasswordFormData>();
+  } = useForm<ResetPasswordFormData>({
+    defaultValues: {
+      email: email || "",
+    },
+  });
   
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -42,36 +49,55 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const validateToken = async () => {
-      if (!token) {
+      if (!token || !email) {
         setTokenValid(false);
-        setErrorMessage("Link không hợp lệ hoặc đã hết hạn.");
+        setErrorMessage("Link không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu link đặt lại mật khẩu mới.");
         return;
       }
 
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setTokenValid(true);
-      } catch (err: any) {
-        setTokenValid(false);
-        setErrorMessage("Link không hợp lệ hoặc đã hết hạn.");
-      }
+      // Token validation will happen when user submits the form
+      // For now, just mark as valid if token and email exist
+      setTokenValid(true);
     };
 
     validateToken();
-  }, [token]);
+  }, [token, email]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     setErrorMessage("");
     setSuccessMessage("");
+
+    if (!token) {
+      setErrorMessage("Token không hợp lệ.");
+      return;
+    }
     
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      setSuccessMessage("Mật khẩu đã được đặt lại thành công!");
-      setTimeout(() => {
-        router.push("/login?reset=success");
-      }, 2000);
+      const response = await authApi.resetPassword({
+        email: data.email,
+        token: token,
+        newPassword: data.password,
+        confirmNewPassword: data.confirmPassword,
+      });
+
+      if (response.success) {
+        setSuccessMessage(
+          response.message || "Mật khẩu đã được đặt lại thành công!"
+        );
+        setTimeout(() => {
+          router.push("/login?reset=success");
+        }, 2000);
+      } else {
+        setErrorMessage(
+          response.message || "Không thể đặt lại mật khẩu. Vui lòng thử lại."
+        );
+      }
     } catch (err: any) {
-      setErrorMessage("Có lỗi xảy ra. Vui lòng thử lại.");
+      setErrorMessage(
+        err?.response?.data?.message ||
+        err?.message ||
+        "Có lỗi xảy ra. Vui lòng thử lại."
+      );
     }
   };
 
@@ -147,6 +173,9 @@ export default function ResetPasswordPage() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Email Field (hidden but required by API) */}
+        <input type="hidden" {...register("email")} />
+        
         <FormField>
           <PasswordInput
             id="password"

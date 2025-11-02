@@ -257,7 +257,7 @@ namespace BookStore.API.Controllers
 
         /// <summary>
         /// Quên mật khẩu - Gửi email reset
-        /// </summary>
+        
         [HttpPost("forgot-password")]
         [AllowAnonymous]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)

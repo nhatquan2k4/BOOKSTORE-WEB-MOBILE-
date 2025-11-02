@@ -9,6 +9,8 @@ export const API_ENDPOINTS = {
     ME: "/Auth/me",
     VERIFY_EMAIL: "/EmailVerification/verify",
     RESEND_VERIFICATION: "/EmailVerification/resend",
+    FORGOT_PASSWORD: "/Auth/forgot-password",
+    RESET_PASSWORD: "/Auth/reset-password",
   },
 
   // Books
