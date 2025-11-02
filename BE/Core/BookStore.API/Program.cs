@@ -1,36 +1,42 @@
-using BookStore.Application.IService.Catalog;
-using BookStore.Application.Services.Catalog;
-using BookStore.Domain.IRepository;
-using BookStore.Domain.IRepository.Catalog;
-using BookStore.Infrastructure.Data;
-using BookStore.Infrastructure.Repository;
-using BookStore.Infrastructure.Repository.Catalog;
-using BookStore.Application.Settings;
-using BookStore.Application.IService;
-using BookStore.Application.Services;
-using BookStore.Application.IService.Identity.Auth;
-using BookStore.Application.Services.Identity.Auth;
-using BookStore.Application.IService.Identity.User;
-using BookStore.Application.Services.Identity;
-using BookStore.Application.IService.Identity.Role;
-using BookStore.Application.Services.Identity.Role;
-using BookStore.Application.IService.Identity.Permission;
-using BookStore.Application.Services.Identity.Permission;
-using BookStore.Domain.IRepository.Identity;
-using BookStore.Domain.IRepository.Identity.User;
-using BookStore.Domain.IRepository.Identity.Auth;
-using BookStore.Domain.IRepository.Identity.RolePermisson;
-using BookStore.Infrastructure.Repository.Identity;
-using BookStore.Infrastructure.Repository.Identity.User;
-using BookStore.Infrastructure.Repository.Identity.Auth;
-using BookStore.Infrastructure.Repository.Identity.RolePermisson;
 using BookStore.API.Filters;
 using BookStore.API.Middlewares;
+using BookStore.Application.IService;
+using BookStore.Application.IService.Catalog;
+using BookStore.Application.IService.Identity.Auth;
+using BookStore.Application.IService.Identity.Permission;
+using BookStore.Application.IService.Identity.Role;
+using BookStore.Application.IService.Identity.User;
+using BookStore.Application.Services;
+using BookStore.Application.Services.Catalog;
+using BookStore.Application.Services.Identity;
+using BookStore.Application.Services.Identity.Auth;
+using BookStore.Application.Services.Identity.Permission;
+using BookStore.Application.Services.Identity.Role;
+using BookStore.Application.Settings;
+using BookStore.Domain.IRepository;
+using BookStore.Domain.IRepository.Cart;
+using BookStore.Domain.IRepository.Catalog;
+using BookStore.Domain.IRepository.Identity;
+using BookStore.Domain.IRepository.Identity.Auth;
+using BookStore.Domain.IRepository.Identity.RolePermisson;
+using BookStore.Domain.IRepository.Identity.User;
+using BookStore.Domain.IRepository.Ordering;
+using BookStore.Domain.IRepository.Payment;
+using BookStore.Infrastructure.Data;
+using BookStore.Infrastructure.Repositories.Cart;
+using BookStore.Infrastructure.Repositories.Ordering;
+using BookStore.Infrastructure.Repositories.Payment;
+using BookStore.Infrastructure.Repository;
+using BookStore.Infrastructure.Repository.Catalog;
+using BookStore.Infrastructure.Repository.Identity;
+using BookStore.Infrastructure.Repository.Identity.Auth;
+using BookStore.Infrastructure.Repository.Identity.RolePermisson;
+using BookStore.Infrastructure.Repository.Identity.User;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -148,6 +154,25 @@ builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IBookImageService, BookImageService>();
 
 
+// Ordering Repositories
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
+builder.Services.AddScoped<IRefundRepository, RefundRepository>();
+
+// Payment Repository
+builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+
+//Cart Repositories
+builder.Services.AddScoped<ICartRepository, CartRepository>();
+builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
+
+// Ordering, Payment & Cart Services
+builder.Services.AddScoped<BookStore.Application.IService.Ordering.IOrderService, BookStore.Application.Services.Ordering.OrderService>();
+builder.Services.AddScoped<BookStore.Application.IService.Payment.IPaymentService, BookStore.Application.Services.Payment.PaymentService>();
+builder.Services.AddScoped<BookStore.Application.IService.Cart.ICartService, BookStore.Application.Services.Cart.CartService>();
+
+
+//Controller
 builder.Services.AddControllers();
 
 
