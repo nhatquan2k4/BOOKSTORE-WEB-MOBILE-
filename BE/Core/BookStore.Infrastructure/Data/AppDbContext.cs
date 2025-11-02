@@ -28,6 +28,8 @@ namespace BookStore.Infrastructure.Data
         public DbSet<Permission> Permissions { get; set; } = null!;
         public DbSet<RolePermission> RolePermissions { get; set; } = null!;
         public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+        public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; } = null!;
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
         public DbSet<UserDevice> UserDevices { get; set; } = null!;
         public DbSet<UserAddress> UserAddresses { get; set; } = null!;
         public DbSet<UserProfile> UserProfiles { get; set; } = null!;

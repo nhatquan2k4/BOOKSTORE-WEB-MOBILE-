@@ -20,7 +20,7 @@ namespace BookStore.Domain.Entities.Pricing___Inventory
         public DateTime EndDate { get; set; }                  // Ngày kết thúc
         public bool IsActive { get; set; } = true;             // Còn hiệu lực không
 
-        // 🔗 1-n: Một chương trình giảm giá có thể áp dụng cho nhiều sách
+        // 1-n: Một chương trình giảm giá có thể áp dụng cho nhiều sách
         public virtual ICollection<Price> Prices { get; set; } = new List<Price>();
     }
 }

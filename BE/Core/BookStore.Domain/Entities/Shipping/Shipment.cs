@@ -23,10 +23,10 @@ namespace BookStore.Domain.Entities.Shipping
         public DateTime? DeliveredAt { get; set; }              // Khi hàng được giao thành công
         public string? Notes { get; set; }                      // Ghi chú giao hàng (ví dụ: "Giao ngoài giờ hành chính")
 
-        // 🔗 1-n: Theo dõi lộ trình di chuyển
+        // 1-n: Theo dõi lộ trình di chuyển
         public virtual ICollection<ShipmentRoutePoint> RoutePoints { get; set; } = new List<ShipmentRoutePoint>();
 
-        // 🔗 1-n: Nhật ký trạng thái (cập nhật từ shipper hoặc hệ thống)
+        // 1-n: Nhật ký trạng thái (cập nhật từ shipper hoặc hệ thống)
         public virtual ICollection<ShipmentStatus> StatusHistory { get; set; } = new List<ShipmentStatus>();
 
     }

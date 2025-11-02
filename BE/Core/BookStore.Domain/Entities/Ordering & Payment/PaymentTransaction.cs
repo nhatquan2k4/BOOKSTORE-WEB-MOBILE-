@@ -22,7 +22,7 @@ namespace BookStore.Domain.Entities.Ordering___Payment
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? PaidAt { get; set; }                  // Khi thanh toán thành công
 
-        // 🔗 1-n: Có thể có nhiều Refund
+        // 1-n: Có thể có nhiều Refund
         public virtual ICollection<Refund> Refunds { get; set; } = new List<Refund>();
     }
 }

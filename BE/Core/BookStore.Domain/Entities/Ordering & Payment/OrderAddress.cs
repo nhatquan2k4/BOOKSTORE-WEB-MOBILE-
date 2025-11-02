@@ -19,7 +19,7 @@ namespace BookStore.Domain.Entities.Ordering___Payment
         public string Street { get; set; } = null!;            // Địa chỉ chi tiết
         public string? Note { get; set; }                      // Ghi chú giao hàng (tuỳ chọn)
 
-        // 🔗 1-1: Mỗi OrderAddress chỉ thuộc về một đơn hàng
+        // 1-1: Mỗi OrderAddress chỉ thuộc về một đơn hàng
         public virtual Order? Order { get; set; }
     }
 }

@@ -500,9 +500,9 @@ namespace BookStore.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ReipientName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    RecipientName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     PhoneNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Povince = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Province = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     District = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Ward = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     StreetAddress = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
