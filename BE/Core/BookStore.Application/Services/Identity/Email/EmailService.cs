@@ -1,4 +1,4 @@
-using BookStore.Application.IService.Identity;
+using BookStore.Application.IService.Identity.Email;
 using BookStore.Application.Settings;
 using Microsoft.Extensions.Options;
 using System.Net;

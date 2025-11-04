@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, XCircle, Mail, RefreshCw, Loader2 } from "lucide-react";
-import { authApi } from "@/lib/api/auth";
+import { authApi } from "@/lib/api/identity/auth";
 
 type VerificationStatus = "verifying" | "success" | "error";
 type ResendStatus = "idle" | "sending" | "sent";

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { authApi } from "@/lib/api/auth";
+import { authApi } from "@/lib/api/identity/auth";
 import { AuthCard, AuthCardIcon } from "@/components/auth";
 import { FormField } from "@/components/auth";
 import { PasswordInput } from "@/components/auth";

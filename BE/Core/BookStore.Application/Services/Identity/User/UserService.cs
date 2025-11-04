@@ -8,7 +8,7 @@ using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Domain.IRepository.Identity.RolePermisson;
 using BookStore.Domain.Entities.Identity;
 
-namespace BookStore.Application.Services.Identity
+namespace BookStore.Application.Services.Identity.User
 {
     public class UserService : IUserService
     {

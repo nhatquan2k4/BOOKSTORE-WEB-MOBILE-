@@ -3,15 +3,16 @@ using BookStore.API.Middlewares;
 using BookStore.Application.IService;
 using BookStore.Application.IService.Catalog;
 using BookStore.Application.IService.Identity.Auth;
+using BookStore.Application.IService.Identity.Email;
 using BookStore.Application.IService.Identity.Permission;
 using BookStore.Application.IService.Identity.Role;
 using BookStore.Application.IService.Identity.User;
 using BookStore.Application.Services;
 using BookStore.Application.Services.Catalog;
-using BookStore.Application.Services.Identity;
 using BookStore.Application.Services.Identity.Auth;
 using BookStore.Application.Services.Identity.Permission;
 using BookStore.Application.Services.Identity.Role;
+using BookStore.Application.Services.Identity.User;
 using BookStore.Application.Settings;
 using BookStore.Domain.IRepository;
 using BookStore.Domain.IRepository.Cart;
@@ -103,13 +104,15 @@ builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Email Services
-builder.Services.AddScoped<BookStore.Application.IService.Identity.IEmailService, BookStore.Application.Services.Identity.Email.EmailService>();
-builder.Services.AddScoped<BookStore.Application.IService.Identity.IEmailVerificationService, BookStore.Application.Services.Identity.Email.EmailVerificationService>();
+builder.Services.AddScoped<IEmailService, BookStore.Application.Services.Identity.Email.EmailService>();
+builder.Services.AddScoped<IEmailVerificationService, BookStore.Application.Services.Identity.Email.EmailVerificationService>();
 
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 
 // User Service
-builder.Services.AddScoped<BookStore.Application.IService.Identity.User.IUserService, BookStore.Application.Services.Identity.UserService>();
+builder.Services.AddScoped<BookStore.Application.IService.Identity.User.IUserService, UserService>();
+builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<IUserAddressService, UserAddressService>();
 
 // Role & Permission Services
 builder.Services.AddScoped<BookStore.Application.IService.Identity.Role.IRoleService, BookStore.Application.Services.Identity.Role.RoleService>();
