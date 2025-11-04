@@ -1,4 +1,4 @@
-namespace BookStore.Application.IService.Identity
+namespace BookStore.Application.IService.Identity.Email
 {
     public interface IEmailService
     {

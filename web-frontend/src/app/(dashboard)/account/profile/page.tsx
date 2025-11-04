@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { authApi } from '@/lib/api/auth';
+import { authApi } from '@/lib/api/identity/auth';
 
 export default function ProfilePage() {
   const { user, isLoggedIn, isLoading } = useAuth();

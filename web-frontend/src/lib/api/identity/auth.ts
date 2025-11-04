@@ -1,6 +1,6 @@
 // Auth API
-import api from './axios';
-import { API_ENDPOINTS } from './endpoints';
+import api from '../axios';
+import { API_ENDPOINTS } from '../endpoints';
 import type {
   LoginRequest,
   RegisterRequest,

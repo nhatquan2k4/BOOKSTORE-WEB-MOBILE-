@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { authApi } from '@/lib/api/auth';
+import { authApi } from "@/lib/api/identity/auth";
 import { User, LoginRequest, RegisterRequest } from '@/types/user';
 
 export function useAuth() {

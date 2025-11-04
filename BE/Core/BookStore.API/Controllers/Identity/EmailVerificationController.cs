@@ -1,7 +1,7 @@
-using BookStore.Application.IService.Identity;
 using Microsoft.AspNetCore.Authorization;
 using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
+using BookStore.Application.IService.Identity.Email;
 
 namespace BookStore.API.Controllers
 {

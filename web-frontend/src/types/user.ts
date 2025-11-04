@@ -95,3 +95,27 @@ export interface RefreshTokenResponse {
   accessTokenExpiresAt: string;
   refreshTokenExpiresAt: string;
 }
+
+export interface UpdateProfileRequest {
+  fullName?: string;
+  phoneNumber?: string;
+  dateOfBirth?: string;
+  gender?: "Male" | "Female" | "Other";
+  avatarUrl?: string;
+}
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
+export interface UpdateAddressRequest {
+  recipientName: string;
+  phoneNumber: string;
+  address: string;
+  ward: string;
+  district: string;
+  province: string;
+  postalCode?: string;
+  isDefault: boolean;
+}
