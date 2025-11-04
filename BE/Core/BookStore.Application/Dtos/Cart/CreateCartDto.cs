@@ -1,5 +1,10 @@
 ﻿namespace BookStore.Application.Dtos.Cart
 {
+    public class CreateCartDto
+    {
+        public Guid UserId { get; set; }
+    }
+
     public class AddToCartDto
     {
         public Guid UserId { get; set; }

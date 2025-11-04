@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace BookStore.Application.Dtos.Cart
+﻿namespace BookStore.Application.Dtos.Cart
 {
-    internal class UpdateCartDto
+    public class UpdateCartDto
     {
+        public Guid CartId { get; set; }
+        public List<UpdateCartItemDto>? Items { get; set; }
     }
 }

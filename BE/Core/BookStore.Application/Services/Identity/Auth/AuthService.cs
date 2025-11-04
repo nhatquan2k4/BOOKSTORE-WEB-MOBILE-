@@ -1,11 +1,11 @@
 using BookStore.Application.Dtos.Identity.Auth;
-using BookStore.Application.IService.Identity;
 using BookStore.Application.IService.Identity.Auth;
 using BookStore.Application.Mappers.Identity.Auth;
 using BookStore.Application.Settings;
 using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Domain.IRepository.Identity.RolePermisson;
 using Microsoft.Extensions.Options;
+using BookStore.Application.IService.Identity.Email;
 
 namespace BookStore.Application.Services.Identity.Auth
 {

@@ -124,10 +124,12 @@ export default function QRPaymentPage() {
         setPaymentStatus('pending');
         setTimeLeft(900);
         
+        console.log('Creating QR with params:', { amount, orderId, type, bookId, planId });
+        
         const data = await paymentApi.createQR({
           amount: Number.parseInt(amount),
           orderId,
-          type: type as 'rent' | 'buy',
+          type: (type || 'buy') as 'rent' | 'buy',
           bookId: bookId || undefined,
           planId: planId || undefined,
           description: type === 'rent' 
@@ -135,15 +137,21 @@ export default function QRPaymentPage() {
             : `MUA ${orderId}`,
         });
         
+        console.log('QR Response:', data);
+        
         if (data.success) {
           setQrCodeUrl(data.qrCodeUrl);
           setSepayOrderId(data.orderId);
           setAccountNumber(data.accountNumber);
           setAccountName(data.accountName);
           setTransferContent(data.transferContent);
+          console.log('QR Code URL set:', data.qrCodeUrl);
+        } else {
+          console.error('QR creation failed:', data);
         }
       } catch (error) {
         console.error('Error creating QR:', error);
+        alert('Lỗi tạo mã QR: ' + (error instanceof Error ? error.message : 'Unknown error'));
       } finally {
         setIsLoadingQR(false);
       }
