@@ -603,7 +603,7 @@ export default function HomePage() {
           
           <h2 className="text-5xl font-bold mb-4">Thuê eBook - Tiết kiệm hơn</h2>
           <p className="text-2xl mb-8 text-purple-100">
-            Chỉ từ 10.000₫/tháng - Đọc không giới hạn trên mọi thiết bị
+            Chỉ từ 10.000₫ - Đọc không giới hạn trên mọi thiết bị
           </p>
           
           <div className="flex gap-4 justify-center items-center mb-8">
