@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils/format";
-import { Button, Input, Badge, EmptyState, Alert, Breadcrumb } from "@/components/ui";
+import { Button, Input, Badge, EmptyState, Alert } from "@/components/ui";
 
 type CartItem = {
   id: string;
@@ -179,10 +179,15 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Breadcrumb */}
-      <Breadcrumb items={[{ label: "Giỏ hàng" }]} />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb */}
+        <nav className="mb-6 text-sm text-gray-600">
+          <Link href="/" className="hover:text-blue-600">
+            Trang chủ
+          </Link>{" "}
+          / <span className="font-medium text-gray-800">Giỏ hàng</span>
+        </nav>
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-start justify-between">

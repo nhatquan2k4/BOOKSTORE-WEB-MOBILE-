@@ -39,22 +39,18 @@ namespace BookStore.API.Controllers
             return Ok(warehouse);
         }
 
-        /// <summary>
-        /// Create new warehouse (Admin only)
-        /// </summary>
+        // Tạo kho mới
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<WarehouseDto>> CreateWarehouse([FromBody] CreateWarehouseDto dto)
         {
             var warehouse = await _warehouseService.CreateWarehouseAsync(dto);
             return CreatedAtAction(nameof(GetWarehouse), new { id = warehouse.Id }, warehouse);
         }
 
-        /// <summary>
-        /// Update warehouse (Admin only)
-        /// </summary>
+        //Cập nhật kho 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<WarehouseDto>> UpdateWarehouse(Guid id, [FromBody] UpdateWarehouseDto dto)
         {
             var warehouse = await _warehouseService.UpdateWarehouseAsync(id, dto);
@@ -64,11 +60,10 @@ namespace BookStore.API.Controllers
             return Ok(warehouse);
         }
 
-        /// <summary>
-        /// Delete warehouse (Admin only)
-        /// </summary>
+
+        // Xóa kho)
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteWarehouse(Guid id)
         {
             var result = await _warehouseService.DeleteWarehouseAsync(id);

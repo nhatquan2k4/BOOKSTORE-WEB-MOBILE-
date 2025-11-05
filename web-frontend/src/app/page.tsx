@@ -17,6 +17,7 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.8,
     reviews: 1234,
+    hot: true,
   },
   {
     id: 2,
@@ -27,6 +28,7 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.9,
     reviews: 856,
+    hot: true,
   },
   {
     id: 3,
@@ -37,6 +39,7 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.7,
     reviews: 645,
+    hot: false,
   },
   {
     id: 4,
@@ -47,6 +50,7 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.6,
     reviews: 432,
+    hot: false,
   },
   {
     id: 5,
@@ -57,6 +61,7 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.9,
     reviews: 1567,
+    hot: true,
   },
   {
     id: 6,
@@ -67,6 +72,7 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.5,
     reviews: 892,
+    hot: false,
   },
 ];
 
@@ -392,6 +398,14 @@ export default function HomePage() {
                         -{Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)}%
                       </Badge>
                     )}
+                    {book.hot && (
+                      <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg animate-pulse">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="mr-1">
+                          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+                        </svg>
+                        HOT
+                      </Badge>
+                    )}
                   </div>
                   <h3 className="font-semibold text-sm line-clamp-2 mb-1">
                     {book.title}
@@ -471,7 +485,7 @@ export default function HomePage() {
               ref={popularRef}
               onScroll={updateArrowsPopular}
               className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
-                        [-ms-overflow-style:none] [scrollbar-width:none] 
+                        [-ms-overflow-style:none] [scrollbar-width:none]
                         [&::-webkit-scrollbar]:hidden"
               style={{ overflowX: "auto" }}
             >

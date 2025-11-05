@@ -294,7 +294,7 @@ export function Header() {
           <Link href="/books" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
             Tất cả sách
           </Link>
-          <Link href="/books?category=bestseller" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
+          <Link href="/bestsellers" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
             Sách bán chạy
           </Link>
           <Link href="/books?category=new" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
@@ -352,7 +352,7 @@ export function Header() {
               Tất cả sách
             </Link>
             <Link
-              href="/books?category=bestseller"
+              href="/bestsellers"
               className="block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
               onClick={() => setShowMobileMenu(false)}
             >

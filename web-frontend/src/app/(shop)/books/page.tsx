@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Button, Badge, Alert, Input, Breadcrumb } from "@/components/ui";
+import { Button, Badge, Alert, Input } from "@/components/ui";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -283,10 +283,15 @@ export default function BooksPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Breadcrumb */}
-      <Breadcrumb items={[{ label: "Tất cả sách" }]} />
-      
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <nav className="mb-6 text-sm text-gray-600">
+          <Link href="/" className="hover:text-blue-600">
+            Trang chủ
+          </Link>{" "}
+          / <span className="font-medium text-gray-800">Tất cả sách</span>
+        </nav>
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Tất cả sách</h1>
@@ -657,7 +662,7 @@ export default function BooksPage() {
                 <div
                   className={
                     viewMode === "grid"
-                      ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                      ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
                       : "space-y-4"
                   }
                 >
@@ -672,91 +677,78 @@ export default function BooksPage() {
                       }
                     >
                       {viewMode === "grid" ? (
-                        /* Grid View */
-                        <Card hover className="h-full">
-                          <CardContent className="p-4">
-                            {/* Book Cover */}
-                            <div className="relative aspect-[3/4] mb-3 bg-gray-200 rounded-lg overflow-hidden">
-                              <Image
-                                src={book.cover}
-                                alt={book.title}
-                                fill
-                                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                              {/* Badges */}
-                              <div className="absolute top-2 left-2 flex flex-col gap-1">
-                                {book.originalPrice && (
-                                  <Badge variant="danger" className="text-xs">
-                                    -{calculateDiscount(book.originalPrice, book.price)}%
-                                  </Badge>
-                                )}
-                                {book.isBestseller && (
-                                  <Badge variant="warning" className="text-xs flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
-                                    </svg>
-                                    Hot
-                                  </Badge>
-                                )}
-                                {book.isNew && (
-                                  <Badge variant="success" className="text-xs flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-book-icon lucide-book">
-                                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
-                                    </svg>
-                                    Mới
-                                  </Badge>
-                                )}
+                        /* Grid View - Home page style */
+                        <div className="flex h-[320px] w-full flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group">
+                          {/* Book Cover */}
+                          <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+                            <Image
+                              src={book.cover}
+                              alt={book.title}
+                              fill
+                              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            
+                            {/* Discount Badge - Top Left */}
+                            {book.originalPrice && (
+                              <Badge variant="danger" className="absolute top-2 left-2 text-xs">
+                                -{calculateDiscount(book.originalPrice, book.price)}%
+                              </Badge>
+                            )}
+                            
+                            {/* HOT Badge - Top Right */}
+                            {book.isBestseller && (
+                              <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg animate-pulse">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="inline-block mr-1">
+                                  <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
+                                </svg>
+                                HOT
+                              </Badge>
+                            )}
+                            
+                            {/* NEW Badge - Top Right (if not bestseller) */}
+                            {book.isNew && !book.isBestseller && (
+                              <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold shadow-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="inline-block mr-1">
+                                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                                MỚI
+                              </Badge>
+                            )}
+                            
+                            {/* Out of Stock Overlay */}
+                            {book.stock === 0 && (
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <Badge variant="default" className="text-red">Hết hàng</Badge>
                               </div>
-                              {/* Stock Badge */}
-                              {book.stock === 0 && (
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                  <Badge variant="default">Hết hàng</Badge>
-                                </div>
-                              )}
-                              {book.stock > 0 && book.stock <= 5 && (
-                                <Badge
-                                  variant="danger"
-                                  className="absolute bottom-2 right-2 text-xs"
-                                >
-                                  Còn {book.stock}
-                                </Badge>
-                              )}
-                            </div>
+                            )}
+                            
+                            {/* Low Stock Badge - Bottom Right */}
+                            {book.stock > 0 && book.stock <= 5 && (
+                              <Badge variant="danger" className="absolute bottom-2 right-2 text-xs">
+                                Còn {book.stock}
+                              </Badge>
+                            )}
+                          </div>
 
-                            {/* Book Info */}
-                            <div>
-                              <h3 className="font-semibold text-sm line-clamp-2 text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
-                                {book.title}
-                              </h3>
-                              <p className="text-xs text-gray-600 mb-2">
-                                {book.author}
+                          {/* Book Info */}
+                          <h3 className="font-semibold text-sm line-clamp-2 mb-1">
+                            {book.title}
+                          </h3>
+                          <p className="text-xs text-gray-600 mb-1">{book.author}</p>
+                          
+                          {/* Price */}
+                          <div className="flex items-center gap-2 mt-auto">
+                            <p className="text-blue-600 font-bold text-sm">
+                              {formatPrice(book.price)}
+                            </p>
+                            {book.originalPrice && (
+                              <p className="text-xs text-gray-400 line-through">
+                                {formatPrice(book.originalPrice)}
                               </p>
-
-                              {/* Rating */}
-                              <div className="flex items-center gap-1 mb-2">
-                                <span className="text-yellow-500 text-sm">★</span>
-                                <span className="text-xs font-medium text-gray-700">
-                                  {book.rating}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  ({book.reviewCount})
-                                </span>
-                              </div>
-
-                              {/* Price */}
-                              <div className="flex items-baseline gap-2">
-                                <span className="font-bold text-blue-600">
-                                  {formatPrice(book.price)}
-                                </span>
-                                {book.originalPrice && (
-                                  <span className="text-xs text-gray-400 line-through">
-                                    {formatPrice(book.originalPrice)}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
+                            )}
+                          </div>
+                        </div>
                       ) : (
                         /* List View */
                         <>
