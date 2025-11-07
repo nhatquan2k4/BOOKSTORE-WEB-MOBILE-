@@ -25,9 +25,9 @@ namespace BookStore.API.Controllers
             _passwordService = passwordService;
         }
 
-        /// <summary>
+
         /// Đăng nhập
-        /// </summary>
+
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
@@ -61,9 +61,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Đăng ký tài khoản mới
-        /// </summary>
+
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
@@ -97,9 +97,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Làm mới token
-        /// </summary>
+
         [HttpPost("refresh-token")]
         [AllowAnonymous]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto refreshTokenDto)
@@ -133,9 +133,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Đăng xuất
-        /// </summary>
+
         [HttpPost("logout")]
         [Authorize]
         public async Task<IActionResult> Logout()
@@ -170,9 +170,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Đăng xuất tất cả thiết bị
-        /// </summary>
+
         [HttpPost("logout-all")]
         [Authorize]
         public async Task<IActionResult> LogoutAllDevices()
@@ -207,9 +207,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Đổi mật khẩu
-        /// </summary>
+
         [HttpPost("change-password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
@@ -256,7 +256,7 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Quên mật khẩu - Gửi email reset
         
         [HttpPost("forgot-password")]
@@ -283,9 +283,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Reset mật khẩu với token
-        /// </summary>
+
         [HttpPost("reset-password")]
         [AllowAnonymous]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
@@ -320,9 +320,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Lấy thông tin user hiện tại
-        /// </summary>
+
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()
@@ -367,9 +367,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Test endpoint - Kiểm tra JWT protected route
-        /// </summary>
+
         [HttpGet("test-protected")]
         [Authorize]
         public IActionResult TestProtectedRoute()
@@ -389,9 +389,9 @@ namespace BookStore.API.Controllers
             });
         }
 
-        /// <summary>
+
         /// Test endpoint - Tạo JWT token
-        /// </summary>
+
         [HttpPost("test-generate-token")]
         [AllowAnonymous]
         public IActionResult TestGenerateToken()

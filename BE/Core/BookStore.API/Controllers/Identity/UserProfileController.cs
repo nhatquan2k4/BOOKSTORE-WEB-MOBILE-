@@ -31,9 +31,9 @@ namespace BookStore.API.Controllers.Identity
 
         #region Profile Management
 
-        /// <summary>
+
         /// Lấy thông tin profile của user hiện tại
-        /// </summary>
+
         [HttpGet("profile")]
         public async Task<IActionResult> GetMyProfile()
         {
@@ -68,9 +68,9 @@ namespace BookStore.API.Controllers.Identity
             }
         }
 
-        /// <summary>
+
         /// Cập nhật thông tin profile của user hiện tại
-        /// </summary>
+
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateUserProfileDto dto)
         {
@@ -101,9 +101,9 @@ namespace BookStore.API.Controllers.Identity
 
         #region Address Management
 
-        /// <summary>
+
         /// Lấy danh sách địa chỉ của user hiện tại
-        /// </summary>
+
         [HttpGet("addresses")]
         public async Task<IActionResult> GetMyAddresses()
         {
@@ -129,9 +129,9 @@ namespace BookStore.API.Controllers.Identity
             }
         }
 
-        /// <summary>
+
         /// Lấy địa chỉ mặc định của user hiện tại
-        /// </summary>
+
         [HttpGet("addresses/default")]
         public async Task<IActionResult> GetDefaultAddress()
         {
@@ -166,9 +166,9 @@ namespace BookStore.API.Controllers.Identity
             }
         }
 
-        /// <summary>
+
         /// Thêm địa chỉ mới
-        /// </summary>
+
         [HttpPost("addresses")]
         public async Task<IActionResult> AddAddress([FromBody] CreateUserAddressDto dto)
         {
@@ -195,9 +195,9 @@ namespace BookStore.API.Controllers.Identity
             }
         }
 
-        /// <summary>
+
         /// Lấy thông tin địa chỉ theo ID
-        /// </summary>
+
         [HttpGet("addresses/{id}")]
         public async Task<IActionResult> GetAddressById(Guid id)
         {
@@ -232,9 +232,9 @@ namespace BookStore.API.Controllers.Identity
             }
         }
 
-        /// <summary>
+
         /// Cập nhật địa chỉ
-        /// </summary>
+
         [HttpPut("addresses/{id}")]
         public async Task<IActionResult> UpdateAddress(Guid id, [FromBody] UpdateUserAddressDto dto)
         {
@@ -270,9 +270,9 @@ namespace BookStore.API.Controllers.Identity
             }
         }
 
-        /// <summary>
+
         /// Xóa địa chỉ
-        /// </summary>
+
         [HttpDelete("addresses/{id}")]
         public async Task<IActionResult> DeleteAddress(Guid id)
         {
@@ -307,9 +307,9 @@ namespace BookStore.API.Controllers.Identity
             }
         }
 
-        /// <summary>
+
         /// Đặt địa chỉ mặc định
-        /// </summary>
+
         [HttpPut("addresses/{id}/set-default")]
         public async Task<IActionResult> SetDefaultAddress(Guid id)
         {
@@ -348,9 +348,9 @@ namespace BookStore.API.Controllers.Identity
 
         #region Helper Methods
 
-        /// <summary>
+
         /// Lấy userId từ JWT token của user hiện tại
-        /// </summary>
+
         private Guid GetCurrentUserId()
         {
             // Thử tìm claim "userId" hoặc "sub" (standard JWT claim)
