@@ -297,20 +297,20 @@ export function Header() {
           <Link href="/bestsellers" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
             Sách bán chạy
           </Link>
-          <Link href="/books?category=new" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
+          <Link href="/new-arrivals" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
             Sách mới
           </Link>
-          <Link href="/books?category=sale" className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors flex items-center gap-1">
+          <Link href="/promotions" className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors flex items-center gap-1">
             Khuyến mãi
             <Badge variant="danger" className="text-xs">Hot</Badge>
           </Link>
-          <Link href="/books?category=fiction" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
+          <Link href="/literature" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
             Văn học
           </Link>
-          <Link href="/books?category=self-help" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
+          <Link href="/life-skills" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
             Kỹ năng sống
           </Link>
-          <Link href="/books?category=business" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
+          <Link href="/economics" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
             Kinh tế
           </Link>
         </nav>

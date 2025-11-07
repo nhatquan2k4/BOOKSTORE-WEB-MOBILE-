@@ -1,17 +1,11 @@
-// app/books/page.tsx - Trang hiển thị tất cả sách
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Button, Badge, Alert, Input } from "@/components/ui";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
-import { EmptyState } from "@/components/ui/EmptyState";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 type Book = {
   id: string;
   title: string;
@@ -27,16 +21,126 @@ type Book = {
   isNew?: boolean;
 };
 
-type SortOption = "latest" | "popular" | "price-low" | "price-high" | "rating";
-type ViewMode = "grid" | "list";
+type SortOption = "popular" | "price-asc" | "price-desc" | "rating" | "name";
+type PriceRange = "all" | "under-100k" | "100k-300k" | "300k-500k" | "over-500k";
 
-// ============================================================================
-// MOCK DATA - Replace with real API
-// ============================================================================
 const MOCK_BOOKS: Book[] = [
   {
     id: "1",
-    title: "Clean Code: A Handbook of Agile Software Craftsmanship",
+    title: "Atomic Habits - Thói Quen Nguyên Tử",
+    author: "James Clear",
+    category: "Kỹ năng sống",
+    price: 195000,
+    originalPrice: 250000,
+    cover: "/image/anh.png",
+    rating: 4.9,
+    reviewCount: 3456,
+    stock: 120,
+    isBestseller: true,
+  },
+  {
+    id: "2",
+    title: "Đắc Nhân Tâm",
+    author: "Dale Carnegie",
+    category: "Kỹ năng sống",
+    price: 95000,
+    originalPrice: 120000,
+    cover: "/image/anh.png",
+    rating: 4.7,
+    reviewCount: 5678,
+    stock: 230,
+    isBestseller: true,
+  },
+  {
+    id: "3",
+    title: "Nhà Giả Kim",
+    author: "Paulo Coelho",
+    category: "Văn học",
+    price: 85000,
+    originalPrice: 110000,
+    cover: "/image/anh.png",
+    rating: 4.9,
+    reviewCount: 4321,
+    stock: 180,
+    isBestseller: true,
+  },
+  {
+    id: "4",
+    title: "Sapiens: Lược Sử Loài Người",
+    author: "Yuval Noah Harari",
+    category: "Khoa học",
+    price: 280000,
+    originalPrice: 350000,
+    cover: "/image/anh.png",
+    rating: 4.8,
+    reviewCount: 3421,
+    stock: 90,
+    isBestseller: true,
+  },
+  {
+    id: "5",
+    title: "Chiến Tranh Tiền Tệ",
+    author: "Song Hongbing",
+    category: "Kinh tế",
+    price: 165000,
+    originalPrice: 210000,
+    cover: "/image/anh.png",
+    rating: 4.6,
+    reviewCount: 1876,
+    stock: 45,
+  },
+  {
+    id: "6",
+    title: "Mắt Biếc",
+    author: "Nguyễn Nhật Ánh",
+    category: "Văn học",
+    price: 95000,
+    originalPrice: 120000,
+    cover: "/image/anh.png",
+    rating: 4.8,
+    reviewCount: 3987,
+    stock: 150,
+    isNew: true,
+  },
+  {
+    id: "7",
+    title: "Tư Duy Nhanh Và Chậm",
+    author: "Daniel Kahneman",
+    category: "Tâm lý học",
+    price: 245000,
+    originalPrice: 310000,
+    cover: "/image/anh.png",
+    rating: 4.8,
+    reviewCount: 1234,
+    stock: 60,
+  },
+  {
+    id: "8",
+    title: "Nghĩ Giàu Làm Giàu",
+    author: "Napoleon Hill",
+    category: "Kinh doanh",
+    price: 115000,
+    originalPrice: 145000,
+    cover: "/image/anh.png",
+    rating: 4.5,
+    reviewCount: 1987,
+    stock: 110,
+  },
+  {
+    id: "9",
+    title: "7 Thói Quen Hiệu Quả",
+    author: "Stephen Covey",
+    category: "Kỹ năng sống",
+    price: 125000,
+    originalPrice: 160000,
+    cover: "/image/anh.png",
+    rating: 4.6,
+    reviewCount: 2345,
+    stock: 95,
+  },
+  {
+    id: "10",
+    title: "Clean Code",
     author: "Robert C. Martin",
     category: "Lập trình",
     price: 350000,
@@ -46,202 +150,241 @@ const MOCK_BOOKS: Book[] = [
     reviewCount: 1234,
     stock: 45,
     isBestseller: true,
-    isNew: false,
   },
   {
-    id: "2",
-    title: "Design Patterns: Elements of Reusable Object-Oriented Software",
-    author: "Gang of Four",
-    category: "Lập trình",
-    price: 280000,
+    id: "11",
+    title: "Tôi Thấy Hoa Vàng Trên Cỏ Xanh",
+    author: "Nguyễn Nhật Ánh",
+    category: "Văn học",
+    price: 125000,
+    originalPrice: 160000,
     cover: "/image/anh.png",
     rating: 4.9,
-    reviewCount: 856,
-    stock: 23,
-    isBestseller: true,
-  },
-  {
-    id: "3",
-    title: "The Pragmatic Programmer",
-    author: "Andrew Hunt",
-    category: "Lập trình",
-    price: 320000,
-    originalPrice: 400000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 645,
-    stock: 8,
+    reviewCount: 4567,
+    stock: 140,
     isNew: true,
   },
   {
-    id: "4",
-    title: "Refactoring: Improving the Design of Existing Code",
-    author: "Martin Fowler",
-    category: "Lập trình",
-    price: 290000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 432,
-    stock: 67,
-  },
-  {
-    id: "5",
-    title: "Introduction to Algorithms",
-    author: "Thomas H. Cormen",
-    category: "Khoa học máy tính",
-    price: 450000,
-    originalPrice: 550000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 1567,
-    stock: 15,
-    isBestseller: true,
-  },
-  {
-    id: "6",
-    title: "You Don't Know JS",
-    author: "Kyle Simpson",
-    category: "Lập trình",
-    price: 180000,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviewCount: 892,
-    stock: 34,
-    isNew: true,
-  },
-  {
-    id: "7",
-    title: "Eloquent JavaScript",
-    author: "Marijn Haverbeke",
-    category: "Lập trình",
-    price: 250000,
-    originalPrice: 300000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 723,
-    stock: 2,
-  },
-  {
-    id: "8",
-    title: "Head First Design Patterns",
-    author: "Eric Freeman",
-    category: "Lập trình",
-    price: 380000,
+    id: "12",
+    title: "Homo Deus: Lược Sử Tương Lai",
+    author: "Yuval Noah Harari",
+    category: "Khoa học",
+    price: 295000,
+    originalPrice: 370000,
     cover: "/image/anh.png",
     rating: 4.8,
-    reviewCount: 934,
-    stock: 56,
-    isBestseller: true,
+    reviewCount: 2987,
+    stock: 75,
   },
   {
-    id: "9",
-    title: "Code Complete",
-    author: "Steve McConnell",
+    id: "13",
+    title: "The Lean Startup",
+    author: "Eric Ries",
+    category: "Kinh doanh",
+    price: 185000,
+    cover: "/image/anh.png",
+    rating: 4.6,
+    reviewCount: 876,
+    stock: 55,
+  },
+  {
+    id: "14",
+    title: "Càng Bình Tĩnh Càng Hạnh Phúc",
+    author: "Megumi",
+    category: "Tâm lý học",
+    price: 98000,
+    cover: "/image/anh.png",
+    rating: 4.5,
+    reviewCount: 2134,
+    stock: 180,
+    isNew: true,
+  },
+  {
+    id: "15",
+    title: "Đừng Bao Giờ Đi Ăn Một Mình",
+    author: "Keith Ferrazzi",
+    category: "Kỹ năng sống",
+    price: 155000,
+    originalPrice: 195000,
+    cover: "/image/anh.png",
+    rating: 4.5,
+    reviewCount: 876,
+    stock: 70,
+  },
+  {
+    id: "16",
+    title: "Nghệ Thuật Bán Hàng Vĩ Đại",
+    author: "Brian Tracy",
+    category: "Kinh doanh",
+    price: 168000,
+    originalPrice: 210000,
+    cover: "/image/anh.png",
+    rating: 4.7,
+    reviewCount: 876,
+    stock: 85,
+  },
+  {
+    id: "17",
+    title: "Số Đỏ",
+    author: "Vũ Trọng Phụng",
+    category: "Văn học",
+    price: 115000,
+    cover: "/image/anh.png",
+    rating: 4.7,
+    reviewCount: 2345,
+    stock: 95,
+  },
+  {
+    id: "18",
+    title: "Truyện Kiều",
+    author: "Nguyễn Du",
+    category: "Văn học",
+    price: 185000,
+    cover: "/image/anh.png",
+    rating: 4.9,
+    reviewCount: 4567,
+    stock: 110,
+  },
+  {
+    id: "19",
+    title: "Deep Work",
+    author: "Cal Newport",
+    category: "Kỹ năng sống",
+    price: 175000,
+    cover: "/image/anh.png",
+    rating: 4.8,
+    reviewCount: 1987,
+    stock: 65,
+  },
+  {
+    id: "20",
+    title: "Design Patterns",
+    author: "Gang of Four",
     category: "Lập trình",
     price: 420000,
     originalPrice: 500000,
     cover: "/image/anh.png",
     rating: 4.9,
-    reviewCount: 1123,
-    stock: 12,
+    reviewCount: 856,
+    stock: 35,
   },
   {
-    id: "10",
-    title: "The Art of Computer Programming",
-    author: "Donald Knuth",
-    category: "Khoa học máy tính",
-    price: 680000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 567,
-    stock: 0,
-  },
-  {
-    id: "11",
-    title: "Cracking the Coding Interview",
-    author: "Gayle Laakmann McDowell",
-    category: "Lập trình",
-    price: 340000,
+    id: "21",
+    title: "Kinh Tế Học Vi Mô",
+    author: "N. Gregory Mankiw",
+    category: "Kinh tế",
+    price: 275000,
+    originalPrice: 340000,
     cover: "/image/anh.png",
     rating: 4.6,
-    reviewCount: 2134,
-    stock: 78,
+    reviewCount: 1987,
+    stock: 50,
+  },
+  {
+    id: "22",
+    title: "Tuyển Tập Thơ Xuân Diệu",
+    author: "Xuân Diệu",
+    category: "Văn học",
+    price: 145000,
+    cover: "/image/anh.png",
+    rating: 4.9,
+    reviewCount: 1234,
+    stock: 80,
+  },
+  {
+    id: "23",
+    title: "Psychology of Money",
+    author: "Morgan Housel",
+    category: "Kinh tế",
+    price: 195000,
+    originalPrice: 245000,
+    cover: "/image/anh.png",
+    rating: 4.8,
+    reviewCount: 2876,
+    stock: 90,
     isNew: true,
   },
   {
-    id: "12",
-    title: "JavaScript: The Good Parts",
-    author: "Douglas Crockford",
-    category: "Lập trình",
-    price: 220000,
-    originalPrice: 280000,
+    id: "24",
+    title: "Cây Cam Ngọt Của Tôi",
+    author: "José Mauro de Vasconcelos",
+    category: "Văn học",
+    price: 135000,
+    originalPrice: 170000,
     cover: "/image/anh.png",
-    rating: 4.4,
-    reviewCount: 456,
-    stock: 23,
+    rating: 4.8,
+    reviewCount: 3456,
+    stock: 120,
   },
 ];
 
 const CATEGORIES = [
-  "Tất cả",
-  "Lập trình",
-  "Khoa học máy tính",
-  "Kinh doanh",
-  "Thiết kế",
-  "Kỹ năng sống",
-  "Văn học",
-  "Thiếu nhi",
+  { id: "all", name: "Tất cả", icon: "📚" },
+  { id: "Văn học", name: "Văn học", icon: "📖" },
+  { id: "Kỹ năng sống", name: "Kỹ năng sống", icon: "💡" },
+  { id: "Kinh tế", name: "Kinh tế", icon: "💰" },
+  { id: "Kinh doanh", name: "Kinh doanh", icon: "💼" },
+  { id: "Khoa học", name: "Khoa học", icon: "🔬" },
+  { id: "Lập trình", name: "Lập trình", icon: "💻" },
+  { id: "Tâm lý học", name: "Tâm lý học", icon: "🧠" },
 ];
 
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-export default function BooksPage() {
+export default function AllBooksPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Tất cả");
-  const [sortBy, setSortBy] = useState<SortOption>("latest");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [sortBy, setSortBy] = useState<SortOption>("popular");
+  const [priceRange, setPriceRange] = useState<PriceRange>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
-  const [showFilters, setShowFilters] = useState(true);
-  const [showScrollTop, setShowScrollTop] = useState(false);
+  const itemsPerPage = 18;
 
-  const itemsPerPage = 12;
-
-  // Filter books
-  const filteredBooks = MOCK_BOOKS.filter((book) => {
-    const matchesSearch =
+  const searchedBooks = MOCK_BOOKS.filter(
+    (book) =>
       book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "Tất cả" || book.category === selectedCategory;
-    const matchesPrice =
-      book.price >= priceRange[0] && book.price <= priceRange[1];
-    return matchesSearch && matchesCategory && matchesPrice;
+      book.author.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const categoryBooks =
+    selectedCategory === "all"
+      ? searchedBooks
+      : searchedBooks.filter((book) => book.category === selectedCategory);
+
+  const priceFilteredBooks = categoryBooks.filter((book) => {
+    switch (priceRange) {
+      case "under-100k":
+        return book.price < 100000;
+      case "100k-300k":
+        return book.price >= 100000 && book.price < 300000;
+      case "300k-500k":
+        return book.price >= 300000 && book.price < 500000;
+      case "over-500k":
+        return book.price >= 500000;
+      default:
+        return true;
+    }
   });
 
-  // Sort books
-  const sortedBooks = [...filteredBooks].sort((a, b) => {
+  const sortedBooks = [...priceFilteredBooks].sort((a, b) => {
     switch (sortBy) {
       case "popular":
         return b.reviewCount - a.reviewCount;
-      case "price-low":
+      case "price-asc":
         return a.price - b.price;
-      case "price-high":
+      case "price-desc":
         return b.price - a.price;
       case "rating":
         return b.rating - a.rating;
+      case "name":
+        return a.title.localeCompare(b.title);
       default:
         return 0;
     }
   });
 
-  // Pagination
   const totalPages = Math.ceil(sortedBooks.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedBooks = sortedBooks.slice(startIndex, startIndex + itemsPerPage);
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedBooks = sortedBooks.slice(startIndex, endIndex);
 
-  // Format price
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -249,42 +392,33 @@ export default function BooksPage() {
     }).format(price);
   };
 
-  // Calculate discount
   const calculateDiscount = (original: number, current: number) => {
     return Math.round(((original - current) / original) * 100);
   };
 
-  // Scroll to top handler
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // Handle scroll for scroll-to-top button
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
-  // Clear all filters
-  const clearFilters = () => {
-    setSearchQuery("");
-    setSelectedCategory("Tất cả");
-    setPriceRange([0, 1000000]);
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
     setCurrentPage(1);
   };
 
+  const handlePriceRangeChange = (range: PriceRange) => {
+    setPriceRange(range);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const getCategoryCount = (categoryId: string) => {
+    if (categoryId === "all") return MOCK_BOOKS.length;
+    return MOCK_BOOKS.filter((book) => book.category === categoryId).length;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Breadcrumb */}
+    <main className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
         <nav className="mb-6 text-sm text-gray-600">
           <Link href="/" className="hover:text-blue-600">
             Trang chủ
@@ -292,626 +426,381 @@ export default function BooksPage() {
           / <span className="font-medium text-gray-800">Tất cả sách</span>
         </nav>
 
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Tất cả sách</h1>
-          <p className="text-gray-600">
-            Khám phá {MOCK_BOOKS.length} đầu sách từ các tác giả nổi tiếng
+          <div className="flex items-center gap-3 mb-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="40"
+              height="40"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-blue-600"
+            >
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+            </svg>
+            <h1 className="text-4xl font-bold text-gray-900">Tất Cả Sách</h1>
+          </div>
+          <p className="text-gray-600 text-lg">
+            Khám phá {sortedBooks.length} đầu sách từ nhiều thể loại khác nhau
           </p>
         </div>
 
-        {/* Alert - Free shipping */}
-        <Alert variant="info" className="mb-6">
-          <div className="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
-              <path d="M15 18H9"/>
-              <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
-              <circle cx="17" cy="18" r="2"/>
-              <circle cx="7" cy="18" r="2"/>
-            </svg>
-            <span>
-              <strong>Miễn phí vận chuyển</strong> cho đơn hàng từ 500.000₫
-            </span>
-          </div>
-        </Alert>
-
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <div className="mb-6">
+            <div className="relative">
+              <input
                 type="text"
                 placeholder="Tìm kiếm theo tên sách, tác giả..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full px-5 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
-            <Button
-              variant="primary"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              {showFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
-            </Button>
+          </div>
+
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Danh mục:</h3>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategoryChange(cat.id)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    selectedCategory === cat.id
+                      ? "bg-blue-600 text-white shadow-lg"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <span className="mr-2">{cat.icon}</span>
+                  {cat.name}
+                  <span className="ml-2 text-xs opacity-75">
+                    ({getCategoryCount(cat.id)})
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="price-range" className="text-sm font-semibold text-gray-700 mb-2 block">
+                Khoảng giá:
+              </label>
+              <select
+                id="price-range"
+                value={priceRange}
+                onChange={(e) => handlePriceRangeChange(e.target.value as PriceRange)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Tất cả</option>
+                <option value="under-100k">Dưới 100.000₫</option>
+                <option value="100k-300k">100.000₫ - 300.000₫</option>
+                <option value="300k-500k">300.000₫ - 500.000₫</option>
+                <option value="over-500k">Trên 500.000₫</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="sort-by" className="text-sm font-semibold text-gray-700 mb-2 block">
+                Sắp xếp:
+              </label>
+              <select
+                id="sort-by"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="popular">Phổ biến nhất</option>
+                <option value="rating">Đánh giá cao</option>
+                <option value="price-asc">Giá tăng dần</option>
+                <option value="price-desc">Giá giảm dần</option>
+                <option value="name">Tên A-Z</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="flex gap-6">
-          {/* Sidebar - Filters */}
-          {showFilters && (
-            <div className="w-64 flex-shrink-0">
-              <Card className="sticky top-4">
-                <CardContent className="p-6">
-                  {/* Categories */}
-                  <div className="mb-6">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect width="8" height="18" x="3" y="3" rx="1"/>
-                        <path d="M7 3v18"/>
-                        <path d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z"/>
-                      </svg>
-                      Danh mục sách
-                    </h3>
-                    <div className="space-y-1.5">
-                      {CATEGORIES.map((cat) => {
-                        const count = cat === "Tất cả" 
-                          ? MOCK_BOOKS.length 
-                          : MOCK_BOOKS.filter((b) => b.category === cat).length;
-                        const isActive = selectedCategory === cat;
-                        
-                        return (
-                          <Button
-                            key={cat}
-                            onClick={() => {
-                              setSelectedCategory(cat);
-                              setCurrentPage(1);
-                            }}
-                            className={`
-                              w-full group relative overflow-hidden
-                              rounded-xl px-4 py-3 
-                              transition-all duration-200
-                              ${isActive 
-                                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]" 
-                                : "bg-white hover:bg-gray-50 text-gray-700 hover:shadow-md border border-gray-100"
-                              }
-                            `}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                {/* Category Icon */}
-                                <div className={`
-                                  w-8 h-8 rounded-full flex items-center justify-center
-                                  transition-colors
-                                  ${isActive 
-                                    ? "bg-white/20" 
-                                    : "bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200"
-                                  }
-                                `}>
-                                  {cat === "Tất cả" ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <rect width="18" height="18" x="3" y="3" rx="2"/>
-                                      <path d="M7 7v10"/>
-                                      <path d="M11 7v10"/>
-                                      <path d="m15 7 2 10"/>
-                                    </svg>
-                                  ) : cat === "Lập trình" ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <polyline points="16 18 22 12 16 6"/>
-                                      <polyline points="8 6 2 12 8 18"/>
-                                    </svg>
-                                  ) : cat === "Khoa học máy tính" ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <rect width="14" height="8" x="5" y="2" rx="2"/>
-                                      <rect width="20" height="8" x="2" y="14" rx="2"/>
-                                      <path d="M6 18h2"/>
-                                      <path d="M12 18h6"/>
-                                    </svg>
-                                  ) : cat === "Kinh doanh" ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <line x1="12" x2="12" y1="2" y2="22"/>
-                                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                                    </svg>
-                                  ) : cat === "Thiết kế" ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <path d="m15 5 4 4"/>
-                                      <path d="M13 7 8.7 2.7a2.41 2.41 0 0 0-3.4 0L2.7 5.3a2.41 2.41 0 0 0 0 3.4L7 13"/>
-                                      <path d="m8 6 2-2"/>
-                                      <path d="m2 22 5.5-1.5L21.17 6.83a2.82 2.82 0 0 0-4-4L3.5 16.5Z"/>
-                                      <path d="m18 16 2-2"/>
-                                      <path d="m17 11 4.3 4.3c.94.94.94 2.46 0 3.4l-2.6 2.6c-.94.94-2.46.94-3.4 0L11 17"/>
-                                    </svg>
-                                  ) : cat === "Kỹ năng sống" ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/>
-                                      <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>
-                                      <path d="M12 2v2"/>
-                                      <path d="M12 22v-2"/>
-                                      <path d="m17 20.66-1-1.73"/>
-                                      <path d="M11 10.27 7 3.34"/>
-                                      <path d="m20.66 17-1.73-1"/>
-                                      <path d="m3.34 7 1.73 1"/>
-                                      <path d="M14 12h8"/>
-                                      <path d="M2 12h2"/>
-                                      <path d="m20.66 7-1.73 1"/>
-                                      <path d="m3.34 17 1.73-1"/>
-                                      <path d="m17 3.34-1 1.73"/>
-                                      <path d="m11 13.73-4 6.93"/>
-                                    </svg>
-                                  ) : cat === "Văn học" ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <path d="m16 6 4 14"/>
-                                      <path d="M12 6v14"/>
-                                      <path d="M8 8v12"/>
-                                      <path d="M4 4v16"/>
-                                    </svg>
-                                  ) : cat === "Thiếu nhi" ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
-                                      <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
-                                      <path d="M15 13a2 2 0 0 1-3 0"/>
-                                      <path d="M9 9h.01"/>
-                                      <path d="M15 9h.01"/>
-                                    </svg>
-                                  ) : (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
-                                    </svg>
-                                  )}
-                                </div>
-                                
-                                {/* Category Name */}
-                                <span className={`font-medium ${isActive ? "text-white" : "text-gray-900 group-hover:text-blue-600"}`}>
-                                  {cat}
-                                </span>
-                              </div>
-                              
-                              {/* Count Badge */}
-                              <Badge 
-                                variant={isActive ? "default" : "info"}
-                                className={`
-                                  text-xs font-semibold
-                                  ${isActive 
-                                    ? "bg-white/20 text-white border-white/30" 
-                                    : "bg-blue-50 text-blue-700 border-blue-200"
-                                  }
-                                `}
-                              >
-                                {count}
-                              </Badge>
-                            </div>
-                            
-                            {/* Active Indicator */}
-                            {isActive && (
-                              <div className="absolute right-0 top-0 bottom-0 w-1 bg-white rounded-l-full"/>
-                            )}
-                          </Button>  
-                        );
-                      })}
-                    </div>
-                  </div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div className="text-sm text-gray-600">
+            Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
+            <span className="font-semibold">{Math.min(endIndex, sortedBooks.length)}</span> trong
+            tổng số <span className="font-semibold">{sortedBooks.length}</span> sách
+          </div>
 
-                  {/* Price Range */}
-                  <div className="mb-6">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" x2="12" y1="2" y2="22"/>
-                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                      </svg>
-                      Khoảng giá
-                    </h3>
-                    <div className="space-y-2">
-                      {[
-                        { label: "Dưới 200.000₫", range: [0, 200000] as [number, number], icon: "💰" },
-                        { label: "200.000₫ - 400.000₫", range: [200000, 400000] as [number, number], icon: "💵" },
-                        { label: "Trên 400.000₫", range: [400000, 1000000] as [number, number], icon: "💎" },
-                        { label: "Tất cả", range: [0, 1000000] as [number, number], icon: "🎯" },
-                      ].map((item, idx) => {
-                        const isActive = priceRange[0] === item.range[0] && priceRange[1] === item.range[1];
-                        return (
-                          <label
-                            key={idx}
-                            className={`
-                              flex items-center gap-3 p-3 rounded-lg cursor-pointer
-                              transition-all duration-200 border
-                              ${isActive 
-                                ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 shadow-sm" 
-                                : "bg-white hover:bg-gray-50 border-gray-200 hover:border-green-200"
-                              }
-                            `}
-                          >
-                            <input
-                              type="radio"
-                              name="price"
-                              checked={isActive}
-                              onChange={() => setPriceRange(item.range)}
-                              className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500 focus:ring-2"
-                            />
-                            <div className="flex-1 flex items-center justify-between">
-                              <span className={`text-sm font-medium ${isActive ? "text-green-900" : "text-gray-700"}`}>
-                                {item.label}
-                              </span>
-                              {isActive && (
-                                <Badge variant="success" className="text-xs">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="20 6 9 17 4 12"/>
-                                  </svg>
-                                </Badge>
-                              )}
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Quick Filters */}
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                      </svg>
-                      Bộ lọc nhanh
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="warning" className="cursor-pointer flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
-                        </svg>
-                        Bestseller
-                      </Badge>
-                      <Badge variant="success" className="cursor-pointer flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10"/>
-                          <path d="m15 9-6 6"/>
-                          <path d="m9 9 6 6"/>
-                        </svg>
-                        Mới nhất
-                      </Badge>
-                      <Badge variant="danger" className="cursor-pointer flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
-                          <path d="m15 9-6 6"/>
-                          <path d="M9 9h.01"/>
-                          <path d="M15 15h.01"/>
-                        </svg>
-                        Giảm giá
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          <div className="flex gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-orange-500"
+              >
+                <path d="M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z" />
+              </svg>
+              <span className="text-gray-600">
+                {MOCK_BOOKS.filter((b) => b.isBestseller).length} Best Seller
+              </span>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-green-500"
+              >
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+              <span className="text-gray-600">
+                {MOCK_BOOKS.filter((b) => b.isNew).length} Sách mới
+              </span>
+            </div>
+          </div>
+        </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Toolbar */}
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-2">
-                  <Badge variant="info">
-                    {filteredBooks.length} kết quả
-                  </Badge>
-                  {selectedCategory !== "Tất cả" && (
-                    <Badge variant="default">{selectedCategory}</Badge>
-                  )}
-                  {searchQuery && (
-                    <Badge variant="info">
-                      Tìm kiếm: &quot;{searchQuery}&quot;;
+        {paginatedBooks.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+            {paginatedBooks.map((book) => (
+              <Link
+                key={book.id}
+                href={`/books/${book.id}`}
+                className="group bg-white rounded-xl p-3 shadow-sm hover:shadow-xl transition-all duration-300"
+              >
+                <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+                  <Image
+                    src={book.cover}
+                    alt={book.title}
+                    fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+
+                  <div className="absolute top-2 right-2 flex flex-col gap-1">
+                    {book.isBestseller && (
+                      <Badge className="text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="inline-block mr-1"
+                        >
+                          <path d="M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z" />
+                        </svg>
+                        HOT
+                      </Badge>
+                    )}
+                    {book.isNew && (
+                      <Badge className="text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold shadow-lg">
+                        MỚI
+                      </Badge>
+                    )}
+                  </div>
+
+                  {book.originalPrice && (
+                    <Badge variant="danger" className="absolute top-2 left-2 text-xs">
+                      -{calculateDiscount(book.originalPrice, book.price)}%
                     </Badge>
                   )}
+
+                  {book.stock < 10 && book.stock > 0 && (
+                    <Badge variant="warning" className="absolute bottom-2 left-2 text-xs">
+                      Chỉ còn {book.stock}
+                    </Badge>
+                  )}
+                  {book.stock === 0 && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Badge variant="danger" className="text-sm font-bold">
+                        HẾT HÀNG
+                      </Badge>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-4">
-                  {/* Sort */}
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="latest">Mới nhất</option>
-                    <option value="popular">Phổ biến nhất</option>
-                    <option value="rating">Đánh giá cao</option>
-                    <option value="price-low">Giá thấp đến cao</option>
-                    <option value="price-high">Giá cao đến thấp</option>
-                  </select>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-sm line-clamp-2 min-h-[40px]">
+                    {book.title}
+                  </h3>
+                  <p className="text-xs text-gray-600">{book.author}</p>
+                  <p className="text-xs text-gray-500">{book.category}</p>
 
-                  {/* View Mode */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant={viewMode === "grid" ? "primary" : "secondary"}
-                      onClick={() => setViewMode("grid")}
-                      size="sm"
+                  <div className="flex items-center gap-2 pt-1">
+                    <p className="text-blue-600 font-bold text-sm">
+                      {formatPrice(book.price)}
+                    </p>
+                    {book.originalPrice && (
+                      <p className="text-xs text-gray-400 line-through">
+                        {formatPrice(book.originalPrice)}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 pt-1">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="text-yellow-400"
                     >
-                      ⊞
-                    </Button>
-                    <Button
-                      variant={viewMode === "list" ? "primary" : "secondary"}
-                      onClick={() => setViewMode("list")}
-                      size="sm"
-                    >
-                      ☰
-                    </Button>
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                    <span className="text-xs text-gray-600">{book.rating}</span>
+                    <span className="text-xs text-gray-400">({book.reviewCount})</span>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Books Grid/List */}
-            {paginatedBooks.length === 0 ? (
-              <EmptyState
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
-                  </svg>
-                }
-                title="Không tìm thấy sách"
-                description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                action={{
-                  label: "Xóa bộ lọc",
-                  onClick: () => {
-                    setSearchQuery("");
-                    setSelectedCategory("Tất cả");
-                    setPriceRange([0, 1000000]);
-                  }
-                }}
-              />
-            ) : (
-              <>
-                <div
-                  className={
-                    viewMode === "grid"
-                      ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
-                      : "space-y-4"
-                  }
-                >
-                  {paginatedBooks.map((book) => (
-                    <Link
-                      key={book.id}
-                      href={`/books/${book.id}`}
-                      className={
-                        viewMode === "grid"
-                          ? "group"
-                          : "flex gap-4 bg-white rounded-lg shadow-sm hover:shadow-lg transition-all p-4"
-                      }
-                    >
-                      {viewMode === "grid" ? (
-                        /* Grid View - Home page style */
-                        <div className="flex h-[320px] w-full flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group">
-                          {/* Book Cover */}
-                          <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
-                            <Image
-                              src={book.cover}
-                              alt={book.title}
-                              fill
-                              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                            
-                            {/* Discount Badge - Top Left */}
-                            {book.originalPrice && (
-                              <Badge variant="danger" className="absolute top-2 left-2 text-xs">
-                                -{calculateDiscount(book.originalPrice, book.price)}%
-                              </Badge>
-                            )}
-                            
-                            {/* HOT Badge - Top Right */}
-                            {book.isBestseller && (
-                              <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg animate-pulse">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="inline-block mr-1">
-                                  <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
-                                </svg>
-                                HOT
-                              </Badge>
-                            )}
-                            
-                            {/* NEW Badge - Top Right (if not bestseller) */}
-                            {book.isNew && !book.isBestseller && (
-                              <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold shadow-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="inline-block mr-1">
-                                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                </svg>
-                                MỚI
-                              </Badge>
-                            )}
-                            
-                            {/* Out of Stock Overlay */}
-                            {book.stock === 0 && (
-                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                <Badge variant="default" className="text-red">Hết hàng</Badge>
-                              </div>
-                            )}
-                            
-                            {/* Low Stock Badge - Bottom Right */}
-                            {book.stock > 0 && book.stock <= 5 && (
-                              <Badge variant="danger" className="absolute bottom-2 right-2 text-xs">
-                                Còn {book.stock}
-                              </Badge>
-                            )}
-                          </div>
-
-                          {/* Book Info */}
-                          <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                            {book.title}
-                          </h3>
-                          <p className="text-xs text-gray-600 mb-1">{book.author}</p>
-                          
-                          {/* Price */}
-                          <div className="flex items-center gap-2 mt-auto">
-                            <p className="text-blue-600 font-bold text-sm">
-                              {formatPrice(book.price)}
-                            </p>
-                            {book.originalPrice && (
-                              <p className="text-xs text-gray-400 line-through">
-                                {formatPrice(book.originalPrice)}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        /* List View */
-                        <>
-                          {/* Book Cover */}
-                          <div className="relative w-32 h-44 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                            <Image
-                              src={book.cover}
-                              alt={book.title}
-                              fill
-                              className="object-cover"
-                            />
-                            {book.originalPrice && (
-                              <Badge
-                                variant="danger"
-                                className="absolute top-2 left-2 text-xs"
-                              >
-                                -{calculateDiscount(book.originalPrice, book.price)}%
-                              </Badge>
-                            )}
-                          </div>
-
-                          {/* Book Info */}
-                          <div className="flex-1 flex flex-col justify-between">
-                            <div>
-                              <div className="flex items-start gap-2 mb-2">
-                                <h3 className="font-semibold text-lg text-gray-900 hover:text-blue-600 transition-colors flex-1">
-                                  {book.title}
-                                </h3>
-                                <div className="flex gap-1">
-                                  {book.isBestseller && (
-                                    <Badge variant="warning" className="text-xs">
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
-                                      </svg>
-                                    </Badge>
-                                  )}
-                                  {book.isNew && (
-                                    <Badge variant="success" className="text-xs">
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <path d="m15 9-6 6"/>
-                                        <path d="m9 9 6 6"/>
-                                      </svg>
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                              <p className="text-gray-600 mb-2">{book.author}</p>
-                              <Badge variant="default" className="mb-3">
-                                {book.category}
-                              </Badge>
-
-                              {/* Rating */}
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-yellow-500">★</span>
-                                  <span className="font-medium text-gray-700">
-                                    {book.rating}
-                                  </span>
-                                </div>
-                                <span className="text-gray-500">
-                                  ({book.reviewCount} đánh giá)
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Price & Stock */}
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="flex items-baseline gap-2">
-                                  <span className="text-2xl font-bold text-blue-600">
-                                    {formatPrice(book.price)}
-                                  </span>
-                                  {book.originalPrice && (
-                                    <span className="text-gray-400 line-through">
-                                      {formatPrice(book.originalPrice)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div>
-                                {book.stock === 0 ? (
-                                  <Badge variant="default">Hết hàng</Badge>
-                                ) : book.stock <= 5 ? (
-                                  <Badge variant="danger">
-                                    Còn {book.stock} cuốn
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="success">Còn hàng</Badge>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </Link>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="mt-8 flex justify-center">
-                    <Pagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      onPageChange={setCurrentPage}
-                    />
-                  </div>
-                )}
-              </>
-            )}
+              </Link>
+            ))}
           </div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="64"
+              height="64"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mx-auto mb-4 text-gray-400"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Không tìm thấy sách
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Không có sách nào phù hợp với bộ lọc của bạn.
+            </p>
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedCategory("all");
+                setPriceRange("all");
+                setCurrentPage(1);
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Xóa bộ lọc
+            </button>
+          </div>
+        )}
 
-        {/* Stats Bar */}
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[
-            { 
-              icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
-              </svg>, 
-              label: "Tổng số sách", 
-              value: MOCK_BOOKS.length 
-            },
-            {
-              icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
-              </svg>,
-              label: "Bestsellers",
-              value: MOCK_BOOKS.filter((b) => b.isBestseller).length,
-            },
-            {
-              icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="m15 9-6 6"/>
-                <path d="m9 9 6 6"/>
-              </svg>,
-              label: "Sách mới",
-              value: MOCK_BOOKS.filter((b) => b.isNew).length,
-            },
-            {
-              icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>,
-              label: "Đánh giá TB",
-              value: (
-                MOCK_BOOKS.reduce((sum, b) => sum + b.rating, 0) /
-                MOCK_BOOKS.length
-              ).toFixed(1),
-            },
-          ].map((stat, idx) => (
-            <Card key={idx} hover>
-              <CardContent className="p-6 text-center">
-                <div className="text-4xl mb-2">{stat.icon}</div>
-                <div className="text-3xl font-bold text-blue-600 mb-1">
-                  {stat.value}
-                </div>
-                <div className="text-gray-600">{stat.label}</div>
-              </CardContent>
-            </Card>
-          ))}
+        {totalPages > 1 && (
+          <div className="flex justify-center mb-8">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
+
+        <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link
+            href="/literature"
+            className="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
+          >
+            <div className="text-4xl mb-2">📖</div>
+            <h3 className="font-bold text-lg mb-1">Văn học</h3>
+            <p className="text-sm opacity-90">
+              {MOCK_BOOKS.filter((b) => b.category === "Văn học").length} đầu sách
+            </p>
+          </Link>
+          <Link
+            href="/life-skills"
+            className="bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
+          >
+            <div className="text-4xl mb-2">💡</div>
+            <h3 className="font-bold text-lg mb-1">Kỹ năng sống</h3>
+            <p className="text-sm opacity-90">
+              {MOCK_BOOKS.filter((b) => b.category === "Kỹ năng sống").length} đầu sách
+            </p>
+          </Link>
+          <Link
+            href="/economics"
+            className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
+          >
+            <div className="text-4xl mb-2">💰</div>
+            <h3 className="font-bold text-lg mb-1">Kinh tế</h3>
+            <p className="text-sm opacity-90">
+              {MOCK_BOOKS.filter((b) => b.category === "Kinh tế").length} đầu sách
+            </p>
+          </Link>
+          <Link
+            href="/new-arrivals"
+            className="bg-gradient-to-br from-green-500 to-green-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
+          >
+            <div className="text-4xl mb-2">✨</div>
+            <h3 className="font-bold text-lg mb-1">Sách mới</h3>
+            <p className="text-sm opacity-90">
+              {MOCK_BOOKS.filter((b) => b.isNew).length} đầu sách
+            </p>
+          </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
