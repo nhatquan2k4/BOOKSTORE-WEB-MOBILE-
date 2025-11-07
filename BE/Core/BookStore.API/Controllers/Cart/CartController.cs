@@ -1,5 +1,6 @@
 using BookStore.Application.Dtos.Cart;
 using BookStore.Application.IService.Cart;
+using BookStore.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -24,9 +25,9 @@ namespace BookStore.API.Controllers.Cart
         {
             var userId = GetCurrentUserId();
             var cart = await _cartService.GetActiveCartByUserIdAsync(userId);
-            
+
             if (cart == null)
-                return Ok(new { Message = "Cart is empty", Cart = (CartDto?)null });
+                return Ok(new { Message = "Giỏ hàng trống", Cart = (CartDto?)null });
 
             return Ok(cart);
         }
@@ -37,9 +38,9 @@ namespace BookStore.API.Controllers.Cart
         {
             var userId = GetCurrentUserId();
             var cart = await _cartService.GetCartByIdAsync(id);
-            
+
             if (cart == null)
-                return NotFound(new { Message = "Cart not found" });
+                return NotFound(new { Message = "Không tìm thấy giỏ hàng" });
 
             // Check authorization: user can only see their own cart
             if (cart.UserId != userId && !User.IsInRole("Admin"))
@@ -70,22 +71,48 @@ namespace BookStore.API.Controllers.Cart
         [HttpPost("add")]
         public async Task<IActionResult> AddToCart([FromBody] AddToCartDto dto)
         {
-            var userId = GetCurrentUserId();
-            dto.UserId = userId; // Ensure user can only add to their own cart
+            try
+            {
+                var userId = GetCurrentUserId();
+                dto.UserId = userId; // Ensure user can only add to their own cart
 
-            var cart = await _cartService.AddToCartAsync(dto);
-            return Ok(cart);
+                var cart = await _cartService.AddToCartAsync(dto);
+                return Ok(cart);
+            }
+            catch (UserFriendlyException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng", details = ex.Message });
+            }
         }
 
         // PUT: api/cart/update-quantity
         [HttpPut("update-quantity")]
         public async Task<IActionResult> UpdateCartItemQuantity([FromBody] UpdateCartItemDto dto)
         {
-            var userId = GetCurrentUserId();
-            dto.UserId = userId; // Ensure user can only update their own cart
+            try
+            {
+                var userId = GetCurrentUserId();
+                dto.UserId = userId; // Ensure user can only update their own cart
 
-            var cart = await _cartService.UpdateCartItemQuantityAsync(dto);
-            return Ok(cart);
+                var cart = await _cartService.UpdateCartItemQuantityAsync(dto);
+                return Ok(cart);
+            }
+            catch (UserFriendlyException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi cập nhật số lượng", details = ex.Message });
+            }
         }
 
         // DELETE: api/cart/remove
@@ -107,7 +134,7 @@ namespace BookStore.API.Controllers.Cart
             var dto = new ClearCartDto { UserId = userId };
 
             var cart = await _cartService.ClearCartAsync(dto);
-            return Ok(new { Message = "Cart cleared successfully", Cart = cart });
+            return Ok(new { Message = "Đã xóa giỏ hàng thành công", Cart = cart });
         }
 
         // GET: api/cart/validate-checkout
@@ -116,13 +143,13 @@ namespace BookStore.API.Controllers.Cart
         {
             var userId = GetCurrentUserId();
             var isValid = await _cartService.ValidateCartForCheckoutAsync(userId);
-            
-            return Ok(new 
-            { 
+
+            return Ok(new
+            {
                 IsValid = isValid,
-                Message = isValid 
-                    ? "Cart is ready for checkout" 
-                    : "Cart is not valid for checkout. Please check cart items."
+                Message = isValid
+                    ? "Giỏ hàng đã sẵn sàng để thanh toán"
+                    : "Giỏ hàng không hợp lệ để thanh toán. Vui lòng kiểm tra các mặt hàng trong giỏ."
             });
         }
 
@@ -132,13 +159,15 @@ namespace BookStore.API.Controllers.Cart
         public async Task<IActionResult> CleanupStaleCarts([FromQuery] int daysThreshold = 30)
         {
             await _cartService.CleanupStaleCartsAsync(daysThreshold);
-            return Ok(new { Message = $"Stale carts older than {daysThreshold} days have been cleaned up" });
+            return Ok(new { Message = $"Đã xóa giỏ hàng cũ hơn {daysThreshold} ngày" });
         }
 
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("User not authenticated"));
+            return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập"));
         }
     }
 }
+
+

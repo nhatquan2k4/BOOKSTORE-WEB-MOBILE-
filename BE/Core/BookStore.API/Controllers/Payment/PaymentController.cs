@@ -24,7 +24,7 @@ namespace BookStore.API.Controllers.Payment
         {
             var payment = await _paymentService.GetPaymentByIdAsync(id);
             if (payment == null)
-                return NotFound(new { Message = "Payment not found" });
+                return NotFound(new { Message = "Không tìm thấy thanh toán" });
 
             return Ok(payment);
         }
@@ -35,7 +35,7 @@ namespace BookStore.API.Controllers.Payment
         {
             var payment = await _paymentService.GetPaymentByOrderIdAsync(orderId);
             if (payment == null)
-                return NotFound(new { Message = "Payment not found for this order" });
+                return NotFound(new { Message = "Không tìm thấy thanh toán cho đơn hàng này" });
 
             return Ok(payment);
         }
@@ -46,7 +46,7 @@ namespace BookStore.API.Controllers.Payment
         {
             var payment = await _paymentService.GetPaymentByTransactionCodeAsync(transactionCode);
             if (payment == null)
-                return NotFound(new { Message = "Payment not found with this transaction code" });
+                return NotFound(new { Message = "Không tìm thấy thanh toán với mã giao dịch này" });
 
             return Ok(payment);
         }
@@ -60,7 +60,7 @@ namespace BookStore.API.Controllers.Payment
             [FromQuery] int pageSize = 20)
         {
             var result = await _paymentService.GetPaymentsByProviderAsync(provider, pageNumber, pageSize);
-            
+
             return Ok(new
             {
                 Items = result.Items,
@@ -80,7 +80,7 @@ namespace BookStore.API.Controllers.Payment
             [FromQuery] int pageSize = 20)
         {
             var result = await _paymentService.GetPaymentsByStatusAsync(status, pageNumber, pageSize);
-            
+
             return Ok(new
             {
                 Items = result.Items,
@@ -128,11 +128,11 @@ namespace BookStore.API.Controllers.Payment
             try
             {
                 var payment = await _paymentService.ProcessPaymentCallbackAsync(dto);
-                return Ok(new { Message = "Payment callback processed successfully", Payment = payment });
+                return Ok(new { Message = "Xử lý callback thanh toán thành công", Payment = payment });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = "Failed to process payment callback", Error = ex.Message });
+                return BadRequest(new { Message = "Xử lý callback thanh toán thất bại", Error = ex.Message });
             }
         }
 
@@ -142,7 +142,7 @@ namespace BookStore.API.Controllers.Payment
         public async Task<IActionResult> MarkPaymentAsSuccess(Guid id)
         {
             await _paymentService.MarkPaymentAsSuccessAsync(id);
-            return Ok(new { Message = "Payment marked as successful" });
+            return Ok(new { Message = "Đánh dấu thanh toán là thành công" });
         }
 
         // PUT: api/payment/{id}/mark-failed
@@ -151,7 +151,7 @@ namespace BookStore.API.Controllers.Payment
         public async Task<IActionResult> MarkPaymentAsFailed(Guid id)
         {
             await _paymentService.MarkPaymentAsFailedAsync(id);
-            return Ok(new { Message = "Payment marked as failed" });
+            return Ok(new { Message = "Đánh dấu thanh toán là thất bại" });
         }
 
         // GET: api/payment/expired-pending
@@ -160,8 +160,8 @@ namespace BookStore.API.Controllers.Payment
         public async Task<IActionResult> GetExpiredPendingPayments([FromQuery] int minutesThreshold = 15)
         {
             var payments = await _paymentService.GetExpiredPendingPaymentsAsync(minutesThreshold);
-            return Ok(new 
-            { 
+            return Ok(new
+            {
                 ExpiredPayments = payments,
                 Count = payments.Count,
                 ThresholdMinutes = minutesThreshold
@@ -174,7 +174,7 @@ namespace BookStore.API.Controllers.Payment
         public async Task<IActionResult> CancelExpiredPayments()
         {
             await _paymentService.CancelExpiredPaymentsAsync();
-            return Ok(new { Message = "Expired pending payments have been cancelled" });
+            return Ok(new { Message = "Đã hủy các thanh toán đang chờ hết hạn" });
         }
 
         // GET: api/payment/statistics/by-provider
@@ -188,8 +188,8 @@ namespace BookStore.API.Controllers.Payment
             var to = toDate ?? DateTime.UtcNow;
 
             var counts = await _paymentService.GetPaymentCountByProviderAsync(from, to);
-            return Ok(new 
-            { 
+            return Ok(new
+            {
                 PaymentCounts = counts,
                 FromDate = from,
                 ToDate = to
@@ -207,7 +207,7 @@ namespace BookStore.API.Controllers.Payment
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("User not authenticated"));
+            return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập"));
         }
     }
 

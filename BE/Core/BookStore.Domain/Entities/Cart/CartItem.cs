@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Domain.Entities.Ordering
+namespace BookStore.Domain.Entities.Cart
 {
     public class CartItem
     {
@@ -22,5 +22,6 @@ namespace BookStore.Domain.Entities.Ordering
         public decimal TotalPrice => Quantity * UnitPrice;     // Tổng giá trị (computed)
 
         public DateTime AddedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }

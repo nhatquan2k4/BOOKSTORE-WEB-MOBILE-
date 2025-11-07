@@ -5,6 +5,7 @@ using BookStore.Domain.Entities.Ordering___Payment;
 using BookStore.Domain.IRepository.Cart;
 using BookStore.Domain.IRepository.Catalog;
 using BookStore.Domain.IRepository.Ordering;
+using BookStore.Shared.Utilities;
 using Microsoft.Extensions.Logging;
 
 namespace BookStore.Application.Services.Ordering
@@ -36,7 +37,7 @@ namespace BookStore.Application.Services.Ordering
         public async Task<(List<OrderDto> Items, int TotalCount)> GetAllOrdersAsync(int pageNumber = 1, int pageSize = 10, string? status = null)
         {
             var skip = (pageNumber - 1) * pageSize;
-            
+
             IEnumerable<Order> orders;
             int totalCount;
 
@@ -85,10 +86,8 @@ namespace BookStore.Application.Services.Ordering
         public async Task<OrderDto> CreateOrderAsync(CreateOrderDto dto)
         {
             // Validate items
-            if (dto.Items == null || !dto.Items.Any())
-            {
-                throw new InvalidOperationException("Đơn hàng phải có ít nhất 1 sản phẩm");
-            }
+            Guard.Against(dto.Items == null || !dto.Items.Any(),
+                "Đơn hàng phải có ít nhất 1 sản phẩm");
 
             // Create OrderAddress
             var orderAddress = new OrderAddress
@@ -104,7 +103,7 @@ namespace BookStore.Application.Services.Ordering
             };
 
             // Calculate total
-            decimal totalAmount = dto.Items.Sum(item => item.UnitPrice * item.Quantity);
+            decimal totalAmount = dto.Items!.Sum(item => item.UnitPrice * item.Quantity);
             decimal discountAmount = 0; // TODO: Apply coupon logic
 
             // Create Order
@@ -123,13 +122,11 @@ namespace BookStore.Application.Services.Ordering
             };
 
             // Add OrderItems
-            foreach (var itemDto in dto.Items)
+            foreach (var itemDto in dto.Items!)
             {
                 var book = await _bookRepository.GetByIdAsync(itemDto.BookId);
-                if (book == null)
-                {
-                    throw new InvalidOperationException($"Sách với ID {itemDto.BookId} không tồn tại");
-                }
+                Guard.Against(book == null,
+                    $"Sách với ID {itemDto.BookId} không tồn tại");
 
                 order.Items.Add(new OrderItem
                 {
@@ -154,13 +151,10 @@ namespace BookStore.Application.Services.Ordering
         {
             // Get active cart
             var cart = await _cartRepository.GetActiveCartByUserIdAsync(userId);
-            if (cart == null || !cart.Items.Any())
-            {
-                throw new InvalidOperationException("Giỏ hàng trống");
-            }
+            Guard.Against(cart == null || !cart.Items.Any(), "Giỏ hàng trống");
 
             // Convert CartItems to OrderItems
-            var orderItems = cart.Items.Select(cartItem => new CreateOrderItemDto
+            var orderItems = cart!.Items.Select(cartItem => new CreateOrderItemDto
             {
                 BookId = cartItem.BookId,
                 Quantity = cartItem.Quantity,
@@ -201,17 +195,10 @@ namespace BookStore.Application.Services.Ordering
         public async Task<OrderDto> CancelOrderAsync(CancelOrderDto dto)
         {
             var order = await _orderRepository.GetByIdAsync(dto.OrderId);
-            if (order == null)
-            {
-                throw new InvalidOperationException("Đơn hàng không tồn tại");
-            }
+            Guard.Against(order == null, "Đơn hàng không tồn tại");
 
-            if (order.Status != "Pending")
-            {
-                throw new InvalidOperationException("Chỉ có thể hủy đơn hàng đang ở trạng thái Pending");
-            }
-
-            await _orderRepository.UpdateOrderStatusAsync(dto.OrderId, "Cancelled", dto.Reason);
+            Guard.Against(order!.Status != "Pending",
+                "Chỉ có thể hủy đơn hàng đang ở trạng thái Pending"); await _orderRepository.UpdateOrderStatusAsync(dto.OrderId, "Cancelled", dto.Reason);
             await _orderRepository.SaveChangesAsync();
 
             var updatedOrder = await _orderRepository.GetOrderWithDetailsAsync(dto.OrderId);
@@ -230,17 +217,10 @@ namespace BookStore.Application.Services.Ordering
         public async Task<OrderDto> ShipOrderAsync(Guid orderId, string? note = null)
         {
             var order = await _orderRepository.GetByIdAsync(orderId);
-            if (order == null)
-            {
-                throw new InvalidOperationException("Đơn hàng không tồn tại");
-            }
+            Guard.Against(order == null, "Đơn hàng không tồn tại");
 
-            if (order.Status != "Paid")
-            {
-                throw new InvalidOperationException("Chỉ có thể ship đơn hàng đã thanh toán");
-            }
-
-            await _orderRepository.UpdateOrderStatusAsync(orderId, "Shipped", note ?? "Order shipped");
+            Guard.Against(order!.Status != "Paid",
+                "Chỉ có thể ship đơn hàng đã thanh toán"); await _orderRepository.UpdateOrderStatusAsync(orderId, "Shipped", note ?? "Order shipped");
             await _orderRepository.SaveChangesAsync();
 
             var updatedOrder = await _orderRepository.GetOrderWithDetailsAsync(orderId);
@@ -250,17 +230,10 @@ namespace BookStore.Application.Services.Ordering
         public async Task<OrderDto> CompleteOrderAsync(Guid orderId, string? note = null)
         {
             var order = await _orderRepository.GetByIdAsync(orderId);
-            if (order == null)
-            {
-                throw new InvalidOperationException("Đơn hàng không tồn tại");
-            }
+            Guard.Against(order == null, "Đơn hàng không tồn tại");
 
-            if (order.Status != "Shipped")
-            {
-                throw new InvalidOperationException("Chỉ có thể hoàn thành đơn hàng đã được ship");
-            }
-
-            await _orderRepository.UpdateOrderStatusAsync(orderId, "Completed", note ?? "Order completed");
+            Guard.Against(order!.Status != "Shipped",
+                "Chỉ có thể hoàn thành đơn hàng đã được ship"); await _orderRepository.UpdateOrderStatusAsync(orderId, "Completed", note ?? "Order completed");
             await _orderRepository.SaveChangesAsync();
 
             var updatedOrder = await _orderRepository.GetOrderWithDetailsAsync(orderId);

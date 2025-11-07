@@ -1,4 +1,4 @@
-﻿using BookStore.Domain.Entities.Ordering;
+﻿using BookStore.Domain.Entities.Cart;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,6 +19,9 @@ namespace BookStore.Infrastructure.Data.Configurations.Ordering
                 .HasColumnType("decimal(18,2)");
 
             builder.Property(ci => ci.AddedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            builder.Property(ci => ci.UpdatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
         }
     }

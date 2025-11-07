@@ -1,8 +1,9 @@
 using BookStore.Application.Dtos.Cart;
 using BookStore.Application.IService.Cart;
-using BookStore.Domain.Entities.Ordering;
+using BookStore.Domain.Entities.Cart;
 using BookStore.Domain.IRepository.Cart;
 using BookStore.Domain.IRepository.Catalog;
+using BookStore.Shared.Utilities;
 using Microsoft.Extensions.Logging;
 
 namespace BookStore.Application.Services.Cart
@@ -54,15 +55,9 @@ namespace BookStore.Application.Services.Cart
         {
             // Validate book exists and available
             var book = await _bookRepository.GetByIdAsync(dto.BookId);
-            if (book == null)
-            {
-                throw new InvalidOperationException("Sách không tồn tại");
-            }
+            Guard.Against(book == null, "Sách không tồn tại");
 
-            if (!book.IsAvailable)
-            {
-                throw new InvalidOperationException("Sách hiện không còn hàng");
-            }
+            Guard.Against(book != null && !book.IsAvailable, "Sách hiện không còn hàng");
 
             // Add or update item in cart
             await _cartRepository.AddOrUpdateItemAsync(dto.UserId, dto.BookId, dto.Quantity);
@@ -72,6 +67,8 @@ namespace BookStore.Application.Services.Cart
 
             // Return updated cart
             var cart = await _cartRepository.GetActiveCartByUserIdAsync(dto.UserId);
+            Guard.Against(cart == null, "Không thể tạo hoặc lấy giỏ hàng");
+
             return MapToCartDto(cart!);
         }
 
@@ -90,10 +87,7 @@ namespace BookStore.Application.Services.Cart
         {
             // Validate book stock
             var book = await _bookRepository.GetByIdAsync(dto.BookId);
-            if (book == null)
-            {
-                throw new InvalidOperationException("Sách không tồn tại");
-            }
+            Guard.Against(book == null, "Sách không tồn tại");
 
             if (dto.Quantity <= 0)
             {
@@ -111,6 +105,8 @@ namespace BookStore.Application.Services.Cart
             _logger.LogInformation($"Updated quantity of book {dto.BookId} to {dto.Quantity} in cart of user {dto.UserId}");
 
             var cart = await _cartRepository.GetActiveCartByUserIdAsync(dto.UserId);
+            Guard.Against(cart == null, "Không thể lấy giỏ hàng");
+
             return MapToCartDto(cart!);
         }
 
@@ -154,7 +150,7 @@ namespace BookStore.Application.Services.Cart
         public async Task<bool> ValidateCartForCheckoutAsync(Guid userId)
         {
             var cart = await _cartRepository.GetActiveCartByUserIdAsync(userId);
-            
+
             if (cart == null || !cart.Items.Any())
             {
                 return false;
@@ -189,7 +185,7 @@ namespace BookStore.Application.Services.Cart
 
         #region Mappers
 
-        private CartDto MapToCartDto(Domain.Entities.Ordering.Cart cart)
+        private CartDto MapToCartDto(Domain.Entities.Cart.Cart cart)
         {
             return new CartDto
             {
@@ -214,8 +210,8 @@ namespace BookStore.Application.Services.Cart
                 BookPrice = item.UnitPrice,
                 Quantity = item.Quantity,
                 AddedAt = item.AddedAt,
-                UpdatedAt = item.AddedAt, // Use AddedAt as UpdatedAt since entity doesn't have UpdatedAt field
-                AuthorNames = item.Book?.BookAuthors != null 
+                UpdatedAt = item.UpdatedAt,
+                AuthorNames = item.Book?.BookAuthors != null
                     ? string.Join(", ", item.Book.BookAuthors.Select(ba => ba.Author?.Name ?? string.Empty))
                     : null,
                 PublisherName = item.Book?.Publisher?.Name,

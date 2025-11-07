@@ -3,6 +3,8 @@ using BookStore.Application.IService.Inventory;
 using BookStore.Application.Mappers.Inventory;
 using BookStore.Domain.Entities.Pricing_Inventory;
 using BookStore.Domain.IRepository.Inventory;
+using BookStore.Shared.Exceptions;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Application.Services.Inventory
 {
@@ -71,19 +73,23 @@ namespace BookStore.Application.Services.Inventory
         public async Task<StockItemDto?> UpdateStockQuantityAsync(Guid bookId, Guid warehouseId, UpdateStockQuantityDto dto)
         {
             var stock = await _stockItemRepository.GetStockByBookAndWarehouseAsync(bookId, warehouseId);
-            if (stock == null) return null;
+            Guard.Against(stock == null, "Stock item not found");
+
+            var validOperations = new[] { "increase", "decrease", "set" };
+            Guard.Against(!validOperations.Contains(dto.Operation.ToLower()),
+                "Invalid operation. Use: increase, decrease, or set");
 
             switch (dto.Operation.ToLower())
             {
                 case "increase":
-                    stock.Increase(dto.Quantity);
+                    stock!.Increase(dto.Quantity);
                     break;
                 case "decrease":
-                    stock.Decrease(dto.Quantity);
+                    stock!.Decrease(dto.Quantity);
                     break;
                 case "set":
                     // Set to specific value
-                    var currentQty = stock.QuantityOnHand;
+                    var currentQty = stock!.QuantityOnHand;
                     if (dto.Quantity > currentQty)
                     {
                         stock.Increase(dto.Quantity - currentQty);
@@ -93,8 +99,6 @@ namespace BookStore.Application.Services.Inventory
                         stock.Decrease(currentQty - dto.Quantity);
                     }
                     break;
-                default:
-                    throw new ArgumentException("Invalid operation. Use: increase, decrease, or set");
             }
 
             await _stockItemRepository.SaveChangesAsync();
