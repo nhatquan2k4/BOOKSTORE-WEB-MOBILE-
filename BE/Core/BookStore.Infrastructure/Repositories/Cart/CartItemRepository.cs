@@ -1,4 +1,4 @@
-using BookStore.Domain.Entities.Ordering;
+using BookStore.Domain.Entities.Cart;
 using BookStore.Domain.IRepository.Cart;
 using BookStore.Infrastructure.Data;
 using BookStore.Infrastructure.Repository;
@@ -82,7 +82,7 @@ namespace BookStore.Infrastructure.Repositories.Cart
         public async Task DeleteStaleItemsAsync(int daysThreshold = 30)
         {
             var thresholdDate = DateTime.UtcNow.AddDays(-daysThreshold);
-            
+
             var staleItems = await _dbSet
                 .Where(item => item.AddedAt < thresholdDate)
                 .ToListAsync();

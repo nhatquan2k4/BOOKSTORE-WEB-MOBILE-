@@ -22,8 +22,8 @@ namespace BookStore.API.Controllers.Order
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllOrders(
-            [FromQuery] int pageNumber = 1, 
-            [FromQuery] int pageSize = 10, 
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
             [FromQuery] string? status = null)
         {
             var result = await _orderService.GetAllOrdersAsync(pageNumber, pageSize, status);
@@ -46,7 +46,7 @@ namespace BookStore.API.Controllers.Order
 
             var order = await _orderService.GetOrderByIdAsync(id);
             if (order == null)
-                return NotFound(new { Message = "Order not found" });
+                return NotFound(new { Message = "Đơn hàng không tồn tại" });
 
             // Check authorization: user can only see their own orders unless admin
             if (!isAdmin && order.UserId != userId)
@@ -64,7 +64,7 @@ namespace BookStore.API.Controllers.Order
 
             var order = await _orderService.GetOrderByOrderNumberAsync(orderNumber);
             if (order == null)
-                return NotFound(new { Message = "Order not found" });
+                return NotFound(new { Message = "Không tìm thấy đơn hàng" });
 
             // Check authorization
             if (!isAdmin && order.UserId != userId)
@@ -82,7 +82,7 @@ namespace BookStore.API.Controllers.Order
         {
             var userId = GetCurrentUserId();
             var result = await _orderService.GetOrdersByUserIdAsync(userId, status, pageNumber, pageSize);
-            
+
             return Ok(new
             {
                 Items = result.Items,
@@ -103,7 +103,7 @@ namespace BookStore.API.Controllers.Order
             [FromQuery] int pageSize = 10)
         {
             var result = await _orderService.GetOrdersByUserIdAsync(userId, status, pageNumber, pageSize);
-            
+
             return Ok(new
             {
                 Items = result.Items,
@@ -119,7 +119,7 @@ namespace BookStore.API.Controllers.Order
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto dto)
         {
             var userId = GetCurrentUserId();
-            
+
             // Ensure the order is for the current user
             if (dto.UserId != userId && !User.IsInRole("Admin"))
                 return Forbid();
@@ -156,7 +156,7 @@ namespace BookStore.API.Controllers.Order
             // Check if order exists and user owns it
             var order = await _orderService.GetOrderByIdAsync(id);
             if (order == null)
-                return NotFound(new { Message = "Order not found" });
+                return NotFound(new { Message = "Không tìm thấy đơn hàng" });
 
             if (!isAdmin && order.UserId != userId)
                 return Forbid();
@@ -164,7 +164,7 @@ namespace BookStore.API.Controllers.Order
             // Check if order can be cancelled
             var canCancel = await _orderService.CanCancelOrderAsync(id);
             if (!canCancel)
-                return BadRequest(new { Message = "Order cannot be cancelled in its current status" });
+                return BadRequest(new { Message = "Đơn hàng không thể hủy trong trạng thái hiện tại" });
 
             dto.OrderId = id;
             var cancelledOrder = await _orderService.CancelOrderAsync(dto);
@@ -207,7 +207,7 @@ namespace BookStore.API.Controllers.Order
         {
             var from = fromDate ?? DateTime.UtcNow.AddMonths(-1);
             var to = toDate ?? DateTime.UtcNow;
-            
+
             var revenue = await _orderService.GetTotalRevenueAsync(from, to);
             return Ok(new { TotalRevenue = revenue, FromDate = from, ToDate = to });
         }
@@ -233,7 +233,7 @@ namespace BookStore.API.Controllers.Order
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("User not authenticated"));
+            return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập"));
         }
     }
 

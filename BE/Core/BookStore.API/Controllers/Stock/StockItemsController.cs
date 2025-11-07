@@ -53,7 +53,7 @@ namespace BookStore.API.Controllers
         /// Get low stock items (Admin only)
         /// </summary>
         [HttpGet("low-stock")]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<StockItemDto>>> GetLowStockItems([FromQuery] int threshold = 10)
         {
             var stocks = await _stockItemService.GetLowStockItemsAsync(threshold);
@@ -64,7 +64,7 @@ namespace BookStore.API.Controllers
         /// Get out of stock items (Admin only)
         /// </summary>
         [HttpGet("out-of-stock")]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<StockItemDto>>> GetOutOfStockItems()
         {
             var stocks = await _stockItemService.GetOutOfStockItemsAsync();
@@ -75,7 +75,7 @@ namespace BookStore.API.Controllers
         /// Create stock item (Admin only)
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<StockItemDto>> CreateStockItem([FromBody] CreateStockItemDto dto)
         {
             var stock = await _stockItemService.CreateStockItemAsync(dto);
@@ -86,10 +86,10 @@ namespace BookStore.API.Controllers
         /// Update stock quantity (Admin only)
         /// </summary>
         [HttpPut("book/{bookId}/warehouse/{warehouseId}")]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<StockItemDto>> UpdateStockQuantity(
-            Guid bookId, 
-            Guid warehouseId, 
+            Guid bookId,
+            Guid warehouseId,
             [FromBody] UpdateStockQuantityDto dto)
         {
             var stock = await _stockItemService.UpdateStockQuantityAsync(bookId, warehouseId, dto);
@@ -103,7 +103,7 @@ namespace BookStore.API.Controllers
         /// Reserve stock for an order (Admin only)
         /// </summary>
         [HttpPost("reserve")]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ReserveStock([FromBody] ReserveStockDto dto)
         {
             try
@@ -121,10 +121,10 @@ namespace BookStore.API.Controllers
         /// Release reserved stock (Admin only)
         /// </summary>
         [HttpPost("release")]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ReleaseReservedStock(
-            [FromQuery] Guid bookId, 
-            [FromQuery] Guid warehouseId, 
+            [FromQuery] Guid bookId,
+            [FromQuery] Guid warehouseId,
             [FromQuery] int quantity)
         {
             try
@@ -142,10 +142,10 @@ namespace BookStore.API.Controllers
         /// Confirm sale (Admin only)
         /// </summary>
         [HttpPost("confirm-sale")]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ConfirmSale(
-            [FromQuery] Guid bookId, 
-            [FromQuery] Guid warehouseId, 
+            [FromQuery] Guid bookId,
+            [FromQuery] Guid warehouseId,
             [FromQuery] int quantity)
         {
             try

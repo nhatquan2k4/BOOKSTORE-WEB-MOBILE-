@@ -1,4 +1,9 @@
-using BookStore.Domain.Entities.Ordering;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using BookStore.Domain.Entities.Catalog;
+using BookStore.Domain.Entities.Cart;
 using BookStore.Domain.IRepository.Cart;
 using BookStore.Infrastructure.Data;
 using BookStore.Infrastructure.Repository;
@@ -6,14 +11,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BookStore.Infrastructure.Repositories.Cart
 {
-    public class CartRepository : GenericRepository<Domain.Entities.Ordering.Cart>, ICartRepository
+    public class CartRepository : GenericRepository<Domain.Entities.Cart.Cart>, ICartRepository
     {
-        public CartRepository(AppDbContext context) : base(context)
-        {
-        }
+        public CartRepository(AppDbContext context) : base(context) { }
 
-        public async Task<Domain.Entities.Ordering.Cart?> GetActiveCartByUserIdAsync(Guid userId)
+        public async Task<Domain.Entities.Cart.Cart?> GetActiveCartByUserIdAsync(Guid userId)
         {
+            // Truy vấn có tracking để EF theo dõi thay đổi
             return await _dbSet
                 .Include(c => c.Items).ThenInclude(i => i.Book).ThenInclude(b => b.Images)
                 .Include(c => c.Items).ThenInclude(i => i.Book).ThenInclude(b => b.Publisher)
@@ -21,68 +25,74 @@ namespace BookStore.Infrastructure.Repositories.Cart
                 .FirstOrDefaultAsync(c => c.UserId == userId && c.IsActive);
         }
 
-        public async Task<Domain.Entities.Ordering.Cart?> GetCartWithItemsAsync(Guid cartId)
+        public async Task<Domain.Entities.Cart.Cart?> GetCartWithItemsAsync(Guid cartId)
         {
             return await _dbSet
                 .Include(c => c.Items).ThenInclude(i => i.Book)
                 .FirstOrDefaultAsync(c => c.Id == cartId);
         }
 
-        public async Task<Domain.Entities.Ordering.Cart> GetOrCreateCartAsync(Guid userId)
+        public async Task<Domain.Entities.Cart.Cart> GetOrCreateCartAsync(Guid userId)
         {
             var cart = await GetActiveCartByUserIdAsync(userId);
-            
-            if (cart == null)
-            {
-                cart = new Domain.Entities.Ordering.Cart
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                };
-                await AddAsync(cart);
-                await SaveChangesAsync();
-            }
+            if (cart != null) return cart;
 
-            return cart;
+            cart = new Domain.Entities.Cart.Cart
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                Items = new List<CartItem>()
+            };
+
+            await AddAsync(cart);
+            await SaveChangesAsync();
+
+            // Reload cart với tracking để đảm bảo có thể thêm items
+            return await GetActiveCartByUserIdAsync(userId) ?? cart;
         }
 
         public async Task AddOrUpdateItemAsync(Guid userId, Guid bookId, int quantity)
         {
             var cart = await GetOrCreateCartAsync(userId);
-            
+
+            // tìm item theo BookId trong cart đang track
             var existingItem = cart.Items.FirstOrDefault(i => i.BookId == bookId);
-            
+
             if (existingItem != null)
             {
                 existingItem.Quantity += quantity;
-                // Note: CartItem entity doesn't have UpdatedAt field in domain model
+                existingItem.UpdatedAt = DateTime.UtcNow;
+                return; // SaveChanges ở Service
             }
-            else
+
+            // Lấy giá hiện tại của sách
+            var book = await _context.Set<Book>()
+                .Include(b => b.Prices)
+                .FirstOrDefaultAsync(b => b.Id == bookId);
+
+            if (book == null)
+                throw new InvalidOperationException($"Sách với ID {bookId} không tồn tại");
+
+            var currentPrice = book.Prices?
+                .Where(p => p.IsCurrent && (!p.EffectiveTo.HasValue || p.EffectiveTo.Value > DateTime.UtcNow))
+                .OrderByDescending(p => p.EffectiveFrom)
+                .FirstOrDefault()?.Amount ?? 0m;
+
+            var newItem = new CartItem
             {
-                // Need to get current price from Book
-                var book = await _context.Set<Domain.Entities.Catalog.Book>()
-                    .Include(b => b.Prices)
-                    .FirstOrDefaultAsync(b => b.Id == bookId);
-                
-                var currentPrice = book?.Prices?
-                    .Where(p => p.IsCurrent && (!p.EffectiveTo.HasValue || p.EffectiveTo.Value > DateTime.UtcNow))
-                    .OrderByDescending(p => p.EffectiveFrom)
-                    .FirstOrDefault()?.Amount ?? 0;
+                Id = Guid.NewGuid(),
+                CartId = cart.Id,
+                BookId = bookId,
+                Quantity = quantity,
+                UnitPrice = currentPrice,
+                AddedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
 
-                cart.Items.Add(new CartItem
-                {
-                    Id = Guid.NewGuid(),
-                    CartId = cart.Id,
-                    BookId = bookId,
-                    Quantity = quantity,
-                    UnitPrice = currentPrice,
-                    AddedAt = DateTime.UtcNow
-                });
-            }
-
-            Update(cart);
+            // Add vào context thay vì collection để đảm bảo tracking
+            await _context.Set<CartItem>().AddAsync(newItem);
         }
 
         public async Task RemoveItemAsync(Guid userId, Guid bookId)
@@ -93,8 +103,7 @@ namespace BookStore.Infrastructure.Repositories.Cart
             var item = cart.Items.FirstOrDefault(i => i.BookId == bookId);
             if (item != null)
             {
-                cart.Items.Remove(item);
-                Update(cart);
+                _context.Remove(item); // xoá trực tiếp
             }
         }
 
@@ -104,18 +113,16 @@ namespace BookStore.Infrastructure.Repositories.Cart
             if (cart == null) return;
 
             var item = cart.Items.FirstOrDefault(i => i.BookId == bookId);
-            if (item != null)
+            if (item == null) return;
+
+            if (quantity <= 0)
             {
-                if (quantity <= 0)
-                {
-                    cart.Items.Remove(item);
-                }
-                else
-                {
-                    item.Quantity = quantity;
-                    // Note: CartItem entity doesn't have UpdatedAt field in domain model
-                }
-                Update(cart);
+                _context.Remove(item);
+            }
+            else
+            {
+                item.Quantity = quantity;
+                item.UpdatedAt = DateTime.UtcNow;
             }
         }
 
@@ -124,8 +131,10 @@ namespace BookStore.Infrastructure.Repositories.Cart
             var cart = await GetActiveCartByUserIdAsync(userId);
             if (cart == null) return;
 
-            cart.Items.Clear();
-            Update(cart);
+            if (cart.Items.Count > 0)
+            {
+                _context.RemoveRange(cart.Items); // xoá tất cả item
+            }
         }
 
         public async Task DeactivateCartAsync(Guid cartId)
@@ -133,8 +142,7 @@ namespace BookStore.Infrastructure.Repositories.Cart
             var cart = await GetByIdAsync(cartId);
             if (cart == null) return;
 
-            cart.IsActive = false;
-            Update(cart);
+            cart.IsActive = false; // chỉ set flag; EF sẽ tạo UPDATE phù hợp
         }
 
         public async Task<int> GetCartItemCountAsync(Guid userId)
@@ -146,7 +154,7 @@ namespace BookStore.Infrastructure.Repositories.Cart
         public async Task<decimal> GetCartTotalAsync(Guid userId)
         {
             var cart = await GetActiveCartByUserIdAsync(userId);
-            if (cart == null) return 0;
+            if (cart == null) return 0m;
 
             return cart.Items.Sum(i => i.UnitPrice * i.Quantity);
         }

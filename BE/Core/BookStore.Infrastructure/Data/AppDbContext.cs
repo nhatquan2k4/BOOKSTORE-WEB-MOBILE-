@@ -2,6 +2,7 @@
 using BookStore.Domain.Entities.Catalog;
 using BookStore.Domain.Entities.Pricing___Inventory;
 using BookStore.Domain.Entities.Common;
+using BookStore.Domain.Entities.Cart;
 using BookStore.Domain.Entities.Ordering;
 using BookStore.Domain.Entities.Ordering___Payment;
 using BookStore.Domain.Entities.Shipping;
@@ -62,8 +63,8 @@ namespace BookStore.Infrastructure.Data
         #endregion
 
         #region Ordering & Payment
-        public DbSet<Cart> Carts { get; set; } = null!;
-        public DbSet<CartItem> CartItems { get; set; } = null!;
+        public DbSet<Domain.Entities.Cart.Cart> Carts { get; set; } = null!;
+        public DbSet<Domain.Entities.Cart.CartItem> CartItems { get; set; } = null!;
         public DbSet<Order> Orders { get; set; } = null!;
         public DbSet<OrderItem> OrderItems { get; set; } = null!;
         public DbSet<OrderAddress> OrderAddresses { get; set; } = null!;
