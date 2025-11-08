@@ -1,3 +1,4 @@
+// Profile Page - Trang thông tin cá nhân (Minimal Design)
 'use client';
 
 import { useAuth } from '@/contexts';
@@ -5,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { authApi } from '@/lib/api/identity/auth';
+import { Button, Badge } from '@/components/ui';
 
 export default function ProfilePage() {
   const { user, isLoggedIn, isLoading } = useAuth();

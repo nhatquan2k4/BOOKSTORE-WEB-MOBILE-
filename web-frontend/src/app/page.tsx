@@ -77,14 +77,14 @@ const featuredBooks = [
 ];
 
 const categories = [
-  { id: 1, name: "Lập trình", count: 1234, color: "from-blue-500 to-cyan-500", image: "/image/lap_trinh.jpg" },
-  { id: 2, name: "Kinh doanh", count: 856, color: "from-purple-500 to-pink-500", image: "/image/kinh_doanh.jpg" },
-  { id: 3, name: "Thiết kế", count: 645, color: "from-orange-500 to-red-500", image: "/image/thiet_ke.jpg" },
-  { id: 4, name: "Khoa học", count: 432, color: "from-green-500 to-teal-500", image: "/image/khoa_hoc.png" },
-  { id: 5, name: "Văn học", count: 1567, color: "from-indigo-500 to-purple-500", image: "/image/van_hoc.jpg" },
-  { id: 6, name: "Kỹ năng sống", count: 892, color: "from-pink-500 to-rose-500", image: "/image/ky_nang_song.jpg" },
-  { id: 7, name: "Thiếu nhi", count: 543, color: "from-yellow-500 to-orange-500", image: "/image/thieu_nhi.jpg" },
-  { id: 8, name: "Ngoại ngữ", count: 721, color: "from-cyan-500 to-blue-500", image: "/image/ngoai_ngu.jpg" },
+  { id: 1, name: "Lập trình", count: 1234, color: "from-blue-500 to-cyan-500", image: "/image/lap_trinh.jpg", href: "/programming" },
+  { id: 2, name: "Kinh doanh", count: 856, color: "from-purple-500 to-pink-500", image: "/image/kinh_doanh.jpg", href: "/business" },
+  { id: 3, name: "Thiết kế", count: 645, color: "from-orange-500 to-red-500", image: "/image/thiet_ke.jpg", href: "/design" },
+  { id: 4, name: "Khoa học", count: 432, color: "from-green-500 to-teal-500", image: "/image/khoa_hoc.png", href: "/courses" },
+  { id: 5, name: "Văn học", count: 1567, color: "from-indigo-500 to-purple-500", image: "/image/van_hoc.jpg", href: "/literature" },
+  { id: 6, name: "Kỹ năng sống", count: 892, color: "from-pink-500 to-rose-500", image: "/image/ky_nang_song.jpg", href: "/life-skills" },
+  { id: 7, name: "Thiếu nhi", count: 543, color: "from-yellow-500 to-orange-500", image: "/image/thieu_nhi.jpg", href: "/children" },
+  { id: 8, name: "Ngoại ngữ", count: 721, color: "from-cyan-500 to-blue-500", image: "/image/ngoai_ngu.jpg", href: "/foreign-languages" },
 ];
 
 const popularBooks = [
@@ -299,7 +299,7 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {categories.slice(0, 8).map((cat) => (
-              <Link key={cat.id} href={`/books?category=${cat.name}`}>
+              <Link key={cat.id} href={cat.href}>
                 <div className="relative h-48 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 group">
                   {/* Background Image with Overlay - Less blur for better visibility */}
                   <div className="absolute inset-0">
@@ -347,7 +347,7 @@ export default function HomePage() {
               href="/books?filter=featured"
               className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
             >
-              <span>Xem tất cả</span>
+              <Link href="/featured">Xem tất cả</Link>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -457,7 +457,7 @@ export default function HomePage() {
               href="/books?filter=popular"
               className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
             >
-              <span>Xem tất cả</span>
+              <Link href="/most-read">Xem tất cả</Link>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
