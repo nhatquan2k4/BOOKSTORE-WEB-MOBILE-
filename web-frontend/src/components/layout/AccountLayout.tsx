@@ -14,7 +14,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
   const router = useRouter();
   const { user } = useAuth();
 
-  // kiểm tra xem đang ở trang orders hay trang con của orders
+  // kiểm tra đang ở trang orders hay trang con
   const isInOrders = useMemo(() => {
     return (
       pathname === '/account/orders' ||
@@ -25,7 +25,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
   // state để mở/đóng submenu đơn hàng
   const [ordersOpen, setOrdersOpen] = useState(isInOrders);
 
-  // nếu đổi route sang trang đơn hàng thì tự mở
+  // nếu đổi route sang đơn hàng thì tự mở
   useEffect(() => {
     if (isInOrders) {
       setOrdersOpen(true);
@@ -36,10 +36,8 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
     router.push(path);
   };
 
-  // helpers
   const isActive = (path: string) => pathname === path;
   const isActiveOrders = (path?: string) => {
-    // path của mục cha là '/account/orders'
     if (!path) return false;
     return pathname === path || pathname?.startsWith('/account/orders/');
   };
@@ -51,7 +49,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
           {/* Sidebar */}
           <aside className="w-64 flex-shrink-0">
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-4">
-              {/* User Info Header */}
+              {/* User Info */}
               <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-cyan-50">
                 <div className="flex items-center gap-3">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
@@ -90,7 +88,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                 </div>
               </div>
 
-              {/* Navigation Menu */}
+              {/* Navigation */}
               <nav className="py-2">
                 {/* Thông tin cá nhân */}
                 <button
@@ -125,11 +123,9 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                   <span>Thông tin cá nhân</span>
                 </button>
 
-                {/* Đơn hàng của tôi (có submenu) */}
+                {/* Đơn hàng */}
                 <button
                   onClick={() => {
-                    // nếu đang ở trang con thì chỉ toggle
-                    // nếu không thì đi tới /account/orders và mở
                     if (!isInOrders) {
                       go('/account/orders');
                     } else {
@@ -164,7 +160,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                         />
                       </svg>
                     </span>
-                    <span>Đơn hàng của tôi</span>
+                    <span>Đơn hàng</span>
                   </span>
                   <svg
                     className={`w-4 h-4 transition-transform ${
@@ -263,7 +259,42 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                       />
                     </svg>
                   </span>
-                  <span>Danh sách yêu thích</span>
+                  <span>Sách yêu thích</span>
+                </button>
+
+                {/* Thư viện sách */}
+                <button
+                  onClick={() => go('/account/library-book')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                    isActive('/account/library-book')
+                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium'
+                      : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent'
+                  }`}
+                >
+                  <span
+                    className={
+                      isActive('/account/library-book')
+                        ? 'text-blue-600'
+                        : 'text-gray-500'
+                    }
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-book-open"
+                    >
+                      <path d="M12 7v14" />
+                      <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                    </svg>
+                  </span>
+                  <span>Thư viện sách</span>
                 </button>
 
                 {/* Địa chỉ nhận hàng */}
@@ -387,12 +418,27 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                         : 'text-gray-500'
                     }
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone-call-icon lucide-phone-call"><path d="M13 2a9 9 0 0 1 9 9"/><path d="M13 6a5 5 0 0 1 5 5"/><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-phone-call"
+                    >
+                      <path d="M13 2a9 9 0 0 1 9 9" />
+                      <path d="M13 6a5 5 0 0 1 5 5" />
+                      <path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384" />
+                    </svg>
                   </span>
                   <span>Hỗ trợ khách hàng</span>
                 </button>
 
-                {/* Logout Button */}
+                {/* Logout */}
                 <div className="mt-4 pt-4 border-t border-gray-200 px-4 pb-4">
                   <button
                     onClick={() => {
@@ -420,7 +466,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
             </div>
           </aside>
 
-          {/* Main Content */}
+          {/* Main content */}
           <main className="flex-1 min-w-0">{children}</main>
         </div>
       </div>
