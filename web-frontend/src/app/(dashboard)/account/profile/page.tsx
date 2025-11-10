@@ -24,9 +24,9 @@ export default function ProfilePage() {
     try {
       setSendingEmail(true);
       setEmailMessage(null);
-      
+
       const response = await authApi.resendVerificationEmail(user.email);
-      
+
       if (response.success) {
         setEmailMessage({
           type: 'success',
@@ -38,10 +38,11 @@ export default function ProfilePage() {
           text: response.message || 'Không thể gửi email. Vui lòng thử lại sau.'
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       setEmailMessage({
         type: 'error',
-        text: error?.response?.data?.message || 'Đã xảy ra lỗi khi gửi email.'
+        text: err?.response?.data?.message || 'Đã xảy ra lỗi khi gửi email.'
       });
     } finally {
       setSendingEmail(false);
@@ -144,14 +145,13 @@ export default function ProfilePage() {
                 <p className="text-yellow-700 mb-4">
                   Vui lòng xác minh email của bạn để đảm bảo tài khoản được bảo mật và nhận thông báo quan trọng.
                 </p>
-                
+
                 {emailMessage && (
                   <div
-                    className={`mb-4 p-3 rounded-lg ${
-                      emailMessage.type === 'success'
+                    className={`mb-4 p-3 rounded-lg ${emailMessage.type === 'success'
                         ? 'bg-green-100 text-green-800 border border-green-200'
                         : 'bg-red-100 text-red-800 border border-red-200'
-                    }`}
+                      }`}
                   >
                     {emailMessage.text}
                   </div>
@@ -247,11 +247,10 @@ export default function ProfilePage() {
             <div className="flex justify-between py-3 border-b border-gray-100">
               <span className="text-gray-600">Trạng thái</span>
               <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  user.isActive
+                className={`px-3 py-1 rounded-full text-xs font-medium ${user.isActive
                     ? 'bg-green-100 text-green-700'
                     : 'bg-red-100 text-red-700'
-                }`}
+                  }`}
               >
                 {user.isActive ? 'Đang hoạt động' : 'Tạm khóa'}
               </span>

@@ -36,7 +36,7 @@ export default function VerifyEmailPage() {
       if (response.success) {
         setStatus("success");
         setMessage(response.message || "Xác minh email thành công!");
-        
+
         // Redirect to login after 3 seconds
         setTimeout(() => {
           router.push("/login?verified=true");
@@ -45,11 +45,12 @@ export default function VerifyEmailPage() {
         setStatus("error");
         setMessage(response.message || "Xác minh email thất bại");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       setStatus("error");
       setMessage(
-        error.response?.data?.message ||
-          "Đã xảy ra lỗi khi xác minh email. Token có thể đã hết hạn hoặc không hợp lệ."
+        err.response?.data?.message ||
+        "Đã xảy ra lỗi khi xác minh email. Token có thể đã hết hạn hoặc không hợp lệ."
       );
     }
   };
@@ -73,11 +74,12 @@ export default function VerifyEmailPage() {
         setResendStatus("idle");
         setMessage(response.message || "Không thể gửi lại email xác minh");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       setResendStatus("idle");
       setMessage(
-        error.response?.data?.message ||
-          "Đã xảy ra lỗi khi gửi lại email xác minh"
+        err.response?.data?.message ||
+        "Đã xảy ra lỗi khi gửi lại email xác minh"
       );
     }
   };
