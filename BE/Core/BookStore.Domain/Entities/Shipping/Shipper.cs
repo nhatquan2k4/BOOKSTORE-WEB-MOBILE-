@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BookStore.Domain.Entities.Identity;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +10,10 @@ namespace BookStore.Domain.Entities.Shipping
     public class Shipper
     {
         public Guid Id { get; set; }
+
+        // Link với User account để shipper có thể đăng nhập
+        public Guid? UserId { get; set; }
+        public virtual User? User { get; set; }
 
         public string Name { get; set; } = null!;               // Tên shipper hoặc tên công ty vận chuyển
         public string PhoneNumber { get; set; } = null!;        // Số điện thoại liên hệ

@@ -369,5 +369,52 @@ namespace BookStore.Application.Services.Identity.Auth
             var user = await _userRepository.GetByIdWithAllDetailsAsync(userId);
             return user?.ToUserInfoDto();
         }
+
+        public async Task<Guid> CreateUserAccountAsync(string email, string password, string fullName, string? phoneNumber, string roleName)
+        {
+            // Validate email uniqueness
+            if (await _userRepository.ExistsByEmailAsync(email))
+                throw new InvalidOperationException($"Email {email} đã được sử dụng");
+
+            // Validate password strength
+            if (!_passwordService.ValidatePasswordStrength(password))
+                throw new InvalidOperationException("Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt");
+
+            // Get role
+            var role = await _roleRepository.GetByNameAsync(roleName);
+            if (role == null)
+                throw new InvalidOperationException($"Role {roleName} không tồn tại");
+
+            // Create user
+            var user = new Domain.Entities.Identity.User
+            {
+                Email = email,
+                PasswordHash = _passwordService.HashPassword(password),
+                IsActive = true, // User được tạo bởi admin nên active luôn
+                CreateAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            // Create profile for user
+            user.Profiles = new Domain.Entities.Identity.UserProfile
+            {
+                FullName = fullName,
+                PhoneNumber = phoneNumber
+            };
+
+            await _userRepository.AddAsync(user);
+            await _userRepository.SaveChangesAsync();
+
+            // Assign role
+            var userRole = new Domain.Entities.Identity.UserRole
+            {
+                UserId = user.Id,
+                RoleId = role.Id
+            };
+            user.UserRoles.Add(userRole);
+            await _userRepository.SaveChangesAsync();
+
+            return user.Id;
+        }
     }
 }

@@ -84,7 +84,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // Next.js frontend URL
+        policy.WithOrigins(
+                "http://localhost:3000",  // Next.js frontend URL
+                "http://localhost:5173"   // Vite admin frontend URL
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -169,6 +172,9 @@ builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepo
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 
+// Shipping Repositories
+builder.Services.AddScoped<BookStore.Domain.IRepository.Shipping.IShipperRepository, BookStore.Infrastructure.Repositories.Shipping.ShipperRepository>();
+
 // Inventory Repositories
 builder.Services.AddScoped<BookStore.Domain.IRepository.Inventory.IWarehouseRepository, BookStore.Infrastructure.Repositories.Inventory.WarehouseRepository>();
 builder.Services.AddScoped<BookStore.Domain.IRepository.Inventory.IPriceRepository, BookStore.Infrastructure.Repositories.Inventory.PriceRepository>();
@@ -178,6 +184,9 @@ builder.Services.AddScoped<BookStore.Domain.IRepository.Inventory.IStockItemRepo
 builder.Services.AddScoped<BookStore.Application.IService.Ordering.IOrderService, BookStore.Application.Services.Ordering.OrderService>();
 builder.Services.AddScoped<BookStore.Application.IService.Payment.IPaymentService, BookStore.Application.Services.Payment.PaymentService>();
 builder.Services.AddScoped<BookStore.Application.IService.Cart.ICartService, BookStore.Application.Services.Cart.CartService>();
+
+// Shipping Services
+builder.Services.AddScoped<BookStore.Application.IService.Shipping.IShipperService, BookStore.Application.Services.Shipping.ShipperService>();
 
 // Inventory Services
 builder.Services.AddScoped<BookStore.Application.IService.Inventory.IWarehouseService, BookStore.Application.Services.Inventory.WarehouseService>();
@@ -227,11 +236,11 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var logger = services.GetRequiredService<ILogger<Program>>();
-    
+
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
-        
+
         // Check if database exists
         var canConnect = context.Database.CanConnect();
         if (!canConnect)
@@ -245,13 +254,13 @@ using (var scope = app.Services.CreateScope())
             // Check for pending migrations
             var pendingMigrations = context.Database.GetPendingMigrations().ToList();
             var appliedMigrations = context.Database.GetAppliedMigrations().ToList();
-            
+
             logger.LogInformation("Applied migrations: {Count}", appliedMigrations.Count);
-            
+
             if (pendingMigrations.Any())
             {
                 logger.LogInformation("Found {Count} pending migrations", pendingMigrations.Count);
-                
+
                 // Try to apply migrations, but catch specific errors
                 try
                 {
@@ -262,17 +271,17 @@ using (var scope = app.Services.CreateScope())
                 {
                     // Error 2714: There is already an object named 'X' in the database
                     logger.LogWarning("Migration skipped - database objects already exist. This is expected if schema was created manually.");
-                    
+
                     // Manually mark migration as applied
                     var migrationId = pendingMigrations.First();
                     var productVersion = typeof(Microsoft.EntityFrameworkCore.DbContext).Assembly
                         .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
                         .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
                         .FirstOrDefault()?.InformationalVersion ?? "8.0.0";
-                    
+
                     var sql = "INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ({0}, {1})";
                     context.Database.ExecuteSqlRaw(sql, migrationId, productVersion);
-                    
+
                     logger.LogInformation("Migration {MigrationId} marked as applied", migrationId);
                 }
             }
