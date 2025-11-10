@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
-import { authApi } from "@/lib/api/auth";
+import { authApi } from "@/lib/api/identity/auth";
 import { AuthCard, AuthCardIcon } from "@/components/auth";
 import { FormField, FormLabel, FormError } from "@/components/auth";
 import { Button } from "@/components/ui/Button";

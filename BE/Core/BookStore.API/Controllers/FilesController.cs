@@ -30,14 +30,14 @@ public class FilesController : ApiControllerBase
         {
             if (file == null || file.Length == 0)
             {
-                return BadRequest(new { message = "No file provided" });
+                return BadRequest(new { message = "Không có File nào được cung cấp" });
             }
 
             // Validate file size (max 10MB)
             const long maxFileSize = 10 * 1024 * 1024;
             if (file.Length > maxFileSize)
             {
-                return BadRequest(new { message = "File size exceeds 10MB limit" });
+                return BadRequest(new { message = "Kích thước file vượt quá giới hạn 10MB" });
             }
 
             // Validate file type (images only)
@@ -46,7 +46,7 @@ public class FilesController : ApiControllerBase
 
             if (!allowedExtensions.Contains(extension))
             {
-                return BadRequest(new { message = "Only image files are allowed" });
+                return BadRequest(new { message = "Chỉ cho phép các file hình ảnh" });
             }
 
             // Generate unique filename
@@ -59,11 +59,11 @@ public class FilesController : ApiControllerBase
                 file.ContentType,
                 bucket);
 
-            _logger.LogInformation("File uploaded successfully: {FileName}", fileName);
+            _logger.LogInformation("File tải lên thành công: {FileName}", fileName);
 
             return Ok(new
             {
-                message = "File uploaded successfully",
+                message = "File tải lên thành công",
                 fileName = fileName,
                 url = fileUrl,
                 size = file.Length,
@@ -72,18 +72,29 @@ public class FilesController : ApiControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error uploading file");
-            return StatusCode(500, new { message = "Error uploading file", error = ex.Message });
+            _logger.LogError(ex, "Lỗi khi tải lên file");
+            return StatusCode(500, new { message = "Lỗi khi tải lên file", error = ex.Message });
         }
     }
 
     /// <summary>
-    /// Upload book cover image
+    /// Upload book-images
     /// </summary>
-    [HttpPost("upload/book-cover")]
+    [HttpPost("upload/book-images")]
     [Authorize]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadBookCover(IFormFile file)
+    public async Task<IActionResult> UploadBookImages(IFormFile file)
+    {
+        return await UploadFile(file, "book-images");
+    }
+
+    /// <summary>
+    /// Upload ebook files
+    /// </summary>
+    [HttpPost("upload/ebook-files")]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadEbookFiles(IFormFile file)
     {
         return await UploadFile(file, "ebook-files");
     }
@@ -91,7 +102,7 @@ public class FilesController : ApiControllerBase
     /// <summary>
     /// Upload user avatar
     /// </summary>
-    [HttpPost("upload/avatar")]
+    [HttpPost("upload/user-avatars")]
     [Authorize]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadAvatar(IFormFile file)
@@ -111,19 +122,19 @@ public class FilesController : ApiControllerBase
             var exists = await _minioService.FileExistsAsync(fileName, bucket);
             if (!exists)
             {
-                return NotFound(new { message = "File not found" });
+                return NotFound(new { message = "File không tồn tại" });
             }
 
             await _minioService.DeleteFileAsync(fileName, bucket);
 
-            _logger.LogInformation("File deleted successfully: {FileName}", fileName);
+            _logger.LogInformation("File đã được xóa thành công: {FileName}", fileName);
 
-            return Ok(new { message = "File deleted successfully" });
+            return Ok(new { message = "File đã được xóa thành công" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting file");
-            return StatusCode(500, new { message = "Error deleting file", error = ex.Message });
+            _logger.LogError(ex, "Lỗi khi xóa file");
+            return StatusCode(500, new { message = "Lỗi khi xóa file", error = ex.Message });
         }
     }
 
@@ -138,7 +149,7 @@ public class FilesController : ApiControllerBase
             var exists = await _minioService.FileExistsAsync(fileName, bucket);
             if (!exists)
             {
-                return NotFound(new { message = "File not found" });
+                return NotFound(new { message = "File không tồn tại" });
             }
 
             var url = await _minioService.GetPresignedUrlAsync(fileName, expiryInSeconds, bucket);
@@ -151,8 +162,8 @@ public class FilesController : ApiControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting presigned URL");
-            return StatusCode(500, new { message = "Error getting presigned URL", error = ex.Message });
+            _logger.LogError(ex, "Lỗi khi lấy presigned URL");
+            return StatusCode(500, new { message = "Lỗi khi lấy presigned URL", error = ex.Message });
         }
     }
 
@@ -167,7 +178,7 @@ public class FilesController : ApiControllerBase
             var exists = await _minioService.FileExistsAsync(fileName, bucket);
             if (!exists)
             {
-                return NotFound(new { message = "File not found" });
+                return NotFound(new { message = "Không tìm thấy File" });
             }
 
             var stream = await _minioService.DownloadFileAsync(fileName, bucket);
@@ -176,8 +187,8 @@ public class FilesController : ApiControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error downloading file");
-            return StatusCode(500, new { message = "Error downloading file", error = ex.Message });
+            _logger.LogError(ex, "Lỗi khi tải xuống file");
+            return StatusCode(500, new { message = "Lỗi khi tải xuống file", error = ex.Message });
         }
     }
 }

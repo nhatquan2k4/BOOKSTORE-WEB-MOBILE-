@@ -1,5 +1,5 @@
 // Auth Service - Centralized authentication logic
-import { authApi } from "@/lib/api/auth";
+import { authApi } from "@/lib/api/identity/auth";
 import type {
   LoginRequest,
   RegisterRequest,

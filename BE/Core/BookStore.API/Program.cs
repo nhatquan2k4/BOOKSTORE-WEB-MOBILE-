@@ -1,36 +1,43 @@
-using BookStore.Application.IService.Catalog;
-using BookStore.Application.Services.Catalog;
-using BookStore.Domain.IRepository;
-using BookStore.Domain.IRepository.Catalog;
-using BookStore.Infrastructure.Data;
-using BookStore.Infrastructure.Repository;
-using BookStore.Infrastructure.Repository.Catalog;
-using BookStore.Application.Settings;
-using BookStore.Application.IService;
-using BookStore.Application.Services;
-using BookStore.Application.IService.Identity.Auth;
-using BookStore.Application.Services.Identity.Auth;
-using BookStore.Application.IService.Identity.User;
-using BookStore.Application.Services.Identity;
-using BookStore.Application.IService.Identity.Role;
-using BookStore.Application.Services.Identity.Role;
-using BookStore.Application.IService.Identity.Permission;
-using BookStore.Application.Services.Identity.Permission;
-using BookStore.Domain.IRepository.Identity;
-using BookStore.Domain.IRepository.Identity.User;
-using BookStore.Domain.IRepository.Identity.Auth;
-using BookStore.Domain.IRepository.Identity.RolePermisson;
-using BookStore.Infrastructure.Repository.Identity;
-using BookStore.Infrastructure.Repository.Identity.User;
-using BookStore.Infrastructure.Repository.Identity.Auth;
-using BookStore.Infrastructure.Repository.Identity.RolePermisson;
 using BookStore.API.Filters;
 using BookStore.API.Middlewares;
+using BookStore.Application.IService;
+using BookStore.Application.IService.Catalog;
+using BookStore.Application.IService.Identity.Auth;
+using BookStore.Application.IService.Identity.Email;
+using BookStore.Application.IService.Identity.Permission;
+using BookStore.Application.IService.Identity.Role;
+using BookStore.Application.IService.Identity.User;
+using BookStore.Application.Services;
+using BookStore.Application.Services.Catalog;
+using BookStore.Application.Services.Identity.Auth;
+using BookStore.Application.Services.Identity.Permission;
+using BookStore.Application.Services.Identity.Role;
+using BookStore.Application.Services.Identity.User;
+using BookStore.Application.Settings;
+using BookStore.Domain.IRepository;
+using BookStore.Domain.IRepository.Cart;
+using BookStore.Domain.IRepository.Catalog;
+using BookStore.Domain.IRepository.Identity;
+using BookStore.Domain.IRepository.Identity.Auth;
+using BookStore.Domain.IRepository.Identity.RolePermisson;
+using BookStore.Domain.IRepository.Identity.User;
+using BookStore.Domain.IRepository.Ordering;
+using BookStore.Domain.IRepository.Payment;
+using BookStore.Infrastructure.Data;
+using BookStore.Infrastructure.Repositories.Cart;
+using BookStore.Infrastructure.Repositories.Ordering;
+using BookStore.Infrastructure.Repositories.Payment;
+using BookStore.Infrastructure.Repository;
+using BookStore.Infrastructure.Repository.Catalog;
+using BookStore.Infrastructure.Repository.Identity;
+using BookStore.Infrastructure.Repository.Identity.Auth;
+using BookStore.Infrastructure.Repository.Identity.RolePermisson;
+using BookStore.Infrastructure.Repository.Identity.User;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -77,7 +84,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // Next.js frontend URL
+        policy.WithOrigins(
+                "http://localhost:3000",  // Next.js frontend URL
+                "http://localhost:5173"   // Vite admin frontend URL
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -97,13 +107,15 @@ builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Email Services
-builder.Services.AddScoped<BookStore.Application.IService.Identity.IEmailService, BookStore.Application.Services.Identity.Email.EmailService>();
-builder.Services.AddScoped<BookStore.Application.IService.Identity.IEmailVerificationService, BookStore.Application.Services.Identity.Email.EmailVerificationService>();
+builder.Services.AddScoped<IEmailService, BookStore.Application.Services.Identity.Email.EmailService>();
+builder.Services.AddScoped<IEmailVerificationService, BookStore.Application.Services.Identity.Email.EmailVerificationService>();
 
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 
 // User Service
-builder.Services.AddScoped<BookStore.Application.IService.Identity.User.IUserService, BookStore.Application.Services.Identity.UserService>();
+builder.Services.AddScoped<BookStore.Application.IService.Identity.User.IUserService, UserService>();
+builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<IUserAddressService, UserAddressService>();
 
 // Role & Permission Services
 builder.Services.AddScoped<BookStore.Application.IService.Identity.Role.IRoleService, BookStore.Application.Services.Identity.Role.RoleService>();
@@ -148,6 +160,44 @@ builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IBookImageService, BookImageService>();
 
 
+// Ordering Repositories
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
+builder.Services.AddScoped<IRefundRepository, RefundRepository>();
+
+// Payment Repository
+builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+
+//Cart Repositories
+builder.Services.AddScoped<ICartRepository, CartRepository>();
+builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
+
+// Shipping Repositories
+builder.Services.AddScoped<BookStore.Domain.IRepository.Shipping.IShipperRepository, BookStore.Infrastructure.Repositories.Shipping.ShipperRepository>();
+
+// Inventory Repositories
+builder.Services.AddScoped<BookStore.Domain.IRepository.Inventory.IWarehouseRepository, BookStore.Infrastructure.Repositories.Inventory.WarehouseRepository>();
+builder.Services.AddScoped<BookStore.Domain.IRepository.Inventory.IPriceRepository, BookStore.Infrastructure.Repositories.Inventory.PriceRepository>();
+builder.Services.AddScoped<BookStore.Domain.IRepository.Inventory.IStockItemRepository, BookStore.Infrastructure.Repositories.Inventory.StockItemRepository>();
+
+// Checkout Service
+builder.Services.AddScoped<BookStore.Application.IService.Checkout.ICheckoutService, BookStore.Application.Services.Checkout.CheckoutService>();
+
+// Ordering, Payment & Cart Services
+builder.Services.AddScoped<BookStore.Application.IService.Ordering.IOrderService, BookStore.Application.Services.Ordering.OrderService>();
+builder.Services.AddScoped<BookStore.Application.IService.Payment.IPaymentService, BookStore.Application.Services.Payment.PaymentService>();
+builder.Services.AddScoped<BookStore.Application.IService.Cart.ICartService, BookStore.Application.Services.Cart.CartService>();
+
+// Shipping Services
+builder.Services.AddScoped<BookStore.Application.IService.Shipping.IShipperService, BookStore.Application.Services.Shipping.ShipperService>();
+
+// Inventory Services
+builder.Services.AddScoped<BookStore.Application.IService.Inventory.IWarehouseService, BookStore.Application.Services.Inventory.WarehouseService>();
+builder.Services.AddScoped<BookStore.Application.IService.Inventory.IPriceService, BookStore.Application.Services.Inventory.PriceService>();
+builder.Services.AddScoped<BookStore.Application.IService.Inventory.IStockItemService, BookStore.Application.Services.Inventory.StockItemService>();
+
+
+//Controller
 builder.Services.AddControllers();
 
 
@@ -188,18 +238,66 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
-        
-        // Apply migrations silently
-        context.Database.Migrate();
+
+        // Check if database exists
+        var canConnect = context.Database.CanConnect();
+        if (!canConnect)
+        {
+            logger.LogInformation("Database does not exist. Creating database and applying migrations...");
+            context.Database.Migrate();
+            logger.LogInformation("Database created successfully");
+        }
+        else
+        {
+            // Check for pending migrations
+            var pendingMigrations = context.Database.GetPendingMigrations().ToList();
+            var appliedMigrations = context.Database.GetAppliedMigrations().ToList();
+
+            logger.LogInformation("Applied migrations: {Count}", appliedMigrations.Count);
+
+            if (pendingMigrations.Any())
+            {
+                logger.LogInformation("Found {Count} pending migrations", pendingMigrations.Count);
+
+                // Try to apply migrations, but catch specific errors
+                try
+                {
+                    context.Database.Migrate();
+                    logger.LogInformation("Database migrations applied successfully");
+                }
+                catch (Microsoft.Data.SqlClient.SqlException sqlEx) when (sqlEx.Number == 2714)
+                {
+                    // Error 2714: There is already an object named 'X' in the database
+                    logger.LogWarning("Migration skipped - database objects already exist. This is expected if schema was created manually.");
+
+                    // Manually mark migration as applied
+                    var migrationId = pendingMigrations.First();
+                    var productVersion = typeof(Microsoft.EntityFrameworkCore.DbContext).Assembly
+                        .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+                        .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+                        .FirstOrDefault()?.InformationalVersion ?? "8.0.0";
+
+                    var sql = "INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ({0}, {1})";
+                    context.Database.ExecuteSqlRaw(sql, migrationId, productVersion);
+
+                    logger.LogInformation("Migration {MigrationId} marked as applied", migrationId);
+                }
+            }
+            else
+            {
+                logger.LogInformation("Database is up to date. No pending migrations.");
+            }
+        }
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating the database");
-        throw;
+        logger.LogError(ex, "An error occurred while managing database migrations");
+        logger.LogWarning("Continuing application startup despite migration error");
     }
 }
 

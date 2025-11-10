@@ -1,4 +1,4 @@
-using BookStore.Application.IService.Identity;
+using BookStore.Application.IService.Identity.Email;
 using BookStore.Application.Settings;
 using BookStore.Domain.Entities.Identity;
 using BookStore.Domain.IRepository.Identity.Auth;

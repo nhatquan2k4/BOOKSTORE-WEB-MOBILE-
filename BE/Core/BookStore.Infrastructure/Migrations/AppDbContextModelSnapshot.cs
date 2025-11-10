@@ -141,6 +141,71 @@ namespace BookStore.Infrastructure.Migrations
                     b.ToTable("UserActivities", "analytics");
                 });
 
+            modelBuilder.Entity("BookStore.Domain.Entities.Cart.Cart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Carts", "ordering");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Cart.CartItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<Guid>("BookId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CartId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Quantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("CartId");
+
+                    b.ToTable("CartItems", "ordering");
+                });
+
             modelBuilder.Entity("BookStore.Domain.Entities.Catalog.Author", b =>
                 {
                     b.Property<Guid>("Id")
@@ -787,66 +852,6 @@ namespace BookStore.Infrastructure.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("UserRoles", "identity");
-                });
-
-            modelBuilder.Entity("BookStore.Domain.Entities.Ordering.Cart", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Carts", "ordering");
-                });
-
-            modelBuilder.Entity("BookStore.Domain.Entities.Ordering.CartItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("AddedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<Guid>("BookId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CartId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Quantity")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BookId");
-
-                    b.HasIndex("CartId");
-
-                    b.ToTable("CartItems", "ordering");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Ordering.Order", b =>
@@ -1756,11 +1761,16 @@ namespace BookStore.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("VehicleNumber")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Shippers", "shipping");
                 });
@@ -1883,6 +1893,36 @@ namespace BookStore.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Cart.Cart", b =>
+                {
+                    b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
+                        .WithMany("Carts")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Cart.CartItem", b =>
+                {
+                    b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BookStore.Domain.Entities.Cart.Cart", "Cart")
+                        .WithMany("Items")
+                        .HasForeignKey("CartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("Cart");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Catalog.Book", b =>
@@ -2126,36 +2166,6 @@ namespace BookStore.Infrastructure.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("BookStore.Domain.Entities.Ordering.Cart", b =>
-                {
-                    b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
-                        .WithMany("Carts")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("BookStore.Domain.Entities.Ordering.CartItem", b =>
-                {
-                    b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
-                        .WithMany()
-                        .HasForeignKey("BookId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BookStore.Domain.Entities.Ordering.Cart", "Cart")
-                        .WithMany("Items")
-                        .HasForeignKey("CartId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Book");
-
-                    b.Navigation("Cart");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Ordering.Order", b =>
@@ -2413,6 +2423,16 @@ namespace BookStore.Infrastructure.Migrations
                     b.Navigation("Shipment");
                 });
 
+            modelBuilder.Entity("BookStore.Domain.Entities.Shipping.Shipper", b =>
+                {
+                    b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("BookStore.Domain.Entities.System.Notification", b =>
                 {
                     b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
@@ -2422,6 +2442,11 @@ namespace BookStore.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Cart.Cart", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Catalog.Author", b =>
@@ -2504,11 +2529,6 @@ namespace BookStore.Infrastructure.Migrations
                     b.Navigation("Reviews");
 
                     b.Navigation("UserRoles");
-                });
-
-            modelBuilder.Entity("BookStore.Domain.Entities.Ordering.Cart", b =>
-                {
-                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Ordering.Order", b =>

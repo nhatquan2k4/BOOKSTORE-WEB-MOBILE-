@@ -1,12 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace BookStore.Application.Dtos.Cart
+﻿namespace BookStore.Application.Dtos.Cart
 {
-    internal class CreateCartDto
+    public class CreateCartDto
     {
+        public Guid UserId { get; set; }
+    }
+
+    public class AddToCartDto
+    {
+        public Guid UserId { get; set; }
+        public Guid BookId { get; set; }
+        public int Quantity { get; set; } = 1;
+    }
+
+    public class RemoveFromCartDto
+    {
+        public Guid UserId { get; set; }
+        public Guid BookId { get; set; }
+    }
+
+    public class UpdateCartItemDto
+    {
+        public Guid UserId { get; set; }
+        public Guid BookId { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    public class ClearCartDto
+    {
+        public Guid UserId { get; set; }
     }
 }

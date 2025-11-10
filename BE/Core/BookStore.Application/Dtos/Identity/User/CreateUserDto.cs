@@ -12,8 +12,8 @@ namespace BookStore.Application.Dtos.Identity.User
         public string Password { get; set; } = null!;
         public bool IsActive { get; set; } = true;
         public CreateUserProfileDto Profile { get; set; } = null!;
-        public List<Guid>? RoleIds { get; set; }
-    
+        // public List<Guid>? RoleIds { get; set; }
+
     }
 
     public class CreateUserProfileDto

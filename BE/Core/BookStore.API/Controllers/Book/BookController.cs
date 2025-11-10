@@ -19,16 +19,16 @@ namespace BookStore.API.Controllers.Book
         }
 
         /// <summary>
-        /// L?y danh s�ch s�ch v?i ph�n trang v� l?c
+        /// Lấy danh sách sách với phân trang và lọc
         /// </summary>
-        /// <param name="pageNumber">S? trang (m?c d?nh: 1)</param>
-        /// <param name="pageSize">K�ch thu?c trang (m?c d?nh: 10)</param>
-        /// <param name="searchTerm">T? kh�a t�m ki?m (t�m theo t�n, ISBN)</param>
-        /// <param name="categoryId">L?c theo danh m?c</param>
-        /// <param name="authorId">L?c theo t�c gi?</param>
-        /// <param name="publisherId">L?c theo nh� xu?t b?n</param>
-        /// <param name="isAvailable">L?c theo tr?ng th�i c�n h�ng</param>
-        /// <returns>PagedResult v?i danh s�ch BookDto</returns>
+        /// <param name="pageNumber">Số trang (mặc định: 1)</param>
+        /// <param name="pageSize">Kích thước trang (mặc định: 10)</param>
+        /// <param name="searchTerm">Từ khóa tìm kiếm (tìm theo tên, ISBN)</param>
+        /// <param name="categoryId">Lọc theo danh mục</param>
+        /// <param name="authorId">Lọc theo tác giả</param>
+        /// <param name="publisherId">Lọc theo nhà xuất bản</param>
+        /// <param name="isAvailable">Lọc theo trạng thái còn hàng</param>
+        /// <returns>PagedResult với danh sách BookDto</returns>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedResult<BookDto>>> GetAll(
@@ -47,9 +47,9 @@ namespace BookStore.API.Controllers.Book
         }
 
         /// <summary>
-        /// L?y chi ti?t s�ch theo ID
+        /// Lấy chi tiết sách theo ID
         /// </summary>
-        /// <param name="id">ID c?a s�ch</param>
+        /// <param name="id">ID của sách</param>
         /// <returns>BookDetailDto</returns>
         [HttpGet("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -58,15 +58,15 @@ namespace BookStore.API.Controllers.Book
         {
             var book = await _bookService.GetByIdAsync(id);
             if (book == null)
-                return NotFound(new { message = $"Kh�ng t�m th?y s�ch v?i ID: {id}" });
+                return NotFound(new { message = $"Không tìm thấy sách với ID: {id}" });
 
             return Ok(book);
         }
 
         /// <summary>
-        /// L?y s�ch theo ISBN
+        /// Lấy sách theo ISBN
         /// </summary>
-        /// <param name="isbn">M� ISBN c?a s�ch</param>
+        /// <param name="isbn">Mã ISBN của sách</param>
         /// <returns>BookDetailDto</returns>
         [HttpGet("by-isbn/{isbn}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -75,17 +75,17 @@ namespace BookStore.API.Controllers.Book
         {
             var book = await _bookService.GetByISBNAsync(isbn);
             if (book == null)
-                return NotFound(new { message = $"Kh�ng t�m th?y s�ch v?i ISBN: {isbn}" });
+                return NotFound(new { message = $"Không tìm thấy sách với ISBN: {isbn}" });
 
             return Ok(book);
         }
 
         /// <summary>
-        /// L?y danh s�ch s�ch theo danh m?c
+        /// Lấy danh sách sách theo danh mục
         /// </summary>
-        /// <param name="categoryId">ID c?a danh m?c</param>
-        /// <param name="top">S? lu?ng s�ch t?i da (m?c d?nh: 10)</param>
-        /// <returns>Danh s�ch BookDto</returns>
+        /// <param name="categoryId">ID của danh mục</param>
+        /// <param name="top">Số lượng sách tối đa (mặc định: 10)</param>
+        /// <returns>Danh sách BookDto</returns>
         [HttpGet("by-category/{categoryId:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<BookDto>>> GetByCategory(Guid categoryId, [FromQuery] int top = 10)
@@ -95,11 +95,11 @@ namespace BookStore.API.Controllers.Book
         }
 
         /// <summary>
-        /// L?y danh s�ch s�ch theo t�c gi?
+        /// Lấy danh sách sách theo tác giả
         /// </summary>
-        /// <param name="authorId">ID c?a t�c gi?</param>
-        /// <param name="top">S? lu?ng s�ch t?i da (m?c d?nh: 10)</param>
-        /// <returns>Danh s�ch BookDto</returns>
+        /// <param name="authorId">ID của tác giả</param>
+        /// <param name="top">Số lượng sách tối đa (mặc định: 10)</param>
+        /// <returns>Danh sách BookDto</returns>
         [HttpGet("by-author/{authorId:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<BookDto>>> GetByAuthor(Guid authorId, [FromQuery] int top = 10)
@@ -109,11 +109,11 @@ namespace BookStore.API.Controllers.Book
         }
 
         /// <summary>
-        /// L?y danh s�ch s�ch theo nh� xu?t b?n
+        /// Lấy danh sách sách theo nhà xuất bản
         /// </summary>
-        /// <param name="publisherId">ID c?a nh� xu?t b?n</param>
-        /// <param name="top">S? lu?ng s�ch t?i da (m?c d?nh: 10)</param>
-        /// <returns>Danh s�ch BookDto</returns>
+        /// <param name="publisherId">ID của nhà xuất bản</param>
+        /// <param name="top">Số lượng sách tối đa (mặc định: 10)</param>
+        /// <returns>Danh sách BookDto</returns>
         [HttpGet("by-publisher/{publisherId:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<BookDto>>> GetByPublisher(Guid publisherId, [FromQuery] int top = 10)
@@ -123,57 +123,75 @@ namespace BookStore.API.Controllers.Book
         }
 
         /// <summary>
-        /// T�m ki?m s�ch theo t? kh�a
+        /// Tìm kiếm sách theo từ khóa
         /// </summary>
-        /// <param name="searchTerm">T? kh�a t�m ki?m</param>
-        /// <param name="top">S? lu?ng k?t qu? t?i da (m?c d?nh: 20)</param>
-        /// <returns>Danh s�ch BookDto</returns>
+        /// <param name="searchTerm">Từ khóa tìm kiếm</param>
+        /// <param name="top">Số lượng kết quả tối đa (mặc định: 20)</param>
+        /// <returns>Danh sách BookDto</returns>
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<BookDto>>> Search([FromQuery] string searchTerm, [FromQuery] int top = 20)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
-                return BadRequest(new { message = "T? kh�a t�m ki?m kh�ng du?c d? tr?ng" });
+                return BadRequest(new { message = "T? kh�a t�m ki?m kh�ng du?c d? tr?ng" });
 
             var books = await _bookService.SearchAsync(searchTerm, top);
             return Ok(books);
         }
 
         /// <summary>
-        /// T?o m?i s�ch
+        /// Tạo mới sách
         /// </summary>
-        /// <param name="dto">Th�ng tin s�ch</param>
-        /// <returns>BookDetailDto d� du?c t?o</returns>
+        /// <param name="dto">Thông tin sách</param>
+        /// <returns>BookDetailDto được tạo</returns>
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(BookDetailDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<BookDetailDto>> Create([FromBody] CreateBookDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                var errors = ModelState
+                    .Where(x => x.Value?.Errors.Count > 0)
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                    );
+                return BadRequest(new { message = "Dữ liệu không hợp lệ", errors });
+            }
 
             try
             {
                 var createdBook = await _bookService.AddAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = createdBook.Id }, createdBook);
             }
-            catch (InvalidOperationException ex)
+            catch (Shared.Exceptions.ValidationException ex)
+            {
+                return BadRequest(new { message = "Lỗi validation", errors = ex.Errors });
+            }
+            catch (Shared.Exceptions.NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Shared.Exceptions.UserFriendlyException ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "C� l?i x?y ra khi t?o s�ch", details = ex.Message });
+                    new { message = "Có lỗi xảy ra khi tạo sách", details = ex.Message });
             }
         }
 
         /// <summary>
-        /// C?p nh?t s�ch
+        /// Cập nhật sách
         /// </summary>
-        /// <param name="id">ID c?a s�ch</param>
-        /// <param name="dto">Th�ng tin c?p nh?t</param>
-        /// <returns>BookDetailDto d� du?c c?p nh?t</returns>
+        /// <param name="id">ID của sách</param>
+        /// <param name="dto">Thông tin cập nhật</param>
+        /// <returns>BookDetailDto được cập nhật</returns>
         [HttpPut("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -181,7 +199,7 @@ namespace BookStore.API.Controllers.Book
         public async Task<ActionResult<BookDetailDto>> Update(Guid id, [FromBody] UpdateBookDto dto)
         {
             if (id != dto.Id)
-                return BadRequest(new { message = "ID trong URL kh�ng kh?p v?i ID trong body" });
+                return BadRequest(new { message = "ID trong URL kh�ng kh?p v?i ID trong body" });
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -202,15 +220,15 @@ namespace BookStore.API.Controllers.Book
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "C� l?i x?y ra khi c?p nh?t s�ch", details = ex.Message });
+                    new { message = "C� l?i x?y ra khi c?p nh?t s�ch", details = ex.Message });
             }
         }
 
         /// <summary>
-        /// X�a s�ch
+        /// Xóa sách
         /// </summary>
-        /// <param name="id">ID c?a s�ch</param>
-        /// <returns>K?t qu? x�a</returns>
+        /// <param name="id">ID của sách</param>
+        /// <returns>Kết quả xóa</returns>
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -218,17 +236,17 @@ namespace BookStore.API.Controllers.Book
         {
             var result = await _bookService.DeleteAsync(id);
             if (!result)
-                return NotFound(new { message = $"Kh�ng t�m th?y s�ch v?i ID: {id}" });
+                return NotFound(new { message = $"Kh�ng t�m th?y s�ch v?i ID: {id}" });
 
             return NoContent();
         }
 
         /// <summary>
-        /// C?p nh?t tr?ng th�i c�n h�ng c?a s�ch
+        /// Cập nhật trạng thái còn hàng của sách
         /// </summary>
-        /// <param name="id">ID c?a s�ch</param>
-        /// <param name="isAvailable">Tr?ng th�i c�n h�ng</param>
-        /// <returns>K?t qu? c?p nh?t</returns>
+        /// <param name="id">ID của sách</param>
+        /// <param name="isAvailable">Trạng thái còn hàng</param>
+        /// <returns>Kết quả cập nhật</returns>
         [HttpPatch("{id:guid}/availability")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -236,23 +254,23 @@ namespace BookStore.API.Controllers.Book
         {
             var result = await _bookService.UpdateAvailabilityAsync(id, isAvailable);
             if (!result)
-                return NotFound(new { message = $"Kh�ng t�m th?y s�ch v?i ID: {id}" });
+                return NotFound(new { message = $"Không tìm thấy sách với ID: {id}" });
 
-            return Ok(new { message = "C?p nh?t tr?ng th�i th�nh c�ng", isAvailable });
+            return Ok(new { message = "Cập nhật trạng thái thành công", isAvailable });
         }
 
         /// <summary>
-        /// Ki?m tra ISBN d� t?n t?i chua
+        /// Kiểm tra ISBN đã tồn tại chưa
         /// </summary>
-        /// <param name="isbn">M� ISBN c?n ki?m tra</param>
-        /// <param name="excludeBookId">ID s�ch c?n lo?i tr? (d�ng khi update)</param>
-        /// <returns>True n?u ISBN d� t?n t?i</returns>
+        /// <param name="isbn">Mã ISBN cần kiểm tra</param>
+        /// <param name="excludeBookId">ID sách cần loại trừ (dùng khi update)</param>
+        /// <returns>True nếu ISBN đã tồn tại</returns>
         [HttpGet("check-isbn")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<object>> CheckISBN([FromQuery] string isbn, [FromQuery] Guid? excludeBookId = null)
         {
             if (string.IsNullOrWhiteSpace(isbn))
-                return BadRequest(new { message = "ISBN kh�ng du?c d? tr?ng" });
+                return BadRequest(new { message = "ISBN không được để trống" });
 
             var exists = await _bookService.IsISBNExistsAsync(isbn, excludeBookId);
             return Ok(new { exists, isbn });

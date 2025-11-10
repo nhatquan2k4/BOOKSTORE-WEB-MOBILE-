@@ -1,5 +1,6 @@
 ﻿using BookStore.Domain.Entities.Analytics___Activity;
 using BookStore.Domain.Entities.Common;
+using BookStore.Domain.Entities.Cart;
 using BookStore.Domain.Entities.Ordering;
 using BookStore.Domain.Entities.Rental;
 using BookStore.Domain.Entities.System;
@@ -36,7 +37,7 @@ namespace BookStore.Domain.Entities.Identity
 
         //Navigation property 
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>(); // Danh sách đơn hàng của người dùng
-        public virtual ICollection<Cart> Carts { get; set; } = new List<Cart>(); // Danh sách giỏ hàng của người dùng
+        public virtual ICollection<Entities.Cart.Cart> Carts { get; set; } = new List<Entities.Cart.Cart>(); // Danh sách giỏ hàng của người dùng
         public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();             // Các đánh giá của người dùng
         public virtual ICollection<BookRental> BookRentals { get; set; } = new List<BookRental>(); // Sách thuê
         public virtual ICollection<UserActivity> Activities { get; set; } = new List<UserActivity>(); // Nhật ký hành động

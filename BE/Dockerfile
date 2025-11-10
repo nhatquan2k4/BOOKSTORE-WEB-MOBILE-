@@ -5,9 +5,6 @@ COPY ["Core/BookStore.API/BookStore.API.csproj", "Core/BookStore.API/"]
 COPY ["Core/BookStore.Application/BookStore.Application.csproj", "Core/BookStore.Application/"]
 COPY ["Core/BookStore.Domain/BookStore.Domain.csproj", "Core/BookStore.Domain/"]
 COPY ["Core/BookStore.Infrastructure/BookStore.Infrastructure.csproj", "Core/BookStore.Infrastructure/"]
-COPY ["BookStore.Results/BookStore.Results.csproj", "BookStore.Results/"]
-COPY ["BookStore.Exceptions/BookStore.Exceptions.csproj", "BookStore.Exceptions/"]
-COPY ["BookStore.Helpers/BookStore.Helpers.csproj", "BookStore.Helpers/"]
 COPY ["BookStore.Shared/BookStore.Shared.csproj", "BookStore.Shared/"]
 
 RUN dotnet restore "Core/BookStore.API/BookStore.API.csproj"

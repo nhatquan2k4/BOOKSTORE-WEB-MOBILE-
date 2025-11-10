@@ -19,15 +19,17 @@ namespace BookStore.Application.IService.Catalog
         /// </summary>
         Task<BookImageDto?> GetImageByIdAsync(Guid id);
 
-        /// <summary>
-        /// Upload một image mới cho book
-        /// </summary>
-        Task<BookImageDto> UploadImageAsync(CreateBookImageDto dto);
 
         /// <summary>
-        /// Upload nhiều images cùng lúc cho book
+        /// [DEPRECATED] Upload một image mới cho book với URL có sẵn
         /// </summary>
-        Task<IEnumerable<BookImageDto>> UploadImagesAsync(UploadBookImagesDto dto);
+        // Task<BookImageDto> UploadImageAsync(CreateBookImageDto dto);
+
+        /// <summary>
+        /// [DEPRECATED] Upload nhiều images cùng lúc cho book với URLs có sẵn
+        /// </summary>
+        // Task<IEnumerable<BookImageDto>> UploadImagesAsync(UploadBookImagesDto dto);
+
 
         /// <summary>
         /// Cập nhật thông tin image (IsCover, DisplayOrder)
@@ -53,5 +55,15 @@ namespace BookStore.Application.IService.Catalog
         /// Lấy cover image của book
         /// </summary>
         Task<BookImageDto?> GetCoverImageAsync(Guid bookId);
+
+        /// <summary>
+        /// Upload file trực tiếp lên MinIO và lưu vào DB (Single file)
+        /// </summary>
+        Task<BookImageDto> UploadFileAsync(Guid bookId, Stream fileStream, string fileName, string contentType, bool isCover = false, int displayOrder = 0);
+
+        /// <summary>
+        /// Upload nhiều files trực tiếp lên MinIO và lưu vào DB (Batch)
+        /// </summary>
+        Task<IEnumerable<BookImageDto>> UploadFilesAsync(Guid bookId, List<(Stream stream, string fileName, string contentType)> files, int? coverImageIndex = null);
     }
 }
