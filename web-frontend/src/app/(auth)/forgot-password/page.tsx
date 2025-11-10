@@ -12,8 +12,6 @@ import {
   getInputClassName,
   authButtonStyles,
   authLinkStyles,
-  authContainerStyles,
-  authAlertStyles,
 } from "@/constants/authStyles";
 
 type ForgotPasswordFormData = {
@@ -159,7 +157,7 @@ export default function ForgotPasswordPage() {
       )}
 
       {/* Divider */}
-      <div className={authContainerStyles.divider}>
+      <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-200"></div>
         </div>

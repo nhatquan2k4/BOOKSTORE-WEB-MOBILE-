@@ -5,10 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, use, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ShoppingCart, BookOpen, Heart, Bookmark, Share2,
-  AlertTriangle, Check, Package, Users, Award, Shield
-} from "lucide-react";
 import { Button, Badge, Alert } from "@/components/ui";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 
@@ -1052,8 +1048,8 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                           aria-label="Hữu ích"
                           aria-pressed={rv.userVote === "up"}
                           className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition ${rv.userVote === "up"
-                              ? "bg-green-50 text-green-600 ring-1 ring-green-200"
-                              : "text-gray-600 hover:bg-gray-100"
+                            ? "bg-green-50 text-green-600 ring-1 ring-green-200"
+                            : "text-gray-600 hover:bg-gray-100"
                             }`}
                         >
                           {/* icon like */}
@@ -1071,8 +1067,8 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                           aria-label="Không hữu ích"
                           aria-pressed={rv.userVote === "down"}
                           className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition ${rv.userVote === "down"
-                              ? "bg-red-50 text-red-600 ring-1 ring-red-200"
-                              : "text-gray-600 hover:bg-gray-100"
+                            ? "bg-red-50 text-red-600 ring-1 ring-red-200"
+                            : "text-gray-600 hover:bg-gray-100"
                             }`}
                         >
                           {/* icon dislike */}

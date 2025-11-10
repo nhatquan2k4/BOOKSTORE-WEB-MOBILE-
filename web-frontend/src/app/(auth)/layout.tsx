@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from 'next/image';
 
 export default function AuthLayout({
   children,
@@ -30,13 +29,13 @@ export default function AuthLayout({
             </div>
           </div>
         </div>
-        
+
         {/* Decorative book illustration */}
         <div className="absolute bottom-0 right-0 w-64 h-64 opacity-20">
           <svg viewBox="0 0 200 200" fill="currentColor">
-            <path d="M40 40 L160 40 L160 160 L40 160 Z" opacity="0.3"/>
-            <path d="M50 50 L150 50 L150 150 L50 150 Z" opacity="0.5"/>
-            <path d="M60 60 L140 60 L140 140 L60 140 Z"/>
+            <path d="M40 40 L160 40 L160 160 L40 160 Z" opacity="0.3" />
+            <path d="M50 50 L150 50 L150 150 L50 150 Z" opacity="0.5" />
+            <path d="M60 60 L140 60 L140 140 L60 140 Z" />
           </svg>
         </div>
       </div>
