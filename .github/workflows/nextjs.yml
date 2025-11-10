@@ -6,7 +6,7 @@ name: Deploy Next.js site to Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["production"]
     paths:
       - "web-frontend/**"
       - ".github/workflows/nextjs.yml"
