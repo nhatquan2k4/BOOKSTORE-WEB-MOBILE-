@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { authApi } from "@/lib/api/identity/auth";
-import { User, LoginRequest, RegisterRequest } from '@/types/user';
+import { UserInfo, LoginRequest, RegisterRequest } from '@/types/user';
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,8 +22,11 @@ export function useAuth() {
   const loadUser = async () => {
     try {
       setIsLoading(true);
-      const userData = await authApi.me();
-      setUser(userData);
+      const response = await authApi.me();
+      // Extract data from ApiResponse
+      if (response.success && response.data) {
+        setUser(response.data);
+      }
       setError(null);
     } catch (err) {
       console.error('Failed to load user:', err);
@@ -40,14 +43,16 @@ export function useAuth() {
       setIsLoading(true);
       setError(null);
       const response = await authApi.login(credentials);
-      
-      // Save tokens
-      localStorage.setItem('access_token', response.accessToken);
-      localStorage.setItem('refresh_token', response.refreshToken);
-      
+
+      // Save tokens from response data
+      if (response.success && response.data) {
+        localStorage.setItem('access_token', response.data.accessToken);
+        localStorage.setItem('refresh_token', response.data.refreshToken);
+      }
+
       // Load user data
       await loadUser();
-      
+
       return response;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Đăng nhập thất bại';
@@ -63,14 +68,16 @@ export function useAuth() {
       setIsLoading(true);
       setError(null);
       const response = await authApi.register(data);
-      
-      // Save tokens
-      localStorage.setItem('access_token', response.accessToken);
-      localStorage.setItem('refresh_token', response.refreshToken);
-      
+
+      // Save tokens from response data
+      if (response.success && response.data) {
+        localStorage.setItem('access_token', response.data.accessToken);
+        localStorage.setItem('refresh_token', response.data.refreshToken);
+      }
+
       // Load user data
       await loadUser();
-      
+
       return response;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Đăng ký thất bại';

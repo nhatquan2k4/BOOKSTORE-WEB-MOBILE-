@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -113,11 +113,8 @@ export default function RentDetailPage() {
   const params = useParams();
   const router = useRouter();
 
-  // Tính gói thuê từ giá mua (để không phải hard-code nữa)
-  const rentalPlans = useMemo(
-    () => generateRentalPlans(bookData.purchasePrice),
-    [bookData.purchasePrice]
-  );
+  // Tính gói thuê từ giá mua (bookData là constant nên không cần useMemo)
+  const rentalPlans = generateRentalPlans(bookData.purchasePrice);
 
   // chọn mặc định gói thứ 2 (7 ngày) cho hợp lý
   const [selectedPlan, setSelectedPlan] = useState<number>(rentalPlans[1]?.id ?? rentalPlans[0]?.id ?? 1);
@@ -275,31 +272,28 @@ export default function RentDetailPage() {
                 <div className="flex gap-8">
                   <button
                     onClick={() => setActiveTab('description')}
-                    className={`pb-4 border-b-2 font-semibold transition ${
-                      activeTab === 'description'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-900'
-                    }`}
+                    className={`pb-4 border-b-2 font-semibold transition ${activeTab === 'description'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                      }`}
                   >
                     Mô tả
                   </button>
                   <button
                     onClick={() => setActiveTab('details')}
-                    className={`pb-4 border-b-2 font-semibold transition ${
-                      activeTab === 'details'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-900'
-                    }`}
+                    className={`pb-4 border-b-2 font-semibold transition ${activeTab === 'details'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                      }`}
                   >
                     Chi tiết
                   </button>
                   <button
                     onClick={() => setActiveTab('reviews')}
-                    className={`pb-4 border-b-2 font-semibold transition ${
-                      activeTab === 'reviews'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-900'
-                    }`}
+                    className={`pb-4 border-b-2 font-semibold transition ${activeTab === 'reviews'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                      }`}
                   >
                     Đánh giá ({bookData.reviews})
                   </button>
@@ -382,11 +376,10 @@ export default function RentDetailPage() {
                       <button
                         key={plan.id}
                         onClick={() => setSelectedPlan(plan.id)}
-                        className={`w-full p-4 rounded-lg border-2 transition-all ${
-                          selectedPlan === plan.id
-                            ? 'border-blue-600 bg-blue-50 shadow-md'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                        } relative`}
+                        className={`w-full p-4 rounded-lg border-2 transition-all ${selectedPlan === plan.id
+                          ? 'border-blue-600 bg-blue-50 shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 bg-white'
+                          } relative`}
                       >
                         {plan.popular && (
                           <div className="absolute -top-2 -right-2">
