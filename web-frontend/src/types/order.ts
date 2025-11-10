@@ -1,4 +1,6 @@
 // Order Types
+import type { Book } from './book';
+
 export interface Order {
   id: string;
   userId: string;
@@ -12,7 +14,7 @@ export interface Order {
   paidAt?: string;
   completedAt?: string;
   cancelledAt?: string;
-  
+
   // Relations
   items: OrderItem[];
   address: OrderAddress;
@@ -21,20 +23,20 @@ export interface Order {
   coupon?: Coupon;
 }
 
-export type OrderStatus = 
-  | "PendingPayment" 
-  | "Paid" 
+export type OrderStatus =
+  | "PendingPayment"
+  | "Paid"
   | "Processing"
-  | "Shipped" 
-  | "Completed" 
-  | "Cancelled" 
+  | "Shipped"
+  | "Completed"
+  | "Cancelled"
   | "Refunded";
 
 export interface OrderItem {
   id: string;
   orderId: string;
   bookId: string;
-  book?: any; // Book type
+  book?: Book;
   quantity: number;
   unitPrice: number;
   totalPrice: number;

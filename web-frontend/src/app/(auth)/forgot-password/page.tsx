@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordFormData>();
-  
+
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [emailSent, setEmailSent] = useState(false);
@@ -34,23 +34,24 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (data: ForgotPasswordFormData) => {
     setErrorMessage("");
     setSuccessMessage("");
-    
+
     try {
       const response = await authApi.forgotPassword(data.email);
-      
+
       if (response.success) {
         setEmailSent(true);
         setSuccessMessage(
-          response.message || 
+          response.message ||
           `Chúng tôi đã gửi email hướng dẫn đặt lại mật khẩu đến ${data.email}. Vui lòng kiểm tra hộp thư của bạn.`
         );
       } else {
         setErrorMessage(response.message || "Có lỗi xảy ra. Vui lòng thử lại.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
       setErrorMessage(
-        err?.response?.data?.message || 
-        err?.message || 
+        error?.response?.data?.message ||
+        error?.message ||
         "Có lỗi xảy ra. Vui lòng thử lại."
       );
     }

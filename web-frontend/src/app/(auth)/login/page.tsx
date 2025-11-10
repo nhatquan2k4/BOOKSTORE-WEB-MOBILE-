@@ -32,7 +32,7 @@ export default function LoginPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>();
-  
+
   const [errorMessage, setErrorMessage] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
 
@@ -58,14 +58,14 @@ export default function LoginPage() {
       // Clear the parameter from URL
       router.replace('/login');
     }
-    
+
     // Check URL parameter for expired session
     if (searchParams.get('expired') === 'true') {
       setInfoMessage("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
       // Clear the parameter from URL
       router.replace('/login');
     }
-    
+
     // Check sessionStorage for logout reason
     const logoutReason = sessionStorage.getItem('logoutReason');
     if (logoutReason === 'expired') {
@@ -86,9 +86,10 @@ export default function LoginPage() {
 
       // Redirect to home - header will update automatically via context
       router.push("/");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { message?: string };
       setErrorMessage(
-        err?.message || 
+        error?.message ||
         "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin."
       );
     }
