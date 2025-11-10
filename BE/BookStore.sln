@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookStore.Infrastructure", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookStore.Shared", "BookStore.Shared\BookStore.Shared.csproj", "{11344368-766E-4363-9B2B-FD13507DA41E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookStore.Tests", "Core\BookStore.Tests\BookStore.Tests.csproj", "{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -85,6 +87,18 @@ Global
 		{11344368-766E-4363-9B2B-FD13507DA41E}.Release|x64.Build.0 = Release|Any CPU
 		{11344368-766E-4363-9B2B-FD13507DA41E}.Release|x86.ActiveCfg = Release|Any CPU
 		{11344368-766E-4363-9B2B-FD13507DA41E}.Release|x86.Build.0 = Release|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Debug|x64.Build.0 = Debug|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Debug|x86.Build.0 = Debug|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Release|x64.ActiveCfg = Release|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Release|x64.Build.0 = Release|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Release|x86.ActiveCfg = Release|Any CPU
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -95,6 +109,7 @@ Global
 		{301ADB67-3B1C-4399-BB69-C202390FB99C} = {FBF56CC3-7AE6-AD2D-3F14-7F97FD322CD6}
 		{F681D5F8-3428-4B90-B000-F89926539367} = {FBF56CC3-7AE6-AD2D-3F14-7F97FD322CD6}
 		{11344368-766E-4363-9B2B-FD13507DA41E} = {FBF56CC3-7AE6-AD2D-3F14-7F97FD322CD6}
+		{DFDCF17E-5A3E-484A-8FDE-40204AA6AD42} = {FBF56CC3-7AE6-AD2D-3F14-7F97FD322CD6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C1ECC3A1-1E45-43BA-9B05-868DCEDED857}
