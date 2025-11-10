@@ -1,0 +1,43 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: .NET
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "BE/**"
+      - ".github/workflows/be-ci.yml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "BE/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # Mặc định mọi lệnh chạy trong thư mục BE
+    defaults:
+      run:
+        working-directory: ./BE
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore BookStore.sln
+
+      - name: Build
+        run: dotnet build BookStore.sln --no-restore --configuration Release
+
+      - name: Test
+        # Chạy thẳng project test, tránh mấy bug lặt vặt khi gọi qua .sln
+        run: dotnet test Core/BookStore.Tests/BookStore.Tests.csproj --no-build --configuration Release --verbosity normal
