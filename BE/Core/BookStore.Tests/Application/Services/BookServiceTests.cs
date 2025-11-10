@@ -50,7 +50,7 @@ namespace BookStore.Tests.Application.Services
                 new Book
                 {
                     Id = Guid.NewGuid(),
-                    Title = "Clean Architecture",
+                    Title = "Doraemon",
                     ISBN = new ISBN("978-0134494166"),
                     PublicationYear = 2017,
                     PublisherId = Guid.NewGuid(),
@@ -61,7 +61,7 @@ namespace BookStore.Tests.Application.Services
                 new Book
                 {
                     Id = Guid.NewGuid(),
-                    Title = "Domain-Driven Design",
+                    Title = "Conan",
                     ISBN = new ISBN("978-0321125217"),
                     PublicationYear = 2003,
                     PublisherId = Guid.NewGuid(),
@@ -96,7 +96,7 @@ namespace BookStore.Tests.Application.Services
                 new Book
                 {
                     Id = Guid.NewGuid(),
-                    Title = "Clean Architecture",
+                    Title = "Doraemon",
                     ISBN = new ISBN("978-0134494166"),
                     PublicationYear = 2017,
                     PublisherId = Guid.NewGuid(),
@@ -107,7 +107,7 @@ namespace BookStore.Tests.Application.Services
                 new Book
                 {
                     Id = Guid.NewGuid(),
-                    Title = "Domain-Driven Design",
+                    Title = "Conan",
                     ISBN = new ISBN("978-0321125217"),
                     PublicationYear = 2003,
                     PublisherId = Guid.NewGuid(),
@@ -124,12 +124,12 @@ namespace BookStore.Tests.Application.Services
             var result = await _bookService.GetAllAsync(
                 pageNumber: 1,
                 pageSize: 10,
-                searchTerm: "Clean");
+                searchTerm: "Doraemon");
 
             // Assert
             result.Should().NotBeNull();
             result.Items.Should().HaveCount(1);
-            result.Items.First().Title.Should().Contain("Clean");
+            result.Items.First().Title.Should().Contain("Doraemon");
 
             _mockBookRepository.Verify(repo => repo.GetAllAsync(), Times.Once);
         }
