@@ -35,4 +35,4 @@ jobs:
 
       - name: Test
         working-directory: ./BE
-        run: dotnet test --no-build --verbosity normal
+        run: dotnet test --verbosity normal
