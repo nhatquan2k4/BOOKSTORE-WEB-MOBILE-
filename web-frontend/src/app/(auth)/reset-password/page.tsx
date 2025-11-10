@@ -29,7 +29,7 @@ export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const email = searchParams.get("email");
-  
+
   const {
     register,
     handleSubmit,
@@ -40,11 +40,11 @@ export default function ResetPasswordPage() {
       email: email || "",
     },
   });
-  
+
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
-  
+
   const password = watch("password");
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
       setErrorMessage("Token không hợp lệ.");
       return;
     }
-    
+
     try {
       const response = await authApi.resetPassword({
         email: data.email,
@@ -92,10 +92,11 @@ export default function ResetPasswordPage() {
           response.message || "Không thể đặt lại mật khẩu. Vui lòng thử lại."
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
       setErrorMessage(
-        err?.response?.data?.message ||
-        err?.message ||
+        error?.response?.data?.message ||
+        error?.message ||
         "Có lỗi xảy ra. Vui lòng thử lại."
       );
     }
@@ -175,7 +176,7 @@ export default function ResetPasswordPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {/* Email Field (hidden but required by API) */}
         <input type="hidden" {...register("email")} />
-        
+
         <FormField>
           <PasswordInput
             id="password"
@@ -199,7 +200,7 @@ export default function ResetPasswordPage() {
                 {[1, 2, 3, 4].map((level) => (
                   <div
                     key={level}
-                    className={'h-1 flex-1 rounded-full transition-all ' + 
+                    className={'h-1 flex-1 rounded-full transition-all ' +
                       (password.length >= level * 2
                         ? password.length < 6 ? passwordStrengthColors.weak : password.length < 8 ? passwordStrengthColors.medium : passwordStrengthColors.strong
                         : passwordStrengthColors.empty)}

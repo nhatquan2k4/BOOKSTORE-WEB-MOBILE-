@@ -1,4 +1,6 @@
 // Cart Types
+import type { Book } from './book';
+
 export interface Cart {
   id: string;
   userId: string;
@@ -11,7 +13,7 @@ export interface CartItem {
   id: string;
   cartId: string;
   bookId: string;
-  book?: any; // Book type
+  book?: Book;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
