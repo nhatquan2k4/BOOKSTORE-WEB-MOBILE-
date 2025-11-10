@@ -55,10 +55,10 @@ namespace BookStore.Application.Services.Identity.User
             await _userRepository.AddAsync(user);
             await _userRepository.SaveChangesAsync();
 
-            if (dto.RoleIds != null && dto.RoleIds.Any())
-            {
-                await AssignRolesToUserAsync(user.Id, dto.RoleIds);
-            }
+            // if (dto.RoleIds != null && dto.RoleIds.Any())
+            // {
+            //     await AssignRolesToUserAsync(user.Id, dto.RoleIds);
+            // }
 
             return (await _userRepository.GetByIdWithAllDetailsAsync(user.Id))!.ToDto();
         }
