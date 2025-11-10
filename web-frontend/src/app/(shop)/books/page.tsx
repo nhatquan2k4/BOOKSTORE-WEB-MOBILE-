@@ -1,7 +1,7 @@
 // app/books/page.tsx - Trang hiển thị tất cả sách
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button, Badge, Alert, Input, Breadcrumb } from "@/components/ui";
@@ -204,7 +204,6 @@ export default function BooksPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
   const [showFilters, setShowFilters] = useState(true);
-  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const itemsPerPage = 12;
 
@@ -254,38 +253,11 @@ export default function BooksPage() {
     return Math.round(((original - current) / original) * 100);
   };
 
-  // Scroll to top handler
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // Handle scroll for scroll-to-top button
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
-  // Clear all filters
-  const clearFilters = () => {
-    setSearchQuery("");
-    setSelectedCategory("Tất cả");
-    setPriceRange([0, 1000000]);
-    setCurrentPage(1);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Breadcrumb */}
       <Breadcrumb items={[{ label: "Tất cả sách" }]} />
-      
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -299,11 +271,11 @@ export default function BooksPage() {
         <Alert variant="info" className="mb-6">
           <div className="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
-              <path d="M15 18H9"/>
-              <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
-              <circle cx="17" cy="18" r="2"/>
-              <circle cx="7" cy="18" r="2"/>
+              <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+              <path d="M15 18H9" />
+              <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+              <circle cx="17" cy="18" r="2" />
+              <circle cx="7" cy="18" r="2" />
             </svg>
             <span>
               <strong>Miễn phí vận chuyển</strong> cho đơn hàng từ 500.000₫
@@ -342,19 +314,19 @@ export default function BooksPage() {
                   <div className="mb-6">
                     <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect width="8" height="18" x="3" y="3" rx="1"/>
-                        <path d="M7 3v18"/>
-                        <path d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z"/>
+                        <rect width="8" height="18" x="3" y="3" rx="1" />
+                        <path d="M7 3v18" />
+                        <path d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z" />
                       </svg>
                       Danh mục sách
                     </h3>
                     <div className="space-y-1.5">
                       {CATEGORIES.map((cat) => {
-                        const count = cat === "Tất cả" 
-                          ? MOCK_BOOKS.length 
+                        const count = cat === "Tất cả"
+                          ? MOCK_BOOKS.length
                           : MOCK_BOOKS.filter((b) => b.category === cat).length;
                         const isActive = selectedCategory === cat;
-                        
+
                         return (
                           <Button
                             key={cat}
@@ -366,8 +338,8 @@ export default function BooksPage() {
                               w-full group relative overflow-hidden
                               rounded-xl px-4 py-3 
                               transition-all duration-200
-                              ${isActive 
-                                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]" 
+                              ${isActive
+                                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]"
                                 : "bg-white hover:bg-gray-50 text-gray-700 hover:shadow-md border border-gray-100"
                               }
                             `}
@@ -378,96 +350,96 @@ export default function BooksPage() {
                                 <div className={`
                                   w-8 h-8 rounded-full flex items-center justify-center
                                   transition-colors
-                                  ${isActive 
-                                    ? "bg-white/20" 
+                                  ${isActive
+                                    ? "bg-white/20"
                                     : "bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200"
                                   }
                                 `}>
                                   {cat === "Tất cả" ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <rect width="18" height="18" x="3" y="3" rx="2"/>
-                                      <path d="M7 7v10"/>
-                                      <path d="M11 7v10"/>
-                                      <path d="m15 7 2 10"/>
+                                      <rect width="18" height="18" x="3" y="3" rx="2" />
+                                      <path d="M7 7v10" />
+                                      <path d="M11 7v10" />
+                                      <path d="m15 7 2 10" />
                                     </svg>
                                   ) : cat === "Lập trình" ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <polyline points="16 18 22 12 16 6"/>
-                                      <polyline points="8 6 2 12 8 18"/>
+                                      <polyline points="16 18 22 12 16 6" />
+                                      <polyline points="8 6 2 12 8 18" />
                                     </svg>
                                   ) : cat === "Khoa học máy tính" ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <rect width="14" height="8" x="5" y="2" rx="2"/>
-                                      <rect width="20" height="8" x="2" y="14" rx="2"/>
-                                      <path d="M6 18h2"/>
-                                      <path d="M12 18h6"/>
+                                      <rect width="14" height="8" x="5" y="2" rx="2" />
+                                      <rect width="20" height="8" x="2" y="14" rx="2" />
+                                      <path d="M6 18h2" />
+                                      <path d="M12 18h6" />
                                     </svg>
                                   ) : cat === "Kinh doanh" ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <line x1="12" x2="12" y1="2" y2="22"/>
-                                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                      <line x1="12" x2="12" y1="2" y2="22" />
+                                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                     </svg>
                                   ) : cat === "Thiết kế" ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <path d="m15 5 4 4"/>
-                                      <path d="M13 7 8.7 2.7a2.41 2.41 0 0 0-3.4 0L2.7 5.3a2.41 2.41 0 0 0 0 3.4L7 13"/>
-                                      <path d="m8 6 2-2"/>
-                                      <path d="m2 22 5.5-1.5L21.17 6.83a2.82 2.82 0 0 0-4-4L3.5 16.5Z"/>
-                                      <path d="m18 16 2-2"/>
-                                      <path d="m17 11 4.3 4.3c.94.94.94 2.46 0 3.4l-2.6 2.6c-.94.94-2.46.94-3.4 0L11 17"/>
+                                      <path d="m15 5 4 4" />
+                                      <path d="M13 7 8.7 2.7a2.41 2.41 0 0 0-3.4 0L2.7 5.3a2.41 2.41 0 0 0 0 3.4L7 13" />
+                                      <path d="m8 6 2-2" />
+                                      <path d="m2 22 5.5-1.5L21.17 6.83a2.82 2.82 0 0 0-4-4L3.5 16.5Z" />
+                                      <path d="m18 16 2-2" />
+                                      <path d="m17 11 4.3 4.3c.94.94.94 2.46 0 3.4l-2.6 2.6c-.94.94-2.46.94-3.4 0L11 17" />
                                     </svg>
                                   ) : cat === "Kỹ năng sống" ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/>
-                                      <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>
-                                      <path d="M12 2v2"/>
-                                      <path d="M12 22v-2"/>
-                                      <path d="m17 20.66-1-1.73"/>
-                                      <path d="M11 10.27 7 3.34"/>
-                                      <path d="m20.66 17-1.73-1"/>
-                                      <path d="m3.34 7 1.73 1"/>
-                                      <path d="M14 12h8"/>
-                                      <path d="M2 12h2"/>
-                                      <path d="m20.66 7-1.73 1"/>
-                                      <path d="m3.34 17 1.73-1"/>
-                                      <path d="m17 3.34-1 1.73"/>
-                                      <path d="m11 13.73-4 6.93"/>
+                                      <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
+                                      <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+                                      <path d="M12 2v2" />
+                                      <path d="M12 22v-2" />
+                                      <path d="m17 20.66-1-1.73" />
+                                      <path d="M11 10.27 7 3.34" />
+                                      <path d="m20.66 17-1.73-1" />
+                                      <path d="m3.34 7 1.73 1" />
+                                      <path d="M14 12h8" />
+                                      <path d="M2 12h2" />
+                                      <path d="m20.66 7-1.73 1" />
+                                      <path d="m3.34 17 1.73-1" />
+                                      <path d="m17 3.34-1 1.73" />
+                                      <path d="m11 13.73-4 6.93" />
                                     </svg>
                                   ) : cat === "Văn học" ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <path d="m16 6 4 14"/>
-                                      <path d="M12 6v14"/>
-                                      <path d="M8 8v12"/>
-                                      <path d="M4 4v16"/>
+                                      <path d="m16 6 4 14" />
+                                      <path d="M12 6v14" />
+                                      <path d="M8 8v12" />
+                                      <path d="M4 4v16" />
                                     </svg>
                                   ) : cat === "Thiếu nhi" ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
-                                      <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
-                                      <path d="M15 13a2 2 0 0 1-3 0"/>
-                                      <path d="M9 9h.01"/>
-                                      <path d="M15 9h.01"/>
+                                      <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+                                      <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+                                      <path d="M15 13a2 2 0 0 1-3 0" />
+                                      <path d="M9 9h.01" />
+                                      <path d="M15 9h.01" />
                                     </svg>
                                   ) : (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isActive ? "text-white" : "text-blue-600"}>
-                                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
+                                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
                                     </svg>
                                   )}
                                 </div>
-                                
+
                                 {/* Category Name */}
                                 <span className={`font-medium ${isActive ? "text-white" : "text-gray-900 group-hover:text-blue-600"}`}>
                                   {cat}
                                 </span>
                               </div>
-                              
+
                               {/* Count Badge */}
-                              <Badge 
+                              <Badge
                                 variant={isActive ? "default" : "info"}
                                 className={`
                                   text-xs font-semibold
-                                  ${isActive 
-                                    ? "bg-white/20 text-white border-white/30" 
+                                  ${isActive
+                                    ? "bg-white/20 text-white border-white/30"
                                     : "bg-blue-50 text-blue-700 border-blue-200"
                                   }
                                 `}
@@ -475,12 +447,12 @@ export default function BooksPage() {
                                 {count}
                               </Badge>
                             </div>
-                            
+
                             {/* Active Indicator */}
                             {isActive && (
-                              <div className="absolute right-0 top-0 bottom-0 w-1 bg-white rounded-l-full"/>
+                              <div className="absolute right-0 top-0 bottom-0 w-1 bg-white rounded-l-full" />
                             )}
-                          </Button>  
+                          </Button>
                         );
                       })}
                     </div>
@@ -490,8 +462,8 @@ export default function BooksPage() {
                   <div className="mb-6">
                     <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" x2="12" y1="2" y2="22"/>
-                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        <line x1="12" x2="12" y1="2" y2="22" />
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                       </svg>
                       Khoảng giá
                     </h3>
@@ -509,8 +481,8 @@ export default function BooksPage() {
                             className={`
                               flex items-center gap-3 p-3 rounded-lg cursor-pointer
                               transition-all duration-200 border
-                              ${isActive 
-                                ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 shadow-sm" 
+                              ${isActive
+                                ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 shadow-sm"
                                 : "bg-white hover:bg-gray-50 border-gray-200 hover:border-green-200"
                               }
                             `}
@@ -529,7 +501,7 @@ export default function BooksPage() {
                               {isActive && (
                                 <Badge variant="success" className="text-xs">
                                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="20 6 9 17 4 12"/>
+                                    <polyline points="20 6 9 17 4 12" />
                                   </svg>
                                 </Badge>
                               )}
@@ -544,31 +516,31 @@ export default function BooksPage() {
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                       </svg>
                       Bộ lọc nhanh
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="warning" className="cursor-pointer flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
+                          <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" />
                         </svg>
                         Bestseller
                       </Badge>
                       <Badge variant="success" className="cursor-pointer flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10"/>
-                          <path d="m15 9-6 6"/>
-                          <path d="m9 9 6 6"/>
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="m15 9-6 6" />
+                          <path d="m9 9 6 6" />
                         </svg>
                         Mới nhất
                       </Badge>
                       <Badge variant="danger" className="cursor-pointer flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
-                          <path d="m15 9-6 6"/>
-                          <path d="M9 9h.01"/>
-                          <path d="M15 15h.01"/>
+                          <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                          <path d="m15 9-6 6" />
+                          <path d="M9 9h.01" />
+                          <path d="M15 15h.01" />
                         </svg>
                         Giảm giá
                       </Badge>
@@ -638,7 +610,7 @@ export default function BooksPage() {
               <EmptyState
                 icon={
                   <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
                   </svg>
                 }
                 title="Không tìm thấy sách"
@@ -693,7 +665,7 @@ export default function BooksPage() {
                                 {book.isBestseller && (
                                   <Badge variant="warning" className="text-xs flex items-center gap-1">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
+                                      <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" />
                                     </svg>
                                     Hot
                                   </Badge>
@@ -701,7 +673,7 @@ export default function BooksPage() {
                                 {book.isNew && (
                                   <Badge variant="success" className="text-xs flex items-center gap-1">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-book-icon lucide-book">
-                                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
+                                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
                                     </svg>
                                     Mới
                                   </Badge>
@@ -789,16 +761,16 @@ export default function BooksPage() {
                                   {book.isBestseller && (
                                     <Badge variant="warning" className="text-xs">
                                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
+                                        <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" />
                                       </svg>
                                     </Badge>
                                   )}
                                   {book.isNew && (
                                     <Badge variant="success" className="text-xs">
                                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <path d="m15 9-6 6"/>
-                                        <path d="m9 9 6 6"/>
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path d="m15 9-6 6" />
+                                        <path d="m9 9 6 6" />
                                       </svg>
                                     </Badge>
                                   )}
@@ -874,32 +846,32 @@ export default function BooksPage() {
         {/* Stats Bar */}
         <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
-            { 
+            {
               icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
-              </svg>, 
-              label: "Tổng số sách", 
-              value: MOCK_BOOKS.length 
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+              </svg>,
+              label: "Tổng số sách",
+              value: MOCK_BOOKS.length
             },
             {
               icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
+                <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" />
               </svg>,
               label: "Bestsellers",
               value: MOCK_BOOKS.filter((b) => b.isBestseller).length,
             },
             {
               icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="m15 9-6 6"/>
-                <path d="m9 9 6 6"/>
+                <circle cx="12" cy="12" r="10" />
+                <path d="m15 9-6 6" />
+                <path d="m9 9 6 6" />
               </svg>,
               label: "Sách mới",
               value: MOCK_BOOKS.filter((b) => b.isNew).length,
             },
             {
               icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>,
               label: "Đánh giá TB",
               value: (

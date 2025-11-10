@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
+  // Remove "output: export" to allow dynamic routes with client components
+  // output: "export",
   images: {
     remotePatterns: [
       {
