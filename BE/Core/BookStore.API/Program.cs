@@ -174,6 +174,7 @@ builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 
 // Shipping Repositories
 builder.Services.AddScoped<BookStore.Domain.IRepository.Shipping.IShipperRepository, BookStore.Infrastructure.Repositories.Shipping.ShipperRepository>();
+builder.Services.AddScoped<BookStore.Domain.IRepository.Shipping.IShipmentRepository, BookStore.Infrastructure.Repositories.Shipping.ShipmentRepository>();
 
 // Inventory Repositories
 builder.Services.AddScoped<BookStore.Domain.IRepository.Inventory.IWarehouseRepository, BookStore.Infrastructure.Repositories.Inventory.WarehouseRepository>();
@@ -190,6 +191,7 @@ builder.Services.AddScoped<BookStore.Application.IService.Cart.ICartService, Boo
 
 // Shipping Services
 builder.Services.AddScoped<BookStore.Application.IService.Shipping.IShipperService, BookStore.Application.Services.Shipping.ShipperService>();
+builder.Services.AddScoped<BookStore.Application.IService.Shipping.IShipmentService, BookStore.Application.Services.Shipping.ShipmentService>();
 
 // Inventory Services
 builder.Services.AddScoped<BookStore.Application.IService.Inventory.IWarehouseService, BookStore.Application.Services.Inventory.WarehouseService>();
