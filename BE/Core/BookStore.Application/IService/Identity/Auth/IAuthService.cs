@@ -15,5 +15,8 @@ namespace BookStore.Application.IService.Identity.Auth
         Task<bool> ValidateTokenAsync(string token);
         Task<bool> RevokeTokenAsync(string refreshToken);
         Task<UserInfoDto?> GetCurrentUserInfoAsync(Guid userId);
+
+        // Create user account with custom role (for admin operations)
+        Task<Guid> CreateUserAccountAsync(string email, string password, string fullName, string? phoneNumber, string roleName);
     }
 }
