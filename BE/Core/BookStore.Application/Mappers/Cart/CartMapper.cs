@@ -1,12 +1,12 @@
 using BookStore.Application.Dtos.Cart;
-using BookStore.Domain.Entities.Ordering;
+using BookStore.Domain.Entities.Cart;
 
 namespace BookStore.Application.Mappers.Cart
 {
     public static class CartMapper
     {
         // Cart Entity -> CartDto
-        public static CartDto ToDto(this Domain.Entities.Ordering.Cart cart)
+        public static CartDto ToDto(this Domain.Entities.Cart.Cart cart)
         {
             return new CartDto
             {
@@ -33,9 +33,9 @@ namespace BookStore.Application.Mappers.Cart
                 Quantity = item.Quantity,
                 AddedAt = item.AddedAt,
                 UpdatedAt = item.AddedAt, // CartItem doesn't have UpdatedAt, using AddedAt
-                
+
                 // Extra book info (populated from Book entity if available)
-                AuthorNames = item.Book?.BookAuthors != null 
+                AuthorNames = item.Book?.BookAuthors != null
                     ? string.Join(", ", item.Book.BookAuthors.Select(ba => ba.Author?.Name ?? ""))
                     : null,
                 PublisherName = item.Book?.Publisher?.Name,
@@ -45,9 +45,9 @@ namespace BookStore.Application.Mappers.Cart
         }
 
         // CreateCartDto -> Cart Entity
-        public static Domain.Entities.Ordering.Cart ToEntity(this CreateCartDto dto)
+        public static Domain.Entities.Cart.Cart ToEntity(this CreateCartDto dto)
         {
-            return new Domain.Entities.Ordering.Cart
+            return new Domain.Entities.Cart.Cart
             {
                 Id = Guid.NewGuid(),
                 UserId = dto.UserId,
@@ -71,7 +71,7 @@ namespace BookStore.Application.Mappers.Cart
         }
 
         // UpdateCartDto -> Update Cart Entity
-        public static void UpdateFromDto(this Domain.Entities.Ordering.Cart cart, UpdateCartDto dto)
+        public static void UpdateFromDto(this Domain.Entities.Cart.Cart cart, UpdateCartDto dto)
         {
             // UpdateCartDto typically contains items to add/update/remove
             // This would be handled in service layer with more complex logic

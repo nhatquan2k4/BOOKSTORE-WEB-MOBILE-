@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookStore.Domain.Entities.Ordering
+namespace BookStore.Domain.Entities.Cart
 {
     public class Cart
     {

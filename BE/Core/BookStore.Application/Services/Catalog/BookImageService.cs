@@ -44,97 +44,97 @@ namespace BookStore.Application.Services.Catalog
             return image?.ToDto();
         }
 
-        public async Task<BookImageDto> UploadImageAsync(CreateBookImageDto dto)
-        {
-            // Validate ImageUrl
-            Guard.AgainstNullOrWhiteSpace(dto.ImageUrl, nameof(dto.ImageUrl));
+        // public async Task<BookImageDto> UploadImageAsync(CreateBookImageDto dto)
+        // {
+        //     // Validate ImageUrl
+        //     Guard.AgainstNullOrWhiteSpace(dto.ImageUrl, nameof(dto.ImageUrl));
 
-            // Validate book exists
-            var book = await _bookRepository.GetByIdAsync(dto.BookId);
-            if (book == null)
-            {
-                throw new NotFoundException($"Không tìm thấy sách với ID {dto.BookId}");
-            }
+        //     // Validate book exists
+        //     var book = await _bookRepository.GetByIdAsync(dto.BookId);
+        //     if (book == null)
+        //     {
+        //         throw new NotFoundException($"Không tìm thấy sách với ID {dto.BookId}");
+        //     }
 
-            // If this image is set as cover, unset previous cover
-            if (dto.IsCover)
-            {
-                await UnsetCurrentCoverAsync(dto.BookId);
-            }
+        //     // If this image is set as cover, unset previous cover
+        //     if (dto.IsCover)
+        //     {
+        //         await UnsetCurrentCoverAsync(dto.BookId);
+        //     }
 
-            // Create entity
-            var bookImage = new BookImage
-            {
-                Id = Guid.NewGuid(),
-                BookId = dto.BookId,
-                ImageUrl = dto.ImageUrl,
-                IsCover = dto.IsCover,
-                DisplayOrder = dto.DisplayOrder
-            };
+        //     // Create entity
+        //     var bookImage = new BookImage
+        //     {
+        //         Id = Guid.NewGuid(),
+        //         BookId = dto.BookId,
+        //         ImageUrl = dto.ImageUrl,
+        //         IsCover = dto.IsCover,
+        //         DisplayOrder = dto.DisplayOrder
+        //     };
 
-            // Save to DB
-            await _bookImageRepository.AddAsync(bookImage);
-            await _bookImageRepository.SaveChangesAsync();
+        //     // Save to DB
+        //     await _bookImageRepository.AddAsync(bookImage);
+        //     await _bookImageRepository.SaveChangesAsync();
 
-            return bookImage.ToDto();
-        }
+        //     return bookImage.ToDto();
+        // }
 
-        public async Task<IEnumerable<BookImageDto>> UploadImagesAsync(UploadBookImagesDto dto)
-        {
-            // Validate all URLs
-            Guard.Against(dto.ImageUrls == null || !dto.ImageUrls.Any(), "Phải cung cấp ít nhất một URL hình ảnh");
-            Guard.Against(dto.ImageUrls!.Count > 10, "Chỉ có thể upload tối đa 10 hình ảnh cùng lúc");
+        // public async Task<IEnumerable<BookImageDto>> UploadImagesAsync(UploadBookImagesDto dto)
+        // {
+        //     // Validate all URLs
+        //     Guard.Against(dto.ImageUrls == null || !dto.ImageUrls.Any(), "Phải cung cấp ít nhất một URL hình ảnh");
+        //     Guard.Against(dto.ImageUrls!.Count > 10, "Chỉ có thể upload tối đa 10 hình ảnh cùng lúc");
 
-            // Validate book exists
-            var book = await _bookRepository.GetByIdAsync(dto.BookId);
-            if (book == null)
-            {
-                throw new NotFoundException($"Không tìm thấy sách với ID {dto.BookId}");
-            }
+        //     // Validate book exists
+        //     var book = await _bookRepository.GetByIdAsync(dto.BookId);
+        //     if (book == null)
+        //     {
+        //         throw new NotFoundException($"Không tìm thấy sách với ID {dto.BookId}");
+        //     }
 
-            // Unset current cover if a new cover will be set
-            if (dto.CoverImageIndex.HasValue && dto.CoverImageIndex >= 0 && dto.CoverImageIndex < dto.ImageUrls.Count)
-            {
-                await UnsetCurrentCoverAsync(dto.BookId);
-            }
+        //     // Unset current cover if a new cover will be set
+        //     if (dto.CoverImageIndex.HasValue && dto.CoverImageIndex >= 0 && dto.CoverImageIndex < dto.ImageUrls.Count)
+        //     {
+        //         await UnsetCurrentCoverAsync(dto.BookId);
+        //     }
 
-            // Get current max display order
-            var existingImages = await _bookImageRepository.GetByBookIdAsync(dto.BookId);
-            int currentMaxOrder = existingImages.Any() ? existingImages.Max(i => i.DisplayOrder) : -1;
+        //     // Get current max display order
+        //     var existingImages = await _bookImageRepository.GetByBookIdAsync(dto.BookId);
+        //     int currentMaxOrder = existingImages.Any() ? existingImages.Max(i => i.DisplayOrder) : -1;
 
-            var uploadedImages = new List<BookImage>();
+        //     var uploadedImages = new List<BookImage>();
 
-            // Create entities for each URL
-            for (int i = 0; i < dto.ImageUrls.Count; i++)
-            {
-                var imageUrl = dto.ImageUrls[i];
+        //     // Create entities for each URL
+        //     for (int i = 0; i < dto.ImageUrls.Count; i++)
+        //     {
+        //         var imageUrl = dto.ImageUrls[i];
 
-                if (string.IsNullOrWhiteSpace(imageUrl))
-                {
-                    continue;
-                }
+        //         if (string.IsNullOrWhiteSpace(imageUrl))
+        //         {
+        //             continue;
+        //         }
 
-                var bookImage = new BookImage
-                {
-                    Id = Guid.NewGuid(),
-                    BookId = dto.BookId,
-                    ImageUrl = imageUrl,
-                    IsCover = dto.CoverImageIndex == i,
-                    DisplayOrder = currentMaxOrder + i + 1
-                };
+        //         var bookImage = new BookImage
+        //         {
+        //             Id = Guid.NewGuid(),
+        //             BookId = dto.BookId,
+        //             ImageUrl = imageUrl,
+        //             IsCover = dto.CoverImageIndex == i,
+        //             DisplayOrder = currentMaxOrder + i + 1
+        //         };
 
-                uploadedImages.Add(bookImage);
-            }
+        //         uploadedImages.Add(bookImage);
+        //     }
 
-            // Save all to DB
-            foreach (var image in uploadedImages)
-            {
-                await _bookImageRepository.AddAsync(image);
-            }
-            await _bookImageRepository.SaveChangesAsync();
+        //     // Save all to DB
+        //     foreach (var image in uploadedImages)
+        //     {
+        //         await _bookImageRepository.AddAsync(image);
+        //     }
+        //     await _bookImageRepository.SaveChangesAsync();
 
-            return uploadedImages.ToDtoList();
-        }
+        //     return uploadedImages.ToDtoList();
+        // }
 
         public async Task<BookImageDto> UpdateImageAsync(UpdateBookImageDto dto)
         {
@@ -250,7 +250,122 @@ namespace BookStore.Application.Services.Catalog
             return coverImage?.ToDto();
         }
 
-        #region Private Helper Methods
+        public async Task<BookImageDto> UploadFileAsync(
+            Guid bookId,
+            Stream fileStream,
+            string fileName,
+            string contentType,
+            bool isCover = false,
+            int displayOrder = 0)
+        {
+            // Validate book exists
+            var book = await _bookRepository.GetByIdAsync(bookId);
+            if (book == null)
+            {
+                throw new NotFoundException($"Không tìm thấy sách với ID {bookId}");
+            }
+
+            // Generate unique filename
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+
+            // Upload to MinIO
+            var imageUrl = await _minIOService.UploadFileAsync(
+                uniqueFileName,
+                fileStream,
+                contentType,
+                BOOK_IMAGES_BUCKET);
+
+            // If this image is set as cover, unset previous cover
+            if (isCover)
+            {
+                await UnsetCurrentCoverAsync(bookId);
+            }
+
+            // Create entity
+            var bookImage = new BookImage
+            {
+                Id = Guid.NewGuid(),
+                BookId = bookId,
+                ImageUrl = imageUrl,
+                IsCover = isCover,
+                DisplayOrder = displayOrder
+            };
+
+            // Save to DB
+            await _bookImageRepository.AddAsync(bookImage);
+            await _bookImageRepository.SaveChangesAsync();
+
+            return bookImage.ToDto();
+        }
+
+        public async Task<IEnumerable<BookImageDto>> UploadFilesAsync(
+            Guid bookId,
+            List<(Stream stream, string fileName, string contentType)> files,
+            int? coverImageIndex = null)
+        {
+            // Validate book exists
+            var book = await _bookRepository.GetByIdAsync(bookId);
+            if (book == null)
+            {
+                throw new NotFoundException($"Không tìm thấy sách với ID {bookId}");
+            }
+
+            Guard.Against(files == null || !files.Any(), "Phải cung cấp ít nhất một file");
+            Guard.Against(files!.Count > 10, "Chỉ có thể upload tối đa 10 hình ảnh cùng lúc");
+
+            // Unset current cover if a new cover will be set
+            if (coverImageIndex.HasValue && coverImageIndex >= 0 && coverImageIndex < files.Count)
+            {
+                await UnsetCurrentCoverAsync(bookId);
+            }
+
+            // Get current max display order
+            var existingImages = await _bookImageRepository.GetByBookIdAsync(bookId);
+            int currentMaxOrder = existingImages.Any() ? existingImages.Max(i => i.DisplayOrder) : -1;
+
+            var uploadedImages = new List<BookImage>();
+
+            // Upload all files to MinIO and create entities
+            for (int i = 0; i < files.Count; i++)
+            {
+                var (stream, fileName, contentType) = files[i];
+
+                // Generate unique filename
+                var extension = Path.GetExtension(fileName).ToLowerInvariant();
+                var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+
+                // Upload to MinIO
+                var imageUrl = await _minIOService.UploadFileAsync(
+                    uniqueFileName,
+                    stream,
+                    contentType,
+                    BOOK_IMAGES_BUCKET);
+
+                // Create entity
+                var bookImage = new BookImage
+                {
+                    Id = Guid.NewGuid(),
+                    BookId = bookId,
+                    ImageUrl = imageUrl,
+                    IsCover = coverImageIndex == i,
+                    DisplayOrder = currentMaxOrder + i + 1
+                };
+
+                uploadedImages.Add(bookImage);
+            }
+
+            // Save all to DB
+            foreach (var image in uploadedImages)
+            {
+                await _bookImageRepository.AddAsync(image);
+            }
+            await _bookImageRepository.SaveChangesAsync();
+
+            return uploadedImages.ToDtoList();
+        }
+
+
 
         private string ExtractFileNameFromUrl(string url)
         {
@@ -270,7 +385,5 @@ namespace BookStore.Application.Services.Catalog
                 _bookImageRepository.Update(currentCover);
             }
         }
-
-        #endregion
     }
 }

@@ -8,7 +8,7 @@ namespace BookStore.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
+    // [Authorize(Roles = "Admin")]
     public class RolesController : ApiControllerBase
     {
         private readonly IRoleService _roleService;

@@ -1,12 +1,12 @@
-﻿using BookStore.Domain.Entities.Ordering;
+﻿using BookStore.Domain.Entities.Cart;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace BookStore.Infrastructure.Data.Configurations.Ordering
 {
-    public class CartConfiguration : IEntityTypeConfiguration<Cart>
+    public class CartConfiguration : IEntityTypeConfiguration<Domain.Entities.Cart.Cart>
     {
-        public void Configure(EntityTypeBuilder<Cart> builder)
+        public void Configure(EntityTypeBuilder<Domain.Entities.Cart.Cart> builder)
         {
             builder.ToTable("Carts", "ordering");
 

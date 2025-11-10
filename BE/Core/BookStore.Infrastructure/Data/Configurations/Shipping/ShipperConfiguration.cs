@@ -30,6 +30,12 @@ namespace BookStore.Infrastructure.Data.Configurations.Shipping
             builder.Property(s => s.IsActive)
                 .HasDefaultValue(true);
 
+            // 🔗 1-1: Shipper → User (một shipper có một tài khoản đăng nhập)
+            builder.HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // 🔗 1-n: Shipper → Shipments
             builder.HasMany(s => s.Shipments)
                 .WithOne(sh => sh.Shipper)

@@ -40,9 +40,144 @@ namespace BookStore.API.Controllers.BookImages
         {
             var coverImage = await _bookImageService.GetCoverImageAsync(bookId);
             if (coverImage == null)
-                return NotFound(new { message = "No cover image found for this book" });
+                return NotFound(new { message = "Không tìm thấy ảnh bìa cho sách này" });
 
             return Ok(coverImage);
+        }
+
+        /// <summary>
+        /// Upload file và tạo BookImage trong 1 request (RECOMMENDED)
+        /// </summary>
+        /// <param name="bookId">ID của book</param>
+        /// <param name="file">File ảnh cần upload</param>
+        /// <param name="isCover">Có phải ảnh bìa không (default: false)</param>
+        /// <param name="displayOrder">Thứ tự hiển thị (default: 0)</param>
+        /// <returns>BookImageDto</returns>
+        [HttpPost("upload")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<BookImageDto>> UploadAndCreateImage(
+            Guid bookId,
+            IFormFile file,
+            [FromForm] bool isCover = false,
+            [FromForm] int displayOrder = 0)
+        {
+            try
+            {
+                // Validate file
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest(new { message = "Không có file nào được cung cấp" });
+                }
+
+                // Validate file size (max 10MB)
+                const long maxFileSize = 10 * 1024 * 1024;
+                if (file.Length > maxFileSize)
+                {
+                    return BadRequest(new { message = "Kích thước file vượt quá giới hạn 10MB" });
+                }
+
+                // Validate file type (images only)
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+                if (!allowedExtensions.Contains(extension))
+                {
+                    return BadRequest(new { message = "Chỉ cho phép các file hình ảnh (.jpg, .jpeg, .png, .gif, .webp)" });
+                }
+
+                // Upload to MinIO and save to DB via Service
+                BookImageDto result;
+                using (var stream = file.OpenReadStream())
+                {
+                    result = await _bookImageService.UploadFileAsync(
+                        bookId,
+                        stream,
+                        file.FileName,
+                        file.ContentType,
+                        isCover,
+                        displayOrder);
+                }
+
+                return CreatedAtRoute("GetImageById", new { id = result.Id }, result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi khi upload ảnh", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Upload nhiều files và tạo BookImages trong 1 request
+        /// </summary>
+        /// <param name="bookId">ID của book</param>
+        /// <param name="files">Danh sách file ảnh</param>
+        /// <param name="coverImageIndex">Index của ảnh bìa (nếu có)</param>
+        /// <returns>Danh sách BookImageDto</returns>
+        [HttpPost("upload/batch")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<IEnumerable<BookImageDto>>> UploadAndCreateImages(
+            Guid bookId,
+            [FromForm] List<IFormFile> files,
+            [FromForm] int? coverImageIndex = null)
+        {
+            try
+            {
+                // Validate files
+                if (files == null || !files.Any())
+                {
+                    return BadRequest(new { message = "Phải cung cấp ít nhất một file" });
+                }
+
+                if (files.Count > 10)
+                {
+                    return BadRequest(new { message = "Chỉ có thể upload tối đa 10 ảnh cùng lúc" });
+                }
+
+                // Validate all files
+                const long maxFileSize = 10 * 1024 * 1024;
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+
+                foreach (var file in files)
+                {
+                    if (file.Length > maxFileSize)
+                    {
+                        return BadRequest(new { message = $"File {file.FileName} vượt quá giới hạn 10MB" });
+                    }
+
+                    var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                    if (!allowedExtensions.Contains(extension))
+                    {
+                        return BadRequest(new { message = $"File {file.FileName} không phải định dạng ảnh hợp lệ" });
+                    }
+                }
+
+                // Prepare file data for service
+                var fileData = new List<(Stream stream, string fileName, string contentType)>();
+                foreach (var file in files)
+                {
+                    var stream = file.OpenReadStream();
+                    fileData.Add((stream, file.FileName, file.ContentType));
+                }
+
+                // Upload to MinIO and save to DB via Service
+                var result = await _bookImageService.UploadFilesAsync(bookId, fileData, coverImageIndex);
+
+                // Dispose streams
+                foreach (var (stream, _, _) in fileData)
+                {
+                    stream.Dispose();
+                }
+
+                return CreatedAtAction(nameof(GetImagesByBookId), new { bookId }, result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi khi upload ảnh", error = ex.Message });
+            }
         }
 
         /// <summary>
@@ -51,26 +186,26 @@ namespace BookStore.API.Controllers.BookImages
         /// <param name="bookId">ID của book</param>
         /// <param name="dto">CreateBookImageDto với ImageUrl đã upload</param>
         /// <returns>BookImageDto</returns>
-        [HttpPost]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<BookImageDto>> CreateImage(
-            Guid bookId,
-            [FromBody] CreateBookImageDto dto)
-        {
-            if (bookId != dto.BookId)
-                return BadRequest(new { message = "BookId mismatch" });
+        // [HttpPost]
+        // [ProducesResponseType(StatusCodes.Status201Created)]
+        // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        // public async Task<ActionResult<BookImageDto>> CreateImage(
+        //     Guid bookId,
+        //     [FromBody] CreateBookImageDto dto)
+        // {
+        //     if (bookId != dto.BookId)
+        //         return BadRequest(new { message = "BookId không hợp lệ" });
 
-            try
-            {
-                var result = await _bookImageService.UploadImageAsync(dto);
-                return CreatedAtRoute("GetImageById", new { id = result.Id }, result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
+        //     try
+        //     {
+        //         var result = await _bookImageService.UploadImageAsync(dto);
+        //         return CreatedAtRoute("GetImageById", new { id = result.Id }, result);
+        //     }
+        //     catch (InvalidOperationException ex)
+        //     {
+        //         return BadRequest(new { message = ex.Message });
+        //     }
+        // }
 
         /// <summary>
         /// Thêm nhiều images cùng lúc cho book (cần upload files trước, sau đó gửi URLs)
@@ -78,26 +213,26 @@ namespace BookStore.API.Controllers.BookImages
         /// <param name="bookId">ID của book</param>
         /// <param name="dto">UploadBookImagesDto với danh sách ImageUrls đã upload</param>
         /// <returns>Danh sách BookImageDto</returns>
-        [HttpPost("batch")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<IEnumerable<BookImageDto>>> CreateImages(
-            Guid bookId,
-            [FromBody] UploadBookImagesDto dto)
-        {
-            if (bookId != dto.BookId)
-                return BadRequest(new { message = "BookId mismatch" });
+        // [HttpPost("batch")]
+        // [ProducesResponseType(StatusCodes.Status201Created)]
+        // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        // public async Task<ActionResult<IEnumerable<BookImageDto>>> CreateImages(
+        //     Guid bookId,
+        //     [FromBody] UploadBookImagesDto dto)
+        // {
+        //     if (bookId != dto.BookId)
+        //         return BadRequest(new { message = "BookId không hợp lệ" });
 
-            try
-            {
-                var result = await _bookImageService.UploadImagesAsync(dto);
-                return CreatedAtAction(nameof(GetImagesByBookId), new { bookId }, result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
+        //     try
+        //     {
+        //         var result = await _bookImageService.UploadImagesAsync(dto);
+        //         return CreatedAtAction(nameof(GetImagesByBookId), new { bookId }, result);
+        //     }
+        //     catch (InvalidOperationException ex)
+        //     {
+        //         return BadRequest(new { message = ex.Message });
+        //     }
+        // }
 
         /// <summary>
         /// Set một image làm cover của book
@@ -111,12 +246,12 @@ namespace BookStore.API.Controllers.BookImages
         public async Task<ActionResult> SetCoverImage(Guid bookId, [FromBody] SetCoverImageDto dto)
         {
             if (bookId != dto.BookId)
-                return BadRequest(new { message = "BookId mismatch" });
+                return BadRequest(new { message = "BookId không hợp lệ" });
 
             try
             {
                 await _bookImageService.SetCoverImageAsync(dto);
-                return Ok(new { message = "Cover image set successfully" });
+                return Ok(new { message = "Đã đặt ảnh bìa thành công" });
             }
             catch (InvalidOperationException ex)
             {
@@ -136,9 +271,9 @@ namespace BookStore.API.Controllers.BookImages
         {
             var result = await _bookImageService.DeleteImagesByBookIdAsync(bookId);
             if (!result)
-                return NotFound(new { message = "No images found for this book" });
+                return NotFound(new { message = "Không tìm thấy ảnh nào cho sách này" });
 
-            return Ok(new { message = "All images deleted successfully" });
+            return Ok(new { message = "Đã xóa tất cả ảnh thành công" });
         }
     }
 
@@ -179,7 +314,7 @@ namespace BookStore.API.Controllers.BookImages
         {
             var image = await _bookImageService.GetImageByIdAsync(id);
             if (image == null)
-                return NotFound(new { message = $"Image with ID {id} not found" });
+                return NotFound(new { message = $"Không tìm thấy ảnh với ID {id}" });
 
             return Ok(image);
         }
@@ -197,7 +332,7 @@ namespace BookStore.API.Controllers.BookImages
         public async Task<ActionResult<BookImageDto>> UpdateImage(Guid id, [FromBody] UpdateBookImageDto dto)
         {
             if (id != dto.Id)
-                return BadRequest(new { message = "ID mismatch" });
+                return BadRequest(new { message = "ID không hợp lệ" });
 
             try
             {
@@ -222,9 +357,9 @@ namespace BookStore.API.Controllers.BookImages
         {
             var result = await _bookImageService.DeleteImageAsync(id);
             if (!result)
-                return NotFound(new { message = $"Image with ID {id} not found" });
+                return NotFound(new { message = $"Không tìm thấy ảnh với ID {id}" });
 
-            return Ok(new { message = "Image deleted successfully" });
+            return Ok(new { message = "Đã xóa ảnh thành công" });
         }
     }
 }

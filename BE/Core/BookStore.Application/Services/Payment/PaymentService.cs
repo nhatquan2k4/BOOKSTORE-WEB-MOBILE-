@@ -3,6 +3,7 @@ using BookStore.Application.IService.Payment;
 using BookStore.Domain.Entities.Ordering___Payment;
 using BookStore.Domain.IRepository.Ordering;
 using BookStore.Domain.IRepository.Payment;
+using BookStore.Shared.Utilities;
 using Microsoft.Extensions.Logging;
 
 namespace BookStore.Application.Services.Payment
@@ -47,10 +48,10 @@ namespace BookStore.Application.Services.Payment
         {
             var skip = (pageNumber - 1) * pageSize;
             var payments = await _paymentRepository.GetByProviderAsync(provider, skip, pageSize);
-            
+
             var paymentDtos = payments.Select(MapToPaymentDto).ToList();
             var totalCount = paymentDtos.Count; // Approximate
-            
+
             return (paymentDtos, totalCount);
         }
 
@@ -58,10 +59,10 @@ namespace BookStore.Application.Services.Payment
         {
             var skip = (pageNumber - 1) * pageSize;
             var payments = await _paymentRepository.GetByStatusAsync(status, skip, pageSize);
-            
+
             var paymentDtos = payments.Select(MapToPaymentDto).ToList();
             var totalCount = paymentDtos.Count; // Approximate
-            
+
             return (paymentDtos, totalCount);
         }
 
@@ -73,17 +74,11 @@ namespace BookStore.Application.Services.Payment
         {
             // Validate order exists
             var order = await _orderRepository.GetByIdAsync(dto.OrderId);
-            if (order == null)
-            {
-                throw new InvalidOperationException("Đơn hàng không tồn tại");
-            }
+            Guard.Against(order == null, "Đơn hàng không tồn tại");
 
             // Check if payment already exists for this order
             var existingPayment = await _paymentRepository.GetByOrderIdAsync(dto.OrderId);
-            if (existingPayment != null)
-            {
-                throw new InvalidOperationException("Đơn hàng này đã có giao dịch thanh toán");
-            }
+            Guard.Against(existingPayment != null, "Đơn hàng này đã có giao dịch thanh toán");
 
             // Generate transaction code
             var transactionCode = GenerateTransactionCode();
@@ -111,17 +106,14 @@ namespace BookStore.Application.Services.Payment
         public async Task<PaymentTransactionDto> CreatePaymentForOrderAsync(Guid orderId, string provider = "VietQR", string paymentMethod = "Online")
         {
             var order = await _orderRepository.GetByIdAsync(orderId);
-            if (order == null)
-            {
-                throw new InvalidOperationException("Đơn hàng không tồn tại");
-            }
+            Guard.Against(order == null, "Đơn hàng không tồn tại");
 
             var dto = new CreatePaymentDto
             {
                 OrderId = orderId,
                 Provider = provider,
                 PaymentMethod = paymentMethod,
-                Amount = order.FinalAmount
+                Amount = order!.FinalAmount
             };
 
             return await CreatePaymentAsync(dto);
@@ -134,13 +126,10 @@ namespace BookStore.Application.Services.Payment
         public async Task<PaymentTransactionDto> UpdatePaymentStatusAsync(UpdatePaymentStatusDto dto)
         {
             var payment = await _paymentRepository.GetByIdAsync(dto.PaymentId);
-            if (payment == null)
-            {
-                throw new InvalidOperationException("Giao dịch không tồn tại");
-            }
+            Guard.Against(payment == null, "Giao dịch không tồn tại");
 
             // Update transaction code if provided
-            if (!string.IsNullOrEmpty(dto.TransactionCode) && payment.TransactionCode != dto.TransactionCode)
+            if (!string.IsNullOrEmpty(dto.TransactionCode) && payment!.TransactionCode != dto.TransactionCode)
             {
                 payment.TransactionCode = dto.TransactionCode;
             }
@@ -151,7 +140,7 @@ namespace BookStore.Application.Services.Payment
             // If payment is successful, update order status
             if (dto.NewStatus == "Success")
             {
-                await _orderRepository.UpdateOrderStatusAsync(payment.OrderId, "Paid", "Payment confirmed");
+                await _orderRepository.UpdateOrderStatusAsync(payment!.OrderId, "Paid", "Payment confirmed");
                 await _orderRepository.SaveChangesAsync();
             }
 
@@ -162,14 +151,11 @@ namespace BookStore.Application.Services.Payment
         public async Task<PaymentTransactionDto> ProcessPaymentCallbackAsync(PaymentCallbackDto dto)
         {
             var payment = await _paymentRepository.GetByTransactionCodeAsync(dto.TransactionCode);
-            if (payment == null)
-            {
-                throw new InvalidOperationException($"Không tìm thấy giao dịch với mã {dto.TransactionCode}");
-            }
+            Guard.Against(payment == null, $"Không tìm thấy giao dịch với mã {dto.TransactionCode}");
 
             var updateDto = new UpdatePaymentStatusDto
             {
-                PaymentId = payment.Id,
+                PaymentId = payment!.Id,
                 TransactionCode = dto.TransactionCode,
                 NewStatus = dto.Status,
                 PaidAt = dto.Status == "Success" ? dto.PaidAt : null
@@ -220,12 +206,12 @@ namespace BookStore.Application.Services.Payment
         public async Task CancelExpiredPaymentsAsync()
         {
             var expiredPayments = await _paymentRepository.GetExpiredPendingPaymentsAsync(15);
-            
+
             foreach (var payment in expiredPayments)
             {
                 await _paymentRepository.UpdatePaymentStatusAsync(payment.Id, "Failed", null);
                 await _orderRepository.UpdateOrderStatusAsync(payment.OrderId, "Cancelled", "Payment timeout");
-                
+
                 _logger.LogInformation($"Cancelled expired payment: {payment.TransactionCode}");
             }
 
