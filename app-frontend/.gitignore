@@ -41,3 +41,22 @@ app-example
 # generated native folders
 /ios
 /android
+
+# ==========================================
+# Documentation & Example Files
+# ==========================================
+# Các file hướng dẫn chi tiết cho dev (không cần push)
+# Xem README.md chính để biết cách sử dụng
+AUTH_README.md
+QUICK_START.md
+FILE_SUMMARY.md
+FLOW_DIAGRAMS.md
+TEST_RESULTS.md
+README_VN.md
+HUONG_DAN.md
+CUSTOMIZE_UI_GUIDE.md
+.gitignore-update.md
+
+# Example & template files
+src/components/*.example.txt
+src/components/*.example.tsx
