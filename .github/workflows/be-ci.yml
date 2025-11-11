@@ -15,7 +15,7 @@ on:
       - "BE/**"
 
 jobs:
-  build-and-test:
+  build-and-test:                 # Job 1
     runs-on: ubuntu-latest
 
     defaults:
@@ -40,10 +40,10 @@ jobs:
       - name: Test
         run: dotnet test Core/BookStore.Tests/BookStore.Tests.csproj --configuration Release --verbosity normal
 
-    build-and-push-image:
+  build-and-push-image:          # Job 2 (cùng cấp với build-and-test)
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'   # chỉ chạy khi push lên main
     permissions:
       contents: read
       packages: write
