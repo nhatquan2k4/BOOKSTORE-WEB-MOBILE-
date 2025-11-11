@@ -24,9 +24,9 @@ namespace BookStore.Application.Services.Identity.User
             _userRepository = userRepository;
         }
 
-        /// <summary>
+
         /// Lấy tất cả địa chỉ của user
-        /// </summary>
+
         public async Task<IEnumerable<UserAddressDto>> GetAddressesByUserIdAsync(Guid userId)
         {
             // Kiểm tra user có tồn tại không
@@ -40,18 +40,18 @@ namespace BookStore.Application.Services.Identity.User
             return addresses.ToDtoList();
         }
 
-        /// <summary>
+
         /// Lấy địa chỉ theo ID
-        /// </summary>
+
         public async Task<UserAddressDto?> GetAddressByIdAsync(Guid addressId)
         {
             var address = await _userAddressRepository.GetByIdAsync(addressId);
             return address?.ToDto();
         }
 
-        /// <summary>
+
         /// Lấy địa chỉ mặc định của user
-        /// </summary>
+
         public async Task<UserAddressDto?> GetDefaultAddressAsync(Guid userId)
         {
             // Kiểm tra user có tồn tại không
@@ -65,9 +65,9 @@ namespace BookStore.Application.Services.Identity.User
             return defaultAddress?.ToDto();
         }
 
-        /// <summary>
+
         /// Thêm địa chỉ mới cho user
-        /// </summary>
+
         public async Task<UserAddressDto> AddAddressAsync(Guid userId, CreateUserAddressDto dto)
         {
             // Kiểm tra user có tồn tại không
@@ -107,9 +107,9 @@ namespace BookStore.Application.Services.Identity.User
             return newAddress.ToDto();
         }
 
-        /// <summary>
+
         /// Cập nhật địa chỉ
-        /// </summary>
+
         public async Task<UserAddressDto?> UpdateAddressAsync(Guid userId, Guid addressId, UpdateUserAddressDto dto)
         {
             // Kiểm tra user có tồn tại không
@@ -146,9 +146,9 @@ namespace BookStore.Application.Services.Identity.User
             return address.ToDto();
         }
 
-        /// <summary>
+
         /// Xóa địa chỉ
-        /// </summary>
+
         public async Task<bool> DeleteAddressAsync(Guid userId, Guid addressId)
         {
             // Kiểm tra user có tồn tại không
@@ -187,9 +187,9 @@ namespace BookStore.Application.Services.Identity.User
             return true;
         }
 
-        /// <summary>
+
         /// Đặt địa chỉ làm mặc định
-        /// </summary>
+
         public async Task<bool> SetDefaultAddressAsync(Guid userId, Guid addressId)
         {
             // Kiểm tra user có tồn tại không

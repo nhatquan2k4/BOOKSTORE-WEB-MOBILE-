@@ -18,9 +18,9 @@ namespace BookStore.API.Controllers
             _roleService = roleService;
         }
 
-        /// <summary>
+
         /// Lấy danh sách tất cả roles
-        /// </summary>
+
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -44,9 +44,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Lấy roles với phân trang và tìm kiếm
-        /// </summary>
+
         [HttpGet("paged")]
         public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int size = 10, [FromQuery] string? search = null)
         {
@@ -73,9 +73,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Lấy role theo ID
-        /// </summary>
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -108,9 +108,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Lấy role theo tên
-        /// </summary>
+
         [HttpGet("by-name/{name}")]
         public async Task<IActionResult> GetByName(string name)
         {
@@ -143,9 +143,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Lấy role với permissions
-        /// </summary>
+
         [HttpGet("{id}/with-permissions")]
         public async Task<IActionResult> GetWithPermissions(Guid id)
         {
@@ -178,9 +178,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Tạo role mới
-        /// </summary>
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateRoleDto createRoleDto)
         {
@@ -213,9 +213,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Xóa role
-        /// </summary>
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -248,9 +248,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Lấy permissions của role
-        /// </summary>
+
         [HttpGet("{id}/permissions")]
         public async Task<IActionResult> GetRolePermissions(Guid id)
         {
@@ -274,9 +274,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Gán permissions cho role
-        /// </summary>
+
         [HttpPost("{roleId}/permissions")]
         public async Task<IActionResult> AssignPermissions(Guid roleId, [FromBody] List<Guid> permissionIds)
         {
@@ -309,9 +309,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Xóa permission khỏi role
-        /// </summary>
+
         [HttpDelete("{roleId}/permissions/{permissionId}")]
         public async Task<IActionResult> RemovePermission(Guid roleId, Guid permissionId)
         {
@@ -344,9 +344,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Kiểm tra tên role đã tồn tại
-        /// </summary>
+
         [HttpGet("check-name/{name}")]
         public async Task<IActionResult> CheckNameExists(string name)
         {

@@ -18,9 +18,9 @@ namespace BookStore.API.Controllers
             _userService = userService;
         }
 
-        /// <summary>
+
         /// Lấy danh sách tất cả users
-        /// </summary>
+
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
@@ -45,9 +45,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Lấy users với phân trang và tìm kiếm
-        /// </summary>
+
         [HttpGet("paged")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetPaged([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
@@ -75,9 +75,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Lấy user theo ID
-        /// </summary>
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -110,9 +110,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Lấy user theo email
-        /// </summary>
+
         [HttpGet("by-email/{email}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetByEmail(string email)
@@ -146,9 +146,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Tạo user mới
-        /// </summary>
+
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] CreateUserDto createUserDto)
@@ -182,9 +182,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Xóa user
-        /// </summary>
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(Guid id)
@@ -218,9 +218,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Kích hoạt user
-        /// </summary>
+
         [HttpPost("{id}/activate")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Activate(Guid id)
@@ -254,9 +254,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Vô hiệu hóa user
-        /// </summary>
+
         [HttpPost("{id}/deactivate")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Deactivate(Guid id)
@@ -290,9 +290,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Lấy roles của user
-        /// </summary>
+
         [HttpGet("{id}/roles")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetUserRoles(Guid id)
@@ -317,9 +317,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Gán role cho user
-        /// </summary>
+
         [HttpPost("{userId}/roles/{roleId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AssignRole(Guid userId, Guid roleId)
@@ -353,9 +353,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Xóa role khỏi user
-        /// </summary>
+
         [HttpDelete("{userId}/roles/{roleId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RemoveRole(Guid userId, Guid roleId)
@@ -389,9 +389,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Gán nhiều roles cho user
-        /// </summary>
+
         [HttpPost("{userId}/roles")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AssignRoles(Guid userId, [FromBody] List<Guid> roleIds)
@@ -425,9 +425,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Lấy permissions của user
-        /// </summary>
+
         [HttpGet("{id}/permissions")]
         public async Task<IActionResult> GetUserPermissions(Guid id)
         {
@@ -451,9 +451,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Kiểm tra email đã tồn tại
-        /// </summary>
+
         [HttpGet("check-email/{email}")]
         [AllowAnonymous]
         public async Task<IActionResult> CheckEmailExists(string email)

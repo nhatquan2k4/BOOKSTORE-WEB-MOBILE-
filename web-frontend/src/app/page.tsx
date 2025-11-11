@@ -17,6 +17,7 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.8,
     reviews: 1234,
+    hot: true,
   },
   {
     id: 2,
@@ -27,6 +28,7 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.9,
     reviews: 856,
+    hot: true,
   },
   {
     id: 3,
@@ -37,6 +39,7 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.7,
     reviews: 645,
+    hot: false,
   },
   {
     id: 4,
@@ -47,6 +50,7 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.6,
     reviews: 432,
+    hot: false,
   },
   {
     id: 5,
@@ -57,6 +61,7 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.9,
     reviews: 1567,
+    hot: true,
   },
   {
     id: 6,
@@ -67,18 +72,19 @@ const featuredBooks = [
     cover: "/image/anh.png",
     rating: 4.5,
     reviews: 892,
+    hot: false,
   },
 ];
 
 const categories = [
-  { id: 1, name: "Lập trình", count: 1234, color: "from-blue-500 to-cyan-500", image: "/image/lap_trinh.jpg" },
-  { id: 2, name: "Kinh doanh", count: 856, color: "from-purple-500 to-pink-500", image: "/image/kinh_doanh.jpg" },
-  { id: 3, name: "Thiết kế", count: 645, color: "from-orange-500 to-red-500", image: "/image/thiet_ke.jpg" },
-  { id: 4, name: "Khoa học", count: 432, color: "from-green-500 to-teal-500", image: "/image/khoa_hoc.png" },
-  { id: 5, name: "Văn học", count: 1567, color: "from-indigo-500 to-purple-500", image: "/image/van_hoc.jpg" },
-  { id: 6, name: "Kỹ năng sống", count: 892, color: "from-pink-500 to-rose-500", image: "/image/ky_nang_song.jpg" },
-  { id: 7, name: "Thiếu nhi", count: 543, color: "from-yellow-500 to-orange-500", image: "/image/thieu_nhi.jpg" },
-  { id: 8, name: "Ngoại ngữ", count: 721, color: "from-cyan-500 to-blue-500", image: "/image/ngoai_ngu.jpg" },
+  { id: 1, name: "Lập trình", count: 1234, color: "from-blue-500 to-cyan-500", image: "/image/lap_trinh.jpg", href: "/programming" },
+  { id: 2, name: "Kinh doanh", count: 856, color: "from-purple-500 to-pink-500", image: "/image/kinh_doanh.jpg", href: "/business" },
+  { id: 3, name: "Thiết kế", count: 645, color: "from-orange-500 to-red-500", image: "/image/thiet_ke.jpg", href: "/design" },
+  { id: 4, name: "Khoa học", count: 432, color: "from-green-500 to-teal-500", image: "/image/khoa_hoc.png", href: "/courses" },
+  { id: 5, name: "Văn học", count: 1567, color: "from-indigo-500 to-purple-500", image: "/image/van_hoc.jpg", href: "/literature" },
+  { id: 6, name: "Kỹ năng sống", count: 892, color: "from-pink-500 to-rose-500", image: "/image/ky_nang_song.jpg", href: "/life-skills" },
+  { id: 7, name: "Thiếu nhi", count: 543, color: "from-yellow-500 to-orange-500", image: "/image/thieu_nhi.jpg", href: "/children" },
+  { id: 8, name: "Ngoại ngữ", count: 721, color: "from-cyan-500 to-blue-500", image: "/image/ngoai_ngu.jpg", href: "/foreign-languages" },
 ];
 
 const popularBooks = [
@@ -254,7 +260,7 @@ export default function HomePage() {
             </p>
             
             <div className="flex gap-4 justify-center">
-              <Link href="/books">
+              <Link href="/discovernow">
                 <Button variant="primary" size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
                     <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
@@ -293,7 +299,7 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {categories.slice(0, 8).map((cat) => (
-              <Link key={cat.id} href={`/books?category=${cat.name}`}>
+              <Link key={cat.id} href={cat.href}>
                 <div className="relative h-48 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 group">
                   {/* Background Image with Overlay - Less blur for better visibility */}
                   <div className="absolute inset-0">
@@ -341,7 +347,7 @@ export default function HomePage() {
               href="/books?filter=featured"
               className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
             >
-              <span>Xem tất cả</span>
+              <Link href="/featured">Xem tất cả</Link>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -390,6 +396,14 @@ export default function HomePage() {
                     {book.originalPrice > 0 && (
                       <Badge variant="danger" className="absolute top-2 left-2 text-xs">
                         -{Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)}%
+                      </Badge>
+                    )}
+                    {book.hot && (
+                      <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg animate-pulse">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="mr-1">
+                          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+                        </svg>
+                        HOT
                       </Badge>
                     )}
                   </div>
@@ -443,7 +457,7 @@ export default function HomePage() {
               href="/books?filter=popular"
               className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
             >
-              <span>Xem tất cả</span>
+              <Link href="/most-read">Xem tất cả</Link>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -471,7 +485,7 @@ export default function HomePage() {
               ref={popularRef}
               onScroll={updateArrowsPopular}
               className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
-                        [-ms-overflow-style:none] [scrollbar-width:none] 
+                        [-ms-overflow-style:none] [scrollbar-width:none]
                         [&::-webkit-scrollbar]:hidden"
               style={{ overflowX: "auto" }}
             >

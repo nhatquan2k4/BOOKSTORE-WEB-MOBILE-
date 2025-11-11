@@ -1197,21 +1197,22 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
             style={{ overflowX: "auto" }}
           >
             {suggestedBooks.map((b) => (
-              <div
+              <Link
                 key={b.id}
-                className="flex h-[260px] w-[150px] min-w-[150px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-md"
+                href={`/books/${b.id}`}
+                className="flex h-[260px] w-[150px] min-w-[150px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
               >
-                <div className="h-[180px] w-full overflow-hidden rounded-lg">
+                <div className="relative h-[180px] w-full overflow-hidden rounded-lg mb-2">
                   <Image
                     src={b.cover}
                     alt={b.title}
-                    width={150}
-                    height={180}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="150px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <p className="line-clamp-2 mt-2 text-center text-sm leading-tight">{b.title}</p>
-              </div>
+                <p className="line-clamp-2 text-sm font-semibold leading-tight text-center">{b.title}</p>
+              </Link>
             ))}
           </div>
 
@@ -1280,21 +1281,22 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
             style={{ overflowX: "auto" }}
           >
             {popularBooks.map((b) => (
-              <div
+              <Link
                 key={b.id}
-                className="flex h-[260px] w-[150px] min-w-[150px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-md"
+                href={`/books/${b.id}`}
+                className="flex h-[260px] w-[150px] min-w-[150px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
               >
-                <div className="h-[180px] w-full overflow-hidden rounded-lg">
+                <div className="relative h-[180px] w-full overflow-hidden rounded-lg mb-2">
                   <Image
                     src={b.cover}
                     alt={b.title}
-                    width={150}
-                    height={180}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="150px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <p className="line-clamp-2 mt-2 text-center text-sm leading-tight">{b.title}</p>
-              </div>
+                <p className="line-clamp-2 text-sm font-semibold leading-tight text-center">{b.title}</p>
+              </Link>
             ))}
           </div>
 
@@ -1364,21 +1366,22 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
             style={{ overflowX: "auto" }}
           >
             {relatedBooks.map((b) => (
-              <div
+              <Link
                 key={b.id}
-                className="flex h-[260px] w-[150px] min-w-[150px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-md"
+                href={`/books/${b.id}`}
+                className="flex h-[260px] w-[150px] min-w-[150px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
               >
-                <div className="h-[180px] w-full overflow-hidden rounded-lg">
+                <div className="relative h-[180px] w-full overflow-hidden rounded-lg mb-2">
                   <Image
                     src={b.cover}
                     alt={b.title}
-                    width={150}
-                    height={180}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="150px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <p className="line-clamp-2 mt-2 text-center text-sm leading-tight">{b.title}</p>
-              </div>
+                <p className="line-clamp-2 text-sm font-semibold leading-tight text-center">{b.title}</p>
+              </Link>
             ))}
           </div>
 

@@ -16,7 +16,7 @@ namespace BookStore.Domain.IRepository.Inventory
         // Kiểm tra warehouse có tồn tại không
         Task<bool> WarehouseExistsAsync(Guid warehouseId);
         
-        // Lấy warehouse với statistics
+        // Lấy warehouse với statistics để lấy kho + dữ liệu phục vụ thống kê (số mặt hàng, tổng số lượng…)
         Task<Warehouse?> GetWarehouseWithStatisticsAsync(Guid warehouseId);
     }
 }

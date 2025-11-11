@@ -10,7 +10,6 @@ namespace BookStore.Domain.IRepository.Identity.User
 
         Task RemoveAllByUserIdAsync(Guid userId);
         
-        // ExistsAsync và AddRangeAsync đã có trong IManyToManyRepository
-        // Không cần khai báo lại
+        
     }
 }

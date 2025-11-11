@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Alert, Badge, Breadcrumb } from '@/components/ui';
+import { Button, Input, Alert, Badge } from '@/components/ui';
 
 // Mock data - sẽ thay bằng API thực tế
 const mockCartItems = [
@@ -83,13 +83,19 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Breadcrumb */}
-      <Breadcrumb items={[
-        { label: "Giỏ hàng", href: "/cart" },
-        { label: "Thanh toán" }
-      ]} />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        {/* Breadcrumb */}
+        <nav className="mb-6 text-sm text-gray-600">
+          <Link href="/" className="hover:text-blue-600">
+            Trang chủ
+          </Link>{" "}
+          /{" "}
+          <Link href="/cart" className="hover:text-blue-600">
+            Giỏ hàng
+          </Link>{" "}
+          / <span className="font-medium text-gray-800">Thanh toán</span>
+        </nav>
+
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">

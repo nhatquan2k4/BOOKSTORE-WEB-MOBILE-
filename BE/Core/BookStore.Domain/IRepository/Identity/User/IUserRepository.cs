@@ -11,7 +11,7 @@ namespace BookStore.Domain.IRepository.Identity.User
 {
     public interface IUserRepository : IGenericRepository<Domain.Entities.Identity.User>
     {
-        // ============= Query Operations =============
+        //  Query Operations 
         
         Task<Domain.Entities.Identity.User?> GetByEmailAsync(string email);
 
@@ -26,21 +26,21 @@ namespace BookStore.Domain.IRepository.Identity.User
 
         Task<IEnumerable<string>> GetUserPermissionNamesAsync(Guid userId);
 
-        // ============= Check Existence =============
+        //  Check Existence 
         
         Task<bool> ExistsByEmailAsync(string email);
 
-        // ============= Authentication Operations =============
+        //  Authentication Operations 
         
         Task<Domain.Entities.Identity.User?> AuthenticateAsync(string email, string passwordHash);
 
         Task<bool> VerifyEmailAsync(Guid userId);
 
-        // ============= Password Management =============
+        //  Password Management 
         
         Task<bool> UpdatePasswordAsync(Guid userId, string newPasswordHash);
 
-        // ============= Account Management =============
+        //  Account Management 
         
         Task<bool> LockUserAccountAsync(Guid userId);
 

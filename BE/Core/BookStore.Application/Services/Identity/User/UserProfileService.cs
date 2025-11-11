@@ -24,9 +24,9 @@ namespace BookStore.Application.Services.Identity.User
             _userRepository = userRepository;
         }
 
-        /// <summary>
+
         /// Lấy thông tin profile của user theo userId
-        /// </summary>
+
         public async Task<UserProfileDto?> GetUserProfileByUserIdAsync(Guid userId)
         {
             // Kiểm tra user có tồn tại không
@@ -42,9 +42,9 @@ namespace BookStore.Application.Services.Identity.User
             return userProfile?.ToDto();
         }
 
-        /// <summary>
+
         /// Tạo mới profile cho user (được gọi khi đăng ký user)
-        /// </summary>
+
         public async Task<UserProfileDto> CreateUserProfileAsync(Guid userId, CreateUserProfileDto dto)
         {
             // Kiểm tra user có tồn tại không
@@ -69,10 +69,10 @@ namespace BookStore.Application.Services.Identity.User
             return userProfile.ToDto();
         }
 
-        /// <summary>
+
         /// Cập nhật thông tin profile của user
         /// Nếu chưa có profile thì tạo mới
-        /// </summary>
+
         public async Task<UserProfileDto?> UpdateUserProfileAsync(Guid userId, UpdateUserProfileDto dto)
         {
             // Kiểm tra user có tồn tại không
