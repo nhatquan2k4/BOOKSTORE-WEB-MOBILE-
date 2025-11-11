@@ -40,10 +40,10 @@ jobs:
       - name: Test
         run: dotnet test Core/BookStore.Tests/BookStore.Tests.csproj --configuration Release --verbosity normal
 
-  build-and-push-image:
+    build-and-push-image:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'   # chỉ build/push image khi push vào main
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -58,10 +58,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Build and Push Docker Image
+        env:
+          IMAGE_NAME: ghcr.io/${{ toLower(github.repository) }}-be
+          TAG: prod
         run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository,, }}-be
-          TAG=v1
+          echo "Building image: $IMAGE_NAME:$TAG"
           docker build -f BE/Dockerfile -t $IMAGE_NAME:$TAG ./BE
           docker push $IMAGE_NAME:$TAG
