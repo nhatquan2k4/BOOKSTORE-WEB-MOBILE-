@@ -318,11 +318,6 @@ export default function HomePage() {
                   
                   {/* Content */}
                   <div className="relative z-10 p-6 h-full flex flex-col justify-between">
-                    <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center shadow-lg">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white drop-shadow-md">
-                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
-                      </svg>
-                    </div>
                     
                     <div>
                       <h3 className="font-bold text-xl mb-2 text-white drop-shadow-lg">{cat.name}</h3>

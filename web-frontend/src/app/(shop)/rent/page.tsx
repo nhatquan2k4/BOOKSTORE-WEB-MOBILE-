@@ -1,51 +1,34 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Button, Badge, Input, Breadcrumb} from '@/components/ui';
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { Button, Badge, Input, Breadcrumb } from "@/components/ui";
 
 /**
  * Hàm tính toán giá thuê sách dựa trên giá mua và số ngày thuê
- * @param bookPrice - Giá mua sách
- * @param days - Số ngày thuê
- * @returns totalRent - Tổng tiền thuê
- * 
- * Logic:
- * - 3 ngày: 10,000đ (cố định cho mọi sách)
- * - 7 ngày: 3% giá sách
- * - 15 ngày: 5% giá sách (tiết kiệm 10%)
- * - 30 ngày: 9% giá sách (tiết kiệm 20%)
- * - 60 ngày: 15% giá sách (tiết kiệm 30%)
- * - 90 ngày: 21% giá sách (tiết kiệm 35%)
- * - 180 ngày: 34% giá sách (tiết kiệm 50% - PHỔ BIẾN)
- * - 365 ngày: 51% giá sách (tiết kiệm 60%)
  */
 export function calculateRentalPrice(bookPrice: number, days: number): number {
-  // Gói 3 ngày cố định
   if (days === 3) return 10000;
-  
-  // Các gói khác tính theo % giá sách
+
   const rentalRates: { [key: number]: number } = {
-    7: 0.03,    // 3%
-    15: 0.05,   // 5%
-    30: 0.09,   // 9%
-    60: 0.15,   // 15%
-    90: 0.21,   // 21%
-    180: 0.34,  // 34%
-    365: 0.51,  // 51%
+    7: 0.03,
+    15: 0.05,
+    30: 0.09,
+    60: 0.15,
+    90: 0.21,
+    180: 0.34,
+    365: 0.51,
   };
-  
+
   const rate = rentalRates[days];
   if (!rate) return 0;
-  
+
   return Math.round(bookPrice * rate);
 }
 
 /**
  * Tạo danh sách các gói thuê cho một cuốn sách
- * @param bookPrice - Giá mua sách
- * @returns Mảng các gói thuê với giá tính toán
  */
 export function generateRentalPlans(bookPrice: number) {
   return [
@@ -60,7 +43,7 @@ export function generateRentalPlans(bookPrice: number) {
   ];
 }
 
-// Mock data - sẽ được thay thế bằng API call
+// Mock data
 const booksRawData = [
   {
     id: 1,
@@ -152,11 +135,11 @@ const booksRawData = [
   },
 ];
 
-// Tạo dữ liệu sách với giá thuê được tính toán tự động
-const rentableBooks = booksRawData.map(book => ({
+// thêm trường giá thuê để hiển thị nhanh
+const rentableBooks = booksRawData.map((book) => ({
   ...book,
-  startPrice: calculateRentalPrice(book.purchasePrice, 3), // Gói 3 ngày
-  popularPrice: calculateRentalPrice(book.purchasePrice, 180), // Gói 180 ngày (phổ biến)
+  startPrice: calculateRentalPrice(book.purchasePrice, 3),
+  popularPrice: calculateRentalPrice(book.purchasePrice, 180),
 }));
 
 const categories = [
@@ -177,110 +160,333 @@ const sortOptions = [
   { value: "rating", label: "Đánh giá cao" },
 ];
 
+// hero sách kiểu discovernow – mình dùng lại data từ booksRawData
+const heroBooks = booksRawData.map((book) => ({
+  id: book.id,
+  title: book.title,
+  desc: `Tác giả: ${book.author}. Định dạng: ${book.format}.`,
+  image: book.cover,
+  purchasePrice: book.purchasePrice,
+  rent3: calculateRentalPrice(book.purchasePrice, 3),
+  rent180: calculateRentalPrice(book.purchasePrice, 180),
+}));
+
 export default function RentPage() {
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("popular");
 
-  const filteredBooks = rentableBooks.filter(book => {
-    const matchCategory = selectedCategory === "Tất cả" || book.category === selectedCategory;
-    const matchSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       book.author.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchCategory && matchSearch;
-  });
+  // hero state (giống discovernow)
+  const [activeHero, setActiveHero] = useState(0);
+
+  const trendingRef = useRef<HTMLDivElement>(null); // dùng cho danh sách dưới (nếu sau này bạn thêm scroll)
+  const filteredBooks = rentableBooks
+    .filter((book) => {
+      const matchCategory =
+        selectedCategory === "Tất cả" || book.category === selectedCategory;
+      const matchSearch =
+        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.author.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchCategory && matchSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === "price-asc") return a.startPrice - b.startPrice;
+      if (sortBy === "price-desc") return b.startPrice - a.startPrice;
+      if (sortBy === "rating") return b.rating - a.rating;
+      return 0;
+    });
+
+  const handleNextHero = () => {
+    setActiveHero((prev) => (prev + 1) % heroBooks.length);
+  };
+
+  const handlePrevHero = () => {
+    setActiveHero((prev) => (prev - 1 + heroBooks.length) % heroBooks.length);
+  };
+
+  // auto đổi hero
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveHero((prev) => (prev + 1) % heroBooks.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Breadcrumb */}
-        <Breadcrumb items={[{ label: "Thuê eBook" }]} />
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white py-20 overflow-hidden">
-        {/* Decorative Elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-64 h-64 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-        </div>
+      <Breadcrumb items={[{ label: "Thuê eBook" }]} />
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-block mb-4 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold">
-              Đọc thông minh - Tiết kiệm hơn
+      {/* HERO giống discovernow */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white py-16 md:py-20">
+        <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10 md:gap-6 items-center">
+          {/* left */}
+          <div className="md:w-1/2 z-10">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide mb-4">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              Thuê eBook siêu tiết kiệm
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Thuê eBook - Tri thức trong tầm tay
-            </h1>
-            <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-              Truy cập hàng ngàn đầu sách điện tử với chi phí thấp. Đọc không giới hạn, học không ngừng nghỉ!
+
+            <p className="text-sm text-white/70 mb-3">
+              Đọc ngay / Không cần chờ giao / Nhiều định dạng
             </p>
-            
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-12">
-              <div>
-                <div className="text-3xl font-bold mb-2">5000+</div>
-                <div className="text-blue-100 text-sm">eBook có sẵn</div>
+
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
+              {heroBooks[activeHero].title}
+            </h1>
+
+            <p className="text-sm md:text-base text-white/75 mb-6 line-clamp-4 md:line-clamp-5 max-w-xl">
+              {heroBooks[activeHero].desc}
+            </p>
+
+            <div className="flex gap-3 items-center flex-wrap">
+              <div className="text-xs text-white/70">
+                Thuê từ{" "}
+                <span className="text-emerald-300 font-semibold">
+                  {heroBooks[activeHero].rent3.toLocaleString("vi-VN")}₫
+                </span>{" "}
+                / 3 ngày
               </div>
-              <div>
-                <div className="text-3xl font-bold mb-2">Từ 10K</div>
-                <div className="text-blue-100 text-sm">Cho 7 ngày</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold mb-2">40%</div>
-                <div className="text-blue-100 text-sm">Tiết kiệm tối đa</div>
-              </div>
+              <Button
+                asChild
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-5"
+              >
+                <Link href={`/rent/${heroBooks[activeHero].id}`}>
+                  Thuê cuốn này
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                className="border-white/30 text-white hover:bg-white/10"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                  />
+                </svg>
+                Thêm vào yêu thích
+              </Button>
+            </div>
+          </div>
+
+          {/* right - stack cards */}
+          <div className="md:w-1/2 relative h-[400px] md:h-[420px] w-full">
+            {heroBooks.map((book, index) => {
+              const offset = index - activeHero;
+              const isActive = index === activeHero;
+              return (
+                <div
+                  key={book.id}
+                  className="absolute top-4 right-0 w-[260px] h-[360px] md:w-[280px] md:h-[380px] rounded-3xl overflow-hidden bg-slate-700/30 border border-white/10 shadow-2xl backdrop-blur"
+                  style={{
+                    transform: `translateX(${offset * -110}px) translateY(${
+                      Math.abs(offset) * 14
+                    }px) scale(${1 - Math.abs(offset) * 0.04})`,
+                    opacity: Math.abs(offset) > 2 ? 0 : 1,
+                    zIndex: 40 - Math.abs(offset),
+                    transition: "all 0.35s ease",
+                  }}
+                >
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={book.image}
+                      alt={book.title}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/0 to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <p className="text-xs text-white/60 mb-1">
+                        Thuê từ{" "}
+                        {book.rent3.toLocaleString("vi-VN")}₫ / 3 ngày
+                      </p>
+                      <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-2">
+                        {book.title}
+                      </h3>
+                      <p className="text-[10px] text-white/50 line-clamp-2">
+                        Giá mua:{" "}
+                        {book.purchasePrice.toLocaleString("vi-VN")}₫
+                      </p>
+                    </div>
+                  </div>
+                  {isActive && (
+                    <div className="absolute top-3 left-3 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold text-slate-950">
+                      Phổ biến
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* mũi tên */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+              <button
+                onClick={handlePrevHero}
+                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
+                aria-label="Previous"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
+              <button
+                onClick={handleNextHero}
+                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
+                aria-label="Next"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+
+            {/* dots */}
+            <div className="absolute bottom-2 right-0 flex gap-2">
+              {heroBooks.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveHero(idx)}
+                  className={`h-1.5 rounded-full transition-all ${
+                    idx === activeHero ? "w-6 bg-white" : "w-2 bg-white/40"
+                  }`}
+                  aria-label={`Chuyển tới slide ${idx + 1}`}
+                />
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Benefits Section */}
+      {/* Benefits nhỏ bên dưới hero */}
       <section className="py-12 bg-white border-b">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-6 h-6 text-blue-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Tiết kiệm chi phí</h3>
-                <p className="text-sm text-gray-600">Chỉ trả một phần nhỏ so với mua sách</p>
+                <h3 className="font-semibold text-gray-900 mb-1">
+                  Tiết kiệm chi phí
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Chỉ trả một phần nhỏ so với mua sách
+                </p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <svg
+                  className="w-6 h-6 text-green-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Đa thiết bị</h3>
-                <p className="text-sm text-gray-600">Đọc trên điện thoại, máy tính, máy tính bảng</p>
+                <h3 className="font-semibold text-gray-900 mb-1">
+                  Đa thiết bị
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Đọc trên điện thoại, máy tính, tablet
+                </p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-6 h-6 text-purple-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Linh hoạt</h3>
-                <p className="text-sm text-gray-600">Chọn thời gian thuê phù hợp với nhu cầu</p>
+                <p className="text-sm text-gray-600">
+                  Chọn thời gian thuê theo nhu cầu
+                </p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <svg
+                  className="w-6 h-6 text-orange-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Truy cập ngay</h3>
-                <p className="text-sm text-gray-600">Đọc ngay sau khi thanh toán</p>
+                <h3 className="font-semibold text-gray-900 mb-1">
+                  Truy cập ngay
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Đọc ngay sau khi thanh toán
+                </p>
               </div>
             </div>
           </div>
@@ -295,8 +501,18 @@ export default function RentPage() {
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
               <div className="flex-1 w-full md:max-w-md">
                 <div className="relative">
-                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  <svg
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
                   </svg>
                   <Input
                     type="text"
@@ -309,13 +525,15 @@ export default function RentPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600 whitespace-nowrap">Sắp xếp:</span>
+                <span className="text-sm text-gray-600 whitespace-nowrap">
+                  Sắp xếp:
+                </span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 text-sm font-medium"
                 >
-                  {sortOptions.map(option => (
+                  {sortOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -332,8 +550,8 @@ export default function RentPage() {
                   onClick={() => setSelectedCategory(category)}
                   className={`px-6 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all ${
                     selectedCategory === category
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-600 hover:text-blue-600'
+                      ? "bg-blue-600 text-white shadow-lg"
+                      : "bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-600 hover:text-blue-600"
                   }`}
                 >
                   {category}
@@ -345,7 +563,11 @@ export default function RentPage() {
           {/* Results Count */}
           <div className="mb-6">
             <p className="text-gray-600">
-              Tìm thấy <span className="font-semibold text-gray-900">{filteredBooks.length}</span> sách
+              Tìm thấy{" "}
+              <span className="font-semibold text-gray-900">
+                {filteredBooks.length}
+              </span>{" "}
+              sách
             </p>
           </div>
 
@@ -365,14 +587,27 @@ export default function RentPage() {
                     className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute top-3 left-3">
-                    <Badge variant="success" className="bg-green-500 text-white text-xs">
+                    <Badge
+                      variant="success"
+                      className="bg-green-500 text-white text-xs"
+                    >
                       eBook
                     </Badge>
                   </div>
                   <div className="absolute top-3 right-3">
                     <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition shadow-lg">
-                      <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      <svg
+                        className="w-5 h-5 text-gray-700"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -380,7 +615,10 @@ export default function RentPage() {
 
                 <div className="p-4">
                   <div className="mb-2">
-                    <Badge variant="default" className="text-xs bg-blue-50 text-blue-700">
+                    <Badge
+                      variant="default"
+                      className="text-xs bg-blue-50 text-blue-700"
+                    >
                       {book.category}
                     </Badge>
                   </div>
@@ -389,40 +627,56 @@ export default function RentPage() {
                     {book.title}
                   </h3>
 
-                  <p className="text-sm text-gray-600 mb-2 line-clamp-1">{book.author}</p>
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-1">
+                    {book.author}
+                  </p>
 
                   <div className="flex items-center gap-1 mb-3">
                     <div className="flex items-center">
-                      <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                      <svg
+                        className="w-4 h-4 text-yellow-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
-                      <span className="ml-1 text-sm font-medium text-gray-900">{book.rating}</span>
+                      <span className="ml-1 text-sm font-medium text-gray-900">
+                        {book.rating}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-500">({book.reviews})</span>
+                    <span className="text-xs text-gray-500">
+                      ({book.reviews})
+                    </span>
                   </div>
 
                   <div className="space-y-2 pt-3 border-t border-gray-100">
                     <div className="flex items-baseline justify-between">
                       <div>
-                        <div className="text-xs text-gray-500 mb-0.5">Thuê từ</div>
+                        <div className="text-xs text-gray-500 mb-0.5">
+                          Thuê từ
+                        </div>
                         <div className="font-bold text-blue-600 text-lg">
-                          {book.startPrice.toLocaleString('vi-VN')}₫
-                          <span className="text-xs font-normal text-gray-500">/3 ngày</span>
+                          {book.startPrice.toLocaleString("vi-VN")}₫
+                          <span className="text-xs font-normal text-gray-500">
+                            /3 ngày
+                          </span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs text-gray-500 mb-0.5">Phổ biến</div>
+                        <div className="text-xs text-gray-500 mb-0.5">
+                          Phổ biến
+                        </div>
                         <div className="font-semibold text-gray-900">
-                          {book.popularPrice.toLocaleString('vi-VN')}₫
-                          <span className="text-xs text-gray-500">/180 ngày</span>
+                          {book.popularPrice.toLocaleString("vi-VN")}₫
+                          <span className="text-xs text-gray-500">
+                            /180 ngày
+                          </span>
                         </div>
                       </div>
                     </div>
 
                     <div className="pt-2">
-                      <Button
-                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm py-2"
-                      >
+                      <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm py-2">
                         Xem chi tiết
                       </Button>
                     </div>
@@ -436,12 +690,26 @@ export default function RentPage() {
           {filteredBooks.length === 0 && (
             <div className="text-center py-16">
               <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-12 h-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                <svg
+                  className="w-12 h-12 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                  />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Không tìm thấy sách</h3>
-              <p className="text-gray-600 mb-6">Thử tìm kiếm với từ khóa khác hoặc chọn danh mục khác</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Không tìm thấy sách
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Thử tìm kiếm với từ khóa khác hoặc chọn danh mục khác
+              </p>
               <Button
                 onClick={() => {
                   setSearchQuery("");
@@ -459,12 +727,14 @@ export default function RentPage() {
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">Bắt đầu hành trình học tập của bạn ngay hôm nay!</h2>
+          <h2 className="text-3xl font-bold mb-4">
+            Bắt đầu hành trình học tập của bạn ngay hôm nay!
+          </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
             Hàng ngàn đầu sách đang chờ bạn khám phá. Thuê ngay với giá ưu đãi!
           </p>
           <Button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-3 text-lg"
           >
             Khám phá ngay
