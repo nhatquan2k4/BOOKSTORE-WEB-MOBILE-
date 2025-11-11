@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
@@ -199,7 +199,9 @@ export default function NewArrivalsPage() {
   const sortedBooks = [...MOCK_NEW_BOOKS].sort((a, b) => {
     switch (sortBy) {
       case "newest":
-        return new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime();
+        return (
+          new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
+        );
       case "popular":
         return b.reviewCount - a.reviewCount;
       case "price-asc":
@@ -210,6 +212,11 @@ export default function NewArrivalsPage() {
         return 0;
     }
   });
+
+  // reset page when sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy]);
 
   // Pagination
   const totalPages = Math.ceil(sortedBooks.length / itemsPerPage);
@@ -233,13 +240,19 @@ export default function NewArrivalsPage() {
   // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
 
   // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   return (
@@ -256,21 +269,9 @@ export default function NewArrivalsPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-green-600"
-            >
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-            <h1 className="text-4xl font-bold text-gray-900">Sách Mới Phát Hành</h1>
+            <h1 className="text-4xl font-bold text-gray-900">
+              Sách Mới Phát Hành
+            </h1>
           </div>
           <p className="text-gray-600 text-lg">
             Khám phá {MOCK_NEW_BOOKS.length} đầu sách mới nhất được phát hành gần đây
@@ -281,7 +282,10 @@ export default function NewArrivalsPage() {
         <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="text-sm text-gray-600">
             Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
-            <span className="font-semibold">{Math.min(endIndex, sortedBooks.length)}</span> trong tổng số{" "}
+            <span className="font-semibold">
+              {Math.min(endIndex, sortedBooks.length)}
+            </span>{" "}
+            trong tổng số{" "}
             <span className="font-semibold">{sortedBooks.length}</span> sách
           </div>
 
@@ -290,7 +294,7 @@ export default function NewArrivalsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
               <option value="newest">Mới nhất</option>
               <option value="popular">Phổ biến nhất</option>
@@ -306,7 +310,7 @@ export default function NewArrivalsPage() {
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-3 shadow-sm hover:shadow-lg transition-all duration-300"
+              className="group bg-white rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 border border-transparent hover:border-blue-100"
             >
               {/* Book Cover */}
               <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
@@ -319,42 +323,48 @@ export default function NewArrivalsPage() {
                 />
 
                 {/* NEW Badge */}
-                <Badge
-                  className="absolute top-2 right-2 text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold shadow-lg"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="inline-block mr-1"
-                  >
-                    <path d="M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z" />
-                  </svg>
-                  MỚI
-                </Badge>
-
-                {/* Discount Badge */}
-                {book.originalPrice && (
-                  <Badge variant="danger" className="absolute top-2 left-2 text-xs">
-                    -{calculateDiscount(book.originalPrice, book.price)}%
+                {book.isNew && (
+                  <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold shadow-lg">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="inline-block mr-1"
+                    >
+                      <path d="M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z" />
+                    </svg>
+                    MỚI
                   </Badge>
                 )}
+
+                {/* BỎ discount badge trên ảnh */}
               </div>
 
               {/* Book Info */}
-              <h3 className="font-semibold text-sm line-clamp-2 mb-1">{book.title}</h3>
+              <h3 className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
+                {book.title}
+              </h3>
               <p className="text-xs text-gray-600 mb-1">{book.author}</p>
-              <p className="text-xs text-gray-500 mb-2">{formatDate(book.publishDate)}</p>
+              <p className="text-xs text-gray-500 mb-2">
+                Phát hành: {formatDate(book.publishDate)}
+              </p>
 
               {/* Price */}
-              <div className="flex items-center gap-2 mb-2">
-                <p className="text-blue-600 font-bold text-sm">{formatPrice(book.price)}</p>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <p className="text-blue-600 font-bold text-sm">
+                  {formatPrice(book.price)}
+                </p>
                 {book.originalPrice && (
-                  <p className="text-xs text-gray-400 line-through">
-                    {formatPrice(book.originalPrice)}
-                  </p>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <p className="text-xs text-gray-400 line-through">
+                      {formatPrice(book.originalPrice)}
+                    </p>
+                    <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                      -{calculateDiscount(book.originalPrice, book.price)}%
+                    </span>
+                  </div>
                 )}
               </div>
 
@@ -371,7 +381,9 @@ export default function NewArrivalsPage() {
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
                 <span className="text-xs text-gray-600">{book.rating}</span>
-                <span className="text-xs text-gray-400">({book.reviewCount})</span>
+                <span className="text-xs text-gray-400">
+                  ({book.reviewCount})
+                </span>
               </div>
             </Link>
           ))}

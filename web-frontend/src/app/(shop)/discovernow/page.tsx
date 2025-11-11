@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, memo } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
@@ -290,7 +290,7 @@ export default function DiscoverNowPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      {/* HERO kiểu Waka có auto + arrows */}
+      {/* HERO */}
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white py-16 md:py-20">
         <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10 md:gap-6 items-center">
           {/* left */}
@@ -300,9 +300,7 @@ export default function DiscoverNowPage() {
               BookStore đề xuất
             </div>
 
-            <p className="text-sm text-white/70 mb-3">
-              Sách điện tử / Ngoại văn
-            </p>
+            <p className="text-sm text-white/70 mb-3">Sách điện tử / Ngoại văn</p>
 
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
               {heroBooks[activeHero].title}
@@ -319,10 +317,7 @@ export default function DiscoverNowPage() {
               >
                 <Link href={`/books/${heroBooks[activeHero].id}`}>Đọc sách</Link>
               </Button>
-              <Button
-                variant="outline"
-                className="border-white/30 text-white hover:bg-white/10"
-              >
+              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5 mr-2"
@@ -342,7 +337,7 @@ export default function DiscoverNowPage() {
             </div>
           </div>
 
-          {/* right - stack cards bigger */}
+          {/* right */}
           <div className="md:w-1/2 relative h-[400px] md:h-[420px] w-full">
             {heroBooks.map((book, index) => {
               const offset = index - activeHero;
@@ -361,21 +356,14 @@ export default function DiscoverNowPage() {
                   }}
                 >
                   <div className="relative w-full h-full">
-                    <Image
-                      src={book.image}
-                      alt={book.title}
-                      fill
-                      className="object-cover"
-                    />
+                    <Image src={book.image} alt={book.title} fill className="object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/0 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
                       <p className="text-xs text-white/60 mb-1">Sách ngoại văn</p>
                       <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-2">
                         {book.title}
                       </h3>
-                      <p className="text-[10px] text-white/50 line-clamp-2">
-                        {book.desc}
-                      </p>
+                      <p className="text-[10px] text-white/50 line-clamp-2">{book.desc}</p>
                     </div>
                   </div>
                   {isActive && (
@@ -387,7 +375,7 @@ export default function DiscoverNowPage() {
               );
             })}
 
-            {/* mũi tên điều hướng */}
+            {/* arrows */}
             <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-3">
               <button
                 onClick={handlePrevHero}
@@ -444,7 +432,7 @@ export default function DiscoverNowPage() {
         </div>
       </section>
 
-      {/* --- giữ nguyên phần dưới --- */}
+      {/* SÁCH THỊNH HÀNH */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="mb-8 flex items-center justify-between">
@@ -461,12 +449,7 @@ export default function DiscoverNowPage() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
           </div>
@@ -500,69 +483,73 @@ export default function DiscoverNowPage() {
               className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               style={{ overflowX: "auto" }}
             >
-              {trendingBooks.map((book) => (
-                <Link
-                  key={book.id}
-                  href={`/books/${book.id}`}
-                  className="flex h-[320px] w-[180px] min-w-[180px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
-                >
-                  <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
-                    <Image
-                      src={book.image}
-                      alt={book.title}
-                      fill
-                      sizes="180px"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    {book.originalPrice > 0 && (
-                      <Badge variant="danger" className="absolute top-2 left-2 text-xs">
-                        -
-                        {Math.round(
-                          ((book.originalPrice - book.price) /
-                            book.originalPrice) *
-                            100
-                          )}
-                        %
-                      </Badge>
-                    )}
-                    {book.hot && (
-                      <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg animate-pulse">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          className="mr-1"
-                        >
-                          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-                        </svg>
-                        HOT
-                      </Badge>
-                    )}
-                  </div>
-                  <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                    {book.title}
-                  </h3>
-                  <p className="text-xs text-gray-600 mb-1">{book.author}</p>
-                  <div className="flex items-center gap-2 mt-auto">
-                    <p className="text-blue-600 font-bold text-sm">
-                      {new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(book.price)}
-                    </p>
-                    {book.originalPrice > 0 && (
-                      <p className="text-xs text-gray-400 line-through">
+              {trendingBooks.map((book) => {
+                const discountPercent =
+                  book.originalPrice && book.originalPrice > book.price
+                    ? Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)
+                    : null;
+
+                return (
+                  <Link
+                    key={book.id}
+                    href={`/books/${book.id}`}
+                    className="flex h-[320px] w-[180px] min-w-[180px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
+                  >
+                    <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+                      <Image
+                        src={book.image}
+                        alt={book.title}
+                        fill
+                        sizes="180px"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {book.hot && (
+                        <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg animate-pulse">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            className="mr-1"
+                          >
+                            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                          </svg>
+                          HOT
+                        </Badge>
+                      )}
+                    </div>
+                    <h3 className="font-semibold text-sm line-clamp-2 mb-1">{book.title}</h3>
+                    <p className="text-xs text-gray-600 mb-1">{book.author}</p>
+
+                    {/* giá */}
+                    <div className="flex items-center gap-2 mt-auto">
+                      <p className="text-blue-600 font-bold text-sm">
                         {new Intl.NumberFormat("vi-VN", {
                           style: "currency",
                           currency: "VND",
-                        }).format(book.originalPrice)}
+                        }).format(book.price)}
                       </p>
-                    )}
-                  </div>
-                </Link>
-              ))}
+
+                      {book.originalPrice && (
+                        <div className="flex items-center gap-1">
+                          <p className="text-xs text-gray-400 line-through">
+                            {new Intl.NumberFormat("vi-VN", {
+                              style: "currency",
+                              currency: "VND",
+                            }).format(book.originalPrice)}
+                          </p>
+                          {discountPercent && (
+                            <span className="text-xs font-semibold text-red-500">
+                              -{discountPercent}%
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
 
             <Button
@@ -591,6 +578,7 @@ export default function DiscoverNowPage() {
         </div>
       </section>
 
+      {/* SÁCH MỚI RA MẮT */}
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="mb-8 flex items-center justify-between">
@@ -607,12 +595,7 @@ export default function DiscoverNowPage() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
           </div>
@@ -674,9 +657,7 @@ export default function DiscoverNowPage() {
                       MỚI
                     </Badge>
                   </div>
-                  <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                    {book.title}
-                  </h3>
+                  <h3 className="font-semibold text-sm line-clamp-2 mb-1">{book.title}</h3>
                   <p className="text-xs text-gray-600 mb-1">{book.author}</p>
                   <div className="flex items-center gap-2 mt-auto">
                     <p className="text-blue-600 font-bold text-sm">

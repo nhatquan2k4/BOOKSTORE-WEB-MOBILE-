@@ -23,7 +23,13 @@ type Book = {
   isRecommended: boolean;
 };
 
-type SubCategoryFilter = "all" | "macro" | "micro" | "finance" | "investing" | "business";
+type SubCategoryFilter =
+  | "all"
+  | "macro"
+  | "micro"
+  | "finance"
+  | "investing"
+  | "business";
 
 // ============================================================================
 // MOCK DATA
@@ -238,7 +244,8 @@ const MOCK_ECONOMICS_BOOKS: Book[] = [
 // MAIN COMPONENT
 // ============================================================================
 export default function EconomicsPage() {
-  const [selectedCategory, setSelectedCategory] = useState<SubCategoryFilter>("all");
+  const [selectedCategory, setSelectedCategory] =
+    useState<SubCategoryFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
@@ -246,7 +253,9 @@ export default function EconomicsPage() {
   const filteredBooks =
     selectedCategory === "all"
       ? MOCK_ECONOMICS_BOOKS
-      : MOCK_ECONOMICS_BOOKS.filter((book) => book.subCategory === selectedCategory);
+      : MOCK_ECONOMICS_BOOKS.filter(
+          (book) => book.subCategory === selectedCategory
+        );
 
   // Pagination
   const totalPages = Math.ceil(filteredBooks.length / itemsPerPage);
@@ -276,7 +285,9 @@ export default function EconomicsPage() {
   // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   return (
@@ -311,7 +322,8 @@ export default function EconomicsPage() {
             <h1 className="text-4xl font-bold text-gray-900">Kinh Tế</h1>
           </div>
           <p className="text-gray-600 text-lg">
-            Khám phá {filteredBooks.length} đầu sách về kinh tế, tài chính và đầu tư
+            Khám phá {filteredBooks.length} đầu sách về kinh tế, tài chính và
+            đầu tư
           </p>
         </div>
 
@@ -349,7 +361,10 @@ export default function EconomicsPage() {
                 : "bg-white text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Kinh tế vĩ mô ({MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "macro").length})
+            Kinh tế vĩ mô (
+            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "macro")
+              .length}
+            )
           </button>
           <button
             onClick={() => handleCategoryChange("micro")}
@@ -359,7 +374,10 @@ export default function EconomicsPage() {
                 : "bg-white text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Kinh tế vi mô ({MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "micro").length})
+            Kinh tế vi mô (
+            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "micro")
+              .length}
+            )
           </button>
           <button
             onClick={() => handleCategoryChange("finance")}
@@ -369,7 +387,10 @@ export default function EconomicsPage() {
                 : "bg-white text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Tài chính ({MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "finance").length})
+            Tài chính (
+            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "finance")
+              .length}
+            )
           </button>
           <button
             onClick={() => handleCategoryChange("investing")}
@@ -379,7 +400,10 @@ export default function EconomicsPage() {
                 : "bg-white text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Đầu tư ({MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "investing").length})
+            Đầu tư (
+            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "investing")
+              .length}
+            )
           </button>
           <button
             onClick={() => handleCategoryChange("business")}
@@ -389,14 +413,20 @@ export default function EconomicsPage() {
                 : "bg-white text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Kinh doanh ({MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "business").length})
+            Kinh doanh (
+            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "business")
+              .length}
+            )
           </button>
         </div>
 
         {/* Result Count */}
         <div className="mb-6 text-sm text-gray-600">
           Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
-          <span className="font-semibold">{Math.min(endIndex, filteredBooks.length)}</span> trong tổng số{" "}
+          <span className="font-semibold">
+            {Math.min(endIndex, filteredBooks.length)}
+          </span>{" "}
+          trong tổng số{" "}
           <span className="font-semibold">{filteredBooks.length}</span> sách
         </div>
 
@@ -406,7 +436,7 @@ export default function EconomicsPage() {
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-3 shadow-sm hover:shadow-lg transition-all duration-300"
+              className="group bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-lg hover:border-emerald-100 transition-all duration-300"
             >
               {/* Book Cover */}
               <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
@@ -439,25 +469,29 @@ export default function EconomicsPage() {
                   </Badge>
                 )}
 
-                {/* Discount Badge */}
-                {book.originalPrice && (
-                  <Badge variant="danger" className="absolute top-2 left-2 text-xs">
-                    -{calculateDiscount(book.originalPrice, book.price)}%
-                  </Badge>
-                )}
+                {/* BỎ badge giảm giá trên ảnh */}
               </div>
 
               {/* Book Info */}
-              <h3 className="font-semibold text-sm line-clamp-2 mb-1">{book.title}</h3>
+              <h3 className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-emerald-600 transition-colors">
+                {book.title}
+              </h3>
               <p className="text-xs text-gray-600 mb-2">{book.author}</p>
 
-              {/* Price */}
-              <div className="flex items-center gap-2 mb-2">
-                <p className="text-blue-600 font-bold text-sm">{formatPrice(book.price)}</p>
+              {/* Price (đưa giảm giá xuống đây) */}
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <p className="text-emerald-600 font-bold text-sm">
+                  {formatPrice(book.price)}
+                </p>
                 {book.originalPrice && (
-                  <p className="text-xs text-gray-400 line-through">
-                    {formatPrice(book.originalPrice)}
-                  </p>
+                  <>
+                    <p className="text-xs text-gray-400 line-through">
+                      {formatPrice(book.originalPrice)}
+                    </p>
+                    <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                      -{calculateDiscount(book.originalPrice, book.price)}%
+                    </span>
+                  </>
                 )}
               </div>
 
@@ -474,7 +508,9 @@ export default function EconomicsPage() {
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
                 <span className="text-xs text-gray-600">{book.rating}</span>
-                <span className="text-xs text-gray-400">({book.reviewCount})</span>
+                <span className="text-xs text-gray-400">
+                  ({book.reviewCount})
+                </span>
               </div>
             </Link>
           ))}

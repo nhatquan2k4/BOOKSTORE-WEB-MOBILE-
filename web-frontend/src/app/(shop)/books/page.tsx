@@ -318,16 +318,173 @@ const MOCK_BOOKS: Book[] = [
   },
 ];
 
+// không dùng emoji nữa, chỉ giữ id + name
 const CATEGORIES = [
-  { id: "all", name: "Tất cả", icon: "📚" },
-  { id: "Văn học", name: "Văn học", icon: "📖" },
-  { id: "Kỹ năng sống", name: "Kỹ năng sống", icon: "💡" },
-  { id: "Kinh tế", name: "Kinh tế", icon: "💰" },
-  { id: "Kinh doanh", name: "Kinh doanh", icon: "💼" },
-  { id: "Khoa học", name: "Khoa học", icon: "🔬" },
-  { id: "Lập trình", name: "Lập trình", icon: "💻" },
-  { id: "Tâm lý học", name: "Tâm lý học", icon: "🧠" },
+  { id: "all", name: "Tất cả" },
+  { id: "Văn học", name: "Văn học" },
+  { id: "Kỹ năng sống", name: "Kỹ năng sống" },
+  { id: "Kinh tế", name: "Kinh tế" },
+  { id: "Kinh doanh", name: "Kinh doanh" },
+  { id: "Khoa học", name: "Khoa học" },
+  { id: "Lập trình", name: "Lập trình" },
+  { id: "Tâm lý học", name: "Tâm lý học" },
 ];
+
+// render icon svg theo category
+const CategoryIcon = ({ id }: { id: string }) => {
+  switch (id) {
+    case "all":
+      return (
+        <svg
+          className="inline-block mr-2"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+        </svg>
+      );
+    case "Văn học":
+      return (
+        <svg
+          className="inline-block mr-2"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4 19.5V5A2.5 2.5 0 0 1 6.5 2H20v17H6.5a2.5 2.5 0 1 0 0 5H20" />
+        </svg>
+      );
+    case "Kỹ năng sống":
+      return (
+        <svg
+          className="inline-block mr-2"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="4" />
+          <path d="m4.93 4.93 2.83 2.83" />
+          <path d="m16.24 7.76 2.83-2.83" />
+          <path d="m4.93 19.07 2.83-2.83" />
+          <path d="m16.24 16.24 2.83 2.83" />
+        </svg>
+      );
+    case "Kinh tế":
+      return (
+        <svg
+          className="inline-block mr-2"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      );
+    case "Kinh doanh":
+      return (
+        <svg
+          className="inline-block mr-2"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="3" y="3" width="7" height="9" rx="1" />
+          <rect x="14" y="3" width="7" height="5" rx="1" />
+          <rect x="14" y="12" width="7" height="9" rx="1" />
+          <rect x="3" y="15" width="7" height="6" rx="1" />
+        </svg>
+      );
+    case "Khoa học":
+      return (
+        <svg
+          className="inline-block mr-2"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82 8 8 0 0 1-2.75 2.75A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1.51.42 8 8 0 0 1-3-.01A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.98.17 8 8 0 0 1-2.75-2.75A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.42-1.51 8 8 0 0 1 .01-3A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.17-1.98 8 8 0 0 1 2.75-2.75A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1.51-.42 8 8 0 0 1 3 .01A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.98-.17 8 8 0 0 1 2.75 2.75A1.65 1.65 0 0 0 19.4 9c.41.42.6.99.49 1.56-.11.57-.11 1.17 0 1.74-.1.57.08 1.14.51 1.7Z" />
+        </svg>
+      );
+    case "Lập trình":
+      return (
+        <svg
+          className="inline-block mr-2"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m6 8-4 4 4 4" />
+          <path d="m18 8 4 4-4 4" />
+          <path d="m14.5 4-5 16" />
+        </svg>
+      );
+    case "Tâm lý học":
+      return (
+        <svg
+          className="inline-block mr-2"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M9 10a3 3 0 0 1 6 0v1h1a2 2 0 0 1 0 4h-1v3" />
+          <path d="M12 19A7 7 0 1 1 5 5" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+};
 
 export default function AllBooksPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -408,7 +565,9 @@ export default function AllBooksPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const getCategoryCount = (categoryId: string) => {
@@ -419,6 +578,7 @@ export default function AllBooksPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
+        {/* Breadcrumb */}
         <nav className="mb-6 text-sm text-gray-600">
           <Link href="/" className="hover:text-blue-600">
             Trang chủ
@@ -426,6 +586,7 @@ export default function AllBooksPage() {
           / <span className="font-medium text-gray-800">Tất cả sách</span>
         </nav>
 
+        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <svg
@@ -449,7 +610,9 @@ export default function AllBooksPage() {
           </p>
         </div>
 
+        {/* Search & Filters */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          {/* Search */}
           <div className="mb-6">
             <div className="relative">
               <input
@@ -504,6 +667,7 @@ export default function AllBooksPage() {
             </div>
           </div>
 
+          {/* Categories */}
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Danh mục:</h3>
             <div className="flex flex-wrap gap-2">
@@ -517,7 +681,7 @@ export default function AllBooksPage() {
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
-                  <span className="mr-2">{cat.icon}</span>
+                  <CategoryIcon id={cat.id} />
                   {cat.name}
                   <span className="ml-2 text-xs opacity-75">
                     ({getCategoryCount(cat.id)})
@@ -527,15 +691,21 @@ export default function AllBooksPage() {
             </div>
           </div>
 
+          {/* Price & Sort */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="price-range" className="text-sm font-semibold text-gray-700 mb-2 block">
+              <label
+                htmlFor="price-range"
+                className="text-sm font-semibold text-gray-700 mb-2 block"
+              >
                 Khoảng giá:
               </label>
               <select
                 id="price-range"
                 value={priceRange}
-                onChange={(e) => handlePriceRangeChange(e.target.value as PriceRange)}
+                onChange={(e) =>
+                  handlePriceRangeChange(e.target.value as PriceRange)
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả</option>
@@ -547,7 +717,10 @@ export default function AllBooksPage() {
             </div>
 
             <div>
-              <label htmlFor="sort-by" className="text-sm font-semibold text-gray-700 mb-2 block">
+              <label
+                htmlFor="sort-by"
+                className="text-sm font-semibold text-gray-700 mb-2 block"
+              >
                 Sắp xếp:
               </label>
               <select
@@ -566,11 +739,15 @@ export default function AllBooksPage() {
           </div>
         </div>
 
+        {/* Result info */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div className="text-sm text-gray-600">
             Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
-            <span className="font-semibold">{Math.min(endIndex, sortedBooks.length)}</span> trong
-            tổng số <span className="font-semibold">{sortedBooks.length}</span> sách
+            <span className="font-semibold">
+              {Math.min(endIndex, sortedBooks.length)}
+            </span>{" "}
+            trong tổng số{" "}
+            <span className="font-semibold">{sortedBooks.length}</span> sách
           </div>
 
           <div className="flex gap-4 text-sm">
@@ -615,14 +792,16 @@ export default function AllBooksPage() {
           </div>
         </div>
 
+        {/* Books grid */}
         {paginatedBooks.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
             {paginatedBooks.map((book) => (
               <Link
                 key={book.id}
                 href={`/books/${book.id}`}
-                className="group bg-white rounded-xl p-3 shadow-sm hover:shadow-xl transition-all duration-300"
+                className="group bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300"
               >
+                {/* Cover */}
                 <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
                   <Image
                     src={book.cover}
@@ -632,6 +811,7 @@ export default function AllBooksPage() {
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
 
+                  {/* Right badges */}
                   <div className="absolute top-2 right-2 flex flex-col gap-1">
                     {book.isBestseller && (
                       <Badge className="text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg">
@@ -655,14 +835,12 @@ export default function AllBooksPage() {
                     )}
                   </div>
 
-                  {book.originalPrice && (
-                    <Badge variant="danger" className="absolute top-2 left-2 text-xs">
-                      -{calculateDiscount(book.originalPrice, book.price)}%
-                    </Badge>
-                  )}
-
+                  {/* stock badge */}
                   {book.stock < 10 && book.stock > 0 && (
-                    <Badge variant="warning" className="absolute bottom-2 left-2 text-xs">
+                    <Badge
+                      variant="warning"
+                      className="absolute bottom-2 left-2 text-xs bg-amber-400 text-amber-900"
+                    >
                       Chỉ còn {book.stock}
                     </Badge>
                   )}
@@ -673,26 +851,36 @@ export default function AllBooksPage() {
                       </Badge>
                     </div>
                   )}
+
+                  {/* bỏ badge giảm giá trên ảnh */}
                 </div>
 
+                {/* Info */}
                 <div className="space-y-1">
-                  <h3 className="font-semibold text-sm line-clamp-2 min-h-[40px]">
+                  <h3 className="font-semibold text-sm line-clamp-2 min-h-[40px] group-hover:text-blue-600 transition-colors">
                     {book.title}
                   </h3>
                   <p className="text-xs text-gray-600">{book.author}</p>
                   <p className="text-xs text-gray-500">{book.category}</p>
 
-                  <div className="flex items-center gap-2 pt-1">
+                  {/* Price */}
+                  <div className="flex items-center gap-2 pt-1 flex-wrap">
                     <p className="text-blue-600 font-bold text-sm">
                       {formatPrice(book.price)}
                     </p>
                     {book.originalPrice && (
-                      <p className="text-xs text-gray-400 line-through">
-                        {formatPrice(book.originalPrice)}
-                      </p>
+                      <>
+                        <p className="text-xs text-gray-400 line-through">
+                          {formatPrice(book.originalPrice)}
+                        </p>
+                        <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                          -{calculateDiscount(book.originalPrice, book.price)}%
+                        </span>
+                      </>
                     )}
                   </div>
 
+                  {/* Rating */}
                   <div className="flex items-center gap-1 pt-1">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -705,7 +893,9 @@ export default function AllBooksPage() {
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                     </svg>
                     <span className="text-xs text-gray-600">{book.rating}</span>
-                    <span className="text-xs text-gray-400">({book.reviewCount})</span>
+                    <span className="text-xs text-gray-400">
+                      ({book.reviewCount})
+                    </span>
                   </div>
                 </div>
               </Link>
@@ -748,6 +938,7 @@ export default function AllBooksPage() {
           </div>
         )}
 
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-center mb-8">
             <Pagination
@@ -758,47 +949,120 @@ export default function AllBooksPage() {
           </div>
         )}
 
+        {/* Quick links - thay emoji bằng svg */}
         <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link
-            href="/literature"
-            className="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
-          >
-            <div className="text-4xl mb-2">📖</div>
-            <h3 className="font-bold text-lg mb-1">Văn học</h3>
-            <p className="text-sm opacity-90">
-              {MOCK_BOOKS.filter((b) => b.category === "Văn học").length} đầu sách
-            </p>
-          </Link>
-          <Link
-            href="/life-skills"
-            className="bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
-          >
-            <div className="text-4xl mb-2">💡</div>
-            <h3 className="font-bold text-lg mb-1">Kỹ năng sống</h3>
-            <p className="text-sm opacity-90">
-              {MOCK_BOOKS.filter((b) => b.category === "Kỹ năng sống").length} đầu sách
-            </p>
-          </Link>
-          <Link
-            href="/economics"
-            className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
-          >
-            <div className="text-4xl mb-2">💰</div>
-            <h3 className="font-bold text-lg mb-1">Kinh tế</h3>
-            <p className="text-sm opacity-90">
-              {MOCK_BOOKS.filter((b) => b.category === "Kinh tế").length} đầu sách
-            </p>
-          </Link>
-          <Link
-            href="/new-arrivals"
-            className="bg-gradient-to-br from-green-500 to-green-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
-          >
-            <div className="text-4xl mb-2">✨</div>
-            <h3 className="font-bold text-lg mb-1">Sách mới</h3>
-            <p className="text-sm opacity-90">
-              {MOCK_BOOKS.filter((b) => b.isNew).length} đầu sách
-            </p>
-          </Link>
+            {/* Văn học */}
+            <Link
+              href="/literature"
+              className="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
+            >
+              <div className="mb-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="42"
+                  height="42"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-white"
+                >
+                  <path d="M4 19.5V5A2.5 2.5 0 0 1 6.5 2H20v17H6.5a2.5 2.5 0 1 0 0 5H20" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-lg mb-1">Văn học</h3>
+              <p className="text-sm opacity-90">
+                {MOCK_BOOKS.filter((b) => b.category === "Văn học").length} đầu sách
+              </p>
+            </Link>
+
+            {/* Kỹ năng sống */}
+            <Link
+              href="/life-skills"
+              className="bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
+            >
+              <div className="mb-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="42"
+                  height="42"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-white"
+                >
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="m4.93 4.93 2.83 2.83" />
+                  <path d="m16.24 7.76 2.83-2.83" />
+                  <path d="m4.93 19.07 2.83-2.83" />
+                  <path d="m16.24 16.24 2.83 2.83" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-lg mb-1">Kỹ năng sống</h3>
+              <p className="text-sm opacity-90">
+                {MOCK_BOOKS.filter((b) => b.category === "Kỹ năng sống").length} đầu sách
+              </p>
+            </Link>
+
+            {/* Kinh tế */}
+            <Link
+              href="/economics"
+              className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
+            >
+              <div className="mb-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="42"
+                  height="42"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-white"
+                >
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-lg mb-1">Kinh tế</h3>
+              <p className="text-sm opacity-90">
+                {MOCK_BOOKS.filter((b) => b.category === "Kinh tế").length} đầu sách
+              </p>
+            </Link>
+
+            {/* Sách mới */}
+            <Link
+              href="/new-arrivals"
+              className="bg-gradient-to-br from-green-500 to-green-700 text-white rounded-xl p-6 hover:shadow-xl transition-all"
+            >
+              <div className="mb-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="42"
+                  height="42"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-white"
+                >
+                  <path d="m12 2 3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-7z" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-lg mb-1">Sách mới</h3>
+              <p className="text-sm opacity-90">
+                {MOCK_BOOKS.filter((b) => b.isNew).length} đầu sách
+              </p>
+            </Link>
         </div>
       </div>
     </main>

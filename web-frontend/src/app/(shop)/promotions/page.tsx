@@ -221,7 +221,9 @@ export default function PromotionsPage() {
     if (diff <= 0) return "Đã kết thúc";
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const hours = Math.floor(
+      (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
     if (days > 0) return `Còn ${days} ngày`;
@@ -264,26 +266,13 @@ export default function PromotionsPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-red-600"
-            >
-              <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-              <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-              <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
-            </svg>
-            <h1 className="text-4xl font-bold text-gray-900">Chương Trình Khuyến Mãi</h1>
+            <h1 className="text-4xl font-bold text-gray-900">
+              Chương Trình Khuyến Mãi
+            </h1>
           </div>
           <p className="text-gray-600 text-lg">
-            Cập nhật các chương trình khuyến mãi hot nhất, tiết kiệm tối đa khi mua sắm
+            Cập nhật các chương trình khuyến mãi hot nhất, tiết kiệm tối đa khi
+            mua sắm
           </p>
         </div>
 
@@ -426,8 +415,12 @@ export default function PromotionsPage() {
                     className="object-cover"
                   />
                   <div className="absolute top-3 left-3 flex gap-2">
-                    <Badge variant={typeBadge.variant}>{typeBadge.label}</Badge>
-                    <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
+                    <Badge variant={typeBadge.variant}>
+                      {typeBadge.label}
+                    </Badge>
+                    <Badge variant={statusBadge.variant}>
+                      {statusBadge.label}
+                    </Badge>
                   </div>
                   {promotion.status === "active" && (
                     <div className="absolute bottom-3 right-3 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold">
@@ -449,17 +442,32 @@ export default function PromotionsPage() {
                         : `${promotion.discount}%`}
                     </div>
                     <div className="text-sm text-gray-500">
-                      <div>Từ: {new Date(promotion.startDate).toLocaleDateString("vi-VN")}</div>
-                      <div>Đến: {new Date(promotion.endDate).toLocaleDateString("vi-VN")}</div>
+                      <div>
+                        Từ:{" "}
+                        {new Date(
+                          promotion.startDate
+                        ).toLocaleDateString("vi-VN")}
+                      </div>
+                      <div>
+                        Đến:{" "}
+                        {new Date(
+                          promotion.endDate
+                        ).toLocaleDateString("vi-VN")}
+                      </div>
                     </div>
                   </div>
 
                   {promotion.terms && (
                     <div className="mb-4">
-                      <h4 className="font-semibold text-gray-700 mb-2 text-sm">Điều kiện:</h4>
+                      <h4 className="font-semibold text-gray-700 mb-2 text-sm">
+                        Điều kiện:
+                      </h4>
                       <ul className="space-y-1">
                         {promotion.terms.map((term) => (
-                          <li key={term} className="text-sm text-gray-600 flex items-start gap-2">
+                          <li
+                            key={term}
+                            className="text-sm text-gray-600 flex items-start gap-2"
+                          >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               width="16"
@@ -510,7 +518,9 @@ export default function PromotionsPage() {
               >
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
-              <h2 className="text-3xl font-bold text-gray-900">Flash Sale Hôm Nay</h2>
+              <h2 className="text-3xl font-bold text-gray-900">
+                Flash Sale Hôm Nay
+              </h2>
             </div>
             <Link
               href="/books?filter=flashsale"
@@ -538,7 +548,7 @@ export default function PromotionsPage() {
               <Link
                 key={book.id}
                 href={`/books/${book.id}`}
-                className="group bg-white rounded-xl p-3 shadow-sm hover:shadow-lg transition-all duration-300"
+                className="group bg-white rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 border border-transparent hover:border-blue-100"
               >
                 {/* Book Cover */}
                 <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
@@ -550,32 +560,31 @@ export default function PromotionsPage() {
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
 
-                  {/* Discount Badge */}
-                  <Badge
-                    variant="danger"
-                    className="absolute top-2 left-2 text-xs font-bold"
-                  >
-                    -{book.discount}%
-                  </Badge>
-
-                  {/* Sold Count Badge */}
+                  {/* Giữ lại badge đã bán */}
                   <Badge className="absolute bottom-2 left-2 text-xs bg-black/70 text-white">
                     Đã bán: {book.soldCount.toLocaleString()}
                   </Badge>
                 </div>
 
                 {/* Book Info */}
-                <h3 className="font-semibold text-sm line-clamp-2 mb-1">{book.title}</h3>
+                <h3 className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
+                  {book.title}
+                </h3>
                 <p className="text-xs text-gray-600 mb-2">{book.author}</p>
 
-                {/* Price */}
+                {/* Price (đưa % giảm xuống đây) */}
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-red-600 font-bold text-sm">{formatPrice(book.price)}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-red-600 font-bold text-sm">
+                      {formatPrice(book.price)}
+                    </p>
+                    <p className="text-xs text-gray-400 line-through">
+                      {formatPrice(book.originalPrice)}
+                    </p>
+                    <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                      -{book.discount}%
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-400 line-through">
-                    {formatPrice(book.originalPrice)}
-                  </p>
                 </div>
 
                 {/* Rating */}
@@ -624,7 +633,10 @@ export default function PromotionsPage() {
               placeholder="Nhập email của bạn"
               className="flex-1 px-4 py-3 rounded-lg text-gray-900"
             />
-            <Button variant="secondary" className="bg-white text-blue-600 hover:bg-gray-100">
+            <Button
+              variant="secondary"
+              className="bg-white text-blue-600 hover:bg-gray-100"
+            >
               Đăng ký
             </Button>
           </div>

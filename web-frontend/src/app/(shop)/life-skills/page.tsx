@@ -23,7 +23,13 @@ type Book = {
   isBestseller: boolean;
 };
 
-type SubCategoryFilter = "all" | "habits" | "productivity" | "communication" | "mindset" | "leadership";
+type SubCategoryFilter =
+  | "all"
+  | "habits"
+  | "productivity"
+  | "communication"
+  | "mindset"
+  | "leadership";
 
 // ============================================================================
 // MOCK DATA
@@ -236,7 +242,8 @@ const MOCK_LIFESKILLS_BOOKS: Book[] = [
 // MAIN COMPONENT
 // ============================================================================
 export default function LifeSkillsPage() {
-  const [selectedCategory, setSelectedCategory] = useState<SubCategoryFilter>("all");
+  const [selectedCategory, setSelectedCategory] =
+    useState<SubCategoryFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
@@ -244,7 +251,9 @@ export default function LifeSkillsPage() {
   const filteredBooks =
     selectedCategory === "all"
       ? MOCK_LIFESKILLS_BOOKS
-      : MOCK_LIFESKILLS_BOOKS.filter((book) => book.subCategory === selectedCategory);
+      : MOCK_LIFESKILLS_BOOKS.filter(
+          (book) => book.subCategory === selectedCategory
+        );
 
   // Pagination
   const totalPages = Math.ceil(filteredBooks.length / itemsPerPage);
@@ -274,7 +283,9 @@ export default function LifeSkillsPage() {
   // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   return (
@@ -310,7 +321,8 @@ export default function LifeSkillsPage() {
             <h1 className="text-4xl font-bold text-gray-900">Kỹ Năng Sống</h1>
           </div>
           <p className="text-gray-600 text-lg">
-            Khám phá {filteredBooks.length} cuốn sách giúp bạn phát triển bản thân
+            Khám phá {filteredBooks.length} cuốn sách giúp bạn phát triển bản
+            thân
           </p>
         </div>
 
@@ -348,7 +360,10 @@ export default function LifeSkillsPage() {
                 : "bg-white text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Thói quen ({MOCK_LIFESKILLS_BOOKS.filter((b) => b.subCategory === "habits").length})
+            Thói quen (
+            {MOCK_LIFESKILLS_BOOKS.filter((b) => b.subCategory === "habits")
+              .length}
+            )
           </button>
           <button
             onClick={() => handleCategoryChange("productivity")}
@@ -358,7 +373,13 @@ export default function LifeSkillsPage() {
                 : "bg-white text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Năng suất ({MOCK_LIFESKILLS_BOOKS.filter((b) => b.subCategory === "productivity").length})
+            Năng suất (
+            {
+              MOCK_LIFESKILLS_BOOKS.filter(
+                (b) => b.subCategory === "productivity"
+              ).length
+            }
+            )
           </button>
           <button
             onClick={() => handleCategoryChange("communication")}
@@ -368,7 +389,13 @@ export default function LifeSkillsPage() {
                 : "bg-white text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Giao tiếp ({MOCK_LIFESKILLS_BOOKS.filter((b) => b.subCategory === "communication").length})
+            Giao tiếp (
+            {
+              MOCK_LIFESKILLS_BOOKS.filter(
+                (b) => b.subCategory === "communication"
+              ).length
+            }
+            )
           </button>
           <button
             onClick={() => handleCategoryChange("mindset")}
@@ -378,7 +405,10 @@ export default function LifeSkillsPage() {
                 : "bg-white text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Tư duy ({MOCK_LIFESKILLS_BOOKS.filter((b) => b.subCategory === "mindset").length})
+            Tư duy (
+            {MOCK_LIFESKILLS_BOOKS.filter((b) => b.subCategory === "mindset")
+              .length}
+            )
           </button>
           <button
             onClick={() => handleCategoryChange("leadership")}
@@ -388,14 +418,23 @@ export default function LifeSkillsPage() {
                 : "bg-white text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Lãnh đạo ({MOCK_LIFESKILLS_BOOKS.filter((b) => b.subCategory === "leadership").length})
+            Lãnh đạo (
+            {
+              MOCK_LIFESKILLS_BOOKS.filter(
+                (b) => b.subCategory === "leadership"
+              ).length
+            }
+            )
           </button>
         </div>
 
         {/* Result Count */}
         <div className="mb-6 text-sm text-gray-600">
           Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
-          <span className="font-semibold">{Math.min(endIndex, filteredBooks.length)}</span> trong tổng số{" "}
+          <span className="font-semibold">
+            {Math.min(endIndex, filteredBooks.length)}
+          </span>{" "}
+          trong tổng số{" "}
           <span className="font-semibold">{filteredBooks.length}</span> sách
         </div>
 
@@ -405,7 +444,7 @@ export default function LifeSkillsPage() {
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-3 shadow-sm hover:shadow-lg transition-all duration-300"
+              className="group bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-blue-100 hover:shadow-lg transition-all duration-300"
             >
               {/* Book Cover */}
               <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
@@ -434,25 +473,29 @@ export default function LifeSkillsPage() {
                   </Badge>
                 )}
 
-                {/* Discount Badge */}
-                {book.originalPrice && (
-                  <Badge variant="danger" className="absolute top-2 left-2 text-xs">
-                    -{calculateDiscount(book.originalPrice, book.price)}%
-                  </Badge>
-                )}
+                {/* BỎ badge giảm giá trên ảnh */}
               </div>
 
               {/* Book Info */}
-              <h3 className="font-semibold text-sm line-clamp-2 mb-1">{book.title}</h3>
+              <h3 className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
+                {book.title}
+              </h3>
               <p className="text-xs text-gray-600 mb-2">{book.author}</p>
 
-              {/* Price */}
-              <div className="flex items-center gap-2 mb-2">
-                <p className="text-blue-600 font-bold text-sm">{formatPrice(book.price)}</p>
+              {/* Price (đưa giảm giá xuống đây) */}
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <p className="text-blue-600 font-bold text-sm">
+                  {formatPrice(book.price)}
+                </p>
                 {book.originalPrice && (
-                  <p className="text-xs text-gray-400 line-through">
-                    {formatPrice(book.originalPrice)}
-                  </p>
+                  <>
+                    <p className="text-xs text-gray-400 line-through">
+                      {formatPrice(book.originalPrice)}
+                    </p>
+                    <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                      -{calculateDiscount(book.originalPrice, book.price)}%
+                    </span>
+                  </>
                 )}
               </div>
 
@@ -469,7 +512,9 @@ export default function LifeSkillsPage() {
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
                 <span className="text-xs text-gray-600">{book.rating}</span>
-                <span className="text-xs text-gray-400">({book.reviewCount})</span>
+                <span className="text-xs text-gray-400">
+                  ({book.reviewCount})
+                </span>
               </div>
             </Link>
           ))}

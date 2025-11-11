@@ -36,7 +36,7 @@ const MOCK_BOOKS: Book[] = [
     reviewCount: 3456,
     stock: 120,
     featuredReason: "Bán chạy nhất 2024",
-    highlight: "🏆 Best Seller",
+    highlight: "Best Seller",
   },
   {
     id: "2",
@@ -50,7 +50,7 @@ const MOCK_BOOKS: Book[] = [
     reviewCount: 4521,
     stock: 95,
     featuredReason: "Được đề xuất bởi Bill Gates",
-    highlight: "⭐ Đề xuất",
+    highlight: "Đề xuất",
   },
   {
     id: "3",
@@ -64,7 +64,7 @@ const MOCK_BOOKS: Book[] = [
     reviewCount: 5678,
     stock: 230,
     featuredReason: "Kinh điển về giao tiếp",
-    highlight: "📚 Kinh điển",
+    highlight: "Kinh điển",
   },
   {
     id: "4",
@@ -78,7 +78,7 @@ const MOCK_BOOKS: Book[] = [
     reviewCount: 2134,
     stock: 45,
     featuredReason: "Must-read cho lập trình viên",
-    highlight: "💻 Essential",
+    highlight: "Essential",
   },
   {
     id: "5",
@@ -92,7 +92,7 @@ const MOCK_BOOKS: Book[] = [
     reviewCount: 4321,
     stock: 180,
     featuredReason: "Văn học hiện đại xuất sắc",
-    highlight: "❤️ Được yêu thích",
+    highlight: "Được yêu thích",
   },
   {
     id: "6",
@@ -105,8 +105,8 @@ const MOCK_BOOKS: Book[] = [
     rating: 4.8,
     reviewCount: 2876,
     stock: 60,
-    featuredReason: "Nobel Prize Winner",
-    highlight: "🏅 Giải Nobel",
+    featuredReason: "Tác giả đạt Nobel",
+    highlight: "Giải Nobel",
   },
   {
     id: "7",
@@ -120,7 +120,7 @@ const MOCK_BOOKS: Book[] = [
     reviewCount: 3987,
     stock: 75,
     featuredReason: "Tầm nhìn về tương lai nhân loại",
-    highlight: "🔮 Tương lai",
+    highlight: "Tương lai",
   },
   {
     id: "8",
@@ -134,7 +134,7 @@ const MOCK_BOOKS: Book[] = [
     reviewCount: 1987,
     stock: 110,
     featuredReason: "Bí quyết thành công từ Carnegie",
-    highlight: "💰 Thành công",
+    highlight: "Thành công",
   },
   {
     id: "9",
@@ -148,7 +148,7 @@ const MOCK_BOOKS: Book[] = [
     reviewCount: 2456,
     stock: 85,
     featuredReason: "Làm việc hiệu quả trong thời đại số",
-    highlight: "⚡ Hiệu suất",
+    highlight: "Hiệu suất",
   },
   {
     id: "10",
@@ -161,8 +161,8 @@ const MOCK_BOOKS: Book[] = [
     rating: 4.9,
     reviewCount: 1856,
     stock: 35,
-    featuredReason: "Bible của Software Design",
-    highlight: "📖 Bible",
+    featuredReason: "“Kinh thánh” về kiến trúc phần mềm",
+    highlight: "Bible",
   },
   {
     id: "11",
@@ -175,8 +175,8 @@ const MOCK_BOOKS: Book[] = [
     rating: 4.8,
     reviewCount: 3234,
     stock: 90,
-    featuredReason: "Best Finance Book 2024",
-    highlight: "💎 Tài chính",
+    featuredReason: "Sách tài chính nổi bật",
+    highlight: "Tài chính",
   },
   {
     id: "12",
@@ -189,8 +189,8 @@ const MOCK_BOOKS: Book[] = [
     rating: 4.9,
     reviewCount: 4567,
     stock: 150,
-    featuredReason: "Hiện tượng văn học Việt Nam",
-    highlight: "🇻🇳 Việt Nam",
+    featuredReason: "Văn học Việt Nam được yêu thích",
+    highlight: "Việt Nam",
   },
   {
     id: "13",
@@ -204,7 +204,7 @@ const MOCK_BOOKS: Book[] = [
     reviewCount: 1876,
     stock: 55,
     featuredReason: "Khởi nghiệp thời đại mới",
-    highlight: "🚀 Startup",
+    highlight: "Startup",
   },
   {
     id: "14",
@@ -217,8 +217,8 @@ const MOCK_BOOKS: Book[] = [
     rating: 4.6,
     reviewCount: 2345,
     stock: 45,
-    featuredReason: "Hiểu rõ hệ thống tài chính toàn cầu",
-    highlight: "🌍 Toàn cầu",
+    featuredReason: "Hiểu hệ thống tài chính toàn cầu",
+    highlight: "Toàn cầu",
   },
   {
     id: "15",
@@ -231,8 +231,8 @@ const MOCK_BOOKS: Book[] = [
     rating: 4.7,
     reviewCount: 3456,
     stock: 95,
-    featuredReason: "Top Leadership Book",
-    highlight: "👔 Lãnh đạo",
+    featuredReason: "Sách lãnh đạo kinh điển",
+    highlight: "Lãnh đạo",
   },
   {
     id: "16",
@@ -245,7 +245,7 @@ const MOCK_BOOKS: Book[] = [
     reviewCount: 2987,
     stock: 180,
     featuredReason: "Sống an nhiên trong thời hiện đại",
-    highlight: "🧘 An nhiên",
+    highlight: "An nhiên",
   },
   {
     id: "17",
@@ -258,8 +258,8 @@ const MOCK_BOOKS: Book[] = [
     rating: 4.6,
     reviewCount: 1654,
     stock: 70,
-    featuredReason: "Nghệ thuật networking đỉnh cao",
-    highlight: "🤝 Networking",
+    featuredReason: "Nghệ thuật networking",
+    highlight: "Networking",
   },
   {
     id: "18",
@@ -272,8 +272,8 @@ const MOCK_BOOKS: Book[] = [
     rating: 4.8,
     reviewCount: 3876,
     stock: 120,
-    featuredReason: "Câu chuyện cảm động nhất thế kỷ",
-    highlight: "😢 Cảm động",
+    featuredReason: "Câu chuyện cảm động",
+    highlight: "Cảm động",
   },
 ];
 
@@ -304,25 +304,26 @@ export default function FeaturedBooksPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedBooks = sortedBooks.slice(startIndex, endIndex);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("vi-VN", {
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
     }).format(price);
-  };
 
-  const calculateDiscount = (original: number, current: number) => {
-    return Math.round(((original - current) / original) * 100);
-  };
+  const calculateDiscount = (original: number, current: number) =>
+    Math.round(((original - current) / original) * 100);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
       <div className="container mx-auto px-4 py-8">
+        {/* breadcrumb */}
         <nav className="mb-6 text-sm text-gray-600">
           <Link href="/" className="hover:text-orange-600">
             Trang chủ
@@ -330,7 +331,8 @@ export default function FeaturedBooksPage() {
           / <span className="font-medium text-gray-800">Sách nổi bật</span>
         </nav>
 
-        <div className="mb-8">
+        {/* Hero */}
+        <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
             <div className="relative">
               <svg
@@ -356,7 +358,7 @@ export default function FeaturedBooksPage() {
                   fill="currentColor"
                   className="text-white"
                 >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  <path d="m19.84 4.61-.01-.01a5.5 5.5 0 0 0-7.78 0L12 4.67l-.05-.05a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l6.77-6.77 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z" />
                 </svg>
               </div>
             </div>
@@ -365,50 +367,20 @@ export default function FeaturedBooksPage() {
             </h1>
           </div>
           <p className="text-gray-700 text-lg font-medium">
-            ⭐ {MOCK_BOOKS.length} đầu sách được chọn lọc kỹ càng - Những tác phẩm xuất sắc nhất
+            {MOCK_BOOKS.length} đầu sách được chọn lọc kỹ càng - Những tác phẩm xuất sắc nhất
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-orange-500 to-red-500 text-white rounded-xl p-6 shadow-lg">
-            <div className="text-4xl mb-2">🏆</div>
-            <div className="text-3xl font-bold mb-1">{MOCK_BOOKS.length}</div>
-            <div className="text-sm opacity-90">Sách nổi bật</div>
-          </div>
-          <div className="bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-xl p-6 shadow-lg">
-            <div className="text-4xl mb-2">⭐</div>
-            <div className="text-3xl font-bold mb-1">
-              {(
-                MOCK_BOOKS.reduce((acc, book) => acc + book.rating, 0) / MOCK_BOOKS.length
-              ).toFixed(1)}
-            </div>
-            <div className="text-sm opacity-90">Đánh giá trung bình</div>
-          </div>
-          <div className="bg-gradient-to-br from-green-500 to-emerald-500 text-white rounded-xl p-6 shadow-lg">
-            <div className="text-4xl mb-2">💬</div>
-            <div className="text-3xl font-bold mb-1">
-              {(
-                MOCK_BOOKS.reduce((acc, book) => acc + book.reviewCount, 0) / 1000
-              ).toFixed(0)}
-              K+
-            </div>
-            <div className="text-sm opacity-90">Lượt đánh giá</div>
-          </div>
-          <div className="bg-gradient-to-br from-blue-500 to-purple-500 text-white rounded-xl p-6 shadow-lg">
-            <div className="text-4xl mb-2">🎯</div>
-            <div className="text-3xl font-bold mb-1">
-              {MOCK_BOOKS.filter((b) => b.originalPrice).length}
-            </div>
-            <div className="text-sm opacity-90">Đang giảm giá</div>
-          </div>
-        </div>
-
+        {/* Controls */}
         <div className="bg-white rounded-xl shadow-md p-6 mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="text-sm text-gray-600">
               Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
-              <span className="font-semibold">{Math.min(endIndex, sortedBooks.length)}</span> trong
-              tổng số <span className="font-semibold">{sortedBooks.length}</span> sách
+              <span className="font-semibold">
+                {Math.min(endIndex, sortedBooks.length)}
+              </span>{" "}
+              trong tổng số{" "}
+              <span className="font-semibold">{sortedBooks.length}</span> sách
             </div>
 
             <div>
@@ -419,24 +391,25 @@ export default function FeaturedBooksPage() {
                 id="sort-featured"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-0 bg-white"
               >
-                <option value="featured">🏆 Nổi bật nhất</option>
-                <option value="rating">⭐ Đánh giá cao</option>
-                <option value="price-asc">💰 Giá tăng dần</option>
-                <option value="price-desc">💎 Giá giảm dần</option>
-                <option value="name">📚 Tên A-Z</option>
+                <option value="featured">Nổi bật nhất</option>
+                <option value="rating">Đánh giá cao</option>
+                <option value="price-asc">Giá tăng dần</option>
+                <option value="price-desc">Giá giảm dần</option>
+                <option value="name">Tên A-Z</option>
               </select>
             </div>
           </div>
         </div>
 
+        {/* Grid books */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
           {paginatedBooks.map((book, index) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-3 shadow-md hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-orange-300"
+              className="group bg-white rounded-xl p-3 shadow-md hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-orange-200"
             >
               <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
                 <Image
@@ -453,38 +426,59 @@ export default function FeaturedBooksPage() {
                   </div>
                 )}
 
-                <div className="absolute top-2 right-2">
-                  <Badge className="text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg">
-                    {book.highlight}
-                  </Badge>
-                </div>
-
-                {book.originalPrice && (
-                  <Badge variant="danger" className="absolute bottom-2 left-2 text-xs font-bold">
-                    -{calculateDiscount(book.originalPrice, book.price)}%
-                  </Badge>
+                {book.highlight && (
+                  <div className="absolute top-2 right-2">
+                    <Badge className="text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg">
+                      {book.highlight}
+                    </Badge>
+                  </div>
                 )}
+
+                {/* BỎ badge giảm giá trên ảnh */}
               </div>
 
               <div className="space-y-1">
                 <h3 className="font-bold text-sm line-clamp-2 min-h-[40px] group-hover:text-orange-600 transition-colors">
                   {book.title}
                 </h3>
-                <p className="text-xs text-gray-600 font-medium">{book.author}</p>
-                <p className="text-xs text-orange-600 font-semibold">{book.category}</p>
+                <p className="text-xs text-gray-600 font-medium">
+                  {book.author}
+                </p>
+                <p className="text-xs text-orange-600 font-semibold">
+                  {book.category}
+                </p>
 
                 <div className="bg-orange-50 rounded-md p-2 mt-2">
-                  <p className="text-xs text-orange-800 font-medium line-clamp-2">
-                    💡 {book.featuredReason}
+                  <p className="text-xs text-orange-800 font-medium line-clamp-2 flex items-start gap-1">
+                    <svg
+                      className="w-3.5 h-3.5 mt-[2px]"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m3 11 2-2 4 4 8-8 2 2-10 10Z" />
+                    </svg>
+                    {book.featuredReason}
                   </p>
                 </div>
 
+                {/* Giá + giá gốc + % giảm (màu đỏ) */}
                 <div className="flex items-center gap-2 pt-1">
-                  <p className="text-orange-600 font-bold text-sm">{formatPrice(book.price)}</p>
+                  <p className="text-orange-600 font-bold text-sm">
+                    {formatPrice(book.price)}
+                  </p>
                   {book.originalPrice && (
-                    <p className="text-xs text-gray-400 line-through">
-                      {formatPrice(book.originalPrice)}
-                    </p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-xs text-gray-400 line-through">
+                        {formatPrice(book.originalPrice)}
+                      </p>
+                      <span className="text-xs font-bold text-red-500">
+                        -{calculateDiscount(book.originalPrice, book.price)}%
+                      </span>
+                    </div>
                   )}
                 </div>
 
@@ -499,14 +493,19 @@ export default function FeaturedBooksPage() {
                   >
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
-                  <span className="text-xs font-bold text-gray-700">{book.rating}</span>
-                  <span className="text-xs text-gray-500">({book.reviewCount})</span>
+                  <span className="text-xs font-bold text-gray-700">
+                    {book.rating}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    ({book.reviewCount})
+                  </span>
                 </div>
               </div>
             </Link>
           ))}
         </div>
 
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-center mb-8">
             <Pagination
@@ -516,35 +515,6 @@ export default function FeaturedBooksPage() {
             />
           </div>
         )}
-
-        <div className="mt-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-8 text-white">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold mb-3">🎉 Tại Sao Chọn Sách Nổi Bật?</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">✨</div>
-                <h3 className="font-bold text-lg mb-2">Được Chọn Lọc</h3>
-                <p className="text-sm opacity-90">
-                  Mỗi cuốn sách được đánh giá kỹ lưỡng bởi chuyên gia
-                </p>
-              </div>
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">🏆</div>
-                <h3 className="font-bold text-lg mb-2">Chất Lượng Đảm Bảo</h3>
-                <p className="text-sm opacity-90">
-                  Đánh giá cao từ hàng nghìn độc giả trên toàn quốc
-                </p>
-              </div>
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">💎</div>
-                <h3 className="font-bold text-lg mb-2">Giá Trị Lâu Dài</h3>
-                <p className="text-sm opacity-90">
-                  Kiến thức và trải nghiệm đọc đáng giá cho cuộc sống
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </main>
   );
