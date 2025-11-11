@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Button, Badge, Input, Breadcrumb } from '@/components/ui';
+import { Button, Badge, Input, Breadcrumb} from '@/components/ui';
 
 /**
  * Hàm tính toán giá thuê sách dựa trên giá mua và số ngày thuê
@@ -21,10 +21,10 @@ import { Button, Badge, Input, Breadcrumb } from '@/components/ui';
  * - 180 ngày: 34% giá sách (tiết kiệm 50% - PHỔ BIẾN)
  * - 365 ngày: 51% giá sách (tiết kiệm 60%)
  */
-function calculateRentalPrice(bookPrice: number, days: number): number {
+export function calculateRentalPrice(bookPrice: number, days: number): number {
   // Gói 3 ngày cố định
   if (days === 3) return 10000;
-
+  
   // Các gói khác tính theo % giá sách
   const rentalRates: { [key: number]: number } = {
     7: 0.03,    // 3%
@@ -35,10 +35,10 @@ function calculateRentalPrice(bookPrice: number, days: number): number {
     180: 0.34,  // 34%
     365: 0.51,  // 51%
   };
-
+  
   const rate = rentalRates[days];
   if (!rate) return 0;
-
+  
   return Math.round(bookPrice * rate);
 }
 
@@ -47,7 +47,7 @@ function calculateRentalPrice(bookPrice: number, days: number): number {
  * @param bookPrice - Giá mua sách
  * @returns Mảng các gói thuê với giá tính toán
  */
-function generateRentalPlans(bookPrice: number) {
+export function generateRentalPlans(bookPrice: number) {
   return [
     { id: 1, duration: "3 ngày", days: 3, price: calculateRentalPrice(bookPrice, 3), discount: 0, popular: false },
     { id: 2, duration: "7 ngày", days: 7, price: calculateRentalPrice(bookPrice, 7), discount: 0, popular: false },
@@ -185,14 +185,14 @@ export default function RentPage() {
   const filteredBooks = rentableBooks.filter(book => {
     const matchCategory = selectedCategory === "Tất cả" || book.category === selectedCategory;
     const matchSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchQuery.toLowerCase());
+                       book.author.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchSearch;
   });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Breadcrumb */}
-      <Breadcrumb items={[{ label: "Thuê eBook" }]} />
+        <Breadcrumb items={[{ label: "Thuê eBook" }]} />
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white py-20 overflow-hidden">
         {/* Decorative Elements */}
@@ -212,7 +212,7 @@ export default function RentPage() {
             <p className="text-xl text-blue-100 mb-8 leading-relaxed">
               Truy cập hàng ngàn đầu sách điện tử với chi phí thấp. Đọc không giới hạn, học không ngừng nghỉ!
             </p>
-
+            
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-12">
               <div>
@@ -330,10 +330,11 @@ export default function RentPage() {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-6 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all ${selectedCategory === category
+                  className={`px-6 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all ${
+                    selectedCategory === category
                       ? 'bg-blue-600 text-white shadow-lg'
                       : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-600 hover:text-blue-600'
-                    }`}
+                  }`}
                 >
                   {category}
                 </button>

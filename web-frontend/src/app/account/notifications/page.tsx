@@ -1,5 +1,3 @@
-"use client";
-
 import { useNotifications } from '@/components/ui/Notification';
 import { Badge } from '@/components/ui';
 

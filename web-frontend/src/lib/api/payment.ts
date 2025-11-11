@@ -58,7 +58,7 @@ export const paymentApi = {
    * Check payment status (placeholder - requires real backend)
    * TODO: Implement real payment verification when backend is ready
    */
-  checkStatus: async (): Promise<CheckPaymentStatusResponse> => {
+  checkStatus: async (orderId: string): Promise<CheckPaymentStatusResponse> => {
     // TODO: Replace with real API call when backend is ready
     // For now, return pending status
     return {

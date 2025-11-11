@@ -12,6 +12,8 @@ import {
   getInputClassName,
   authButtonStyles,
   authLinkStyles,
+  authContainerStyles,
+  authAlertStyles,
 } from "@/constants/authStyles";
 
 type ForgotPasswordFormData = {
@@ -24,7 +26,7 @@ export default function ForgotPasswordPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordFormData>();
-
+  
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [emailSent, setEmailSent] = useState(false);
@@ -32,24 +34,23 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (data: ForgotPasswordFormData) => {
     setErrorMessage("");
     setSuccessMessage("");
-
+    
     try {
       const response = await authApi.forgotPassword(data.email);
-
+      
       if (response.success) {
         setEmailSent(true);
         setSuccessMessage(
-          response.message ||
+          response.message || 
           `Chúng tôi đã gửi email hướng dẫn đặt lại mật khẩu đến ${data.email}. Vui lòng kiểm tra hộp thư của bạn.`
         );
       } else {
         setErrorMessage(response.message || "Có lỗi xảy ra. Vui lòng thử lại.");
       }
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
+    } catch (err: any) {
       setErrorMessage(
-        error?.response?.data?.message ||
-        error?.message ||
+        err?.response?.data?.message || 
+        err?.message || 
         "Có lỗi xảy ra. Vui lòng thử lại."
       );
     }
@@ -157,7 +158,7 @@ export default function ForgotPasswordPage() {
       )}
 
       {/* Divider */}
-      <div className="relative my-6">
+      <div className={authContainerStyles.divider}>
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-200"></div>
         </div>
