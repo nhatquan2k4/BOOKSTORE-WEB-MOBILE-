@@ -33,6 +33,7 @@ using BookStore.Infrastructure.Repository.Identity;
 using BookStore.Infrastructure.Repository.Identity.Auth;
 using BookStore.Infrastructure.Repository.Identity.RolePermisson;
 using BookStore.Infrastructure.Repository.Identity.User;
+using BookStore.Infrastructure.Data.Seeders;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -294,6 +295,18 @@ using (var scope = app.Services.CreateScope())
             {
                 logger.LogInformation("Database is up to date. No pending migrations.");
             }
+        }
+
+        // Seed Roles and Permissions
+        try
+        {
+            logger.LogInformation("Starting to seed roles and permissions...");
+            await RolePermissionSeeder.SeedAsync(context);
+            logger.LogInformation("Roles and permissions seeded successfully");
+        }
+        catch (Exception seedEx)
+        {
+            logger.LogError(seedEx, "An error occurred while seeding roles and permissions");
         }
     }
     catch (Exception ex)
