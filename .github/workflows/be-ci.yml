@@ -15,7 +15,7 @@ on:
       - "BE/**"
 
 jobs:
-  build-and-test:                 # Job 1
+  build-and-test:
     runs-on: ubuntu-latest
 
     defaults:
@@ -40,10 +40,10 @@ jobs:
       - name: Test
         run: dotnet test Core/BookStore.Tests/BookStore.Tests.csproj --configuration Release --verbosity normal
 
-  build-and-push-image:          # Job 2 (cùng cấp với build-and-test)
+  build-and-push-image:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'   # chỉ chạy khi push lên main
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -60,10 +60,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Docker Image
-        env:
-          IMAGE_NAME: ghcr.io/${{ toLower(github.repository) }}-be
-          TAG: prod
         run: |
+          # GITHUB_REPOSITORY = owner/RepoName (vd: nhatquan2k4/BOOKSTORE-WEB-MOBILE)
+          REPO_LOWER=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME=ghcr.io/$REPO_LOWER-be
+          TAG=prod
+
           echo "Building image: $IMAGE_NAME:$TAG"
+
           docker build -f BE/Dockerfile -t $IMAGE_NAME:$TAG ./BE
           docker push $IMAGE_NAME:$TAG
