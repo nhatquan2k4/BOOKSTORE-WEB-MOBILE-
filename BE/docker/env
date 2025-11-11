@@ -1,0 +1,10 @@
+# SQL Server
+MSSQL_SA_PASSWORD=YourStrong@Password123
+SA_PW=YourStrong@Password123
+APP_DB=BookStore
+APP_USER=bookstoreUser
+APP_PW=BookstorePass1@
+
+# MinIO
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin123
