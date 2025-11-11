@@ -11,12 +11,12 @@ export function useCart(userId?: string) {
 
   const loadCart = useCallback(async () => {
     if (!userId) return;
-
+    
     try {
       setIsLoading(true);
       setError(null);
-      const cart = await cartApi.getByUserId(userId);
-      setCart(cart);
+      const response = await cartApi.getByUserId(userId);
+      setCart(response.data);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Không thể tải giỏ hàng';
       setError(errorMessage);
@@ -30,9 +30,9 @@ export function useCart(userId?: string) {
     try {
       setIsLoading(true);
       setError(null);
-      const cart = await cartApi.addItem(request);
-      setCart(cart);
-      return cart;
+      const response = await cartApi.addItem(request);
+      setCart(response.data);
+      return response.data;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Không thể thêm sản phẩm';
       setError(errorMessage);
@@ -46,9 +46,9 @@ export function useCart(userId?: string) {
     try {
       setIsLoading(true);
       setError(null);
-      const cart = await cartApi.updateItem(itemId, request);
-      setCart(cart);
-      return cart;
+      const response = await cartApi.updateItem(itemId, request);
+      setCart(response.data);
+      return response.data;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Không thể cập nhật sản phẩm';
       setError(errorMessage);
@@ -63,12 +63,13 @@ export function useCart(userId?: string) {
       setIsLoading(true);
       setError(null);
       await cartApi.removeItem(itemId);
-
+      
       // Remove item from local state
       if (cart) {
         setCart({
           ...cart,
           items: cart.items.filter((item) => item.id !== itemId),
+          totalItems: cart.totalItems - 1,
         });
       }
     } catch (err: unknown) {
@@ -82,7 +83,7 @@ export function useCart(userId?: string) {
 
   const clearCart = async () => {
     if (!userId) return;
-
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -98,11 +99,11 @@ export function useCart(userId?: string) {
   };
 
   const getItemCount = () => {
-    return cart?.items.length || 0;
+    return cart?.totalItems || 0;
   };
 
   const getTotalPrice = () => {
-    return cart?.totalAmount || 0;
+    return cart?.totalPrice || 0;
   };
 
   return {

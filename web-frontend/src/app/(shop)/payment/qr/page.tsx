@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button, Badge, Breadcrumb } from '@/components/ui';
 import { paymentApi } from '@/lib/api';
 
-function QRPaymentContent() {
+export default function QRPaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
+  
   const [timeLeft, setTimeLeft] = useState(900); // 15 phút = 900 giây
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'checking' | 'success' | 'failed' | 'expired'>('pending');
   const [showCopiedAlert, setShowCopiedAlert] = useState(false);
@@ -20,7 +20,7 @@ function QRPaymentContent() {
   const [accountNumber, setAccountNumber] = useState<string>('');
   const [accountName, setAccountName] = useState<string>('');
   const [transferContent, setTransferContent] = useState<string>('');
-
+  
   // Lấy thông tin từ URL - HỖ TRỢ CẢ RENT VÀ BUY
   const type = searchParams.get('type'); // 'rent' hoặc 'buy'
   const bookId = searchParams.get('bookId');
@@ -29,10 +29,10 @@ function QRPaymentContent() {
   const planId = searchParams.get('planId');
   const duration = searchParams.get('duration');
   const price = searchParams.get('price');
-
+  
   // Generate orderId CHỈ 1 LẦN - không thay đổi khi re-render
   const [orderId] = useState(() => searchParams.get('orderId') || `ORD${Date.now()}`);
-
+  
   // Tương thích ngược với code cũ
   const amount = searchParams.get('amount') || price || '450000';
   const bankCode = searchParams.get('bank') || 'MOMO'; // MOMO, VNPAY, ZALOPAY
@@ -123,22 +123,22 @@ function QRPaymentContent() {
         setIsLoadingQR(true);
         setPaymentStatus('pending');
         setTimeLeft(900);
-
+        
         console.log('Creating QR with params:', { amount, orderId, type, bookId, planId });
-
+        
         const data = await paymentApi.createQR({
           amount: Number.parseInt(amount),
           orderId,
           type: (type || 'buy') as 'rent' | 'buy',
           bookId: bookId || undefined,
           planId: planId || undefined,
-          description: type === 'rent'
-            ? `THUE ${bookId} ${planId}`
+          description: type === 'rent' 
+            ? `THUE ${bookId} ${planId}` 
             : `MUA ${orderId}`,
         });
-
+        
         console.log('QR Response:', data);
-
+        
         if (data.success) {
           setQrCodeUrl(data.qrCodeUrl);
           setSepayOrderId(data.orderId);
@@ -205,12 +205,12 @@ function QRPaymentContent() {
     }
 
     setPaymentStatus('checking');
-
+    
     // TODO: Tích hợp API kiểm tra thanh toán thật từ backend
     // Hiện tại chỉ chuyển trang sau 1 giây
     setTimeout(() => {
       setPaymentStatus('success');
-      const successUrl = type === 'rent'
+      const successUrl = type === 'rent' 
         ? `/payment/success?type=rent&bookId=${bookId}&orderId=${orderId}`
         : `/payment/success?type=buy&orderId=${orderId}`;
       router.push(successUrl);
@@ -287,7 +287,7 @@ function QRPaymentContent() {
         { label: 'Thanh toán QR' }
       ];
     }
-
+    
     // Từ giỏ hàng hoặc mua ngay từ chi tiết sách
     if (bookId && bookTitle) {
       // Mua ngay từ trang chi tiết sách
@@ -297,7 +297,7 @@ function QRPaymentContent() {
         { label: 'Thanh toán QR' }
       ];
     }
-
+    
     // Từ giỏ hàng
     return [
       { label: 'Giỏ hàng', href: '/cart' },
@@ -323,11 +323,11 @@ function QRPaymentContent() {
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
                 Thanh toán thành công!
               </h1>
-
+              
               <p className="text-gray-600 mb-2">
                 Mã đơn hàng: <span className="font-semibold text-gray-900">{orderId}</span>
               </p>
-
+              
               <p className="text-gray-600 mb-8">
                 Số tiền: <span className="font-semibold text-red-600 text-xl">{formatCurrency(amount)}₫</span>
               </p>
@@ -335,14 +335,14 @@ function QRPaymentContent() {
               {type === 'rent' ? (
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <p className="text-blue-800 text-sm flex items-start gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><path d="M5.8 11.3 2 22l10.7-3.79" /><path d="M4 3h.01" /><path d="M22 8h.01" /><path d="M15 2h.01" /><path d="M22 20h.01" /><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" /><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17" /><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7" /><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></svg>
                     <span>Bạn đã thuê eBook thành công! Sách đã được thêm vào thư viện của bạn.</span>
                   </p>
                 </div>
               ) : (
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <p className="text-blue-800 text-sm flex items-start gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><path d="m14 18 4 4 4-4" /><path d="M16 2v4" /><path d="M18 14v8" /><path d="M21 11.354V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7.343" /><path d="M3 10h18" /><path d="M8 2v4" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><path d="m14 18 4 4 4-4"/><path d="M16 2v4"/><path d="M18 14v8"/><path d="M21 11.354V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7.343"/><path d="M3 10h18"/><path d="M8 2v4"/></svg>
                     <span>Đơn hàng của bạn đang được xử lý. Chúng tôi sẽ giao hàng trong 2-3 ngày làm việc.</span>
                   </p>
                 </div>
@@ -385,7 +385,7 @@ function QRPaymentContent() {
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
                 Mã QR đã hết hạn
               </h1>
-
+              
               <p className="text-gray-600 mb-8">
                 Phiên thanh toán đã hết thời gian. Vui lòng thử lại.
               </p>
@@ -471,7 +471,7 @@ function QRPaymentContent() {
                   <h3 className="font-semibold text-gray-900 text-center mb-4">
                     Hướng dẫn thanh toán
                   </h3>
-
+                  
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-blue-50 rounded-lg p-4 text-center">
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -519,7 +519,7 @@ function QRPaymentContent() {
                       </p>
                     </div>
                   )}
-
+                  
                   {!qrCodeUrl && !isLoadingQR && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                       <p className="text-sm text-yellow-700 text-center">
@@ -593,7 +593,7 @@ function QRPaymentContent() {
                   <h4 className="text-sm font-semibold text-gray-900 mb-2">
                     Thông tin chuyển khoản
                   </h4>
-
+                  
                   {/* Account Number */}
                   <div>
                     <div className="text-xs text-gray-500 block mb-1">Số tài khoản</div>
@@ -651,7 +651,7 @@ function QRPaymentContent() {
                       </button>
                     </div>
                     <p className="text-xs text-amber-700 mt-1">
-                      Nhập chính xác để tự động xác nhận
+                       Nhập chính xác để tự động xác nhận
                     </p>
                   </div>
                 </div>
@@ -714,17 +714,5 @@ function QRPaymentContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function QRPaymentPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    }>
-      <QRPaymentContent />
-    </Suspense>
   );
 }

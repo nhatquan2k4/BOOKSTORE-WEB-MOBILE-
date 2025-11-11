@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -24,12 +24,12 @@ type ResetPasswordFormData = {
   confirmPassword: string;
 };
 
-function ResetPasswordContent() {
+export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const email = searchParams.get("email");
-
+  
   const {
     register,
     handleSubmit,
@@ -40,11 +40,11 @@ function ResetPasswordContent() {
       email: email || "",
     },
   });
-
+  
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
-
+  
   const password = watch("password");
 
   useEffect(() => {
@@ -71,7 +71,7 @@ function ResetPasswordContent() {
       setErrorMessage("Token không hợp lệ.");
       return;
     }
-
+    
     try {
       const response = await authApi.resetPassword({
         email: data.email,
@@ -92,11 +92,10 @@ function ResetPasswordContent() {
           response.message || "Không thể đặt lại mật khẩu. Vui lòng thử lại."
         );
       }
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
+    } catch (err: any) {
       setErrorMessage(
-        error?.response?.data?.message ||
-        error?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
         "Có lỗi xảy ra. Vui lòng thử lại."
       );
     }
@@ -176,7 +175,7 @@ function ResetPasswordContent() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {/* Email Field (hidden but required by API) */}
         <input type="hidden" {...register("email")} />
-
+        
         <FormField>
           <PasswordInput
             id="password"
@@ -200,7 +199,7 @@ function ResetPasswordContent() {
                 {[1, 2, 3, 4].map((level) => (
                   <div
                     key={level}
-                    className={'h-1 flex-1 rounded-full transition-all ' +
+                    className={'h-1 flex-1 rounded-full transition-all ' + 
                       (password.length >= level * 2
                         ? password.length < 6 ? passwordStrengthColors.weak : password.length < 8 ? passwordStrengthColors.medium : passwordStrengthColors.strong
                         : passwordStrengthColors.empty)}
@@ -252,17 +251,5 @@ function ResetPasswordContent() {
         </Link>
       </div>
     </AuthCard>
-  );
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    }>
-      <ResetPasswordContent />
-    </Suspense>
   );
 }

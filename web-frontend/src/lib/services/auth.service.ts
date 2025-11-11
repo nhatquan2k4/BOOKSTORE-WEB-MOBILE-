@@ -7,14 +7,6 @@ import type {
   UserInfo,
 } from "@/types/user";
 
-// JWT Payload type
-interface JWTPayload {
-  exp?: number;
-  iat?: number;
-  sub?: string;
-  [key: string]: unknown;
-}
-
 const STORAGE_KEYS = {
   ACCESS_TOKEN: "accessToken",
   REFRESH_TOKEN: "refreshToken",
@@ -82,11 +74,10 @@ class AuthService {
     try {
       // Try to call logout API to invalidate server-side tokens
       await authApi.logout();
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Ignore 401 errors during logout (token might be expired)
       // The important thing is to clear local session
-      const axiosError = error as { response?: { status?: number } };
-      if (axiosError?.response?.status !== 401) {
+      if (error?.response?.status !== 401) {
         console.error("Logout API error:", error);
       }
     } finally {
@@ -140,28 +131,21 @@ class AuthService {
   isAuthenticated(): boolean {
     const token = this.getAccessToken();
     const user = this.getCurrentUser();
-
+    
     if (!token || !user) return false;
 
     // Check if token is expired
     try {
       const tokenData = this.decodeToken(token);
-
-      if (!tokenData) {
-        console.log('Invalid token, clearing session...');
-        this.clearSession();
-        return false;
-      }
-
       const currentTime = Date.now() / 1000; // Convert to seconds
-
+      
       // Token expired
       if (tokenData.exp && tokenData.exp < currentTime) {
         console.log('Token expired, clearing session...');
         this.clearSession();
         return false;
       }
-
+      
       return true;
     } catch (error) {
       console.error('Error checking token validity:', error);
@@ -172,7 +156,7 @@ class AuthService {
   /**
    * Decode JWT token
    */
-  private decodeToken(token: string): JWTPayload | null {
+  private decodeToken(token: string): any {
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -182,10 +166,10 @@ class AuthService {
           .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
           .join('')
       );
-      return JSON.parse(jsonPayload) as JWTPayload;
+      return JSON.parse(jsonPayload);
     } catch (error) {
       console.error('Error decoding token:', error);
-      return null;
+      throw error;
     }
   }
 

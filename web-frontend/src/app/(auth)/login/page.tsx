@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -23,7 +23,7 @@ type LoginFormData = LoginRequest & {
   remember?: boolean;
 };
 
-function LoginContent() {
+export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
@@ -32,7 +32,7 @@ function LoginContent() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>();
-
+  
   const [errorMessage, setErrorMessage] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
 
@@ -58,14 +58,14 @@ function LoginContent() {
       // Clear the parameter from URL
       router.replace('/login');
     }
-
+    
     // Check URL parameter for expired session
     if (searchParams.get('expired') === 'true') {
       setInfoMessage("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
       // Clear the parameter from URL
       router.replace('/login');
     }
-
+    
     // Check sessionStorage for logout reason
     const logoutReason = sessionStorage.getItem('logoutReason');
     if (logoutReason === 'expired') {
@@ -86,10 +86,9 @@ function LoginContent() {
 
       // Redirect to home - header will update automatically via context
       router.push("/");
-    } catch (err: unknown) {
-      const error = err as { message?: string };
+    } catch (err: any) {
       setErrorMessage(
-        error?.message ||
+        err?.message || 
         "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin."
       );
     }
@@ -217,17 +216,5 @@ function LoginContent() {
         </Link>
       </div>
     </AuthCard>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    }>
-      <LoginContent />
-    </Suspense>
   );
 }

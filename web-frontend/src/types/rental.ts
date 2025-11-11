@@ -1,11 +1,9 @@
 // Rental Types (eBook)
-import type { Book } from './book';
-
 export interface Rental {
   id: string;
   userId: string;
   bookId: string;
-  book?: Book;
+  book?: any; // Book type
   startDate: string;
   endDate: string;
   status: RentalStatus;
