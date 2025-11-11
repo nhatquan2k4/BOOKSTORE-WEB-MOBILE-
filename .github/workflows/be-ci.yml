@@ -58,10 +58,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
+      
       - name: Build and Push Docker Image
         run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository }}-be
-          TAG=prod
+          IMAGE_NAME=ghcr.io/${{ github.repository,, }}-be
+          TAG=v1
           docker build -f BE/Dockerfile -t $IMAGE_NAME:$TAG ./BE
           docker push $IMAGE_NAME:$TAG
