@@ -42,8 +42,8 @@ services:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin123
     ports:
-      - "9000:9000" # MinIO API
-      - "9001:9001" # MinIO Console (Web UI)
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/data
     networks:
@@ -67,23 +67,23 @@ services:
       - bookstore-network
     entrypoint: >
       /bin/sh -c " mc alias set myminio http://minio:9000 minioadmin minioadmin123; mc mb myminio/bookstore-images --ignore-existing; mc mb myminio/ebook-files --ignore-existing; mc mb myminio/user-avatars --ignore-existing; mc anonymous set download myminio/bookstore-images; mc anonymous set download myminio/ebook-files; mc anonymous set download myminio/user-avatars; echo 'MinIO buckets created successfully!'; "
-  # BookStore API
+
+  # BookStore API (chạy từ image build sẵn trên GHCR)
   bookstore-api:
-    build:
-      context: ..
-      dockerfile: Dockerfile
+    image: ghcr.io/nhatquan2k4/bookstore-web-mobile--be:prod
+    pull_policy: always # Luôn pull image mới nhất từ registry
     container_name: bookstore-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__UsersDb=Server=sqlserver;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True
+      - ConnectionStrings__UsersDb=Server=sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True
       - MinIO__Endpoint=minio:9000
       - MinIO__AccessKey=minioadmin
       - MinIO__SecretKey=minioadmin123
       - MinIO__BucketName=bookstore-images
       - MinIO__UseSSL=false
     ports:
-      - "5276:8080" # Host:Container (8080 là port API trong container)
+      - "5276:8080"
     depends_on:
       sqlserver:
         condition: service_healthy

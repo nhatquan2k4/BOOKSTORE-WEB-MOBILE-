@@ -28,7 +28,7 @@ namespace BookStore.Application.Services.Checkout
         private const decimal DEFAULT_SHIPPING_FEE = 30000m; // 30,000 VND
 
         // Warehouse mặc định - Phahasa Warehouse (Hà Nội)
-        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("ee0dc3a5-83d3-4a51-8047-dd9311dd2038");
+        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("f0983a45-b10c-494c-a05e-2dfe0b1d768d");
 
         public CheckoutService(
             ICartService cartService,
@@ -111,12 +111,8 @@ namespace BookStore.Application.Services.Checkout
                     continue;
                 }
 
-                if (!book.IsAvailable)
-                {
-                    errorMessages.Add($"Sách '{item.BookTitle}' hiện không còn hàng");
-                    itemValidations.Add(item.ToItemValidationDto(false, 0, "Sách không còn hàng"));
-                    continue;
-                }
+                // NOTE: Đã bỏ check book.IsAvailable vì đã có stock validation
+                // Chỉ dựa vào stock thực tế để validate
 
                 // Kiểm tra số lượng tồn kho từ StockItem
                 var availableStock = await GetAvailableStockAsync(item.BookId);
