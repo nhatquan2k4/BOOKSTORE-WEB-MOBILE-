@@ -67,31 +67,30 @@ services:
       - bookstore-network
     entrypoint: >
       /bin/sh -c " mc alias set myminio http://minio:9000 minioadmin minioadmin123; mc mb myminio/bookstore-images --ignore-existing; mc mb myminio/ebook-files --ignore-existing; mc mb myminio/user-avatars --ignore-existing; mc anonymous set download myminio/bookstore-images; mc anonymous set download myminio/ebook-files; mc anonymous set download myminio/user-avatars; echo 'MinIO buckets created successfully!'; "
-
   # BookStore API (chạy từ image build sẵn trên GHCR)
-  bookstore-api:
-    image: ghcr.io/nhatquan2k4/bookstore-web-mobile--be:prod
-    pull_policy: always # Luôn pull image mới nhất từ registry
-    container_name: bookstore-api
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__UsersDb=Server=sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True
-      - MinIO__Endpoint=minio:9000
-      - MinIO__AccessKey=minioadmin
-      - MinIO__SecretKey=minioadmin123
-      - MinIO__BucketName=bookstore-images
-      - MinIO__UseSSL=false
-    ports:
-      - "5276:8080"
-    depends_on:
-      sqlserver:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    networks:
-      - bookstore-network
-    restart: on-failure
+  # bookstore-api:
+  #   image: ghcr.io/nhatquan2k4/bookstore-web-mobile--be:prod
+  #   pull_policy: always # Luôn pull image mới nhất từ registry
+  #   container_name: bookstore-api
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ASPNETCORE_URLS=http://+:8080
+  #     - ConnectionStrings__UsersDb=Server=sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True
+  #     - MinIO__Endpoint=minio:9000
+  #     - MinIO__AccessKey=minioadmin
+  #     - MinIO__SecretKey=minioadmin123
+  #     - MinIO__BucketName=bookstore-images
+  #     - MinIO__UseSSL=false
+  #   ports:
+  #     - "5276:8080"
+  #   depends_on:
+  #     sqlserver:
+  #       condition: service_healthy
+  #     minio:
+  #       condition: service_healthy
+  #   networks:
+  #     - bookstore-network
+  #   restart: on-failure
 
 volumes:
   sqlserver_data:
