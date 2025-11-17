@@ -8,10 +8,9 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
-            steps {
-                checkout scm
-            }
+            steps { checkout scm }
         }
 
         stage('Docker Build') {
@@ -23,13 +22,14 @@ pipeline {
             }
         }
 
-        stage('Docker Tag & Push') {
+        stage('Push to Registry') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'docker-registry',
                     usernameVariable: 'REG_USER',
                     passwordVariable: 'REG_PASS'
                 )]) {
+
                     sh '''
                         docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
 
@@ -44,25 +44,32 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                    # Dừng container backend cũ nếu tồn tại
+                    # Tạo network (nếu chưa có)
+                    docker network create bookstore-network || true
+
+                    # Chạy docker-compose cho SQL + MinIO
+                    docker compose -f docker-compose.infrastructure.yml up -d
+
+                    # Dừng container backend cũ
                     docker stop bookstore-backend || true
                     docker rm   bookstore-backend || true
 
-                    # Pull image backend mới nhất từ registry
+                    # Pull backend version mới
                     docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
 
-                    # Chạy container backend mới
-                    docker run -d --name bookstore-backend \
-                      --network bookstore-network \
-                      -e ASPNETCORE_ENVIRONMENT=Development \
-                      -e ConnectionStrings__DefaultConnection="Server=bookstore-sqlserver,1433;Database=BookStore;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True" \
-                      -e MinIO__Endpoint="minio:9000" \
-                      -e MinIO__AccessKey="minioadmin" \
-                      -e MinIO__SecretKey="minioadmin123" \
-                      -e MinIO__BucketName="bookstore-images" \
-                      -e MinIO__UseSSL="false" \
-                      -p 3030:8080 \
-                      ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                    # Chạy backend
+                    docker run -d \
+                        --name bookstore-backend \
+                        --network bookstore-network \
+                        -e ASPNETCORE_ENVIRONMENT=Development \
+                        -e ConnectionStrings__DefaultConnection="Server=bookstore-sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;TrustServerCertificate=True" \
+                        -e MinIO__Endpoint=minio:9000 \
+                        -e MinIO__AccessKey=minioadmin \
+                        -e MinIO__SecretKey=minioadmin123 \
+                        -e MinIO__BucketName=bookstore-images \
+                        -e MinIO__UseSSL=false \
+                        -p 3030:8080 \
+                        ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
                 '''
             }
         }
