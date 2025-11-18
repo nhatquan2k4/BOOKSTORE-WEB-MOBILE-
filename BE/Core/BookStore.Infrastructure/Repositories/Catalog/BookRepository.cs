@@ -17,6 +17,25 @@ namespace BookStore.Infrastructure.Repository.Catalog
                 .FirstOrDefaultAsync(b => b.ISBN.Value == isbn);
         }
 
+        public override async Task<IEnumerable<Book>> GetAllAsync()
+        {
+            return await _dbSet
+                .Include(b => b.Publisher)
+                .Include(b => b.BookFormat)
+                .Include(b => b.BookAuthors)
+                    .ThenInclude(ba => ba.Author)
+                .Include(b => b.BookCategories)
+                    .ThenInclude(bc => bc.Category)
+                .Include(b => b.Prices)
+                .Include(b => b.Reviews)
+                .Include(b => b.StockItem)
+                .Include(b => b.Images)
+                .Include(b => b.Files)
+                .Include(b => b.Metadata)
+                .ToListAsync();
+        }
+
+
         public async Task<Book?> GetDetailByIdAsync(Guid id)
         {
             return await _dbSet
