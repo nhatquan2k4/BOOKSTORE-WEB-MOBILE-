@@ -1,4 +1,5 @@
 using BookStore.Application.Dtos.Inventory;
+using BookStore.Shared.Utilities;
 
 namespace BookStore.Application.IService.Inventory
 {
@@ -33,5 +34,14 @@ namespace BookStore.Application.IService.Inventory
         Task<bool> ReserveStockAsync(ReserveStockDto dto);
         Task<bool> ReleaseReservedStockAsync(Guid bookId, Guid warehouseId, int quantity);
         Task<bool> ConfirmSaleAsync(Guid bookId, Guid warehouseId, int quantity);
+    }
+
+    public interface IInventoryTransactionService
+    {
+        Task<PagedResult<InventoryTransactionDto>> GetFilteredTransactionsAsync(InventoryTransactionFilterDto filter);
+        Task<IEnumerable<InventoryTransactionDto>> GetByWarehouseIdAsync(Guid warehouseId, int pageNumber = 1, int pageSize = 20);
+        Task<IEnumerable<InventoryTransactionDto>> GetByBookIdAsync(Guid bookId, int pageNumber = 1, int pageSize = 20);
+        Task<IEnumerable<InventoryTransactionDto>> GetByWarehouseAndBookAsync(Guid warehouseId, Guid bookId, int pageNumber = 1, int pageSize = 20);
+        Task<InventoryTransactionDto> CreateTransactionAsync(CreateInventoryTransactionDto dto);
     }
 }

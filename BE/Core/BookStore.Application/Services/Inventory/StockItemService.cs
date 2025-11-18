@@ -2,6 +2,7 @@ using BookStore.Application.Dtos.Inventory;
 using BookStore.Application.IService.Inventory;
 using BookStore.Application.Mappers.Inventory;
 using BookStore.Domain.Entities.Pricing_Inventory;
+using BookStore.Domain.Entities.Pricing___Inventory;
 using BookStore.Domain.IRepository.Inventory;
 using BookStore.Shared.Exceptions;
 using BookStore.Shared.Utilities;
@@ -11,10 +12,14 @@ namespace BookStore.Application.Services.Inventory
     public class StockItemService : IStockItemService
     {
         private readonly IStockItemRepository _stockItemRepository;
+        private readonly IInventoryTransactionRepository _transactionRepository;
 
-        public StockItemService(IStockItemRepository stockItemRepository)
+        public StockItemService(
+            IStockItemRepository stockItemRepository,
+            IInventoryTransactionRepository transactionRepository)
         {
             _stockItemRepository = stockItemRepository;
+            _transactionRepository = transactionRepository;
         }
 
         public async Task<StockItemDto?> GetStockByBookAndWarehouseAsync(Guid bookId, Guid warehouseId)
@@ -56,6 +61,17 @@ namespace BookStore.Application.Services.Inventory
                 // Update existing
                 existing.Increase(dto.InitialQuantity);
                 await _stockItemRepository.SaveChangesAsync();
+
+                // Log transaction
+                await _transactionRepository.CreateTransactionAsync(
+                    dto.WarehouseId,
+                    dto.BookId,
+                    InventoryTransactionType.Inbound,
+                    dto.InitialQuantity,
+                    null,
+                    "Initial stock added to existing item"
+                );
+
                 return existing.ToDto();
             }
 
@@ -65,6 +81,16 @@ namespace BookStore.Application.Services.Inventory
 
             await _stockItemRepository.AddAsync(stockItem);
             await _stockItemRepository.SaveChangesAsync();
+
+            // Log transaction
+            await _transactionRepository.CreateTransactionAsync(
+                dto.WarehouseId,
+                dto.BookId,
+                InventoryTransactionType.Inbound,
+                dto.InitialQuantity,
+                null,
+                "Initial stock creation"
+            );
 
             var created = await _stockItemRepository.GetStockByBookAndWarehouseAsync(dto.BookId, dto.WarehouseId);
             return created!.ToDto();
@@ -79,17 +105,27 @@ namespace BookStore.Application.Services.Inventory
             Guard.Against(!validOperations.Contains(dto.Operation.ToLower()),
                 "Invalid operation. Use: increase, decrease, or set");
 
+            int quantityChange = 0;
+            InventoryTransactionType transactionType;
+
             switch (dto.Operation.ToLower())
             {
                 case "increase":
                     stock!.Increase(dto.Quantity);
+                    quantityChange = dto.Quantity;
+                    transactionType = InventoryTransactionType.Inbound;
                     break;
                 case "decrease":
                     stock!.Decrease(dto.Quantity);
+                    quantityChange = -dto.Quantity;
+                    transactionType = InventoryTransactionType.Outbound;
                     break;
                 case "set":
                     // Set to specific value
                     var currentQty = stock!.QuantityOnHand;
+                    quantityChange = dto.Quantity - currentQty;
+                    transactionType = InventoryTransactionType.Adjustment;
+                    
                     if (dto.Quantity > currentQty)
                     {
                         stock.Increase(dto.Quantity - currentQty);
@@ -99,9 +135,24 @@ namespace BookStore.Application.Services.Inventory
                         stock.Decrease(currentQty - dto.Quantity);
                     }
                     break;
+                default:
+                    throw new UserFriendlyException("Invalid operation");
             }
 
             await _stockItemRepository.SaveChangesAsync();
+
+            // Log transaction
+            if (quantityChange != 0)
+            {
+                await _transactionRepository.CreateTransactionAsync(
+                    warehouseId,
+                    bookId,
+                    transactionType,
+                    quantityChange,
+                    null,
+                    dto.Reason ?? $"Manual {dto.Operation} operation"
+                );
+            }
 
             var updated = await _stockItemRepository.GetStockByBookAndWarehouseAsync(bookId, warehouseId);
             return updated!.ToDto();
@@ -110,18 +161,51 @@ namespace BookStore.Application.Services.Inventory
         public async Task<bool> ReserveStockAsync(ReserveStockDto dto)
         {
             await _stockItemRepository.ReserveStockAsync(dto.BookId, dto.WarehouseId, dto.Quantity);
+
+            // Log transaction for reservation (no actual quantity change yet)
+            await _transactionRepository.CreateTransactionAsync(
+                dto.WarehouseId,
+                dto.BookId,
+                InventoryTransactionType.Outbound,
+                0, // Reserved, not removed yet
+                dto.OrderId,
+                $"Reserved {dto.Quantity} items for order"
+            );
+
             return true;
         }
 
         public async Task<bool> ReleaseReservedStockAsync(Guid bookId, Guid warehouseId, int quantity)
         {
             await _stockItemRepository.ReleaseReservedStockAsync(bookId, warehouseId, quantity);
+
+            // Log transaction for released reservation
+            await _transactionRepository.CreateTransactionAsync(
+                warehouseId,
+                bookId,
+                InventoryTransactionType.Adjustment,
+                0, // Just releasing reservation
+                null,
+                $"Released {quantity} reserved items"
+            );
+
             return true;
         }
 
         public async Task<bool> ConfirmSaleAsync(Guid bookId, Guid warehouseId, int quantity)
         {
             await _stockItemRepository.ConfirmSaleAsync(bookId, warehouseId, quantity);
+
+            // Log transaction for confirmed sale
+            await _transactionRepository.CreateTransactionAsync(
+                warehouseId,
+                bookId,
+                InventoryTransactionType.Outbound,
+                -quantity, // Actual outbound
+                null,
+                $"Confirmed sale of {quantity} items"
+            );
+
             return true;
         }
     }

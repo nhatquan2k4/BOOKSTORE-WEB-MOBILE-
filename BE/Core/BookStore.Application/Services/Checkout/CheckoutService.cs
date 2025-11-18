@@ -28,7 +28,7 @@ namespace BookStore.Application.Services.Checkout
         private const decimal DEFAULT_SHIPPING_FEE = 30000m; // 30,000 VND
 
         // Warehouse mặc định - Phahasa Warehouse (Hà Nội)
-        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("f0983a45-b10c-494c-a05e-2dfe0b1d768d");
+        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("e9b2f775-d4c2-4526-8f18-f6b7e23d0214");
 
         public CheckoutService(
             ICartService cartService,
@@ -189,14 +189,15 @@ namespace BookStore.Application.Services.Checkout
             );
         }
 
-        public async Task<bool> ValidateCouponAsync(string couponCode, Guid userId)
+        public Task<bool> ValidateCouponAsync(string couponCode, Guid userId)
         {
             // TODO: Implement actual coupon validation logic
             // For now, return true for demo purposes
-            _logger.LogInformation($"Validating coupon {couponCode} for user {userId}");
+            _logger.LogInformation($"Đang kiểm tra mã giảm giá {couponCode} cho người dùng {userId}");
 
             // Giả sử mã "FREESHIP" và "DISCOUNT10" là hợp lệ
-            return couponCode.ToUpper() == "FREESHIP" || couponCode.ToUpper() == "DISCOUNT10";
+            var isValid = couponCode.ToUpper() == "FREESHIP" || couponCode.ToUpper() == "DISCOUNT10";
+            return Task.FromResult(isValid);
         }
 
         #endregion
