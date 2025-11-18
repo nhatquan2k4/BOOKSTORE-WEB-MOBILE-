@@ -58,10 +58,10 @@ pipeline {
                     # Chạy backend
                     docker run -d \
                         --name bookstore-backend \
-                        --network bookstore-network \
+                        --network docker_bookstore-network \
                         -e ASPNETCORE_ENVIRONMENT=Development \
-                        -e ConnectionStrings__DefaultConnection="Server=bookstore-sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;TrustServerCertificate=True" \
-                        -e MinIO__Endpoint=minio:9000 \
+                        -e ConnectionStrings__UsersDb="Server=bookstore-sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True" \
+                        -e MinIO__Endpoint=bookstore-minio:9000 \
                         -e MinIO__AccessKey=minioadmin \
                         -e MinIO__SecretKey=minioadmin123 \
                         -e MinIO__BucketName=bookstore-images \
