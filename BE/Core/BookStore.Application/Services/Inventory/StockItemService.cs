@@ -106,17 +106,21 @@ namespace BookStore.Application.Services.Inventory
                 "Invalid operation. Use: increase, decrease, or set");
 
             int quantityChange = 0;
-            InventoryTransactionType transactionType;
+            InventoryTransactionType transactionType = InventoryTransactionType.Adjustment;
 
             switch (dto.Operation.ToLower())
             {
                 case "increase":
                     // Use AdjustQuantity for manual increases (doesn't affect SoldQuantity)
                     stock!.AdjustQuantity(dto.Quantity);
+                    quantityChange = dto.Quantity;
+                    transactionType = InventoryTransactionType.Adjustment;
                     break;
                 case "decrease":
                     // Use AdjustQuantity for manual decreases (doesn't affect SoldQuantity)
                     stock!.AdjustQuantity(-dto.Quantity);
+                    quantityChange = -dto.Quantity;
+                    transactionType = InventoryTransactionType.Adjustment;
                     break;
                 case "set":
                     // Set to specific value using AdjustQuantity
@@ -125,6 +129,8 @@ namespace BookStore.Application.Services.Inventory
                     if (difference != 0)
                     {
                         stock.AdjustQuantity(difference);
+                        quantityChange = difference;
+                        transactionType = InventoryTransactionType.Adjustment;
                     }
                     break;
                 default:
