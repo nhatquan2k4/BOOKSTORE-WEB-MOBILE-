@@ -5,8 +5,6 @@ pipeline {
         REGISTRY_URL = "localhost:5000"
         IMAGE_NAME   = "bookstore-backend"
         IMAGE_TAG    = "LASTEST"
-        // Base URL exposed by nginx for media, e.g., http://yourdomain/media
-        PUBLIC_MEDIA_BASE = "http://localhost/media"
     }
 
     stages {
@@ -68,7 +66,6 @@ pipeline {
                         -e MinIO__SecretKey=minioadmin123 \
                         -e MinIO__BucketName=bookstore-images \
                         -e MinIO__UseSSL=false \
-                        -e MinIO__PublicBaseUrl="${PUBLIC_MEDIA_BASE}" \
                         -p 3030:8080 \
                         ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
                 '''

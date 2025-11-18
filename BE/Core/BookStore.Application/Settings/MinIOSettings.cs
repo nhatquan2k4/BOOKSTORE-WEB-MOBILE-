@@ -7,6 +7,4 @@ public class MinIOSettings
     public string SecretKey { get; set; } = string.Empty;
     public string BucketName { get; set; } = string.Empty;
     public bool UseSSL { get; set; } = false;
-    // Optional: Public base URL served via reverse proxy (e.g., http://yourhost/media)
-    public string? PublicBaseUrl { get; set; }
 }
