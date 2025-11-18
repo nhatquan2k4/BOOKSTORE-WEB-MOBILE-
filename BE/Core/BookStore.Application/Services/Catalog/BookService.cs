@@ -433,36 +433,50 @@ namespace BookStore.Application.Services.Catalog
 
         private BookDto MapToBookDto(Book book)
         {
-            return new BookDto
+            try
             {
-                Id = book.Id,
-                Title = book.Title,
-                ISBN = book.ISBN.Value,
-                PublicationYear = book.PublicationYear,
-                Language = book.Language,
-                PageCount = book.PageCount,
-                IsAvailable = book.IsAvailable,
-                PublisherId = book.PublisherId,
-                PublisherName = book.Publisher?.Name ?? string.Empty,
-                BookFormatId = book.BookFormatId,
-                BookFormatName = book.BookFormat?.FormatType,
-                AuthorNames = book.BookAuthors?.Select(ba => ba.Author.Name).ToList() ?? new List<string>(),
-                CategoryNames = book.BookCategories?.Select(bc => bc.Category.Name).ToList() ?? new List<string>(),
-                CurrentPrice = book.Prices?.Where(p => p.IsCurrent &&
-                                                       p.EffectiveFrom <= DateTime.UtcNow &&
-                                                       (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
-                                         .OrderByDescending(p => p.EffectiveFrom)
-                                         .FirstOrDefault()?.Amount,
-                DiscountPrice = book.Prices?.Where(p => p.IsCurrent &&
-                                                        p.EffectiveFrom <= DateTime.UtcNow &&
-                                                        (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow) &&
-                                                        p.DiscountId.HasValue)
-                                           .OrderByDescending(p => p.EffectiveFrom)
-                                           .FirstOrDefault()?.Amount,
-                StockQuantity = book.StockItem?.QuantityOnHand,
-                AverageRating = book.Reviews?.Any() == true ? book.Reviews.Average(r => r.Rating) : null,
-                TotalReviews = book.Reviews?.Count ?? 0
-            };
+                return new BookDto
+                {
+                    Id = book.Id,
+                    Title = book.Title ?? string.Empty,
+                    ISBN = book.ISBN?.Value ?? string.Empty,
+                    PublicationYear = book.PublicationYear,
+                    Language = book.Language ?? string.Empty,
+                    PageCount = book.PageCount,
+                    IsAvailable = book.IsAvailable,
+                    PublisherId = book.PublisherId,
+                    PublisherName = book.Publisher?.Name ?? string.Empty,
+                    BookFormatId = book.BookFormatId,
+                    BookFormatName = book.BookFormat?.FormatType ?? string.Empty,
+                    AuthorNames = book.BookAuthors?.Where(ba => ba?.Author != null)
+                                                   .Select(ba => ba.Author.Name)
+                                                   .ToList() ?? new List<string>(),
+                    CategoryNames = book.BookCategories?.Where(bc => bc?.Category != null)
+                                                        .Select(bc => bc.Category.Name)
+                                                        .ToList() ?? new List<string>(),
+                    CurrentPrice = book.Prices?.Where(p => p.IsCurrent &&
+                                                           p.EffectiveFrom <= DateTime.UtcNow &&
+                                                           (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
+                                             .OrderByDescending(p => p.EffectiveFrom)
+                                             .FirstOrDefault()?.Amount,
+                    DiscountPrice = book.Prices?.Where(p => p.IsCurrent &&
+                                                            p.EffectiveFrom <= DateTime.UtcNow &&
+                                                            (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow) &&
+                                                            p.DiscountId.HasValue)
+                                               .OrderByDescending(p => p.EffectiveFrom)
+                                               .FirstOrDefault()?.Amount,
+                    StockQuantity = book.StockItem?.QuantityOnHand ?? 0,
+                    // TODO: Calculate from Reviews when schema is fixed
+                    AverageRating = null,
+                    TotalReviews = 0
+                };
+            }
+            catch (Exception ex)
+            {
+                // Log the error and return a safe default
+                Console.WriteLine($"Error mapping book {book?.Id}: {ex.Message}");
+                throw new Exception($"Error mapping book to DTO: {ex.Message}", ex);
+            }
         }
 
         private BookDetailDto MapToBookDetailDto(Book book)

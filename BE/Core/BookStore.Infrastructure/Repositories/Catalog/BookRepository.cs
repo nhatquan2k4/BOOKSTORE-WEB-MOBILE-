@@ -12,6 +12,7 @@ namespace BookStore.Infrastructure.Repository.Catalog
         }
 
         // Override GetAllAsync to include related entities
+        // NOTE: Removed Reviews Include to avoid schema issues
         public override async Task<IEnumerable<Book>> GetAllAsync()
         {
             return await _dbSet
@@ -23,7 +24,6 @@ namespace BookStore.Infrastructure.Repository.Catalog
                     .ThenInclude(bc => bc.Category)
                 .Include(b => b.Prices)
                 .Include(b => b.StockItem)
-                .Include(b => b.Reviews)
                 .ToListAsync();
         }
 

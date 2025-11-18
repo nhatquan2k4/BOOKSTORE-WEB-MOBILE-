@@ -110,6 +110,10 @@ namespace BookStore.Infrastructure.Data
             //  Global Query Filter cho soft delete
             modelBuilder.Entity<Review>().HasQueryFilter(e => !e.IsDeleted);
 
+            // Ignore computed properties (AverageRating, TotalReviews) that don't exist in database yet
+            modelBuilder.Entity<Book>().Ignore(b => b.AverageRating);
+            modelBuilder.Entity<Book>().Ignore(b => b.TotalReviews);
+
             base.OnModelCreating(modelBuilder);
         }
     }
