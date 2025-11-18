@@ -47,6 +47,12 @@ public class MinIOService : IMinIOService
         await _minioClient.PutObjectAsync(putObjectArgs);
 
         // Return public URL
+        if (!string.IsNullOrWhiteSpace(_settings.PublicBaseUrl))
+        {
+            var baseUrl = _settings.PublicBaseUrl!.TrimEnd('/');
+            return $"{baseUrl}/{bucket}/{fileName}";
+        }
+
         var protocol = _settings.UseSSL ? "https" : "http";
         return $"{protocol}://{_settings.Endpoint}/{bucket}/{fileName}";
     }
