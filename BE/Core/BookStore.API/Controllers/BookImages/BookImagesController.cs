@@ -2,6 +2,8 @@ using BookStore.Application.Dtos.Catalog.BookImages;
 using BookStore.Application.IService.Catalog;
 using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using BookStore.Domain.Entities.Identity;
 
 namespace BookStore.API.Controllers.BookImages
 {
@@ -22,6 +24,7 @@ namespace BookStore.API.Controllers.BookImages
         /// <returns>Danh sách BookImageDto</returns>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<BookImageDto>>> GetImagesByBookId(Guid bookId)
         {
             var images = await _bookImageService.GetImagesByBookIdAsync(bookId);
