@@ -236,6 +236,9 @@ namespace BookStore.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("AverageRating")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<Guid?>("BookFormatId")
                         .HasColumnType("uniqueidentifier");
 
@@ -272,6 +275,9 @@ namespace BookStore.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
+
+                    b.Property<int>("TotalReviews")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -478,16 +484,82 @@ namespace BookStore.Infrastructure.Migrations
                     b.ToTable("Publishers", "catalog");
                 });
 
+            modelBuilder.Entity("BookStore.Domain.Entities.Common.Comment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BookId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasComment("Comment content");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsEdited")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<Guid?>("ParentCommentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ReviewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("ParentCommentId");
+
+                    b.HasIndex("ReviewId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Comments", "common", t =>
+                        {
+                            t.HasCheckConstraint("CK_Comment_BookOrReview", "(BookId IS NOT NULL AND ReviewId IS NULL) OR (BookId IS NULL AND ReviewId IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("BookStore.Domain.Entities.Common.Review", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ApprovedBy")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("BookId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Comment")
+                    b.Property<string>("Content")
                         .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)")
@@ -508,9 +580,31 @@ namespace BookStore.Infrastructure.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+                    b.Property<bool>("IsVerifiedPurchase")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasComment("Đã xác thực mua hàng");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("Rating")
                         .HasColumnType("int")
                         .HasComment("Điểm đánh giá từ 1–5 sao");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Pending")
+                        .HasComment("Trạng thái: Pending, Approved, Rejected");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasComment("Tiêu đề đánh giá");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -519,6 +613,12 @@ namespace BookStore.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("Status");
 
                     b.HasIndex("UserId");
 
@@ -660,6 +760,26 @@ namespace BookStore.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Roles", "identity");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            Description = "Administrator with full system access",
+                            Name = "Admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            Description = "Regular user with basic access",
+                            Name = "User"
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            Description = "Delivery personnel with shipping access",
+                            Name = "Shipper"
+                        });
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Identity.RolePermission", b =>
@@ -1866,6 +1986,63 @@ namespace BookStore.Infrastructure.Migrations
                     b.ToTable("Notifications", "system");
                 });
 
+            modelBuilder.Entity("BookStore.Domain.Entities.System.NotificationTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasComment("Email body template (HTML format)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasComment("Unique code identifying the template");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasComment("Template description for admin reference");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasComment("Whether this template is active");
+
+                    b.Property<string>("Placeholders")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasComment("Available placeholders (JSON format)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasComment("Email subject template");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive");
+
+                    b.ToTable("NotificationTemplates", "system");
+                });
+
             modelBuilder.Entity("BookStore.Domain.Entities.Analytics___Activity.BookView", b =>
                 {
                     b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
@@ -2045,6 +2222,38 @@ namespace BookStore.Infrastructure.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("BookStore.Domain.Entities.Common.Comment", b =>
+                {
+                    b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("BookStore.Domain.Entities.Common.Comment", "ParentComment")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("BookStore.Domain.Entities.Common.Review", "Review")
+                        .WithMany()
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("ParentComment");
+
+                    b.Navigation("Review");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("BookStore.Domain.Entities.Common.Review", b =>
                 {
                     b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
@@ -2053,6 +2262,11 @@ namespace BookStore.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("BookStore.Domain.Entities.Ordering.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
                         .WithMany("Reviews")
                         .HasForeignKey("UserId")
@@ -2060,6 +2274,8 @@ namespace BookStore.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Book");
+
+                    b.Navigation("Order");
 
                     b.Navigation("User");
                 });
@@ -2490,6 +2706,11 @@ namespace BookStore.Infrastructure.Migrations
             modelBuilder.Entity("BookStore.Domain.Entities.Catalog.Publisher", b =>
                 {
                     b.Navigation("Books");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Common.Comment", b =>
+                {
+                    b.Navigation("Replies");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Identity.Permission", b =>

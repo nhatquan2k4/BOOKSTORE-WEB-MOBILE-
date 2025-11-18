@@ -25,6 +25,28 @@ namespace BookStore.Infrastructure.Data.Configurations.Identity
 
             builder.Property(r => r.Description)
                 .HasMaxLength(255);
+
+            // Seed default roles
+            builder.HasData(
+                new Role
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Admin",
+                    Description = "Administrator with full system access"
+                },
+                new Role
+                {
+                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                    Name = "User",
+                    Description = "Regular user with basic access"
+                },
+                new Role
+                {
+                    Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                    Name = "Shipper",
+                    Description = "Delivery personnel with shipping access"
+                }
+            );
         }
     }
 }

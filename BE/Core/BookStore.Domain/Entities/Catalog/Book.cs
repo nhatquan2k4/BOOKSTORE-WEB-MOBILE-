@@ -46,7 +46,12 @@ namespace BookStore.Domain.Entities.Catalog
         //  1-n: Quan hệ sang module Pricing & Review
         public virtual ICollection<Price> Prices { get; set; } = new List<Price>();
         public virtual StockItem? StockItem { get; set; }            
-        public virtual ICollection<Review> Reviews { get; set; } = new List<Review>(); 
+        public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+        
+        // Review statistics
+        public decimal AverageRating { get; set; } = 0;         // Điểm trung bình
+        public int TotalReviews { get; set; } = 0;              // Tổng số đánh giá
+        
         public virtual ICollection<BookRental> Rentals { get; set; } = new List<BookRental>(); 
     }
 }

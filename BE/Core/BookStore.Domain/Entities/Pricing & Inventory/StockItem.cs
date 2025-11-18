@@ -52,6 +52,29 @@ namespace BookStore.Domain.Entities.Pricing_Inventory
             UpdateTimestamp();
         }
 
+
+        public void AdjustQuantity(int amount)
+        {
+            if (amount == 0)
+                throw new ArgumentException("Amount must not be zero.", nameof(amount));
+
+            if (amount > 0)
+            {
+                // Increase
+                QuantityOnHand += amount;
+            }
+            else
+            {
+                // Decrease - check available stock
+                int available = QuantityOnHand - ReservedQuantity;
+                if (available < Math.Abs(amount))
+                    throw new InvalidOperationException($"Not enough available stock. Available: {available}, Requested: {Math.Abs(amount)}");
+
+                QuantityOnHand += amount; // amount is negative
+            }
+            UpdateTimestamp();
+        }
+
         public void Reserve(int amount)
         {
             if (amount <= 0)

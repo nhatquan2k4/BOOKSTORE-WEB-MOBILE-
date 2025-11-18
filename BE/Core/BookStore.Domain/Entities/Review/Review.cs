@@ -18,12 +18,22 @@ namespace BookStore.Domain.Entities.Common
         public Guid BookId { get; set; }                        // FK: Sách được đánh giá
         public virtual Book Book { get; set; } = null!;
 
+        public Guid? OrderId { get; set; }                      // FK: Đơn hàng đã mua sách này (để verify purchase)
+        public virtual Ordering.Order? Order { get; set; }
+
         public int Rating { get; set; }                         // Điểm đánh giá (1–5 sao)
-        public string Comment { get; set; } = null!;            // Nội dung đánh giá
+        public string? Title { get; set; }                      // Tiêu đề đánh giá (optional)
+        public string Content { get; set; } = null!;            // Nội dung đánh giá
+        
+        public string Status { get; set; } = "Pending";         // Pending, Approved, Rejected
+        public bool IsVerifiedPurchase { get; set; } = false;   // Đã mua hàng thật
         public bool IsEdited { get; set; } = false;             // Đã chỉnh sửa hay chưa
         public bool IsDeleted { get; set; } = false;            // Đánh dấu xóa mềm (soft delete)
+        
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // Thời điểm viết đánh giá
         public DateTime? UpdatedAt { get; set; }                // Khi chỉnh sửa đánh giá
+        public DateTime? ApprovedAt { get; set; }               // Khi admin duyệt
+        public Guid? ApprovedBy { get; set; }                   // Admin duyệt
 
     }
 }

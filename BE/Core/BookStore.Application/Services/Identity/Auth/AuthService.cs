@@ -53,10 +53,6 @@ namespace BookStore.Application.Services.Identity.Auth
             if (!_passwordService.VerifyPassword(loginDto.Password, user.PasswordHash))
                 throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
 
-            // Allow login even if account is not active (email not verified)
-            // if (!user.IsActive)
-            //     throw new UnauthorizedAccessException("Tài khoản đã bị khóa");
-
             var roles = user.UserRoles?
             .Select(ur => ur.Role?.Name ?? "")
             .Where(n => !string.IsNullOrEmpty(n)) ?? Enumerable.Empty<string>();

@@ -16,9 +16,9 @@ namespace BookStore.API.Controllers
             _emailVerificationService = emailVerificationService;
         }
 
-        /// <summary>
+
         /// Verify email with token
-        /// </summary>
+
         [HttpPost("verify")]
         public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
         {
@@ -61,9 +61,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Resend verification email
-        /// </summary>
+
         [HttpPost("resend")]
         public async Task<IActionResult> ResendVerificationEmail([FromBody] ResendVerificationRequest request)
         {
@@ -106,9 +106,9 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
+
         /// Check if email is verified
-        /// </summary>
+
         [HttpGet("status/{userId}")]
         [Authorize]
         public async Task<IActionResult> CheckVerificationStatus(Guid userId)

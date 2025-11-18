@@ -1,4 +1,4 @@
-﻿using BookStore.Domain.Entities.Shipping;
+using BookStore.Domain.Entities.Shipping;
 
 namespace BookStore.Domain.IRepository.Shipping
 {

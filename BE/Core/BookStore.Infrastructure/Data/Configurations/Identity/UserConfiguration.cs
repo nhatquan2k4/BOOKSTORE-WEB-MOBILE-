@@ -64,7 +64,6 @@ namespace BookStore.Infrastructure.Data.Configurations.Identity
                 .WithOne(ur => ur.User)
                 .HasForeignKey(ur => ur.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-
         }
     }
 }

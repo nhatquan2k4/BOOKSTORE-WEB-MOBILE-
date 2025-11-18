@@ -1,4 +1,4 @@
-﻿using BookStore.Domain.Entities.Shipping;
+using BookStore.Domain.Entities.Shipping;
 using BookStore.Domain.IRepository.Shipping;
 using BookStore.Infrastructure.Data;
 using BookStore.Infrastructure.Repository;
@@ -81,3 +81,4 @@ namespace BookStore.Infrastructure.Repositories.Shipping
         }
     }
 }
+
