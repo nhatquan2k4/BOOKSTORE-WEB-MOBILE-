@@ -1,5 +1,6 @@
 using BookStore.Application.Dtos.Ordering;
 using BookStore.Application.IService.Ordering;
+using BookStore.Application.Mappers.Ordering;
 using BookStore.Domain.Entities.Ordering;
 using BookStore.Domain.Entities.Ordering___Payment;
 using BookStore.Domain.IRepository.Cart;
@@ -14,6 +15,7 @@ namespace BookStore.Application.Services.Ordering
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IOrderItemRepository _orderItemRepository;
+        private readonly IOrderStatusLogRepository _statusLogRepository;
         private readonly ICartRepository _cartRepository;
         private readonly IBookRepository _bookRepository;
         private readonly ILogger<OrderService> _logger;
@@ -21,12 +23,14 @@ namespace BookStore.Application.Services.Ordering
         public OrderService(
             IOrderRepository orderRepository,
             IOrderItemRepository orderItemRepository,
+            IOrderStatusLogRepository statusLogRepository,
             ICartRepository cartRepository,
             IBookRepository bookRepository,
             ILogger<OrderService> logger)
         {
             _orderRepository = orderRepository;
             _orderItemRepository = orderItemRepository;
+            _statusLogRepository = statusLogRepository;
             _cartRepository = cartRepository;
             _bookRepository = bookRepository;
             _logger = logger;
@@ -364,6 +368,20 @@ namespace BookStore.Application.Services.Ordering
             var date = DateTime.UtcNow.ToString("yyyyMMdd");
             var random = new Random().Next(100000, 999999);
             return $"ORD-{date}-{random}";
+        }
+
+        #endregion
+
+        #region Order Status History
+
+        public async Task<IEnumerable<OrderStatusLogDto>> GetOrderStatusHistoryAsync(Guid orderId)
+        {
+            // Verify order exists
+            var order = await _orderRepository.GetByIdAsync(orderId);
+            Guard.Against(order == null, "Order not found");
+
+            var logs = await _statusLogRepository.GetByOrderIdAsync(orderId);
+            return logs.ToDtoList();
         }
 
         #endregion

@@ -28,7 +28,7 @@ namespace BookStore.Application.Services.Checkout
         private const decimal DEFAULT_SHIPPING_FEE = 30000m; // 30,000 VND
 
         // Warehouse mặc định - Phahasa Warehouse (Hà Nội)
-        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("ee0dc3a5-83d3-4a51-8047-dd9311dd2038");
+        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("e9b2f775-d4c2-4526-8f18-f6b7e23d0214");
 
         public CheckoutService(
             ICartService cartService,
@@ -111,12 +111,8 @@ namespace BookStore.Application.Services.Checkout
                     continue;
                 }
 
-                if (!book.IsAvailable)
-                {
-                    errorMessages.Add($"Sách '{item.BookTitle}' hiện không còn hàng");
-                    itemValidations.Add(item.ToItemValidationDto(false, 0, "Sách không còn hàng"));
-                    continue;
-                }
+                // NOTE: Đã bỏ check book.IsAvailable vì đã có stock validation
+                // Chỉ dựa vào stock thực tế để validate
 
                 // Kiểm tra số lượng tồn kho từ StockItem
                 var availableStock = await GetAvailableStockAsync(item.BookId);
@@ -193,14 +189,15 @@ namespace BookStore.Application.Services.Checkout
             );
         }
 
-        public async Task<bool> ValidateCouponAsync(string couponCode, Guid userId)
+        public Task<bool> ValidateCouponAsync(string couponCode, Guid userId)
         {
             // TODO: Implement actual coupon validation logic
             // For now, return true for demo purposes
-            _logger.LogInformation($"Validating coupon {couponCode} for user {userId}");
+            _logger.LogInformation($"Đang kiểm tra mã giảm giá {couponCode} cho người dùng {userId}");
 
             // Giả sử mã "FREESHIP" và "DISCOUNT10" là hợp lệ
-            return couponCode.ToUpper() == "FREESHIP" || couponCode.ToUpper() == "DISCOUNT10";
+            var isValid = couponCode.ToUpper() == "FREESHIP" || couponCode.ToUpper() == "DISCOUNT10";
+            return Task.FromResult(isValid);
         }
 
         #endregion

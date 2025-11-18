@@ -45,6 +45,7 @@ namespace BookStore.Application.Dtos.Shipping
 
         public string? Notes { get; set; }
         
+
         public string? Location { get; set; } // Vị trí hiện tại
     }
 
@@ -81,6 +82,7 @@ namespace BookStore.Application.Dtos.Shipping
         public string? Notes { get; set; }
         public DateTime? Timestamp { get; set; }
         
+
         // Signature để verify webhook
         public string? Signature { get; set; }
     }
@@ -105,4 +107,5 @@ namespace BookStore.Application.Dtos.Shipping
         public string? Notes { get; set; }
         public DateTime ArrivedAt { get; set; }
     }
+}
 }

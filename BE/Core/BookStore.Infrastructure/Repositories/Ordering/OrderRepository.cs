@@ -1,4 +1,5 @@
 using BookStore.Domain.Entities.Ordering;
+using BookStore.Domain.Entities.Ordering___Payment;
 using BookStore.Domain.IRepository.Ordering;
 using BookStore.Infrastructure.Data;
 using BookStore.Infrastructure.Repository;
@@ -8,8 +9,11 @@ namespace BookStore.Infrastructure.Repositories.Ordering
 {
     public class OrderRepository : GenericRepository<Order>, IOrderRepository
     {
-        public OrderRepository(AppDbContext context) : base(context)
+        private readonly IOrderStatusLogRepository _statusLogRepository;
+
+        public OrderRepository(AppDbContext context, IOrderStatusLogRepository statusLogRepository) : base(context)
         {
+            _statusLogRepository = statusLogRepository;
         }
 
         public async Task<Order?> GetOrderWithDetailsAsync(Guid orderId)
@@ -17,7 +21,7 @@ namespace BookStore.Infrastructure.Repositories.Ordering
             return await _dbSet
                 .Include(o => o.Items).ThenInclude(i => i.Book)
                 .Include(o => o.Address)
-                .Include(o => o.PaymentTransaction).ThenInclude(p => p.Refunds)
+                .Include(o => o.PaymentTransaction!).ThenInclude(p => p.Refunds)
                 .Include(o => o.StatusLogs)
                 .Include(o => o.Histories)
                 .Include(o => o.Coupon)
@@ -40,7 +44,7 @@ namespace BookStore.Infrastructure.Repositories.Ordering
 
             // Apply filters first
             query = query.Where(o => o.UserId == userId);
-            
+
             if (!string.IsNullOrEmpty(status))
             {
                 query = query.Where(o => o.Status == status);
@@ -88,44 +92,36 @@ namespace BookStore.Infrastructure.Repositories.Ordering
             if (order == null) return;
 
             var oldStatus = order.Status;
-            order.Status = newStatus;
 
-            // Cập nhật timestamps tương ứng
-            switch (newStatus)
+            // Chỉ tạo log nếu status thực sự thay đổi
+            if (oldStatus != newStatus)
             {
-                case "Paid":
-                    order.PaidAt = DateTime.UtcNow;
-                    break;
-                case "Completed":
-                    order.CompletedAt = DateTime.UtcNow;
-                    break;
-                case "Cancelled":
-                    order.CancelledAt = DateTime.UtcNow;
-                    break;
+                order.Status = newStatus;
+
+                // Cập nhật timestamps tương ứng
+                switch (newStatus)
+                {
+                    case "Paid":
+                        order.PaidAt = DateTime.UtcNow;
+                        break;
+                    case "Completed":
+                        order.CompletedAt = DateTime.UtcNow;
+                        break;
+                    case "Cancelled":
+                        order.CancelledAt = DateTime.UtcNow;
+                        break;
+                }
+
+                Update(order);
+
+                // ✅ TỰ ĐỘNG TẠO LOG khi thay đổi status
+                await _statusLogRepository.CreateLogAsync(
+                    orderId,
+                    oldStatus,
+                    newStatus,
+                    note ?? "System"
+                );
             }
-
-            // Track StatusLog - TODO: Implement OrderStatusLog entity
-            // order.StatusLogs.Add(new OrderStatusLog
-            // {
-            //     Id = Guid.NewGuid(),
-            //     OrderId = orderId,
-            //     OldStatus = oldStatus,
-            //     NewStatus = newStatus,
-            //     ChangedAt = DateTime.UtcNow,
-            //     Note = note
-            // });
-
-            // Track History - TODO: Implement OrderHistory entity
-            // order.Histories.Add(new OrderHistory
-            // {
-            //     Id = Guid.NewGuid(),
-            //     OrderId = orderId,
-            //     Action = $"Status changed from {oldStatus} to {newStatus}",
-            //     ChangedAt = DateTime.UtcNow,
-            //     Note = note
-            // });
-
-            Update(order);
         }
 
         public async Task<IEnumerable<Order>> GetOrdersByStatusAsync(string status, int skip = 0, int take = 20)
@@ -149,8 +145,8 @@ namespace BookStore.Infrastructure.Repositories.Ordering
         public async Task<decimal> GetTotalRevenueAsync(DateTime fromDate, DateTime toDate)
         {
             return await _dbSet
-                .Where(o => o.Status == "Completed" 
-                    && o.CompletedAt >= fromDate 
+                .Where(o => o.Status == "Completed"
+                    && o.CompletedAt >= fromDate
                     && o.CompletedAt <= toDate)
                 .SumAsync(o => o.FinalAmount);
         }

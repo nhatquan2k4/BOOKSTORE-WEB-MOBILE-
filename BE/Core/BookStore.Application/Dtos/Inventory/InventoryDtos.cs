@@ -118,4 +118,41 @@ namespace BookStore.Application.Dtos.Inventory
         public int Quantity { get; set; }
         public string? Note { get; set; }
     }
+
+    // ===== INVENTORY TRANSACTION DTOs =====
+    public class InventoryTransactionDto
+    {
+        public Guid Id { get; set; }
+        public Guid WarehouseId { get; set; }
+        public string WarehouseName { get; set; } = string.Empty;
+        public Guid BookId { get; set; }
+        public string BookTitle { get; set; } = string.Empty;
+        public string BookISBN { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty; // Inbound, Outbound, Adjustment
+        public int QuantityChange { get; set; }
+        public string? ReferenceId { get; set; }
+        public string? Note { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class CreateInventoryTransactionDto
+    {
+        public Guid WarehouseId { get; set; }
+        public Guid BookId { get; set; }
+        public string Type { get; set; } = string.Empty; // Inbound, Outbound, Adjustment
+        public int QuantityChange { get; set; }
+        public string? ReferenceId { get; set; }
+        public string? Note { get; set; }
+    }
+
+    public class InventoryTransactionFilterDto
+    {
+        public Guid? WarehouseId { get; set; }
+        public Guid? BookId { get; set; }
+        public string? Type { get; set; }
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+    }
 }

@@ -47,25 +47,26 @@ public class FileUploadOperationFilter : IOperationFilter
             schema.Required.Add(param.Name);
         }
 
-        // Add other query/form parameters
+        // Add other query/form/route parameters
         var otherParams = context.ApiDescription.ParameterDescriptions
             .Where(p => p.ModelMetadata?.ModelType != typeof(IFormFile))
             .ToList();
 
         foreach (var param in otherParams)
         {
-            if (param.Source.Id == "Query")
+            if (param.Source.Id == "Query" || param.Source.Id == "Path")
             {
                 operation.Parameters ??= new List<OpenApiParameter>();
                 operation.Parameters.Add(new OpenApiParameter
                 {
                     Name = param.Name,
-                    In = ParameterLocation.Query,
-                    Required = param.IsRequired,
+                    In = param.Source.Id == "Path" ? ParameterLocation.Path : ParameterLocation.Query,
+                    Required = param.IsRequired || param.Source.Id == "Path", // Path parameters are always required
                     Schema = new OpenApiSchema
                     {
-                        Type = "string",
-                        Nullable = !param.IsRequired
+                        Type = param.Type == typeof(Guid) ? "string" : "string",
+                        Format = param.Type == typeof(Guid) ? "uuid" : null,
+                        Nullable = !param.IsRequired && param.Source.Id != "Path"
                     }
                 });
             }

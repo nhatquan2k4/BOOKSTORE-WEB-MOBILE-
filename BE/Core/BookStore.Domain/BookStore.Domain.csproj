@@ -12,7 +12,6 @@
     <Folder Include="IRepository\Common\" />
     <Folder Include="IRepository\Identity\" />
     <Folder Include="IRepository\System\" />
-    <Folder Include="IRepository\Shipping\" />
     <Folder Include="IRepository\Rental\" />
     <Folder Include="IRepository\Pricing &amp; Inventory\" />
     <Folder Include="IRepository\Ordering &amp; Payment\" />

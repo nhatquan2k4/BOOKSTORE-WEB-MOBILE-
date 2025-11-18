@@ -22,6 +22,8 @@ namespace BookStore.Infrastructure.Repositories.Cart
                 .Include(c => c.Items).ThenInclude(i => i.Book).ThenInclude(b => b.Images)
                 .Include(c => c.Items).ThenInclude(i => i.Book).ThenInclude(b => b.Publisher)
                 .Include(c => c.Items).ThenInclude(i => i.Book).ThenInclude(b => b.BookAuthors).ThenInclude(ba => ba.Author)
+                // Ensure StockItem is loaded so StockQuantity can be read
+                .Include(c => c.Items).ThenInclude(i => i.Book).ThenInclude(b => b.StockItem)
                 .FirstOrDefaultAsync(c => c.UserId == userId && c.IsActive);
         }
 
@@ -29,6 +31,8 @@ namespace BookStore.Infrastructure.Repositories.Cart
         {
             return await _dbSet
                 .Include(c => c.Items).ThenInclude(i => i.Book)
+                // Include StockItem for book so quantity available is populated
+                .Include(c => c.Items).ThenInclude(i => i.Book).ThenInclude(b => b.StockItem)
                 .FirstOrDefaultAsync(c => c.Id == cartId);
         }
 

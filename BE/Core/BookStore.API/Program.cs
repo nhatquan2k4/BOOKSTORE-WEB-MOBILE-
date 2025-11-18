@@ -33,6 +33,7 @@ using BookStore.Infrastructure.Repository.Identity;
 using BookStore.Infrastructure.Repository.Identity.Auth;
 using BookStore.Infrastructure.Repository.Identity.RolePermisson;
 using BookStore.Infrastructure.Repository.Identity.User;
+using BookStore.Infrastructure.Data.Seeders;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -163,6 +164,7 @@ builder.Services.AddScoped<IBookImageService, BookImageService>();
 // Ordering Repositories
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
+builder.Services.AddScoped<IOrderStatusLogRepository, OrderStatusLogRepository>();
 builder.Services.AddScoped<IRefundRepository, RefundRepository>();
 
 // Payment Repository
@@ -180,6 +182,7 @@ builder.Services.AddScoped<BookStore.Domain.IRepository.Shipping.IShipmentReposi
 builder.Services.AddScoped<BookStore.Domain.IRepository.Inventory.IWarehouseRepository, BookStore.Infrastructure.Repositories.Inventory.WarehouseRepository>();
 builder.Services.AddScoped<BookStore.Domain.IRepository.Inventory.IPriceRepository, BookStore.Infrastructure.Repositories.Inventory.PriceRepository>();
 builder.Services.AddScoped<BookStore.Domain.IRepository.Inventory.IStockItemRepository, BookStore.Infrastructure.Repositories.Inventory.StockItemRepository>();
+builder.Services.AddScoped<BookStore.Domain.IRepository.Inventory.IInventoryTransactionRepository, BookStore.Infrastructure.Repositories.Inventory.InventoryTransactionRepository>();
 
 // Checkout Service
 builder.Services.AddScoped<BookStore.Application.IService.Checkout.ICheckoutService, BookStore.Application.Services.Checkout.CheckoutService>();
@@ -197,6 +200,7 @@ builder.Services.AddScoped<BookStore.Application.IService.Shipping.IShipmentServ
 builder.Services.AddScoped<BookStore.Application.IService.Inventory.IWarehouseService, BookStore.Application.Services.Inventory.WarehouseService>();
 builder.Services.AddScoped<BookStore.Application.IService.Inventory.IPriceService, BookStore.Application.Services.Inventory.PriceService>();
 builder.Services.AddScoped<BookStore.Application.IService.Inventory.IStockItemService, BookStore.Application.Services.Inventory.StockItemService>();
+builder.Services.AddScoped<BookStore.Application.IService.Inventory.IInventoryTransactionService, BookStore.Application.Services.Inventory.InventoryTransactionService>();
 
 // Review Repository & Service
 builder.Services.AddScoped<BookStore.Domain.IRepository.Review.IReviewRepository, BookStore.Infrastructure.Repositories.Review.ReviewRepository>();
@@ -210,6 +214,12 @@ builder.Services.AddScoped<BookStore.Application.IService.Comment.ICommentServic
 builder.Services.AddScoped<BookStore.Domain.IRepository.System.INotificationTemplateRepository, BookStore.Infrastructure.Repositories.System.NotificationTemplateRepository>();
 builder.Services.AddScoped<BookStore.Application.IService.System.INotificationTemplateService, BookStore.Application.Services.System.NotificationTemplateService>();
 
+// Rental Services (Story 18 - Ebook Rental)
+builder.Services.AddScoped<BookStore.Domain.IRepository.Rental.IRentalPlanRepository, BookStore.Infrastructure.Repositories.Rental.RentalPlanRepository>();
+builder.Services.AddScoped<BookStore.Domain.IRepository.Rental.IUserSubscriptionRepository, BookStore.Infrastructure.Repositories.Rental.UserSubscriptionRepository>();
+builder.Services.AddScoped<BookStore.Application.IService.Rental.IRentalPlanService, BookStore.Application.Services.Rental.RentalPlanService>();
+builder.Services.AddScoped<BookStore.Application.IService.Rental.IUserSubscriptionService, BookStore.Application.Services.Rental.UserSubscriptionService>();
+builder.Services.AddScoped<BookStore.Application.IService.Rental.IEbookService, BookStore.Application.Services.Rental.EbookService>();
 
 //Controller
 builder.Services.AddControllers();
@@ -244,6 +254,9 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    // Add file upload support in Swagger
+    c.OperationFilter<FileUploadOperationFilter>();
 });
 
 var app = builder.Build();
@@ -307,6 +320,18 @@ using (var scope = app.Services.CreateScope())
                 logger.LogInformation("Database is up to date. No pending migrations.");
             }
         }
+
+        // Seed Roles and Permissions
+        try
+        {
+            logger.LogInformation("Starting to seed roles and permissions...");
+            await RolePermissionSeeder.SeedAsync(context);
+            logger.LogInformation("Roles and permissions seeded successfully");
+        }
+        catch (Exception seedEx)
+        {
+            logger.LogError(seedEx, "An error occurred while seeding roles and permissions");
+        }
     }
     catch (Exception ex)
     {
@@ -334,19 +359,14 @@ if (!app.Environment.IsDevelopment())
 // Enable CORS (must be before Authentication & Authorization)
 app.UseCors("AllowFrontend");
 
+// Exception handling middleware
+app.UseMiddleware<ExceptionMiddleware>();
+
 // Add Authentication & Authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Map Controllers
 app.MapControllers();
-
-
-app.UseMiddleware<ExceptionMiddleware>();
-app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
 
 app.Run();

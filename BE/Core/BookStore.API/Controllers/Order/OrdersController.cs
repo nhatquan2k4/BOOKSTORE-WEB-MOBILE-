@@ -12,10 +12,14 @@ namespace BookStore.API.Controllers.Order
     public class OrdersController : ControllerBase
     {
         private readonly IOrderService _orderService;
+        private readonly ILogger<OrdersController> _logger;
 
-        public OrdersController(IOrderService orderService)
+        public OrdersController(
+            IOrderService orderService,
+            ILogger<OrdersController> logger)
         {
             _orderService = orderService;
+            _logger = logger;
         }
 
         // GET: api/orders
@@ -139,7 +143,7 @@ namespace BookStore.API.Controllers.Order
 
         // PUT: api/orders/status
         [HttpPut("status")]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateOrderStatus([FromBody] UpdateOrderStatusDto dto)
         {
             var order = await _orderService.UpdateOrderStatusAsync(dto);
@@ -228,6 +232,40 @@ namespace BookStore.API.Controllers.Order
         {
             var counts = await _orderService.GetOrdersCountByStatusAsync();
             return Ok(counts);
+        }
+
+        /// <summary>
+        /// Get order status history (lịch sử thay đổi trạng thái đơn hàng)
+        /// </summary>
+        /// <remarks>
+        /// User có thể xem lịch sử của đơn hàng của mình.
+        /// Admin có thể xem lịch sử của tất cả đơn hàng.
+        /// </remarks>
+        [HttpGet("{id:guid}/status-history")]
+        public async Task<IActionResult> GetOrderStatusHistory(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var isAdmin = User.IsInRole("Admin");
+
+                // Check if order exists and user owns it
+                var order = await _orderService.GetOrderByIdAsync(id);
+                if (order == null)
+                    return NotFound(new { Message = "Không tìm thấy đơn hàng" });
+
+                // Check authorization
+                if (!isAdmin && order.UserId != userId)
+                    return Forbid();
+
+                var history = await _orderService.GetOrderStatusHistoryAsync(id);
+                return Ok(history);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting order status history for order {OrderId}", id);
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         private Guid GetCurrentUserId()
