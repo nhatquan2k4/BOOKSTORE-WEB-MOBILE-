@@ -46,7 +46,7 @@ pipeline {
                 sh '''
 
                     # Chạy docker-compose cho SQL + MinIO
-                    docker compose -f docker-compose.yml up -d
+                    docker compose -f BE/docker/docker-compose.yml up -d
 
                     # Dừng container backend cũ
                     docker stop bookstore-backend || true
