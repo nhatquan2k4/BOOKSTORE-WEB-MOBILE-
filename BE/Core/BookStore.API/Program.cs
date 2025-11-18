@@ -198,6 +198,18 @@ builder.Services.AddScoped<BookStore.Application.IService.Inventory.IWarehouseSe
 builder.Services.AddScoped<BookStore.Application.IService.Inventory.IPriceService, BookStore.Application.Services.Inventory.PriceService>();
 builder.Services.AddScoped<BookStore.Application.IService.Inventory.IStockItemService, BookStore.Application.Services.Inventory.StockItemService>();
 
+// Review Repository & Service
+builder.Services.AddScoped<BookStore.Domain.IRepository.Review.IReviewRepository, BookStore.Infrastructure.Repositories.Review.ReviewRepository>();
+builder.Services.AddScoped<BookStore.Application.IService.Review.IReviewService, BookStore.Application.Services.Review.ReviewService>();
+
+// Comment Repository & Service
+builder.Services.AddScoped<BookStore.Domain.IRepository.Comment.ICommentRepository, BookStore.Infrastructure.Repositories.Comment.CommentRepository>();
+builder.Services.AddScoped<BookStore.Application.IService.Comment.ICommentService, BookStore.Application.Services.Comment.CommentService>();
+
+// NotificationTemplate Repository & Service
+builder.Services.AddScoped<BookStore.Domain.IRepository.System.INotificationTemplateRepository, BookStore.Infrastructure.Repositories.System.NotificationTemplateRepository>();
+builder.Services.AddScoped<BookStore.Application.IService.System.INotificationTemplateService, BookStore.Application.Services.System.NotificationTemplateService>();
+
 
 //Controller
 builder.Services.AddControllers();

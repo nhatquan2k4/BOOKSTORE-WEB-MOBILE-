@@ -69,7 +69,7 @@ namespace BookStore.Infrastructure.Repositories.Shipping
             var date = DateTime.Now.ToString("yyyyMMdd");
             var random = new Random();
             string trackingCode;
-            
+
             do
             {
                 var randomNumber = random.Next(10000, 99999);
@@ -81,3 +81,4 @@ namespace BookStore.Infrastructure.Repositories.Shipping
         }
     }
 }
+

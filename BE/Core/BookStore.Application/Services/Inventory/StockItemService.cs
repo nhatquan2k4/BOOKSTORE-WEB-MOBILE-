@@ -82,21 +82,20 @@ namespace BookStore.Application.Services.Inventory
             switch (dto.Operation.ToLower())
             {
                 case "increase":
-                    stock!.Increase(dto.Quantity);
+                    // Use AdjustQuantity for manual increases (doesn't affect SoldQuantity)
+                    stock!.AdjustQuantity(dto.Quantity);
                     break;
                 case "decrease":
-                    stock!.Decrease(dto.Quantity);
+                    // Use AdjustQuantity for manual decreases (doesn't affect SoldQuantity)
+                    stock!.AdjustQuantity(-dto.Quantity);
                     break;
                 case "set":
-                    // Set to specific value
+                    // Set to specific value using AdjustQuantity
                     var currentQty = stock!.QuantityOnHand;
-                    if (dto.Quantity > currentQty)
+                    var difference = dto.Quantity - currentQty;
+                    if (difference != 0)
                     {
-                        stock.Increase(dto.Quantity - currentQty);
-                    }
-                    else if (dto.Quantity < currentQty)
-                    {
-                        stock.Decrease(currentQty - dto.Quantity);
+                        stock.AdjustQuantity(difference);
                     }
                     break;
             }

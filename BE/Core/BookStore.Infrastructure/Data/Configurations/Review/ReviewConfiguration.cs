@@ -18,10 +18,25 @@ namespace BookStore.Infrastructure.Data.Configurations.Common
                 .IsRequired()
                 .HasComment("Điểm đánh giá từ 1–5 sao");
 
-            builder.Property(r => r.Comment)
+            builder.Property(r => r.Title)
+                .HasMaxLength(200)
+                .IsRequired(false)
+                .HasComment("Tiêu đề đánh giá");
+
+            builder.Property(r => r.Content)
                 .HasMaxLength(2000)
                 .IsRequired()
                 .HasComment("Nội dung đánh giá của người dùng");
+
+            builder.Property(r => r.Status)
+                .HasMaxLength(50)
+                .IsRequired()
+                .HasDefaultValue("Pending")
+                .HasComment("Trạng thái: Pending, Approved, Rejected");
+
+            builder.Property(r => r.IsVerifiedPurchase)
+                .HasDefaultValue(false)
+                .HasComment("Đã xác thực mua hàng");
 
             builder.Property(r => r.IsEdited)
                 .HasDefaultValue(false);
@@ -33,6 +48,12 @@ namespace BookStore.Infrastructure.Data.Configurations.Common
                 .HasDefaultValueSql("GETUTCDATE()");
 
             builder.Property(r => r.UpdatedAt)
+                .IsRequired(false);
+
+            builder.Property(r => r.ApprovedAt)
+                .IsRequired(false);
+
+            builder.Property(r => r.ApprovedBy)
                 .IsRequired(false);
 
             // 🔗 1-n: User → Reviews
@@ -47,8 +68,16 @@ namespace BookStore.Infrastructure.Data.Configurations.Common
                 .HasForeignKey(r => r.BookId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // 🔗 n-1: Review → Order (optional)
+            builder.HasOne(r => r.Order)
+                .WithMany()
+                .HasForeignKey(r => r.OrderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // 📈 Index để tìm kiếm nhanh
             builder.HasIndex(r => new { r.BookId, r.UserId });
+            builder.HasIndex(r => r.Status);
+            builder.HasIndex(r => r.BookId);
 
             // ✅ Soft delete filter (nếu bạn dùng Global Query Filter)
             // builder.HasQueryFilter(r => !r.IsDeleted);
