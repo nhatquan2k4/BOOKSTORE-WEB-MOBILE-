@@ -14,13 +14,13 @@ namespace BookStore.Application.Dtos.Shipping
         public DateTime CreatedAt { get; set; }
         public DateTime? DeliveredAt { get; set; }
         public string? Notes { get; set; }
-        
+
         // Thông tin shipper
         public ShipperDto? Shipper { get; set; }
-        
+
         // Lịch sử trạng thái
         public List<ShipmentStatusDto>? StatusHistory { get; set; }
-        
+
         // Route points
         public List<ShipmentRoutePointDto>? RoutePoints { get; set; }
     }
@@ -44,7 +44,7 @@ namespace BookStore.Application.Dtos.Shipping
         public string Status { get; set; } = null!; // Preparing, InTransit, Delivered, Cancelled
 
         public string? Notes { get; set; }
-        
+
 
         public string? Location { get; set; } // Vị trí hiện tại
     }
@@ -81,7 +81,7 @@ namespace BookStore.Application.Dtos.Shipping
         public string? Location { get; set; }
         public string? Notes { get; set; }
         public DateTime? Timestamp { get; set; }
-        
+
 
         // Signature để verify webhook
         public string? Signature { get; set; }
@@ -107,5 +107,4 @@ namespace BookStore.Application.Dtos.Shipping
         public string? Notes { get; set; }
         public DateTime ArrivedAt { get; set; }
     }
-}
 }
