@@ -3,6 +3,7 @@ using BookStore.Application.IService.Catalog;
 using BookStore.Shared.Utilities;
 using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BookStore.API.Controllers.Book
 {
@@ -52,6 +53,7 @@ namespace BookStore.API.Controllers.Book
         /// <param name="id">ID của sách</param>
         /// <returns>BookDetailDto</returns>
         [HttpGet("{id:guid}")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<BookDetailDto>> GetById(Guid id)
