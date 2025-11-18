@@ -88,6 +88,7 @@ namespace BookStore.Infrastructure.Data
         public DbSet<BookRental> BookRentals { get; set; } = null!;
         public DbSet<RentalHistory> RentalHistories { get; set; } = null!;
         public DbSet<RentalAccessToken> RentalAccessTokens { get; set; } = null!;
+        public DbSet<UserSubscription> UserSubscriptions { get; set; } = null!; // Story 18
         #endregion
 
         #region Analytics / Activity

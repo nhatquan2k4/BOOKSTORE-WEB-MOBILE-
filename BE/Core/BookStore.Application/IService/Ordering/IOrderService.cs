@@ -29,5 +29,8 @@ namespace BookStore.Application.IService.Ordering
         // Validation
         Task<bool> IsOrderOwnedByUserAsync(Guid orderId, Guid userId);
         Task<bool> CanCancelOrderAsync(Guid orderId);
+        
+        // Order Status History
+        Task<IEnumerable<OrderStatusLogDto>> GetOrderStatusHistoryAsync(Guid orderId);
     }
 }
