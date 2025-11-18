@@ -11,12 +11,7 @@ namespace BookStore.Infrastructure.Repository.Catalog
         {
         }
 
-        public async Task<Book?> GetByISBNAsync(string isbn)
-        {
-            return await _dbSet
-                .FirstOrDefaultAsync(b => b.ISBN.Value == isbn);
-        }
-
+        // Override GetAllAsync to include related entities
         public override async Task<IEnumerable<Book>> GetAllAsync()
         {
             return await _dbSet
@@ -27,12 +22,15 @@ namespace BookStore.Infrastructure.Repository.Catalog
                 .Include(b => b.BookCategories)
                     .ThenInclude(bc => bc.Category)
                 .Include(b => b.Prices)
-                .Include(b => b.Reviews)
                 .Include(b => b.StockItem)
-                .Include(b => b.Images)
-                .Include(b => b.Files)
-                .Include(b => b.Metadata)
+                .Include(b => b.Reviews)
                 .ToListAsync();
+        }
+
+        public async Task<Book?> GetByISBNAsync(string isbn)
+        {
+            return await _dbSet
+                .FirstOrDefaultAsync(b => b.ISBN.Value == isbn);
         }
 
 

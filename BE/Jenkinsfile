@@ -4,7 +4,7 @@ pipeline {
     environment {
         REGISTRY_URL = "localhost:5000"
         IMAGE_NAME   = "bookstore-backend"
-        IMAGE_TAG    = "LASTEST"
+        IMAGE_TAG    = "lastest"
     }
 
     stages {
