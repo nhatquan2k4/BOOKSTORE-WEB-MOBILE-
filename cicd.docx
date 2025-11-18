@@ -1,0 +1,44 @@
+clone dự án jenkins docker về 
+git clone https://github.com/vanminhdev/jenkins-docker-setup.git
+cd jenkins-docker-setup
+
+Trong thư mục jenkins-docker-setup vừa cd vào, chạy:
+docker compose up -d --build
+
+Mở port 8080 (web UI) và 50000 (agent)
+Vào: http://localhost:8080
+Username: admin
+Password: admin123
+
+Bước 2: Tạo tài khoản GitHub cho Jenkins (Credentials)
+Mục tiêu: để Jenkins có thể kéo code từ GitHub repo backend .NET của bạn.
+
+2.1. Tạo Personal Access Token (PAT) trên GitHub
+Đăng nhập GitHub trên trình duyệt.
+Góc trên cùng bên phải → bấm vào avatar → Settings.
+Trong menu bên trái:
+Vào Developer settings
+Chọn Personal access tokens → Tokens (classic).
+Bấm Generate new token → Generate new token (classic).
+Đặt tên (note) cho token, ví dụ: jenkins-access.
+Chọn thời hạn (Expiration) – ví dụ: 90 days hoặc No expiration (dev nội bộ).
+Ở phần Scopes, tick tối thiểu:
+repo (để Jenkins có thể đọc repo private nếu cần)
+Kéo xuống dưới → Generate token.
+GitHub sẽ hiện ra chuỗi token (kiểu ghp_xxx...), copy lại ngay, vì sau này sẽ không xem lại được.
+Token này coi như mật khẩu GitHub dành riêng cho Jenkins, không đưa cho ai khác.
+
+Thêm Credentials vào Jenkins
+Vào trang Jenkins của bạn: http://localhost:8080
+Menu trái → Manage Jenkins.
+Tìm phần Credentials → bấm System.
+Ở khung Stores scoped to Jenkins → bấm Global credentials (unrestricted).
+Bên trái → bấm Add Credentials.
+
+Trong form:
+Kind: chọn Username with password
+Username: nhập username GitHub của bạn (ví dụ: vanminhdev – bạn điền cái của bạn).
+Password: dán GitHub PAT vừa tạo ở bước 2.1.
+ID: gõ một cái tên dễ nhớ, ví dụ: github-jenkins
+Description: GitHub access token for Jenkins
+→ Bấm OK để lưu.
