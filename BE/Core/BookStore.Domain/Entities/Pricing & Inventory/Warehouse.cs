@@ -13,10 +13,19 @@ namespace BookStore.Domain.Entities.Pricing___Inventory
         public string Name { get; set; } = "Main Warehouse";
         public string? Address { get; set; }
         public string? Description { get; set; }
+        public bool IsActive { get; set; } = true;
+        public int Priority { get; set; } = 0; // For warehouse selection logic
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        
         // 🔗 1-n: Một kho có thể chứa nhiều mặt hàng tồn kho
         public virtual ICollection<StockItem> StockItems { get; set; } = new List<StockItem>();
+
+        // Computed properties for statistics
+        public int TotalStockItems => StockItems?.Count ?? 0;
+        public int TotalQuantity => StockItems?.Sum(s => s.QuantityOnHand) ?? 0;
+        public int TotalAvailableQuantity => StockItems?.Sum(s => s.GetAvailableQuantity()) ?? 0;
+        public int TotalReservedQuantity => StockItems?.Sum(s => s.ReservedQuantity) ?? 0;
     }
 }

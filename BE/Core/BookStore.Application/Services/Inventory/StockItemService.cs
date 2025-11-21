@@ -192,7 +192,15 @@ namespace BookStore.Application.Services.Inventory
 
         public async Task<bool> ConfirmSaleAsync(Guid bookId, Guid warehouseId, int quantity)
         {
-            await _stockItemRepository.ConfirmSaleAsync(bookId, warehouseId, quantity);
+            var stock = await _stockItemRepository.GetStockByBookAndWarehouseAsync(bookId, warehouseId);
+            Guard.Against(stock == null, "Stock item not found");
+            
+            Guard.Against(stock!.ReservedQuantity < quantity, 
+                $"Insufficient reserved quantity. Reserved: {stock.ReservedQuantity}, Requested: {quantity}");
+
+            // Use ConfirmSale method instead of Decrease
+            stock.ConfirmSale(quantity);
+            await _stockItemRepository.SaveChangesAsync();
 
             // Log transaction for confirmed sale
             await _transactionRepository.CreateTransactionAsync(
@@ -201,7 +209,7 @@ namespace BookStore.Application.Services.Inventory
                 InventoryTransactionType.Outbound,
                 -quantity, // Actual outbound
                 null,
-                $"Confirmed sale of {quantity} items"
+                $"Confirmed sale of {quantity} items (from reserved stock)"
             );
 
             return true;
