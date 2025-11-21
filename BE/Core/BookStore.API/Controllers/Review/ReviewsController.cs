@@ -58,46 +58,6 @@ namespace BookStore.API.Controllers.Review
         }
 
         /// <summary>
-        /// Create a quick rating for a book (User only, must have purchased the book)
-        /// This allows users to rate without writing a full review. Auto-approved.
-        /// </summary>
-        [HttpPost("../rating")]
-        [Authorize]
-        public async Task<IActionResult> CreateQuickRating(Guid bookId, [FromBody] QuickRatingDto dto)
-        {
-            try
-            {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
-                {
-                    return Unauthorized(new { Success = false, Message = "User not authenticated" });
-                }
-
-                var review = await _reviewService.CreateQuickRatingAsync(userId, bookId, dto);
-
-                return Ok(new
-                {
-                    Success = true,
-                    Message = "Rating submitted successfully",
-                    Data = review
-                });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { Success = false, Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    Success = false,
-                    Message = "An error occurred while submitting the rating",
-                    Error = ex.Message
-                });
-            }
-        }
-
-        /// <summary>
         /// Get all approved reviews for a book (Public access)
         /// </summary>
         [HttpGet]
@@ -173,5 +133,44 @@ namespace BookStore.API.Controllers.Review
                 });
             }
         }
+
+        /// <summary>
+        /// Delete user's own review for a book (User only - for testing/correction)
+        /// </summary>
+        [HttpDelete("my-review")]
+        [Authorize]
+        public async Task<IActionResult> DeleteMyReview(Guid bookId)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                {
+                    return Unauthorized(new { Success = false, Message = "User not authenticated" });
+                }
+
+                await _reviewService.DeleteUserReviewAsync(userId, bookId);
+
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Your review has been deleted successfully"
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = "An error occurred while deleting the review",
+                    Error = ex.Message
+                });
+            }
+        }
+
     }
 }

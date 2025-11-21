@@ -46,12 +46,30 @@ namespace BookStore.Infrastructure.Repositories.Review
 
         public async Task<bool> HasUserPurchasedBookAsync(Guid userId, Guid bookId)
         {
-            // Check if user has a completed/delivered order containing this book
-            return await _context.Orders
-                .Where(o => o.UserId == userId && 
-                           (o.Status == "Completed" || o.Status == "Delivered"))
-                .SelectMany(o => o.Items)
-                .AnyAsync(item => item.BookId == bookId);
+            // Check if user has successfully purchased this book
+            // Valid order statuses: "Completed", "Delivered", or "Paid"
+            var result = await _context.OrderItems
+                .AnyAsync(item => 
+                    item.BookId == bookId && 
+                    item.Order.UserId == userId &&
+                    (item.Order.Status == "Completed" || 
+                     item.Order.Status == "Delivered" ||
+                     item.Order.Status == "Paid"));
+            
+            // Debug logging
+            if (!result)
+            {
+                var userOrdersCount = await _context.Orders.CountAsync(o => o.UserId == userId);
+                var completedOrdersCount = await _context.Orders
+                    .CountAsync(o => o.UserId == userId && 
+                        (o.Status == "Completed" || o.Status == "Delivered" || o.Status == "Paid"));
+                
+                Console.WriteLine($"[PurchaseCheck] UserId: {userId}, BookId: {bookId}");
+                Console.WriteLine($"[PurchaseCheck] User has {userOrdersCount} total orders, {completedOrdersCount} completed orders");
+                Console.WriteLine($"[PurchaseCheck] Result: {result} (User has NOT purchased this book)");
+            }
+            
+            return result;
         }
 
         public async Task<bool> HasUserReviewedBookAsync(Guid userId, Guid bookId)

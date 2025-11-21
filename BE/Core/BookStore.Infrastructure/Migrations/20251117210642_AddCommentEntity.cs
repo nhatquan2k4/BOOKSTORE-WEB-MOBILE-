@@ -101,36 +101,43 @@ namespace BookStore.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Comments", x => x.Id);
-                    table.CheckConstraint("CK_Comment_BookOrReview", "(BookId IS NOT NULL AND ReviewId IS NULL) OR (BookId IS NULL AND ReviewId IS NOT NULL)");
+                    table.CheckConstraint(
+                        "CK_Comment_BookOrReview",
+                        "(BookId IS NOT NULL AND ReviewId IS NULL) OR (BookId IS NULL AND ReviewId IS NOT NULL)");
+
                     table.ForeignKey(
                         name: "FK_Comments_Books_BookId",
                         column: x => x.BookId,
                         principalSchema: "catalog",
                         principalTable: "Books",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);   // <--- đổi từ Cascade
+
                     table.ForeignKey(
                         name: "FK_Comments_Comments_ParentCommentId",
                         column: x => x.ParentCommentId,
                         principalSchema: "common",
                         principalTable: "Comments",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.NoAction);
+
                     table.ForeignKey(
                         name: "FK_Comments_Reviews_ReviewId",
                         column: x => x.ReviewId,
                         principalSchema: "common",
                         principalTable: "Reviews",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
+
                     table.ForeignKey(
                         name: "FK_Comments_Users_UserId",
                         column: x => x.UserId,
                         principalSchema: "identity",
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.NoAction);
+                }
+                );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Reviews_BookId",
@@ -188,7 +195,7 @@ namespace BookStore.Infrastructure.Migrations
                 principalSchema: "ordering",
                 principalTable: "Orders",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
         }
 
         /// <inheritdoc />
