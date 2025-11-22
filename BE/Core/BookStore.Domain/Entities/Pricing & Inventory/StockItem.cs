@@ -38,7 +38,7 @@ namespace BookStore.Domain.Entities.Pricing_Inventory
         }
 
         /// <summary>
-        /// Decrease stock (for direct sales WITHOUT reservation)
+        /// Decrease stock 
         /// </summary>
         public void Decrease(int amount)
         {

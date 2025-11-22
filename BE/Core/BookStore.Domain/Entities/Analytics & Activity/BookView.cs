@@ -8,18 +8,33 @@ using System.Threading.Tasks;
 
 namespace BookStore.Domain.Entities.Analytics___Activity
 {
+    /// <summary>
+    /// BookView entity for tracking book detail page views
+    /// Used for analytics: most viewed books, user behavior tracking
+    /// </summary>
     public class BookView
     {
         public Guid Id { get; set; }
 
-        public Guid BookId { get; set; }                        // FK: Sách được xem
+        // FK: Book being viewed
+        public Guid BookId { get; set; }
         public virtual Book Book { get; set; } = null!;
 
-        public Guid? UserId { get; set; }                       // Nếu là user đã đăng nhập
+        // FK: User who viewed (nullable for guest users)
+        public Guid? UserId { get; set; }
         public virtual User? User { get; set; }
 
-        public string? IPAddress { get; set; }                  // IP người xem (cho người không đăng nhập)
+        // Timestamp of the view
         public DateTime ViewedAt { get; set; } = DateTime.UtcNow;
+
+        // IP Address (for guest tracking and security)
+        public string? IpAddress { get; set; }
+
+        // User Agent (browser/device info)
+        public string? UserAgent { get; set; }
+
+        // Session ID (for tracking user journey)
+        public string? SessionId { get; set; }
     }
 }
 //Giải thích:

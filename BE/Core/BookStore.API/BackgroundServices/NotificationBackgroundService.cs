@@ -47,28 +47,29 @@ namespace BookStore.API.BackgroundServices
         {
             using var scope = _serviceProvider.CreateScope();
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-            var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+            // TODO: Add email service later
+            // var emailService = scope.ServiceProvider.GetRequiredService<Identity.IEmailService>();
 
             switch (eventMessage)
             {
                 case UserRegisteredEvent userEvent:
-                    await HandleUserRegisteredAsync(userEvent, notificationService, emailService);
+                    await HandleUserRegisteredAsync(userEvent, notificationService, null);
                     break;
 
                 case OrderCreatedEvent orderEvent:
-                    await HandleOrderCreatedAsync(orderEvent, notificationService, emailService);
+                    await HandleOrderCreatedAsync(orderEvent, notificationService, null);
                     break;
 
                 case OrderShippedEvent shippedEvent:
-                    await HandleOrderShippedAsync(shippedEvent, notificationService, emailService);
+                    await HandleOrderShippedAsync(shippedEvent, notificationService, null);
                     break;
 
                 case OrderDeliveredEvent deliveredEvent:
-                    await HandleOrderDeliveredAsync(deliveredEvent, notificationService, emailService);
+                    await HandleOrderDeliveredAsync(deliveredEvent, notificationService, null);
                     break;
 
                 case OrderPaidEvent paidEvent:
-                    await HandleOrderPaidAsync(paidEvent, notificationService, emailService);
+                    await HandleOrderPaidAsync(paidEvent, notificationService, null);
                     break;
 
                 default:
@@ -80,7 +81,7 @@ namespace BookStore.API.BackgroundServices
         private async Task HandleUserRegisteredAsync(
             UserRegisteredEvent eventData,
             INotificationService notificationService,
-            IEmailService emailService)
+            object? emailService)
         {
             _logger.LogInformation("Processing UserRegistered event for user {UserId}", eventData.UserId);
 
@@ -94,21 +95,17 @@ namespace BookStore.API.BackgroundServices
                 Link = "/books"
             });
 
-            // Send welcome email
-            try
-            {
-                await emailService.SendWelcomeEmailAsync(eventData.Email, eventData.UserName);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send welcome email to {Email}", eventData.Email);
-            }
+            // TODO: Send welcome email when email service is integrated
+            // if (emailService != null)
+            // {
+            //     await emailService.SendWelcomeEmailAsync(eventData.Email, eventData.UserName);
+            // }
         }
 
         private async Task HandleOrderCreatedAsync(
             OrderCreatedEvent eventData,
             INotificationService notificationService,
-            IEmailService emailService)
+            object? emailService)
         {
             _logger.LogInformation("Processing OrderCreated event for order {OrderNumber}", eventData.OrderNumber);
 
@@ -121,26 +118,12 @@ namespace BookStore.API.BackgroundServices
                 Type = "Order",
                 Link = $"/orders/{eventData.OrderId}"
             });
-
-            // Send order confirmation email
-            try
-            {
-                await emailService.SendOrderConfirmationEmailAsync(
-                    eventData.UserEmail,
-                    eventData.UserName,
-                    eventData.OrderNumber);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send order confirmation email for order {OrderNumber}", 
-                    eventData.OrderNumber);
-            }
         }
 
         private async Task HandleOrderShippedAsync(
             OrderShippedEvent eventData,
             INotificationService notificationService,
-            IEmailService emailService)
+            object? emailService)
         {
             _logger.LogInformation("Processing OrderShipped event for order {OrderNumber}", eventData.OrderNumber);
 
@@ -153,27 +136,12 @@ namespace BookStore.API.BackgroundServices
                 Type = "Order",
                 Link = $"/orders/{eventData.OrderId}"
             });
-
-            // Send shipped email
-            try
-            {
-                await emailService.SendOrderShippedEmailAsync(
-                    eventData.UserEmail,
-                    eventData.UserName,
-                    eventData.OrderNumber,
-                    eventData.TrackingNumber);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send order shipped email for order {OrderNumber}", 
-                    eventData.OrderNumber);
-            }
         }
 
         private async Task HandleOrderDeliveredAsync(
             OrderDeliveredEvent eventData,
             INotificationService notificationService,
-            IEmailService emailService)
+            object? emailService)
         {
             _logger.LogInformation("Processing OrderDelivered event for order {OrderNumber}", eventData.OrderNumber);
 
@@ -186,26 +154,12 @@ namespace BookStore.API.BackgroundServices
                 Type = "Order",
                 Link = $"/orders/{eventData.OrderId}"
             });
-
-            // Send delivered email
-            try
-            {
-                await emailService.SendOrderDeliveredEmailAsync(
-                    eventData.UserEmail,
-                    eventData.UserName,
-                    eventData.OrderNumber);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send order delivered email for order {OrderNumber}", 
-                    eventData.OrderNumber);
-            }
         }
 
         private async Task HandleOrderPaidAsync(
             OrderPaidEvent eventData,
             INotificationService notificationService,
-            IEmailService emailService)
+            object? emailService)
         {
             _logger.LogInformation("Processing OrderPaid event for order {OrderNumber}", eventData.OrderNumber);
 
