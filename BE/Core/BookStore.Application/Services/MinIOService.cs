@@ -47,8 +47,10 @@ public class MinIOService : IMinIOService
         await _minioClient.PutObjectAsync(putObjectArgs);
 
         // Return public URL
-        var protocol = _settings.UseSSL ? "https" : "http";
-        return $"{protocol}://{_settings.Endpoint}/{bucket}/{fileName}";
+        var publicEndpoint = string.IsNullOrEmpty(_settings.PublicEndpoint)
+            ? $"{(_settings.UseSSL ? "https" : "http")}://{_settings.Endpoint}"
+            : _settings.PublicEndpoint;
+        return $"{publicEndpoint}/{bucket}/{fileName}";
     }
 
     public async Task DeleteFileAsync(string fileName, string? bucketName = null)

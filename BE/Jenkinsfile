@@ -2,15 +2,17 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY_URL = "localhost:5000"
+        REGISTRY_URL = "192.168.0.100:5000"   // registry trên server
         IMAGE_NAME   = "bookstore-backend"
-        IMAGE_TAG    = "lastest"
+        IMAGE_TAG    = "latest"
     }
 
     stages {
 
         stage('Checkout') {
-            steps { checkout scm }
+            steps {
+                checkout scm
+            }
         }
 
         stage('Docker Build') {
@@ -29,7 +31,6 @@ pipeline {
                     usernameVariable: 'REG_USER',
                     passwordVariable: 'REG_PASS'
                 )]) {
-
                     sh '''
                         docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
 
@@ -41,34 +42,37 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to Ubuntu Server') {
             steps {
-                sh '''
+                sshagent(credentials: ['ubuntu-server-ssh']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ubuntu@192.168.0.100 '
+                            # Chạy docker-compose cho SQL + MinIO + Nginx trên SERVER
+                            docker-compose -f /home/ubuntu/BE/docker/docker-compose.yml up -d
 
-                    # Chạy docker-compose cho SQL + MinIO
-                    docker compose -f BE/docker/docker-compose.yml up -d
+                            # Dừng container backend cũ (nếu có)
+                            docker stop bookstore-backend || true
+                            docker rm   bookstore-backend || true
 
-                    # Dừng container backend cũ
-                    docker stop bookstore-backend || true
-                    docker rm   bookstore-backend || true
+                            # Pull image backend mới từ registry
+                            docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
 
-                    # Pull backend version mới
-                    docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-
-                    # Chạy backend
-                    docker run -d \
-                        --name bookstore-backend \
-                        --network docker_bookstore-network \
-                        -e ASPNETCORE_ENVIRONMENT=Development \
-                        -e ConnectionStrings__UsersDb="Server=bookstore-sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True" \
-                        -e MinIO__Endpoint=bookstore-minio:9000 \
-                        -e MinIO__AccessKey=minioadmin \
-                        -e MinIO__SecretKey=minioadmin123 \
-                        -e MinIO__BucketName=bookstore-images \
-                        -e MinIO__UseSSL=false \
-                        -p 3030:8080 \
-                        ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                '''
+                            # Chạy container backend mới
+                            docker run -d \\
+                                --name bookstore-backend \\
+                                --network bookstore-network \\
+                                -e ASPNETCORE_ENVIRONMENT=Development \\
+                                -e ConnectionStrings__UsersDb="Server=bookstore-sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True" \\
+                                -e MinIO__Endpoint=minio:9000 \\
+                                -e MinIO__AccessKey=minioadmin \\
+                                -e MinIO__SecretKey=minioadmin123 \\
+                                -e MinIO__BucketName=bookstore-images \\
+                                -e MinIO__UseSSL=false \\
+                                -p 3030:8080 \\
+                                ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                        '
+                    """
+                }
             }
         }
     }

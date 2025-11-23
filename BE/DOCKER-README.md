@@ -2,11 +2,41 @@
 
 ## Cấu trúc
 - **Dockerfile**: Build image cho BookStore API (.NET 8.0)
-- **docker-compose.yml**: Orchestrate API + SQL Server 2022
+- **docker-compose.yml**: Orchestrate tất cả services (API, SQL Server, MinIO, Nginx)
+- **nginx/nginx.conf**: Cấu hình reverse proxy và load balancing
 
 ## Yêu cầu
 - Docker Desktop
 - Docker Compose
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│     Nginx Reverse Proxy (Port 80)          │
+│     http://localhost                        │
+└──────────────┬──────────────────────────────┘
+               │
+    ┌──────────┼──────────┬────────────┐
+    ▼          ▼          ▼            ▼
+┌────────┐ ┌────────┐ ┌────────┐ ┌──────────┐
+│  API   │ │ MinIO  │ │ MinIO  │ │   SQL    │
+│ :8080  │ │ :9000  │ │Console │ │  Server  │
+│        │ │Storage │ │ :9001  │ │  :1433   │
+└────────┘ └────────┘ └────────┘ └──────────┘
+```
+
+## Services & Endpoints
+
+Tất cả services được truy cập qua `http://localhost`:
+
+| Endpoint | Service | Mô tả |
+|----------|---------|-------|
+| `/api/*` | BookStore API | REST API endpoints |
+| `/swagger/*` | Swagger UI | API documentation |
+| `/storage/*` | MinIO | Object storage (files, images) |
+| `/minio-console/*` | MinIO Console | MinIO web interface |
+| `/health` | Nginx | Health check |
 
 ## Cách sử dụng
 
