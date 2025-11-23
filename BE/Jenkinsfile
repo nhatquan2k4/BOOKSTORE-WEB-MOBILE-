@@ -60,7 +60,7 @@ pipeline {
                             # Chạy container backend mới
                             docker run -d \\
                                 --name bookstore-backend \\
-                                --network bookstore-network \\
+                                --network docker_bookstore-network \\
                                 -e ASPNETCORE_ENVIRONMENT=Development \\
                                 -e ConnectionStrings__UsersDb="Server=bookstore-sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True" \\
                                 -e MinIO__Endpoint=minio:9000 \\
