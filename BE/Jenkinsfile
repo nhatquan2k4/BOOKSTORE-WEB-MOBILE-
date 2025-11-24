@@ -4,7 +4,7 @@ pipeline {
     environment {
         REGISTRY_URL = "192.168.0.100:5000"   // registry trên server
         IMAGE_NAME   = "bookstore-backend"
-        IMAGE_TAG    = "latest"
+        IMAGE_TAG    = "24112025"
     }
 
     stages {
