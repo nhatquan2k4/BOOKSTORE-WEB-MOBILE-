@@ -324,6 +324,10 @@ using (var scope = app.Services.CreateScope())
         // Seed Roles and Permissions
         try
         {
+            logger.LogInformation("Seeding basic roles...");
+            await RoleSeeder.SeedAsync(context);
+            logger.LogInformation("Basic roles seeded successfully");
+
             logger.LogInformation("Starting to seed roles and permissions...");
             await RolePermissionSeeder.SeedAsync(context);
             logger.LogInformation("Roles and permissions seeded successfully");
