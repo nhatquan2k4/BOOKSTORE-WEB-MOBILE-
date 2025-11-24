@@ -27,6 +27,15 @@ namespace BookStore.Infrastructure.Migrations
                     VALUES (NEWID(), 'User', N'Khách hàng')
                 END
             ");
+
+            // Thêm Role "Shipper" nếu chưa tồn tại
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (SELECT 1 FROM [identity].[Roles] WHERE [Name] = 'Shipper')
+                BEGIN
+                    INSERT INTO [identity].[Roles] (Id, Name, Description)
+                    VALUES (NEWID(), 'Shipper', N'Nhân viên giao hàng')
+                END
+            ");
         }
 
         /// <inheritdoc />
@@ -34,7 +43,7 @@ namespace BookStore.Infrastructure.Migrations
         {
             // Xóa role khi rollback migration
             migrationBuilder.Sql(@"
-                DELETE FROM [identity].[Roles] WHERE [Name] IN ('Admin', 'User')
+                DELETE FROM [identity].[Roles] WHERE [Name] IN ('Admin', 'User', 'Shipper')
             ");
         }
     }
