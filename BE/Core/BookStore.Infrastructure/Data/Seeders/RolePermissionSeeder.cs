@@ -7,11 +7,22 @@ namespace BookStore.Infrastructure.Data.Seeders
     {
         public static async Task SeedAsync(AppDbContext context)
         {
-            // Kiểm tra xem đã có dữ liệu chưa
-            if (await context.Roles.AnyAsync() || await context.Permissions.AnyAsync())
+
+            // Luôn đảm bảo đủ 3 role chính
+            var requiredRoles = new[]
             {
-                return; // Đã có dữ liệu, không cần seed
+                new Role { Name = "Admin", Description = "Quản trị viên có toàn quyền trong hệ thống" },
+                new Role { Name = "User", Description = "Người dùng thông thường có thể mua sách, đánh giá và quản lý tài khoản cá nhân" },
+                new Role { Name = "Shipper", Description = "Nhân viên giao hàng có thể xem và cập nhật trạng thái đơn hàng giao cho mình" }
+            };
+            foreach (var role in requiredRoles)
+            {
+                if (!await context.Roles.AnyAsync(r => r.Name == role.Name))
+                {
+                    await context.Roles.AddAsync(new Role { Name = role.Name, Description = role.Description });
+                }
             }
+            await context.SaveChangesAsync();
 
             // ===== ĐỊNH NGHĨA CÁC PERMISSIONS =====
             var permissions = new List<Permission>
