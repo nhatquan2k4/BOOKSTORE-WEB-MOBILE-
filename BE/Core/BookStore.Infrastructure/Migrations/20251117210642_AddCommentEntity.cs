@@ -108,7 +108,7 @@ namespace BookStore.Infrastructure.Migrations
                         principalSchema: "catalog",
                         principalTable: "Books",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_Comments_Comments_ParentCommentId",
                         column: x => x.ParentCommentId,
@@ -129,7 +129,7 @@ namespace BookStore.Infrastructure.Migrations
                         principalSchema: "identity",
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
