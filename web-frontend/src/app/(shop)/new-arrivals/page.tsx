@@ -353,7 +353,7 @@ export default function NewArrivalsPage() {
 
               {/* Price */}
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <p className="text-blue-600 font-bold text-sm">
+                <p className="text-red-600 font-bold text-sm">
                   {formatPrice(book.price)}
                 </p>
                 {book.originalPrice && (

@@ -280,13 +280,13 @@ const MOCK_BOOKS: Book[] = [
 ];
 
 const SUBCATEGORIES = [
-  { id: "all", name: "Tất cả", icon: "📚" },
-  { id: "web-dev", name: "Web Development", icon: "💻" },
-  { id: "data-science", name: "Data Science", icon: "📊" },
-  { id: "business", name: "Kinh doanh", icon: "💼" },
-  { id: "marketing", name: "Marketing", icon: "📈" },
-  { id: "design", name: "Thiết kế", icon: "🎨" },
-  { id: "language", name: "Ngoại ngữ", icon: "🗣️" },
+  { id: "all", name: "Tất cả", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg> },
+  { id: "web-dev", name: "Web Development", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> },
+  { id: "data-science", name: "Data Science", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg> },
+  { id: "business", name: "Kinh doanh", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> },
+  { id: "marketing", name: "Marketing", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> },
+  { id: "design", name: "Thiết kế", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg> },
+  { id: "language", name: "Ngoại ngữ", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg> },
 ];
 
 export default function CourseBooksPage() {
@@ -378,38 +378,12 @@ export default function CourseBooksPage() {
               Sách Khóa Học
             </h1>
           </div>
-          <p className="text-gray-700 text-lg font-medium">
-            🎓 {MOCK_BOOKS.length} khóa học chất lượng cao - {formatStudents(totalStudents)} học viên đã theo học
+          <p className="text-gray-700 text-lg font-medium flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            {MOCK_BOOKS.length} khóa học chất lượng cao - {formatStudents(totalStudents)} học viên đã theo học
           </p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-violet-500 to-purple-500 text-white rounded-xl p-6 shadow-lg">
-            <div className="text-4xl mb-2">📚</div>
-            <div className="text-3xl font-bold mb-1">{MOCK_BOOKS.length}</div>
-            <div className="text-sm opacity-90">Khóa học</div>
-          </div>
-          <div className="bg-gradient-to-br from-purple-500 to-fuchsia-500 text-white rounded-xl p-6 shadow-lg">
-            <div className="text-4xl mb-2">👨‍🎓</div>
-            <div className="text-3xl font-bold mb-1">{formatStudents(totalStudents)}</div>
-            <div className="text-sm opacity-90">Học viên</div>
-          </div>
-          <div className="bg-gradient-to-br from-fuchsia-500 to-pink-500 text-white rounded-xl p-6 shadow-lg">
-            <div className="text-4xl mb-2">⭐</div>
-            <div className="text-3xl font-bold mb-1">
-              {(
-                MOCK_BOOKS.reduce((acc, book) => acc + book.rating, 0) / MOCK_BOOKS.length
-              ).toFixed(1)}
-            </div>
-            <div className="text-sm opacity-90">Đánh giá TB</div>
-          </div>
-          <div className="bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-xl p-6 shadow-lg">
-            <div className="text-4xl mb-2">🎯</div>
-            <div className="text-3xl font-bold mb-1">100%</div>
-            <div className="text-sm opacity-90">Truy cập mãi</div>
-          </div>
-        </div>
-
+        
         <div className="bg-white rounded-xl shadow-md p-6 mb-6">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Danh mục:</h3>
           <div className="flex flex-wrap gap-2 mb-4">
@@ -449,11 +423,11 @@ export default function CourseBooksPage() {
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
               >
-                <option value="popular">🔥 Phổ biến nhất</option>
-                <option value="students">👨‍🎓 Nhiều học viên nhất</option>
-                <option value="rating">⭐ Đánh giá cao</option>
-                <option value="price-asc">💰 Giá tăng dần</option>
-                <option value="price-desc">💎 Giá giảm dần</option>
+                <option value="popular">Phổ biến nhất</option>
+                <option value="students">Nhiều học viên nhất</option>
+                <option value="rating">Đánh giá cao</option>
+                <option value="price-asc">Giá tăng dần</option>
+                <option value="price-desc">Giá giảm dần</option>
               </select>
             </div>
           </div>
@@ -481,15 +455,10 @@ export default function CourseBooksPage() {
                   </Badge>
                 </div>
 
-                {book.originalPrice && (
-                  <Badge variant="danger" className="absolute top-2 left-2 text-xs font-bold">
-                    -{calculateDiscount(book.originalPrice, book.price)}%
-                  </Badge>
-                )}
-
                 {book.duration && (
-                  <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-bold">
-                    ⏱️ {book.duration}
+                  <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    {book.duration}
                   </div>
                 )}
               </div>
@@ -500,24 +469,29 @@ export default function CourseBooksPage() {
                 </h3>
                 <p className="text-xs text-gray-600 font-medium">{book.author}</p>
                 <p className="text-xs text-violet-600 font-semibold">
-                  {SUBCATEGORIES.find((c) => c.id === book.subcategory)?.icon}{" "}
                   {SUBCATEGORIES.find((c) => c.id === book.subcategory)?.name}
                 </p>
 
                 {book.students && (
-                  <div className="bg-violet-50 rounded px-2 py-1">
+                  <div className="bg-violet-50 rounded px-2 py-1 flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     <p className="text-xs text-violet-700 font-bold">
-                      👥 {formatStudents(book.students)} học viên
+                      {formatStudents(book.students)} học viên
                     </p>
                   </div>
                 )}
 
                 <div className="flex items-center gap-2 pt-1">
-                  <p className="text-violet-600 font-bold text-sm">{formatPrice(book.price)}</p>
+                  <p className="text-red-600 font-bold text-sm">{formatPrice(book.price)}</p>
                   {book.originalPrice && (
-                    <p className="text-xs text-gray-400 line-through">
-                      {formatPrice(book.originalPrice)}
-                    </p>
+                    <>
+                      <p className="text-xs text-gray-400 line-through">
+                        {formatPrice(book.originalPrice)}
+                      </p>
+                      <Badge variant="danger" className="text-xs font-bold">
+                        -{calculateDiscount(book.originalPrice, book.price)}%
+                      </Badge>
+                    </>
                   )}
                 </div>
 
@@ -552,20 +526,29 @@ export default function CourseBooksPage() {
 
         <div className="mt-12 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl p-8 text-white">
           <div className="text-center">
-            <h2 className="text-3xl font-bold mb-4">🎓 Học Online Hiệu Quả</h2>
+            <h2 className="text-3xl font-bold mb-4 flex items-center justify-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+              Học Online Hiệu Quả
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">♾️</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Truy cập mãi mãi</h3>
                 <p className="text-sm opacity-90">Học mọi lúc, mọi nơi, không giới hạn</p>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">🎯</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Thực hành thực tế</h3>
                 <p className="text-sm opacity-90">Dự án thực tế, bài tập có đáp án</p>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">🏆</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Chứng chỉ hoàn thành</h3>
                 <p className="text-sm opacity-90">Thêm vào CV của bạn ngay</p>
               </div>

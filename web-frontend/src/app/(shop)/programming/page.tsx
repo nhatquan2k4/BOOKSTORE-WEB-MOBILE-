@@ -280,13 +280,34 @@ const MOCK_BOOKS: Book[] = [
 ];
 
 const SUBCATEGORIES = [
-  { id: "all", name: "Tất cả", icon: "💻" },
-  { id: "web", name: "Web Development", icon: "🌐" },
-  { id: "mobile", name: "Mobile Apps", icon: "📱" },
-  { id: "data-science", name: "Data Science", icon: "📊" },
-  { id: "ai-ml", name: "AI & Machine Learning", icon: "🤖" },
-  { id: "devops", name: "DevOps", icon: "⚙️" },
-  { id: "game", name: "Game Development", icon: "🎮" },
+  { 
+    id: "all", 
+    name: "Tất cả", 
+  },
+  { 
+    id: "web", 
+    name: "Web Development", 
+  },
+  { 
+    id: "mobile", 
+    name: "Mobile Apps", 
+  },
+  { 
+    id: "data-science", 
+    name: "Data Science", 
+  },
+  { 
+    id: "ai-ml", 
+    name: "AI & Machine Learning", 
+  },
+  { 
+    id: "devops", 
+    name: "DevOps", 
+  },
+  { 
+    id: "game", 
+    name: "Game Development", 
+  },
 ];
 
 export default function ProgrammingBooksPage() {
@@ -382,8 +403,8 @@ export default function ProgrammingBooksPage() {
               Sách Lập Trình
             </h1>
           </div>
-          <p className="text-gray-700 text-lg font-medium">
-            💻 {MOCK_BOOKS.length} cuốn sách lập trình chất lượng cao - Từ cơ bản đến nâng cao
+          <p className="text-gray-700 text-lg font-medium flex items-center gap-2">
+            {MOCK_BOOKS.length} cuốn sách lập trình chất lượng cao - Từ cơ bản đến nâng cao
           </p>
         </div>
 
@@ -426,11 +447,11 @@ export default function ProgrammingBooksPage() {
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
               >
-                <option value="popular">🔥 Phổ biến nhất</option>
-                <option value="newest">✨ Mới nhất</option>
-                <option value="rating">⭐ Đánh giá cao</option>
-                <option value="price-asc">💰 Giá tăng dần</option>
-                <option value="price-desc">💎 Giá giảm dần</option>
+                <option value="popular">Phổ biến nhất</option>
+                <option value="newest">Mới nhất</option>
+                <option value="rating">Đánh giá cao</option>
+                <option value="price-asc">Giá tăng dần</option>
+                <option value="price-desc">Giá giảm dần</option>
               </select>
             </div>
           </div>
@@ -460,12 +481,6 @@ export default function ProgrammingBooksPage() {
                   )}
                 </div>
 
-                {book.originalPrice && (
-                  <Badge variant="danger" className="absolute bottom-2 left-2 text-xs font-bold">
-                    -{calculateDiscount(book.originalPrice, book.price)}%
-                  </Badge>
-                )}
-
                 <div
                   className={`absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-bold ${getLevelColor(
                     book.level
@@ -480,17 +495,21 @@ export default function ProgrammingBooksPage() {
                   {book.title}
                 </h3>
                 <p className="text-xs text-gray-600 font-medium">{book.author}</p>
-                <p className="text-xs text-slate-600 font-semibold">
-                  {SUBCATEGORIES.find((c) => c.id === book.subcategory)?.icon}{" "}
+                <p className="text-xs text-slate-600 font-semibold flex items-center gap-1">
                   {SUBCATEGORIES.find((c) => c.id === book.subcategory)?.name}
                 </p>
 
                 <div className="flex items-center gap-2 pt-1">
-                  <p className="text-slate-700 font-bold text-sm">{formatPrice(book.price)}</p>
+                  <p className="text-red-600 font-bold text-sm">{formatPrice(book.price)}</p>
                   {book.originalPrice && (
-                    <p className="text-xs text-gray-400 line-through">
-                      {formatPrice(book.originalPrice)}
-                    </p>
+                    <>
+                      <p className="text-xs text-gray-400 line-through">
+                        {formatPrice(book.originalPrice)}
+                      </p>
+                      <Badge variant="danger" className="text-xs font-bold">
+                        -{calculateDiscount(book.originalPrice, book.price)}%
+                      </Badge>
+                    </>
                   )}
                 </div>
 
@@ -525,20 +544,29 @@ export default function ProgrammingBooksPage() {
 
         <div className="mt-12 bg-gradient-to-r from-slate-700 to-gray-900 rounded-2xl p-8 text-white">
           <div className="text-center">
-            <h2 className="text-3xl font-bold mb-4">💻 Học Lập Trình Hiệu Quả</h2>
+            <h2 className="text-3xl font-bold mb-4 flex items-center justify-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              Học Lập Trình Hiệu Quả
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">📚</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Kiến thức nền tảng</h3>
                 <p className="text-sm opacity-90">Từ cơ bản đến nâng cao, có hệ thống</p>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">💡</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Thực hành thực tế</h3>
                 <p className="text-sm opacity-90">Các ví dụ và bài tập từ dự án thực tế</p>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">🚀</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Cập nhật liên tục</h3>
                 <p className="text-sm opacity-90">Theo kịp công nghệ và xu hướng mới nhất</p>
               </div>

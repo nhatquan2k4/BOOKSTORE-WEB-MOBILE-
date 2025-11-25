@@ -451,7 +451,7 @@ export default function LiteraturePage() {
 
               {/* Price (đưa giảm giá xuống đây) */}
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <p className="text-blue-600 font-bold text-sm">
+                <p className="text-red-600 font-bold text-sm">
                   {formatPrice(book.price)}
                 </p>
                 {book.originalPrice && (

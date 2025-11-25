@@ -601,7 +601,7 @@ export default function BestsellersPage() {
 
       {/* Price line with discount */}
       <div className="flex flex-wrap items-center gap-2 mt-auto">
-        <p className="text-blue-600 font-bold text-sm">{formatPrice(book.price)}</p>
+        <p className="text-red-600 font-bold text-sm">{formatPrice(book.price)}</p>
         {book.originalPrice && (
           <div className="flex items-center gap-1 flex-wrap">
             <p className="text-xs text-gray-400 line-through">

@@ -256,13 +256,13 @@ const MOCK_BOOKS: Book[] = [
 ];
 
 const SUBCATEGORIES = [
-  { id: "all", name: "Tất cả", icon: "🎨" },
-  { id: "ui-ux", name: "UI/UX Design", icon: "🖥️" },
-  { id: "graphic", name: "Graphic Design", icon: "🎭" },
-  { id: "web", name: "Web Design", icon: "🌐" },
-  { id: "product", name: "Product Design", icon: "📦" },
-  { id: "brand", name: "Branding", icon: "🏷️" },
-  { id: "motion", name: "Motion Graphics", icon: "🎬" },
+  { id: "all", name: "Tất cả", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg> },
+  { id: "ui-ux", name: "UI/UX Design", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg> },
+  { id: "graphic", name: "Graphic Design", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> },
+  { id: "web", name: "Web Design", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> },
+  { id: "product", name: "Product Design", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> },
+  { id: "brand", name: "Branding", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/></svg> },
+  { id: "motion", name: "Motion Graphics", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg> },
 ];
 
 export default function DesignBooksPage() {
@@ -351,8 +351,9 @@ export default function DesignBooksPage() {
               Sách Thiết Kế
             </h1>
           </div>
-          <p className="text-gray-700 text-lg font-medium">
-            🎨 {MOCK_BOOKS.length} cuốn sách thiết kế - Sáng tạo không giới hạn
+          <p className="text-gray-700 text-lg font-medium flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg>
+            {MOCK_BOOKS.length} cuốn sách thiết kế - Sáng tạo không giới hạn
           </p>
         </div>
 
@@ -395,11 +396,11 @@ export default function DesignBooksPage() {
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
               >
-                <option value="popular">🔥 Phổ biến nhất</option>
-                <option value="rating">⭐ Đánh giá cao</option>
-                <option value="price-asc">💰 Giá tăng dần</option>
-                <option value="price-desc">💎 Giá giảm dần</option>
-                <option value="name">📚 Tên A-Z</option>
+                <option value="popular">Phổ biến nhất</option>
+                <option value="rating">Đánh giá cao</option>
+                <option value="price-asc">Giá tăng dần</option>
+                <option value="price-desc">Giá giảm dần</option>
+                <option value="name">Tên A-Z</option>
               </select>
             </div>
           </div>
@@ -428,12 +429,6 @@ export default function DesignBooksPage() {
                     </Badge>
                   </div>
                 )}
-
-                {book.originalPrice && (
-                  <Badge variant="danger" className="absolute bottom-2 left-2 text-xs font-bold">
-                    -{calculateDiscount(book.originalPrice, book.price)}%
-                  </Badge>
-                )}
               </div>
 
               <div className="space-y-1">
@@ -442,7 +437,6 @@ export default function DesignBooksPage() {
                 </h3>
                 <p className="text-xs text-gray-600 font-medium">{book.author}</p>
                 <p className="text-xs text-pink-600 font-semibold">
-                  {SUBCATEGORIES.find((c) => c.id === book.subcategory)?.icon}{" "}
                   {SUBCATEGORIES.find((c) => c.id === book.subcategory)?.name}
                 </p>
 
@@ -460,11 +454,16 @@ export default function DesignBooksPage() {
                 )}
 
                 <div className="flex items-center gap-2 pt-1">
-                  <p className="text-pink-600 font-bold text-sm">{formatPrice(book.price)}</p>
+                  <p className="text-red-600 font-bold text-sm">{formatPrice(book.price)}</p>
                   {book.originalPrice && (
-                    <p className="text-xs text-gray-400 line-through">
-                      {formatPrice(book.originalPrice)}
-                    </p>
+                    <>
+                      <p className="text-xs text-gray-400 line-through">
+                        {formatPrice(book.originalPrice)}
+                      </p>
+                      <Badge variant="danger" className="text-xs font-bold">
+                        -{calculateDiscount(book.originalPrice, book.price)}%
+                      </Badge>
+                    </>
                   )}
                 </div>
 
@@ -499,20 +498,29 @@ export default function DesignBooksPage() {
 
         <div className="mt-12 bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl p-8 text-white">
           <div className="text-center">
-            <h2 className="text-3xl font-bold mb-4">🎨 Khám Phá Nghệ Thuật Thiết Kế</h2>
+            <h2 className="text-3xl font-bold mb-4 flex items-center justify-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg>
+              Khám Phá Nghệ Thuật Thiết Kế
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">💡</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Nguyên lý cơ bản</h3>
                 <p className="text-sm opacity-90">Nắm vững nền tảng thiết kế chuyên nghiệp</p>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">🛠️</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Công cụ hiện đại</h3>
                 <p className="text-sm opacity-90">Figma, Adobe XD, Photoshop, Illustrator</p>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">🚀</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Thực chiến dự án</h3>
                 <p className="text-sm opacity-90">Áp dụng vào dự án thực tế ngay</p>
               </div>
