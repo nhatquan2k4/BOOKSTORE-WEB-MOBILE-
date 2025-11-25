@@ -17,6 +17,18 @@ namespace BookStore.Infrastructure.Data.Configurations.Ordering
 
             builder.Property(oi => oi.UnitPrice)
                 .HasColumnType("decimal(18,2)");
+
+            // Configure relationship with Order
+            builder.HasOne(oi => oi.Order)
+                .WithMany(o => o.Items)
+                .HasForeignKey(oi => oi.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with Book
+            builder.HasOne(oi => oi.Book)
+                .WithMany()
+                .HasForeignKey(oi => oi.BookId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

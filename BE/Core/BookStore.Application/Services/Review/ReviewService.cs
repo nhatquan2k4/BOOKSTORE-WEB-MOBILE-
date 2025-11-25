@@ -48,10 +48,25 @@ namespace BookStore.Application.Services.Review
                 throw new InvalidOperationException("You can only review books you have purchased");
             }
 
-            // 3. Check if user has already reviewed this book
-            var hasReviewed = await _reviewRepository.HasUserReviewedBookAsync(userId, bookId);
-            if (hasReviewed)
-                throw new InvalidOperationException("You have already reviewed this book");
+            // 3. Check if user has already reviewed this book (Approved or Pending)
+            var existingReview = await _reviewRepository.GetUserReviewForBookAsync(userId, bookId);
+            if (existingReview != null)
+            {
+                if (existingReview.Status == "Approved")
+                    throw new InvalidOperationException("You have already reviewed this book. Use update endpoint to modify your review.");
+                
+                if (existingReview.Status == "Pending")
+                    throw new InvalidOperationException("Your review is pending approval. Use update endpoint to modify it.");
+
+                // If status is Rejected, allow creating new review by deleting the old one
+                if (existingReview.Status == "Rejected")
+                {
+                    _logger.LogInformation($"[CreateReview] Deleting rejected review {existingReview.Id} to allow new submission");
+                    existingReview.IsDeleted = true;
+                    _reviewRepository.Update(existingReview);
+                    await _reviewRepository.SaveChangesAsync();
+                }
+            }
 
             // 4. Create review
             var review = new Domain.Entities.Common.Review
@@ -278,15 +293,21 @@ namespace BookStore.Application.Services.Review
             if (book == null)
                 return;
 
-            var reviews = await _reviewRepository.GetAllAsync();
-            var approvedReviews = reviews
-                .Where(r => r.BookId == bookId && r.Status == "Approved" && !r.IsDeleted)
-                .ToList();
+            // Only get reviews for this specific book (optimized)
+            var totalReviews = await _reviewRepository.GetTotalReviewsCountByBookIdAsync(bookId, approvedOnly: true);
+            var distribution = await _reviewRepository.GetRatingDistributionAsync(bookId);
 
-            book.TotalReviews = approvedReviews.Count;
-            book.AverageRating = approvedReviews.Any() 
-                ? (decimal)approvedReviews.Average(r => r.Rating) 
-                : 0;
+            // Calculate average from distribution
+            decimal totalRating = 0;
+            int totalCount = 0;
+            foreach (var item in distribution)
+            {
+                totalRating += item.Key * item.Value;
+                totalCount += item.Value;
+            }
+
+            book.TotalReviews = totalCount;
+            book.AverageRating = totalCount > 0 ? Math.Round(totalRating / totalCount, 2) : 0;
 
             _bookRepository.Update(book);
             await _bookRepository.SaveChangesAsync();
@@ -324,10 +345,46 @@ namespace BookStore.Application.Services.Review
             };
         }
 
+        public async Task<ReviewDto> UpdateReviewAsync(Guid userId, Guid bookId, UpdateReviewDto dto)
+        {
+            var review = await _reviewRepository.GetUserReviewForBookAsync(userId, bookId);
+            if (review == null)
+                throw new InvalidOperationException("You have not reviewed this book yet");
+
+            // Only allow updating Pending or Rejected reviews
+            if (review.Status == "Approved")
+                throw new InvalidOperationException("Cannot update an approved review. Please delete and create a new one.");
+
+            review.Rating = dto.Rating;
+            review.Title = dto.Title;
+            review.Content = dto.Content;
+            review.Status = "Pending"; // Reset to Pending after update
+            review.IsEdited = true;
+            review.UpdatedAt = DateTime.UtcNow;
+
+            _reviewRepository.Update(review);
+            await _reviewRepository.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} updated review {ReviewId} for book {BookId}", 
+                userId, review.Id, bookId);
+
+            return await MapToReviewDto(review);
+        }
+
+        public async Task<ReviewDto?> GetUserReviewForBookAsync(Guid userId, Guid bookId)
+        {
+            var review = await _reviewRepository.GetUserReviewForBookAsync(userId, bookId);
+            if (review == null)
+                return null;
+
+            return await MapToReviewDto(review);
+        }
+
         public async Task<object> GetReviewEligibilityDebugAsync(Guid userId, Guid bookId)
         {
             var hasPurchased = await _reviewRepository.HasUserPurchasedBookAsync(userId, bookId);
             var hasReviewed = await _reviewRepository.HasUserReviewedBookAsync(userId, bookId);
+            var existingReview = await _reviewRepository.GetUserReviewForBookAsync(userId, bookId);
             var book = await _bookRepository.GetByIdAsync(bookId);
 
             return new
@@ -338,10 +395,18 @@ namespace BookStore.Application.Services.Review
                 BookTitle = book?.Title,
                 HasPurchased = hasPurchased,
                 HasReviewed = hasReviewed,
-                CanReview = book != null && hasPurchased && !hasReviewed,
+                ExistingReview = existingReview != null ? new
+                {
+                    ReviewId = existingReview.Id,
+                    Status = existingReview.Status,
+                    Rating = existingReview.Rating,
+                    CreatedAt = existingReview.CreatedAt
+                } : null,
+                CanCreateNew = book != null && hasPurchased && !hasReviewed,
+                CanUpdate = existingReview != null && existingReview.Status != "Approved",
                 Message = book == null ? "Book not found" :
                          !hasPurchased ? "User has not purchased this book" :
-                         hasReviewed ? "User has already reviewed this book" :
+                         hasReviewed ? $"User already has a review (Status: {existingReview?.Status})" :
                          "User can review this book"
             };
         }

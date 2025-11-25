@@ -7,8 +7,18 @@ using System.Security.Claims;
 
 namespace BookStore.API.Controllers.Comment
 {
+    /// <summary>
+    /// DEPRECATED: Review Comments are not used in standard e-commerce
+    /// In real e-commerce (Amazon, Shopee, etc.), customers:
+    /// 1. Leave REVIEWS with ratings (handled by ReviewsController)
+    /// 2. Ask QUESTIONS on the product page (handled by BookCommentsController)
+    /// 3. Mark reviews as helpful/not helpful (should be separate feature)
+    /// 
+    /// This controller is kept for backward compatibility but should not be used
+    /// </summary>
     [ApiController]
     [Route("api/reviews/{reviewId}/comments")]
+    [ApiExplorerSettings(IgnoreApi = true)] // Hide from Swagger
     public class ReviewCommentsController : ApiControllerBase
     {
         private readonly ICommentService _commentService;

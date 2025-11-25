@@ -49,6 +49,7 @@ namespace BookStore.Infrastructure.Repositories.Review
             // Check if user has successfully purchased this book
             // Valid order statuses: "Completed", "Delivered", or "Paid"
             var result = await _context.OrderItems
+                .Include(item => item.Order)  // ✅ Include Order navigation property
                 .AnyAsync(item => 
                     item.BookId == bookId && 
                     item.Order.UserId == userId &&
@@ -74,8 +75,11 @@ namespace BookStore.Infrastructure.Repositories.Review
 
         public async Task<bool> HasUserReviewedBookAsync(Guid userId, Guid bookId)
         {
+            // Only check for active reviews (Approved or Pending)
+            // Allow user to create new review if previous was Rejected or Deleted
             return await _dbSet
-                .AnyAsync(r => r.UserId == userId && r.BookId == bookId && !r.IsDeleted);
+                .AnyAsync(r => r.UserId == userId && r.BookId == bookId && !r.IsDeleted 
+                    && (r.Status == "Approved" || r.Status == "Pending"));
         }
 
         public async Task<Domain.Entities.Common.Review?> GetUserReviewForBookAsync(Guid userId, Guid bookId)
