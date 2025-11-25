@@ -2,8 +2,6 @@ pipeline {
     agent any
 
     parameters {
-        // Job CI: để mặc định false (chạy build + test + build image + push image)
-        // Job CD: set true để chỉ chạy Deploy
         booleanParam(
             name: 'DEPLOY_ONLY',
             defaultValue: false,
@@ -18,10 +16,10 @@ pipeline {
     }
 
     stages {
-        // ===== CI: Checkout source code =====
+        
         stage('Checkout') {
             when {
-                expression { !params.DEPLOY_ONLY } // Không chạy ở job CD
+                expression { !params.DEPLOY_ONLY }
             }
             steps {
                 checkout scm
@@ -31,7 +29,6 @@ pipeline {
             }
         }
 
-        // ===== CI: Build & Test (.NET) =====
         stage('Build & Test') {
             when {
                 expression { !params.DEPLOY_ONLY }
@@ -45,7 +42,6 @@ pipeline {
             }
         }
 
-        // ===== CI: Docker Build =====
         stage('Docker Build') {
             when {
                 expression { !params.DEPLOY_ONLY }
@@ -58,13 +54,9 @@ pipeline {
             }
         }
 
-        // ===== CI: Push image lên registry (chỉ branch 22-11) =====
-        stage('Push Image (branch 22-11 only)') {
+        stage('Push Image') {
             when {
-                allOf {
-                    expression { !params.DEPLOY_ONLY }  // chỉ chạy trong CI
-                    branch '22-11'                      // chỉ cho nhánh 22-11
-                }
+                expression { !params.DEPLOY_ONLY }
             }
             steps {
                 withCredentials([usernamePassword(
@@ -81,29 +73,21 @@ pipeline {
             }
         }
 
-        // ===== CD: Deploy (chỉ branch 22-11, chỉ khi DEPLOY_ONLY = true) =====
-        stage('Deploy (CD - branch 22-11)') {
+        stage('Deploy (CD)') {
             when {
-                allOf {
-                    branch '22-11'
-                    expression { params.DEPLOY_ONLY }
-                }
+                expression { params.DEPLOY_ONLY }
             }
             steps {
                 bat """
-                echo Deploying ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG} on branch 22-11
+                echo Deploying ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
 
-                REM Start / update SQL + MinIO bằng docker compose
                 docker compose -f BE/docker/docker-compose.yml up -d
 
-                REM Dừng & xoá container backend cũ (nếu có)
-                docker stop bookstore-backend || echo "No old container to stop"
-                docker rm   bookstore-backend || echo "No old container to remove"
+                docker stop bookstore-backend || echo "No old container"
+                docker rm   bookstore-backend || echo "No old container"
 
-                REM Pull image mới
                 docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
 
-                REM Chạy container backend mới
                 docker run -d ^
                   --name bookstore-backend ^
                   --network docker_bookstore-network ^
