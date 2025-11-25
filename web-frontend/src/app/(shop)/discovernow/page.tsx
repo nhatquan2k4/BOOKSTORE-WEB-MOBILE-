@@ -290,7 +290,6 @@ export default function DiscoverNowPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      {/* HERO */}
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white py-16 md:py-20">
         <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10 md:gap-6 items-center">
           {/* left */}

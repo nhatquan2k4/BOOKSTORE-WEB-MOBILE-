@@ -256,7 +256,7 @@ export default function NewArrivalsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <nav className="mb-6 text-sm text-gray-600">
@@ -274,7 +274,8 @@ export default function NewArrivalsPage() {
             </h1>
           </div>
           <p className="text-gray-600 text-lg">
-            Khám phá {MOCK_NEW_BOOKS.length} đầu sách mới nhất được phát hành gần đây
+            Khám phá {MOCK_NEW_BOOKS.length} đầu sách mới nhất được phát hành
+            gần đây
           </p>
         </div>
 
@@ -361,9 +362,9 @@ export default function NewArrivalsPage() {
                     <p className="text-xs text-gray-400 line-through">
                       {formatPrice(book.originalPrice)}
                     </p>
-                    <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                    <Badge variant="danger" className="text-xs font-bold">
                       -{calculateDiscount(book.originalPrice, book.price)}%
-                    </span>
+                    </Badge>
                   </div>
                 )}
               </div>

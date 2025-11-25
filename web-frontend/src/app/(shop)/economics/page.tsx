@@ -291,7 +291,7 @@ export default function EconomicsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <nav className="mb-6 text-sm text-gray-600">
@@ -362,8 +362,10 @@ export default function EconomicsPage() {
             }`}
           >
             Kinh tế vĩ mô (
-            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "macro")
-              .length}
+            {
+              MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "macro")
+                .length
+            }
             )
           </button>
           <button
@@ -375,8 +377,10 @@ export default function EconomicsPage() {
             }`}
           >
             Kinh tế vi mô (
-            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "micro")
-              .length}
+            {
+              MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "micro")
+                .length
+            }
             )
           </button>
           <button
@@ -388,8 +392,10 @@ export default function EconomicsPage() {
             }`}
           >
             Tài chính (
-            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "finance")
-              .length}
+            {
+              MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "finance")
+                .length
+            }
             )
           </button>
           <button
@@ -401,8 +407,10 @@ export default function EconomicsPage() {
             }`}
           >
             Đầu tư (
-            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "investing")
-              .length}
+            {
+              MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "investing")
+                .length
+            }
             )
           </button>
           <button
@@ -414,8 +422,10 @@ export default function EconomicsPage() {
             }`}
           >
             Kinh doanh (
-            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "business")
-              .length}
+            {
+              MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "business")
+                .length
+            }
             )
           </button>
         </div>
@@ -488,9 +498,9 @@ export default function EconomicsPage() {
                     <p className="text-xs text-gray-400 line-through">
                       {formatPrice(book.originalPrice)}
                     </p>
-                    <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                    <Badge variant="danger" className="text-xs font-bold">
                       -{calculateDiscount(book.originalPrice, book.price)}%
-                    </span>
+                    </Badge>
                   </>
                 )}
               </div>

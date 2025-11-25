@@ -400,7 +400,7 @@ export default function MostReadBooksPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4">
         {/* Breadcrumb */}
         <div className="mb-6">

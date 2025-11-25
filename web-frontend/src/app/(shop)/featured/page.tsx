@@ -321,7 +321,7 @@ export default function FeaturedBooksPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4 py-8">
         {/* breadcrumb */}
         <nav className="mb-6 text-sm text-gray-600">

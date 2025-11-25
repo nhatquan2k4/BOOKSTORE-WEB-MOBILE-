@@ -277,13 +277,13 @@ const MOCK_BOOKS: Book[] = [
 ];
 
 const SUBCATEGORIES = [
-  { id: "all", name: "Tất cả", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> },
-  { id: "english", name: "Tiếng Anh", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg> },
-  { id: "japanese", name: "Tiếng Nhật", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg> },
-  { id: "korean", name: "Tiếng Hàn", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg> },
-  { id: "chinese", name: "Tiếng Trung", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg> },
-  { id: "french", name: "Tiếng Pháp", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg> },
-  { id: "german", name: "Tiếng Đức", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg> },
+  { id: "all", name: "Tất cả"},
+  { id: "english", name: "Tiếng Anh"},
+  { id: "japanese", name: "Tiếng Nhật"},
+  { id: "korean", name: "Tiếng Hàn"},
+  { id: "chinese", name: "Tiếng Trung"},
+  { id: "french", name: "Tiếng Pháp"},
+  { id: "german", name: "Tiếng Đức"},
 ];
 
 export default function LanguageBooksPage() {
@@ -352,7 +352,7 @@ export default function LanguageBooksPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-sky-50">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4 py-8">
         <nav className="mb-6 text-sm text-gray-600">
           <Link href="/" className="hover:text-teal-600">
@@ -363,24 +363,6 @@ export default function LanguageBooksPage() {
 
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-teal-600"
-            >
-              <path d="M3 5v14" />
-              <path d="M8 5v14" />
-              <path d="M12 5v14" />
-              <path d="M17 5v14" />
-              <path d="M21 5v14" />
-            </svg>
             <h1 className="text-5xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
               Sách Ngoại Ngữ
             </h1>

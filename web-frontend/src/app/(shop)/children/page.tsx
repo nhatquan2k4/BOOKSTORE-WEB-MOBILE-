@@ -266,13 +266,13 @@ const MOCK_BOOKS: Book[] = [
 ];
 
 const SUBCATEGORIES = [
-  { id: "all", name: "Tất cả", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0 3 3 3 3 0 0 0 3-3"/><path d="M19 5a3 3 0 0 0-3 3 3 3 0 0 0 3 3"/><path d="M19 11a3 3 0 0 0-3 3 3 3 0 0 0 3 3"/><path d="M19 17a3 3 0 0 0-3 3 3 3 0 0 0 3 3"/><path d="M7 5a3 3 0 0 0 3 3 3 3 0 0 0-3 3"/><path d="M7 11a3 3 0 0 0 3 3 3 3 0 0 0-3 3"/></svg> },
-  { id: "picture", name: "Tranh Truyện", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg> },
-  { id: "fairy-tale", name: "Cổ Tích", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg> },
-  { id: "education", name: "Giáo Dục", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg> },
-  { id: "comics", name: "Truyện Tranh", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M8 7h8"/><path d="M8 11h8"/></svg> },
-  { id: "adventure", name: "Phiêu Lưu", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg> },
-  { id: "science", name: "Khoa Học", icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2v17.5c0 1.4-1.1 2.5-2.5 2.5s-2.5-1.1-2.5-2.5V2"/><path d="M8.5 2h7"/><path d="M14.5 16h-5"/></svg> },
+  { id: "all", name: "Tất cả"},
+  { id: "picture", name: "Tranh Truyện"},
+  { id: "fairy-tale", name: "Cổ Tích"},
+  { id: "education", name: "Giáo Dục"},
+  { id: "comics", name: "Truyện Tranh"},
+  { id: "adventure", name: "Phiêu Lưu"},
+  { id: "science", name: "Khoa Học"},
 ];
 
 export default function ChildrenBooksPage() {
@@ -325,7 +325,7 @@ export default function ChildrenBooksPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-pink-50">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4 py-8">
         <nav className="mb-6 text-sm text-gray-600">
           <Link href="/" className="hover:text-orange-600">
@@ -336,31 +336,11 @@ export default function ChildrenBooksPage() {
 
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-orange-600"
-            >
-              <path d="M12 6v4" />
-              <path d="M14 14h-4" />
-              <path d="M14 18h-4" />
-              <path d="M14 8h-4" />
-              <path d="M18 12h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2" />
-              <path d="M18 22V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v18" />
-            </svg>
             <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-pink-600 bg-clip-text text-transparent">
               Sách Thiếu Nhi
             </h1>
           </div>
           <p className="text-gray-700 text-lg font-medium flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0 3 3 3 3 0 0 0 3-3"/><path d="M19 5a3 3 0 0 0-3 3 3 3 0 0 0 3 3"/><path d="M19 11a3 3 0 0 0-3 3 3 3 0 0 0 3 3"/></svg>
             {MOCK_BOOKS.length} cuốn sách thiếu nhi - Nuôi dưỡng trí tưởng tượng và khám phá
           </p>
         </div>

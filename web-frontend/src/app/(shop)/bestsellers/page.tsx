@@ -498,7 +498,9 @@ export default function BestsellersPage() {
     const oneDay = 24 * 60 * 60 * 1000;
 
     return books.filter((book) => {
-      const daysDiff = Math.floor((now.getTime() - book.lastSoldDate.getTime()) / oneDay);
+      const daysDiff = Math.floor(
+        (now.getTime() - book.lastSoldDate.getTime()) / oneDay
+      );
       switch (range) {
         case "week":
           return daysDiff <= 7;
@@ -541,9 +543,12 @@ export default function BestsellersPage() {
     Math.round(((original - current) / original) * 100);
 
   const getRankBadgeClass = (rank: number) => {
-    if (rank === 1) return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white";
-    if (rank === 2) return "bg-gradient-to-r from-gray-300 to-gray-500 text-white";
-    if (rank === 3) return "bg-gradient-to-r from-orange-400 to-orange-600 text-white";
+    if (rank === 1)
+      return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white";
+    if (rank === 2)
+      return "bg-gradient-to-r from-gray-300 to-gray-500 text-white";
+    if (rank === 3)
+      return "bg-gradient-to-r from-orange-400 to-orange-600 text-white";
     return "bg-gray-200 text-gray-700";
   };
 
@@ -601,15 +606,17 @@ export default function BestsellersPage() {
 
       {/* Price line with discount */}
       <div className="flex flex-wrap items-center gap-2 mt-auto">
-        <p className="text-red-600 font-bold text-sm">{formatPrice(book.price)}</p>
+        <p className="text-red-600 font-bold text-sm">
+          {formatPrice(book.price)}
+        </p>
         {book.originalPrice && (
           <div className="flex items-center gap-1 flex-wrap">
             <p className="text-xs text-gray-400 line-through">
               {formatPrice(book.originalPrice)}
             </p>
-            <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+            <Badge variant="danger" className="text-xs font-bold">
               -{calculateDiscount(book.originalPrice, book.price)}%
-            </span>
+            </Badge>
           </div>
         )}
       </div>
@@ -754,12 +761,18 @@ export default function BestsellersPage() {
         <div className="mb-6 flex items-center justify-between px-2">
           <p className="text-sm text-gray-600">
             Hiển thị{" "}
-            <span className="font-semibold text-gray-900">{startIndex + 1}</span> -{" "}
+            <span className="font-semibold text-gray-900">
+              {startIndex + 1}
+            </span>{" "}
+            -{" "}
             <span className="font-semibold text-gray-900">
               {Math.min(endIndex, filteredBooks.length)}
             </span>{" "}
             trong tổng số{" "}
-            <span className="font-semibold text-gray-900">{filteredBooks.length}</span> sách
+            <span className="font-semibold text-gray-900">
+              {filteredBooks.length}
+            </span>{" "}
+            sách
           </p>
           <p className="text-sm text-gray-500">
             Trang {currentPage} / {totalPages}

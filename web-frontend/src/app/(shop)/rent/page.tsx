@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button, Badge, Input, Breadcrumb} from '@/components/ui';
@@ -181,6 +181,7 @@ export default function RentPage() {
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("popular");
+  const [activeHero, setActiveHero] = useState(0);
 
   const filteredBooks = rentableBooks.filter(book => {
     const matchCategory = selectedCategory === "Tất cả" || book.category === selectedCategory;
@@ -189,44 +190,189 @@ export default function RentPage() {
     return matchCategory && matchSearch;
   });
 
+  // Hero carousel
+  const heroBooks = rentableBooks.slice(0, 6);
+
+  const handleNextHero = () => {
+    setActiveHero((prev) => (prev + 1) % heroBooks.length);
+  };
+
+  const handlePrevHero = () => {
+    setActiveHero((prev) => (prev - 1 + heroBooks.length) % heroBooks.length);
+  };
+
+  // Auto-advance carousel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveHero((prev) => (prev + 1) % heroBooks.length);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [heroBooks.length]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Breadcrumb */}
-        <Breadcrumb items={[{ label: "Thuê eBook" }]} />
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white py-20 overflow-hidden">
-        {/* Decorative Elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-64 h-64 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-block mb-4 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold">
-              Đọc thông minh - Tiết kiệm hơn
+      <Breadcrumb items={[{ label: "Thuê eBook" }]} />
+      
+      {/* Hero Section - Similar to DiscoverNow */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white py-16 md:py-20">
+        <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10 md:gap-6 items-center">
+          {/* left */}
+          <div className="md:w-1/2 z-10">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide mb-4">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              Thuê eBook tiết kiệm
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Thuê eBook - Tri thức trong tầm tay
+
+            <p className="text-sm text-white/70 mb-3">Sách điện tử / {heroBooks[activeHero]?.category || "Lập trình"}</p>
+
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
+              {heroBooks[activeHero]?.title || "Thuê eBook - Tri thức trong tầm tay"}
             </h1>
-            <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-              Truy cập hàng ngàn đầu sách điện tử với chi phí thấp. Đọc không giới hạn, học không ngừng nghỉ!
+
+            <p className="text-sm md:text-base text-white/75 mb-6 line-clamp-4 md:line-clamp-5 max-w-xl">
+              Truy cập hàng ngàn đầu sách điện tử với chi phí thấp. Đọc không giới hạn, học không ngừng nghỉ! Chỉ từ 10,000₫ cho 3 ngày thuê.
             </p>
-            
+
+            <div className="flex gap-3 items-center">
+              <Button
+                asChild
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-5"
+              >
+                <Link href={`/rent/${heroBooks[activeHero]?.id || 1}`}>Thuê ngay</Link>
+              </Button>
+              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                  />
+                </svg>
+                Thêm vào yêu thích
+              </Button>
+            </div>
+
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-12">
+            <div className="grid grid-cols-3 gap-6 mt-8">
               <div>
-                <div className="text-3xl font-bold mb-2">5000+</div>
-                <div className="text-blue-100 text-sm">eBook có sẵn</div>
+                <div className="text-2xl font-bold mb-1">5000+</div>
+                <div className="text-white/60 text-xs">eBook có sẵn</div>
               </div>
               <div>
-                <div className="text-3xl font-bold mb-2">Từ 10K</div>
-                <div className="text-blue-100 text-sm">Cho 7 ngày</div>
+                <div className="text-2xl font-bold mb-1">Từ 10K</div>
+                <div className="text-white/60 text-xs">Cho 3 ngày</div>
               </div>
               <div>
-                <div className="text-3xl font-bold mb-2">40%</div>
-                <div className="text-blue-100 text-sm">Tiết kiệm tối đa</div>
+                <div className="text-2xl font-bold mb-1">60%</div>
+                <div className="text-white/60 text-xs">Tiết kiệm tối đa</div>
               </div>
+            </div>
+          </div>
+
+          {/* right - Book carousel */}
+          <div className="md:w-1/2 relative h-[400px] md:h-[420px] w-full">
+            {heroBooks.map((book, index) => {
+              const offset = index - activeHero;
+              const isActive = index === activeHero;
+              return (
+                <div
+                  key={book.id}
+                  className="absolute top-4 right-0 w-[260px] h-[360px] md:w-[280px] md:h-[380px] rounded-3xl overflow-hidden bg-slate-700/30 border border-white/10 shadow-2xl backdrop-blur"
+                  style={{
+                    transform: `translateX(${offset * -110}px) translateY(${
+                      Math.abs(offset) * 14
+                    }px) scale(${1 - Math.abs(offset) * 0.04})`,
+                    opacity: Math.abs(offset) > 2 ? 0 : 1,
+                    zIndex: 40 - Math.abs(offset),
+                    transition: "all 0.35s ease",
+                  }}
+                >
+                  <div className="relative w-full h-full">
+                    <Image src={book.cover} alt={book.title} fill className="object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/0 to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <p className="text-xs text-white/60 mb-1">eBook</p>
+                      <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-2">
+                        {book.title}
+                      </h3>
+                      <p className="text-[10px] text-white/50 line-clamp-1">{book.author}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs font-bold text-emerald-400">
+                          Từ {book.startPrice.toLocaleString('vi-VN')}₫
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {isActive && (
+                    <div className="absolute top-3 left-3 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold text-slate-950">
+                      Tiết kiệm
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* arrows */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+              <button
+                onClick={handlePrevHero}
+                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
+                aria-label="Previous"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
+              <button
+                onClick={handleNextHero}
+                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
+                aria-label="Next"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+
+            {/* dots */}
+            <div className="absolute bottom-2 right-0 flex gap-2">
+              {heroBooks.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveHero(idx)}
+                  className={`h-1.5 rounded-full transition-all ${
+                    idx === activeHero ? "w-6 bg-white" : "w-2 bg-white/40"
+                  }`}
+                  aria-label={`Chuyển tới slide ${idx + 1}`}
+                />
+              ))}
             </div>
           </div>
         </div>
