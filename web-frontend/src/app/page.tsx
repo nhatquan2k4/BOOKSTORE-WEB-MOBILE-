@@ -308,14 +308,14 @@ export default function HomePage() {
 
   const scrollByStepFeatured = (dir: "left" | "right") => {
     if (!featuredRef.current) return;
-    const step = 300;
+    const step = 350;
     const delta = dir === "left" ? -step : step;
     featuredRef.current.scrollBy({ left: delta, behavior: "smooth" });
   };
 
   const scrollByStepPopular = (dir: "left" | "right") => {
     if (!popularRef.current) return;
-    const step = 300;
+    const step = 350;
     const delta = dir === "left" ? -step : step;
     popularRef.current.scrollBy({ left: delta, behavior: "smooth" });
   };
@@ -500,7 +500,7 @@ export default function HomePage() {
             {categories.slice(0, 8).map((cat) => (
               <Link key={cat.id} href={cat.href}>
                 <div className="relative h-48 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 group">
-                  {/* Background Image with Overlay - Less blur for better visibility */}
+                  {/* Background Image with Overlay */}
                   <div className="absolute inset-0">
                     <Image
                       src={cat.image}
@@ -509,11 +509,9 @@ export default function HomePage() {
                       sizes="(max-width: 768px) 50vw, 25vw"
                       className="object-cover blur-[1px] group-hover:scale-110 transition-transform duration-300"
                     />
-                    {/* Lighter Gradient Overlay - reduced opacity */}
                     <div
                       className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-20`}
                     ></div>
-                    {/* Lighter dark overlay */}
                     <div className="absolute inset-0 bg-black/5"></div>
                   </div>
 
@@ -610,7 +608,7 @@ export default function HomePage() {
             <div
               ref={featuredRef}
               onScroll={updateArrowsFeatured}
-              className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
+              className="flex gap-5 overflow-x-auto pb-4 pr-4 pl-10 md:pl-12 md:pr-12 scroll-smooth
                         [-ms-overflow-style:none] [scrollbar-width:none] 
                         [&::-webkit-scrollbar]:hidden"
               style={{ overflowX: "auto" }}
@@ -619,54 +617,72 @@ export default function HomePage() {
                 <Link
                   key={book.id}
                   href={`/books/${book.id}`}
-                  className="flex h-[320px] w-[180px] min-w-[180px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
+                  className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
+                             border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
                 >
-                  <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+                  {/* Ảnh sách full khung */}
+                  <div className="relative w-full aspect-[4/5]">
                     <Image
                       src={book.cover}
                       alt={book.title}
                       fill
-                      sizes="180px"
+                      sizes="260px"
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    {/* ĐÃ BỎ % GIẢM GIÁ TRÊN ẢNH */}
+
+                    {/* Badge level + mới 2024 giống mẫu */}
                     {book.hot && (
-                      <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg animate-pulse">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          className="mr-1"
-                        >
-                          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-                        </svg>
-                        HOT
-                      </Badge>
-                    )}
-                  </div>
-                  <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                    {book.title}
-                  </h3>
-                  <p className="text-xs text-gray-600 mb-1">{book.author}</p>
-                  <div className="mt-auto flex flex-wrap items-center gap-1">
-                    <p className="text-red-600 font-bold text-sm">
-                      {formatVnd(book.price)}
-                    </p>
-                    {book.originalPrice > 0 && (
-                      <div className="flex flex-wrap items-center gap-1 text-xs">
-                        <p className="text-gray-400 line-through">
-                          {formatVnd(book.originalPrice)}
-                        </p>
-                        <Badge
-                          variant="danger"
-                          className="text-[11px] font-bold px-1.5 py-0.5"
-                        >
-                          -{calculateDiscount(book.originalPrice, book.price)}%
+                      <div className="absolute top-2 left-2 flex items-center gap-1">
+                        <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-600 text-white shadow">
+                          Advanced
                         </Badge>
                       </div>
                     )}
+
+                    <div className="absolute top-2 right-2">
+                      <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow">
+                        MỚI 2024
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Nội dung */}
+                  <div className="p-3 flex flex-col gap-1 flex-1">
+                    <h3 className="font-semibold text-sm line-clamp-2">
+                      {book.title}
+                    </h3>
+                    <p className="text-xs text-gray-600">{book.author}</p>
+
+                    {/* Giá + % giảm */}
+                    <div className="mt-2 flex items-end justify-between gap-2">
+                      <div className="flex flex-col">
+                        <p className="text-red-600 font-bold text-sm">
+                          {formatVnd(book.price)}
+                        </p>
+                        {book.originalPrice > 0 && (
+                          <p className="text-xs text-gray-400 line-through">
+                            {formatVnd(book.originalPrice)}
+                          </p>
+                        )}
+                      </div>
+
+                      {book.originalPrice > 0 && (
+                        <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                          -{calculateDiscount(book.originalPrice, book.price)}%
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Rating */}
+                    <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
+                      <span className="text-yellow-400">★</span>
+                      <span className="font-semibold">
+                        {book.rating.toFixed(1)}
+                      </span>
+                      <span className="text-gray-400">
+                        ({book.reviews.toLocaleString()})
+                      </span>
+                    </div>
                   </div>
                 </Link>
               ))}
@@ -758,7 +774,7 @@ export default function HomePage() {
             <div
               ref={popularRef}
               onScroll={updateArrowsPopular}
-              className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
+              className="flex gap-5 overflow-x-auto pb-4 pr-4 pl-10 md:pl-12 md:pr-12 scroll-smooth
                         [-ms-overflow-style:none] [scrollbar-width:none]
                         [&::-webkit-scrollbar]:hidden"
               style={{ overflowX: "auto" }}
@@ -767,37 +783,51 @@ export default function HomePage() {
                 <Link
                   key={book.id}
                   href={`/books/${book.id}`}
-                  className="flex h-[320px] w-[180px] min-w-[180px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
+                  className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
+                             border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
                 >
-                  <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+                  {/* Ảnh sách */}
+                  <div className="relative w-full aspect-[4/5]">
                     <Image
                       src={book.cover}
                       alt={book.title}
                       fill
-                      sizes="180px"
+                      sizes="260px"
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    {/* ĐÃ BỎ % GIẢM GIÁ TRÊN ẢNH */}
-                  </div>
-                  <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                    {book.title}
-                  </h3>
-                  <p className="text-xs text-gray-600 mb-1">{book.author}</p>
-                  <div className="mt-auto flex flex-wrap items-center gap-1">
-                    <p className="text-red-600 font-bold text-sm">
-                      {formatVnd(book.price)}
-                    </p>
-                    {book.originalPrice > 0 && (
-                      <div className="flex flex-wrap items-center gap-1 text-xs">
-                        <p className="text-gray-400 line-through">
-                          {formatVnd(book.originalPrice)}
-                        </p>
-                       <Badge variant="danger" className="text-[11px] font-bold px-1.5 py-0.5">
-                        -{calculateDiscount(book.originalPrice, book.price)}%
-                      </Badge>
 
+                    <div className="absolute top-2 right-2">
+                      <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow">
+                        MỚI 2024
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Nội dung */}
+                  <div className="p-3 flex flex-col gap-1 flex-1">
+                    <h3 className="font-semibold text-sm line-clamp-2">
+                      {book.title}
+                    </h3>
+                    <p className="text-xs text-gray-600">{book.author}</p>
+
+                    <div className="mt-2 flex items-end justify-between gap-2">
+                      <div className="flex flex-col">
+                        <p className="text-red-600 font-bold text-sm">
+                          {formatVnd(book.price)}
+                        </p>
+                        {book.originalPrice > 0 && (
+                          <p className="text-xs text-gray-400 line-through">
+                            {formatVnd(book.originalPrice)}
+                          </p>
+                        )}
                       </div>
-                    )}
+
+                      {book.originalPrice > 0 && (
+                        <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                          -{calculateDiscount(book.originalPrice, book.price)}%
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </Link>
               ))}
