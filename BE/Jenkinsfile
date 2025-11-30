@@ -65,7 +65,8 @@ pipeline {
 
                         sshCommand remote: remote, command: """
                             REM === Run docker-compose on Windows ===
-                            docker-compose -f D:/BOOKSTORE-WEB-MOBILE-/BE/docker/docker-compose.yml up -d
+                            cd D:/BOOKSTORE-WEB-MOBILE-/BE/docker
+                            docker compose up -d
 
                             REM === Restart backend container ===
                             docker stop bookstore-backend 2>nul || echo no old container
@@ -75,7 +76,7 @@ pipeline {
 
                             docker run -d ^
                               --name bookstore-backend ^
-                              --network bookstore-network ^
+                              --network docker_bookstore-network ^
                               -e ASPNETCORE_ENVIRONMENT=Development ^
                               -p 3030:8080 ^
                               ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}

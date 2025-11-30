@@ -7,22 +7,7 @@ namespace BookStore.Infrastructure.Data.Seeders
     {
         public static async Task SeedAsync(AppDbContext context)
         {
-
-            // Luôn đảm bảo đủ 3 role chính
-            var requiredRoles = new[]
-            {
-                new Role { Name = "Admin", Description = "Quản trị viên có toàn quyền trong hệ thống" },
-                new Role { Name = "User", Description = "Người dùng thông thường có thể mua sách, đánh giá và quản lý tài khoản cá nhân" },
-                new Role { Name = "Shipper", Description = "Nhân viên giao hàng có thể xem và cập nhật trạng thái đơn hàng giao cho mình" }
-            };
-            foreach (var role in requiredRoles)
-            {
-                if (!await context.Roles.AnyAsync(r => r.Name == role.Name))
-                {
-                    await context.Roles.AddAsync(new Role { Name = role.Name, Description = role.Description });
-                }
-            }
-            await context.SaveChangesAsync();
+            // Roles đã được seed bởi RoleSeeder, không cần tạo lại ở đây
 
             // ===== ĐỊNH NGHĨA CÁC PERMISSIONS =====
             var permissions = new List<Permission>
@@ -130,31 +115,15 @@ namespace BookStore.Infrastructure.Data.Seeders
             await context.Permissions.AddRangeAsync(permissions);
             await context.SaveChangesAsync();
 
-            // ===== ĐỊNH NGHĨA CÁC ROLES =====
-            var adminRole = new Role
-            {
-                Id = Guid.NewGuid(),
-                Name = "Admin",
-                Description = "Quản trị viên có toàn quyền trong hệ thống"
-            };
+            // Lấy các roles đã được seed từ RoleSeeder
+            var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "Admin");
+            var userRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "User");
+            var shipperRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "Shipper");
 
-            var userRole = new Role
+            if (adminRole == null || userRole == null || shipperRole == null)
             {
-                Id = Guid.NewGuid(),
-                Name = "User",
-                Description = "Người dùng thông thường có thể mua sách, đánh giá và quản lý tài khoản cá nhân"
-            };
-
-            var shipperRole = new Role
-            {
-                Id = Guid.NewGuid(),
-                Name = "Shipper",
-                Description = "Nhân viên giao hàng có thể xem và cập nhật trạng thái đơn hàng giao cho mình"
-            };
-
-            var roles = new List<Role> { adminRole, userRole, shipperRole };
-            await context.Roles.AddRangeAsync(roles);
-            await context.SaveChangesAsync();
+                throw new InvalidOperationException("Required roles not found. Please ensure RoleSeeder runs before RolePermissionSeeder.");
+            }
 
             // ===== GÁN QUYỀN CHO CÁC ROLES =====
             var rolePermissions = new List<RolePermission>();
@@ -263,7 +232,7 @@ namespace BookStore.Infrastructure.Data.Seeders
             await context.RolePermissions.AddRangeAsync(rolePermissions);
             await context.SaveChangesAsync();
 
-            Console.WriteLine($"Seeded {permissions.Count} permissions, {roles.Count} roles, and {rolePermissions.Count} role-permission mappings.");
+            Console.WriteLine($"Seeded {permissions.Count} permissions and {rolePermissions.Count} role-permission mappings.");
         }
     }
 }
