@@ -2,9 +2,10 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY_URL = "192.168.0.100:5000"   // registry trên server
-        IMAGE_NAME   = "bookstore-backend"
-        IMAGE_TAG    = "lastest"
+        SERVER_IP   = '192.168.0.102'          // ĐỔI thành IPv4 của máy Windows
+        REGISTRY_URL = "${SERVER_IP}:5000"    // Registry truy cập bằng IP:5000
+        IMAGE_NAME   = 'bookstore-backend'
+        IMAGE_TAG    = 'latest'
     }
 
     stages {
@@ -17,63 +18,90 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh '''
-                    cd BE
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                '''
+                dir('BE') {
+                    sh """
+                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    """
+                }
             }
         }
 
         stage('Push to Registry') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'docker-registry',
-                    usernameVariable: 'REG_USER',
-                    passwordVariable: 'REG_PASS'
-                )]) {
-                    sh '''
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker-registry',
+                        usernameVariable: 'REG_USER',
+                        passwordVariable: 'REG_PASS'
+                    )
+                ]) {
+                    sh """
                         docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
 
                         echo "${REG_PASS}" | docker login ${REGISTRY_URL} -u "${REG_USER}" --password-stdin
 
                         docker push ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                    '''
+                    """
                 }
             }
         }
 
-        stage('Deploy to Ubuntu Server') {
+        stage('Deploy to Windows Server via SSH (IP)') {
             steps {
-                sshagent(credentials: ['ubuntu-server-ssh']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ubuntu@192.168.0.100 '
-                            # Chạy docker-compose cho SQL + MinIO + Nginx trên SERVER
-                            docker-compose -f /home/ubuntu/BE/docker/docker-compose.yml up -d
+                script {
+                    def remote = [:]
+                    remote.name = 'windows-server'
+                    remote.host = SERVER_IP        // Dùng IP, không dùng localhost
+                    remote.allowAnyHosts = true
 
-                            # Dừng container backend cũ (nếu có)
-                            docker stop bookstore-backend || true
-                            docker rm   bookstore-backend || true
+                    withCredentials([
+                        sshUserPrivateKey(
+                            credentialsId: 'ubuntu-server-ssh',   // ĐỔI cho đúng ID credential SSH của bạn
+                            keyFileVariable: 'IDENTITY_FILE',
+                            passphraseVariable: '',
+                            usernameVariable: 'SSH_USER'
+                        )
+                    ]) {
+                        remote.user         = SSH_USER            // ví dụ: jenkins_deploy
+                        remote.identityFile = IDENTITY_FILE
 
-                            # Pull image backend mới từ registry
+                        sshCommand remote: remote, command: """
+                            REM ==== Docker Compose (chỉnh path cho đúng máy bạn) ====
+                            docker-compose -f D:\BOOKSTORE-WEB-MOBILE-\BE\docker\docker-compose.yml up -d
+
+                            REM ==== Dừng + xóa container cũ nếu có ====
+                            docker stop bookstore-backend  2>nul || echo "No old container to stop"
+                            docker rm   bookstore-backend  2>nul || echo "No old container to remove"
+
+                            REM ==== Pull image mới từ registry qua IP ====
                             docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
 
-                            # Chạy container backend mới
-                            docker run -d \\
-                                --name bookstore-backend \\
-                                --network docker_bookstore-network \\
-                                -e ASPNETCORE_ENVIRONMENT=Development \\
-                                -e ConnectionStrings__UsersDb="Server=bookstore-sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True" \\
-                                -e MinIO__Endpoint=minio:9000 \\
-                                -e MinIO__AccessKey=minioadmin \\
-                                -e MinIO__SecretKey=minioadmin123 \\
-                                -e MinIO__BucketName=bookstore-images \\
-                                -e MinIO__UseSSL=false \\
-                                -p 3030:8080 \\
-                                ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                        '
-                    """
+                            REM ==== Run container mới ====
+                            docker run -d ^
+                              --name bookstore-backend ^
+                              --network docker_bookstore-network ^
+                              -e ASPNETCORE_ENVIRONMENT=Development ^
+                              -e "ConnectionStrings__UsersDb=Server=bookstore-sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True" ^
+                              -e MinIO__Endpoint=minio:9000 ^
+                              -e MinIO__AccessKey=minioadmin ^
+                              -e MinIO__SecretKey=minioadmin123 ^
+                              -e MinIO__BucketName=bookstore-images ^
+                              -e MinIO__UseSSL=false ^
+                              -p 3030:8080 ^
+                              ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                        """
+                    }
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Deploy success: ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+        failure {
+            echo "Pipeline lỗi – xem console log."
         }
     }
 }
