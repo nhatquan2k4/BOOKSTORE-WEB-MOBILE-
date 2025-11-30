@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 
 type Book = {
@@ -290,7 +291,7 @@ export default function LanguageBooksPage() {
   const [selectedSubcategory, setSelectedSubcategory] = useState<SubCategory>("all");
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 18;
+  const itemsPerPage = 20;
 
   const filteredBooks =
     selectedSubcategory === "all"
@@ -377,21 +378,17 @@ export default function LanguageBooksPage() {
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Ngôn ngữ:</h3>
           <div className="flex flex-wrap gap-2 mb-4">
             {SUBCATEGORIES.map((cat) => (
-              <button
+              <Button
                 key={cat.id}
                 onClick={() => {
                   setSelectedSubcategory(cat.id as SubCategory);
                   setCurrentPage(1);
                 }}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  selectedSubcategory === cat.id
-                    ? "bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                variant={selectedSubcategory === cat.id ? "primary" : "outline"}
+                size="sm"
               >
-                <span className="mr-2">{cat.icon}</span>
                 {cat.name}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -422,20 +419,20 @@ export default function LanguageBooksPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           {paginatedBooks.map((book) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-3 shadow-md hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-teal-300"
+              className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
             >
-              <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                 <Image
                   src={book.cover}
                   alt={book.title}
                   fill
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                  className="object-cover group-hover:scale-110 transition-transform duration-300"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
 
                 <div className="absolute top-2 left-2 flex flex-col gap-1">

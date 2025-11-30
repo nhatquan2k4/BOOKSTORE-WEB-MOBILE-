@@ -280,7 +280,7 @@ const MOCK_BOOKS: Book[] = [
 export default function FeaturedBooksPage() {
   const [sortBy, setSortBy] = useState<SortOption>("featured");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 18;
+  const itemsPerPage = 20;
 
   const sortedBooks = [...MOCK_BOOKS].sort((a, b) => {
     switch (sortBy) {
@@ -404,20 +404,20 @@ export default function FeaturedBooksPage() {
         </div>
 
         {/* Grid books */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           {paginatedBooks.map((book, index) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-3 shadow-md hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-orange-200"
+              className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
             >
-              <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                 <Image
                   src={book.cover}
                   alt={book.title}
                   fill
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                  className="object-cover group-hover:scale-110 transition-transform duration-300"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
 
                 {index < 3 && (

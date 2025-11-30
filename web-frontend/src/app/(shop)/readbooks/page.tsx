@@ -5,6 +5,7 @@ import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui";
+import { Button } from "@/components/ui/Button";
 
 // Types
 interface Book {
@@ -384,36 +385,30 @@ export default function ReadBooksPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-sm p-2 mb-6 inline-flex gap-2">
-          <button
+          <Button
             onClick={() => setActiveTab("reading")}
-            className={`px-6 py-3 rounded-md font-medium transition-all ${
-              activeTab === "reading"
-                ? "bg-blue-600 text-white shadow-md"
-                : "text-gray-600 hover:bg-gray-100"
-            }`}
+            variant={activeTab === "reading" ? "primary" : "outline"}
+            size="md"
+            className={activeTab === "reading" ? "shadow-md" : ""}
           >
             📖 Đang đọc ({stats.reading})
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setActiveTab("completed")}
-            className={`px-6 py-3 rounded-md font-medium transition-all ${
-              activeTab === "completed"
-                ? "bg-green-600 text-white shadow-md"
-                : "text-gray-600 hover:bg-gray-100"
-            }`}
+            variant={activeTab === "completed" ? "primary" : "outline"}
+            size="md"
+            className={activeTab === "completed" ? "bg-green-600 hover:bg-green-700 shadow-md" : ""}
           >
             ✅ Đã đọc ({stats.completed})
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setActiveTab("want-to-read")}
-            className={`px-6 py-3 rounded-md font-medium transition-all ${
-              activeTab === "want-to-read"
-                ? "bg-gray-600 text-white shadow-md"
-                : "text-gray-600 hover:bg-gray-100"
-            }`}
+            variant={activeTab === "want-to-read" ? "primary" : "outline"}
+            size="md"
+            className={activeTab === "want-to-read" ? "bg-gray-600 hover:bg-gray-700 shadow-md" : ""}
           >
             🔖 Muốn đọc ({stats.wantToRead})
-          </button>
+          </Button>
         </div>
 
         {/* Filters */}
@@ -511,7 +506,7 @@ export default function ReadBooksPage() {
                         </h3>
                       </Link>
                       <p className="text-sm text-gray-600 mb-2">{book.author}</p>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="default" className="text-xs">
                         {book.genre}
                       </Badge>
                     </div>
@@ -577,9 +572,13 @@ export default function ReadBooksPage() {
                       <div className="text-sm text-gray-600 mb-2">
                         📖 {book.totalPages} trang
                       </div>
-                      <button className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium">
+                      <Button 
+                        variant="primary" 
+                        size="sm"
+                        className="w-full bg-purple-600 hover:bg-purple-700"
+                      >
                         Bắt đầu đọc
-                      </button>
+                      </Button>
                     </div>
                   )}
 

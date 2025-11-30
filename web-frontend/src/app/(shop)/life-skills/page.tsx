@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 
 // ============================================================================
@@ -245,7 +246,7 @@ export default function LifeSkillsPage() {
   const [selectedCategory, setSelectedCategory] =
     useState<SubCategoryFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+  const itemsPerPage = 20;
 
   // Filter books
   const filteredBooks =
@@ -328,13 +329,10 @@ export default function LifeSkillsPage() {
 
         {/* Category Filters */}
         <div className="mb-8 flex flex-wrap gap-3">
-          <button
+          <Button
             onClick={() => handleCategoryChange("all")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "all"
-                ? "bg-blue-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "all" ? "primary" : "outline"}
+            size="sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -351,14 +349,11 @@ export default function LifeSkillsPage() {
               <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
             </svg>
             Tất cả ({MOCK_LIFESKILLS_BOOKS.length})
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("habits")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "habits"
-                ? "bg-blue-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "habits" ? "primary" : "outline"}
+            size="sm"
           >
             Thói quen (
             {
@@ -366,14 +361,11 @@ export default function LifeSkillsPage() {
                 .length
             }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("productivity")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "productivity"
-                ? "bg-blue-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "productivity" ? "primary" : "outline"}
+            size="sm"
           >
             Năng suất (
             {
@@ -382,14 +374,11 @@ export default function LifeSkillsPage() {
               ).length
             }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("communication")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "communication"
-                ? "bg-blue-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "communication" ? "primary" : "outline"}
+            size="sm"
           >
             Giao tiếp (
             {
@@ -398,14 +387,11 @@ export default function LifeSkillsPage() {
               ).length
             }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("mindset")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "mindset"
-                ? "bg-blue-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "mindset" ? "primary" : "outline"}
+            size="sm"
           >
             Tư duy (
             {
@@ -413,14 +399,11 @@ export default function LifeSkillsPage() {
                 .length
             }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("leadership")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "leadership"
-                ? "bg-blue-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "leadership" ? "primary" : "outline"}
+            size="sm"
           >
             Lãnh đạo (
             {
@@ -429,7 +412,7 @@ export default function LifeSkillsPage() {
               ).length
             }
             )
-          </button>
+          </Button>
         </div>
 
         {/* Result Count */}
@@ -443,20 +426,20 @@ export default function LifeSkillsPage() {
         </div>
 
         {/* Books Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           {paginatedBooks.map((book) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-blue-100 hover:shadow-lg transition-all duration-300"
+              className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
             >
               {/* Book Cover */}
-              <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                 <Image
                   src={book.cover}
                   alt={book.title}
                   fill
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                  sizes="(max-width: 768px) 50vw, 25vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
 

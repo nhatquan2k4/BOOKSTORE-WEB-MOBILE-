@@ -7,6 +7,7 @@ import { useState, use, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Badge, Alert } from "@/components/ui";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 // ============================================================================
 // TYPES
@@ -1067,18 +1068,11 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
 
   return (
     <main className="min-h-screen bg-gray-50">
+      <Breadcrumb items={[
+        { label: 'Sách', href: '/books' },
+        { label: book.title }
+      ]} />
       <div className="container mx-auto px-6 py-10 text-gray-900">
-        {/* Breadcrumb */}
-        <nav className="mb-4 text-sm text-gray-600">
-          <Link href="/" className="hover:text-blue-600">
-            Trang chủ
-          </Link>{" "}
-          /{" "}
-          <Link href="/books" className="hover:text-blue-600">
-            Sách
-          </Link>{" "}
-          / <span className="font-medium text-gray-800">{book.title}</span>
-        </nav>
 
         {/* Nội dung chính */}
         <div className="grid grid-cols-1 gap-8 rounded-2xl bg-white p-6 shadow-md lg:grid-cols-2">

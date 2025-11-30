@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 
 // ============================================================================
@@ -247,7 +248,7 @@ export default function EconomicsPage() {
   const [selectedCategory, setSelectedCategory] =
     useState<SubCategoryFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+  const itemsPerPage = 20;
 
   // Filter books
   const filteredBooks =
@@ -329,13 +330,10 @@ export default function EconomicsPage() {
 
         {/* Category Filters */}
         <div className="mb-8 flex flex-wrap gap-3">
-          <button
+          <Button
             onClick={() => handleCategoryChange("all")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "all"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "all" ? "primary" : "outline"}
+            size="sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -352,14 +350,11 @@ export default function EconomicsPage() {
               <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
             </svg>
             Tất cả ({MOCK_ECONOMICS_BOOKS.length})
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("macro")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "macro"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "macro" ? "primary" : "outline"}
+            size="sm"
           >
             Kinh tế vĩ mô (
             {
@@ -367,14 +362,11 @@ export default function EconomicsPage() {
                 .length
             }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("micro")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "micro"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "micro" ? "primary" : "outline"}
+            size="sm"
           >
             Kinh tế vi mô (
             {
@@ -382,14 +374,11 @@ export default function EconomicsPage() {
                 .length
             }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("finance")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "finance"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "finance" ? "primary" : "outline"}
+            size="sm"
           >
             Tài chính (
             {
@@ -397,14 +386,11 @@ export default function EconomicsPage() {
                 .length
             }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("investing")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "investing"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "investing" ? "primary" : "outline"}
+            size="sm"
           >
             Đầu tư (
             {
@@ -412,14 +398,11 @@ export default function EconomicsPage() {
                 .length
             }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("business")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "business"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "business" ? "primary" : "outline"}
+            size="sm"
           >
             Kinh doanh (
             {
@@ -427,7 +410,7 @@ export default function EconomicsPage() {
                 .length
             }
             )
-          </button>
+          </Button>
         </div>
 
         {/* Result Count */}
@@ -441,20 +424,20 @@ export default function EconomicsPage() {
         </div>
 
         {/* Books Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           {paginatedBooks.map((book) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-lg hover:border-emerald-100 transition-all duration-300"
+              className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
             >
               {/* Book Cover */}
-              <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                 <Image
                   src={book.cover}
                   alt={book.title}
                   fill
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                  sizes="(max-width: 768px) 50vw, 25vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
 

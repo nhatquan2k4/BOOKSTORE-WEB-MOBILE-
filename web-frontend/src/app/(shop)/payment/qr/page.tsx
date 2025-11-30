@@ -277,7 +277,7 @@ export default function QRPaymentPage() {
 
   const bankInfo = getBankInfo();
 
-  // Xây dựng breadcrumb items dựa trên nguồn
+  // Xây dựng breadcrumb items dựa trên nguồn (không cần Trang chủ vì Breadcrumb component tự thêm)
   const getBreadcrumbItems = () => {
     if (type === 'rent') {
       // Từ trang thuê eBook

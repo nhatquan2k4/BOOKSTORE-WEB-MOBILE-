@@ -113,10 +113,11 @@ export default function RentDetailPage() {
   const params = useParams();
   const router = useRouter();
 
-  // Tính gói thuê từ giá mua (để không phải hard-code nữa)
+  // Tính gói thuê từ giá mua
+  const purchasePrice = bookData.purchasePrice;
   const rentalPlans = useMemo(
-    () => generateRentalPlans(bookData.purchasePrice),
-    [bookData.purchasePrice]
+    () => generateRentalPlans(purchasePrice),
+    [purchasePrice]
   );
 
   // chọn mặc định gói thứ 2 (7 ngày) cho hợp lý
@@ -146,24 +147,18 @@ export default function RentDetailPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Breadcrumb */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Link href="/" className="hover:text-blue-600 transition">
-              Trang chủ
-            </Link>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            <Link href="/rent" className="hover:text-blue-600 transition">
-              Thuê eBook
-            </Link>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            <span className="text-gray-900 font-medium line-clamp-1">{bookData.title}</span>
-          </div>
-        </div>
+      <div className="container mx-auto px-4 py-3">
+        <nav className="flex items-center gap-2 text-sm text-gray-600">
+          <Link href="/" className="hover:text-blue-600 transition">
+            Trang chủ
+          </Link>
+          <span>/</span>
+          <Link href="/rent" className="hover:text-blue-600 transition">
+            Thuê eBook
+          </Link>
+          <span>/</span>
+          <span className="text-gray-900">{bookData.title}</span>
+        </nav>
       </div>
 
       <div className="container mx-auto px-4 py-8">
@@ -273,36 +268,42 @@ export default function RentDetailPage() {
               {/* Tabs */}
               <div className="border-b border-gray-200 mb-6">
                 <div className="flex gap-8">
-                  <button
+                  <Button
                     onClick={() => setActiveTab('description')}
-                    className={`pb-4 border-b-2 font-semibold transition ${
+                    variant={activeTab === 'description' ? 'primary' : 'outline'}
+                    size="md"
+                    className={`pb-4 border-b-2 ${
                       activeTab === 'description'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                        ? 'border-blue-600'
+                        : 'border-transparent'
                     }`}
                   >
                     Mô tả
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setActiveTab('details')}
-                    className={`pb-4 border-b-2 font-semibold transition ${
+                    variant={activeTab === 'details' ? 'primary' : 'outline'}
+                    size="md"
+                    className={`pb-4 border-b-2 ${
                       activeTab === 'details'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                        ? 'border-blue-600'
+                        : 'border-transparent'
                     }`}
                   >
                     Chi tiết
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setActiveTab('reviews')}
-                    className={`pb-4 border-b-2 font-semibold transition ${
+                    variant={activeTab === 'reviews' ? 'primary' : 'outline'}
+                    size="md"
+                    className={`pb-4 border-b-2 ${
                       activeTab === 'reviews'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                        ? 'border-blue-600'
+                        : 'border-transparent'
                     }`}
                   >
                     Đánh giá ({bookData.reviews})
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -379,13 +380,15 @@ export default function RentDetailPage() {
                   {/* Rental Plans */}
                   <div className="space-y-3 mb-6">
                     {rentalPlans.map((plan) => (
-                      <button
+                      <Button
                         key={plan.id}
                         onClick={() => setSelectedPlan(plan.id)}
-                        className={`w-full p-4 rounded-lg border-2 transition-all ${
+                        variant={selectedPlan === plan.id ? 'primary' : 'outline'}
+                        size="md"
+                        className={`w-full p-4 ${
                           selectedPlan === plan.id
-                            ? 'border-blue-600 bg-blue-50 shadow-md'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                            ? 'bg-blue-50 shadow-md'
+                            : ''
                         } relative`}
                       >
                         {plan.popular && (
@@ -416,7 +419,7 @@ export default function RentDetailPage() {
                             )} */}
                           </div>
                         </div>
-                      </button>
+                      </Button>
                     ))}
                   </div>
 

@@ -383,230 +383,117 @@ export default function TrendingBooksPage() {
   const totalPages = Math.ceil(sortedBooks.length / booksPerPage);
   const startIndex = (currentPage - 1) * booksPerPage;
   const displayedBooks = sortedBooks.slice(startIndex, startIndex + booksPerPage);
-
-  // Calculate stats
-  const totalViews = trendingBooks.reduce((sum, book) => sum + book.weeklyViews, 0);
-  const totalOrders = trendingBooks.reduce((sum, book) => sum + book.weeklyOrders, 0);
-  const avgRating = (trendingBooks.reduce((sum, book) => sum + book.rating, 0) / trendingBooks.length).toFixed(1);
-  const hotBooksCount = trendingBooks.filter(b => b.isHot).length;
-
-  const getTrendIcon = (change: string) => {
-    switch (change) {
-      case "up":
-        return <span className="text-green-500 font-bold">↑</span>;
-      case "down":
-        return <span className="text-red-500 font-bold">↓</span>;
-      case "new":
-        return <span className="text-blue-500 font-bold">★</span>;
-      case "stable":
-        return <span className="text-gray-500 font-bold">→</span>;
-      default:
-        return null;
-    }
-  };
-
-  const getPositionChange = (book: Book) => {
-    if (!book.lastWeekPosition) return null;
-    const change = book.lastWeekPosition - (book.position || 0);
-    if (change > 0) {
-      return (
-        <span className="text-green-600 text-xs font-semibold">
-          +{change}
-        </span>
-      );
-    } else if (change < 0) {
-      return (
-        <span className="text-red-600 text-xs font-semibold">
-          {change}
-        </span>
-      );
-    }
-    return null;
-  };
+  const endIndex = startIndex + booksPerPage;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-fuchsia-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-rose-600 via-pink-600 to-fuchsia-600 text-white py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold">Sách Thịnh Hành</h1>
-              <p className="text-rose-100 mt-1">Những cuốn sách đang được yêu thích nhất</p>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-              <div className="text-3xl font-bold">{trendingBooks.length}</div>
-              <div className="text-rose-100 text-sm mt-1">Sách thịnh hành</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-              <div className="text-3xl font-bold">{(totalViews / 1000).toFixed(0)}K</div>
-              <div className="text-rose-100 text-sm mt-1">Lượt xem/tuần</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-              <div className="text-3xl font-bold">{(totalOrders / 1000).toFixed(1)}K</div>
-              <div className="text-rose-100 text-sm mt-1">Đơn hàng/tuần</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-              <div className="text-3xl font-bold">{avgRating}⭐</div>
-              <div className="text-rose-100 text-sm mt-1">Đánh giá TB</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <main className="min-h-screen bg-gradient-to-br from-orange-50 via-rose-50 to-pink-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-            <div className="flex flex-wrap gap-2">
-              <span className="text-sm font-medium text-gray-700 flex items-center">
-                Khung thời gian:
-              </span>
-              {(["today", "week", "month"] as TimeFilter[]).map((filter) => (
-                <Button
-                  key={filter}
-                  variant={timeFilter === filter ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setTimeFilter(filter)}
-                  className="text-xs"
-                >
-                  {filter === "today" && "Hôm nay"}
-                  {filter === "week" && "Tuần này"}
-                  {filter === "month" && "Tháng này"}
-                </Button>
-              ))}
-            </div>
+        {/* Breadcrumb */}
+        <nav className="mb-6 text-sm text-gray-600">
+          <Link href="/" className="hover:text-blue-600">
+            Trang chủ
+          </Link>{" "}
+          / <span className="font-medium text-gray-800">Sách thịnh hành</span>
+        </nav>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">Sắp xếp:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
-              >
-                <option value="trend">Độ thịnh hành</option>
-                <option value="views">Lượt xem</option>
-                <option value="orders">Đơn hàng</option>
-                <option value="rating">Đánh giá</option>
-                <option value="price-asc">Giá tăng dần</option>
-                <option value="price-desc">Giá giảm dần</option>
-              </select>
-            </div>
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-4xl font-bold text-gray-900">
+              Sách Thịnh Hành
+            </h1>
+          </div>
+          <p className="text-gray-600 text-lg">
+            Khám phá {sortedBooks.length} đầu sách đang được yêu thích nhất
+          </p>
+        </div>
+        {/* Filters & Sort */}
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="text-sm text-gray-600">
+            Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
+            <span className="font-semibold">
+              {Math.min(endIndex, sortedBooks.length)}
+            </span>{" "}
+            trong tổng số{" "}
+            <span className="font-semibold">{sortedBooks.length}</span> sách
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Sắp xếp:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="trend">Độ thịnh hành</option>
+              <option value="views">Lượt xem</option>
+              <option value="orders">Đơn hàng</option>
+              <option value="rating">Đánh giá</option>
+              <option value="price-asc">Giá tăng dần</option>
+              <option value="price-desc">Giá giảm dần</option>
+            </select>
           </div>
         </div>
 
         {/* Books Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-          {displayedBooks.map((book, index) => (
-            <Link key={book.id} href={`/books/${book.id}`}>
-              <div className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group relative">
-                {/* Ranking Badge */}
-                {book.position && book.position <= 10 && (
-                  <div className="absolute top-2 left-2 z-10">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ${
-                      book.position === 1 ? "bg-gradient-to-br from-yellow-400 to-yellow-600" :
-                      book.position === 2 ? "bg-gradient-to-br from-gray-300 to-gray-500" :
-                      book.position === 3 ? "bg-gradient-to-br from-orange-400 to-orange-600" :
-                      "bg-gradient-to-br from-rose-500 to-pink-600"
-                    }`}>
-                      {book.position}
-                    </div>
-                  </div>
-                )}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          {displayedBooks.map((book) => (
+            <Link
+              key={book.id}
+              href={`/books/${book.id}`}
+              className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
+            >
+              {/* Book Cover */}
+              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
+                <Image
+                  src={book.cover}
+                  alt={book.title}
+                  fill
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
 
-                {/* Hot Badge */}
+                {/* HOT Badge */}
                 {book.isHot && (
-                  <div className="absolute top-2 right-2 z-10">
-                    <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold animate-pulse">
-                      🔥 HOT
-                    </Badge>
-                  </div>
-                )}
-
-                {/* Book Cover */}
-                <div className="relative h-64 bg-gray-100">
-                  <Image
-                    src={book.cover}
-                    alt={book.title}
-                    fill
-                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 16vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-
-                {/* Book Info */}
-                <div className="p-4">
-                  {/* Trend Info */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="outline" className="text-xs border-rose-200 text-rose-700">
-                      {getTrendIcon(book.trendChange)}
-                      {book.trendChange === "new" ? "MỚI" : `${book.trendScore}%`}
-                    </Badge>
-                    {getPositionChange(book) && (
-                      <div className="flex items-center gap-1 text-xs">
-                        {getPositionChange(book)}
-                      </div>
-                    )}
-                  </div>
-
-                  <h3 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-rose-600 transition-colors">
-                    {book.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 mb-2">{book.author}</p>
-
-                  {/* Stats */}
-                  <div className="flex items-center gap-2 mb-2 text-xs text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <span>👁️</span>
-                      <span>{(book.weeklyViews / 1000).toFixed(0)}K</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span>📦</span>
-                      <span>{(book.weeklyOrders / 1000).toFixed(1)}K</span>
-                    </div>
-                  </div>
-
-                  {/* Category */}
-                  <Badge variant="secondary" className="text-xs mb-3">
-                    {book.category}
+                  <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg">
+                    🔥 HOT
                   </Badge>
-
-                  {/* Rating */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex items-center">
-                      <span className="text-yellow-400 text-sm">★</span>
-                      <span className="text-sm font-medium ml-1">{book.rating}</span>
-                    </div>
-                    <span className="text-xs text-gray-400">({book.reviews.toLocaleString()})</span>
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex flex-col gap-1">
-                    <div className="text-rose-600 font-bold text-lg">
-                      {book.price.toLocaleString()}₫
-                    </div>
-                    {book.originalPrice > 0 && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-400 text-xs line-through">
-                          {book.originalPrice.toLocaleString()}₫
-                        </span>
-                        <Badge variant="destructive" className="text-xs">
-                          -{Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)}%
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
+
+              {/* Book Info */}
+              <h3 className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
+                {book.title}
+              </h3>
+              <p className="text-xs text-gray-600 mb-1">{book.author}</p>
+
+              {/* Rating */}
+              <div className="flex items-center gap-1 mb-2">
+                <span className="text-yellow-500 text-sm">⭐</span>
+                <span className="text-xs font-medium">{book.rating}</span>
+                <span className="text-xs text-gray-500">({book.reviews})</span>
+              </div>
+
+              {/* Price */}
+              <div className="flex items-center gap-2">
+                <span className="text-base font-bold text-blue-600">
+                  {book.price.toLocaleString()}₫
+                </span>
+                {book.originalPrice && book.originalPrice > book.price && (
+                  <span className="text-xs text-gray-400 line-through">
+                    {book.originalPrice.toLocaleString()}₫
+                  </span>
+                )}
+              </div>
+
+              {/* Discount Badge */}
+              {book.originalPrice && book.originalPrice > book.price && (
+                <div className="mt-1">
+                  <Badge className="text-xs bg-red-500 text-white">
+                    -{Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)}%
+                  </Badge>
+                </div>
+              )}
             </Link>
           ))}
         </div>
@@ -626,10 +513,9 @@ export default function TrendingBooksPage() {
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <Button
                 key={page}
-                variant={currentPage === page ? "default" : "outline"}
+                variant={currentPage === page ? "primary" : "outline"}
                 size="sm"
                 onClick={() => setCurrentPage(page)}
-                className={currentPage === page ? "bg-rose-600 hover:bg-rose-700" : ""}
               >
                 {page}
               </Button>
@@ -646,6 +532,6 @@ export default function TrendingBooksPage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

@@ -491,7 +491,7 @@ export default function BestsellersPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const itemsPerPage = 14; // 2 hàng x 7 sách
+  const itemsPerPage = 20; // responsive grid layout
 
   const filterBooksByTimeRange = (books: Book[], range: TimeRange): Book[] => {
     const now = new Date();
@@ -556,7 +556,7 @@ export default function BestsellersPage() {
   const BookCard = ({ book }: { book: Book }) => (
     <Link
       href={`/books/${book.id}`}
-      className="flex h-[320px] w-[180px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group relative"
+      className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group relative"
     >
       {/* Rank badge */}
       <div
@@ -568,12 +568,12 @@ export default function BestsellersPage() {
       </div>
 
       {/* Cover */}
-      <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+      <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
         <Image
           src={book.cover}
           alt={book.title}
           fill
-          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          sizes="(max-width: 768px) 50vw, 25vw"
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
 
@@ -779,23 +779,11 @@ export default function BestsellersPage() {
           </p>
         </div>
 
-        {/* Grid 2 hàng sách */}
-        <div className="space-y-8">
-          {/* Row 1 */}
-          <div className="flex flex-wrap gap-9 justify-start">
-            {paginatedBooks.slice(0, 7).map((book) => (
-              <BookCard key={book.id} book={book} />
-            ))}
-          </div>
-
-          {/* Row 2: chỉ hiển thị nếu còn sách */}
-          {paginatedBooks.length > 7 && (
-            <div className="flex flex-wrap gap-9 justify-start">
-              {paginatedBooks.slice(7, 14).map((book) => (
-                <BookCard key={book.id} book={book} />
-              ))}
-            </div>
-          )}
+        {/* Books Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {paginatedBooks.map((book) => (
+            <BookCard key={book.id} book={book} />
+          ))}
         </div>
 
         {/* Pagination */}

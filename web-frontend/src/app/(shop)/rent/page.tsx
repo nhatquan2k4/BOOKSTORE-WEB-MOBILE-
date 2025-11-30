@@ -236,12 +236,12 @@ export default function RentPage() {
             </p>
 
             <div className="flex gap-3 items-center">
-              <Button
-                asChild
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-5"
+              <Link
+                href={`/rent/${heroBooks[activeHero]?.id || 1}`}
+                className="inline-flex items-center justify-center gap-2 font-semibold rounded-full transition-all bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-5 py-2.5"
               >
-                <Link href={`/rent/${heroBooks[activeHero]?.id || 1}`}>Thuê ngay</Link>
-              </Button>
+                Thuê ngay
+              </Link>
               <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -378,61 +378,6 @@ export default function RentPage() {
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-12 bg-white border-b">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Tiết kiệm chi phí</h3>
-                <p className="text-sm text-gray-600">Chỉ trả một phần nhỏ so với mua sách</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Đa thiết bị</h3>
-                <p className="text-sm text-gray-600">Đọc trên điện thoại, máy tính, máy tính bảng</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Linh hoạt</h3>
-                <p className="text-sm text-gray-600">Chọn thời gian thuê phù hợp với nhu cầu</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Truy cập ngay</h3>
-                <p className="text-sm text-gray-600">Đọc ngay sau khi thanh toán</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Main Content */}
       <section className="py-12">
         <div className="container mx-auto px-4">
@@ -473,17 +418,17 @@ export default function RentPage() {
             {/* Category Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
               {categories.map((category) => (
-                <button
+                <Button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-6 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all ${
-                    selectedCategory === category
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-600 hover:text-blue-600'
+                  variant={selectedCategory === category ? "primary" : "outline"}
+                  size="sm"
+                  className={`whitespace-nowrap ${
+                    selectedCategory === category ? 'shadow-lg' : ''
                   }`}
                 >
                   {category}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

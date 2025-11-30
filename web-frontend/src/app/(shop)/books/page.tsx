@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 
 type Book = {
@@ -497,7 +498,7 @@ export default function AllBooksPage() {
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [priceRange, setPriceRange] = useState<PriceRange>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 18;
+  const itemsPerPage = 20;
 
   const searchedBooks = MOCK_BOOKS.filter(
     (book) =>
@@ -679,21 +680,19 @@ export default function AllBooksPage() {
             </h3>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.map((cat) => (
-                <button
+                <Button
                   key={cat.id}
                   onClick={() => handleCategoryChange(cat.id)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                    selectedCategory === cat.id
-                      ? "bg-blue-600 text-white shadow-lg"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                  variant={selectedCategory === cat.id ? "primary" : "outline"}
+                  size="md"
+                  className={selectedCategory === cat.id ? "shadow-lg" : ""}
                 >
                   <CategoryIcon id={cat.id} />
                   {cat.name}
                   <span className="ml-2 text-xs opacity-75">
                     ({getCategoryCount(cat.id)})
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -801,20 +800,20 @@ export default function AllBooksPage() {
 
         {/* Books grid */}
         {paginatedBooks.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             {paginatedBooks.map((book) => (
               <Link
                 key={book.id}
                 href={`/books/${book.id}`}
-                className="group bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all duration-300"
+                className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
               >
                 {/* Cover */}
-                <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+                <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                   <Image
                     src={book.cover}
                     alt={book.title}
                     fill
-                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                    sizes="(max-width: 768px) 50vw, 25vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
 
@@ -931,17 +930,18 @@ export default function AllBooksPage() {
             <p className="text-gray-600 mb-6">
               Không có sách nào phù hợp với bộ lọc của bạn.
             </p>
-            <button
+            <Button
               onClick={() => {
                 setSearchQuery("");
                 setSelectedCategory("all");
                 setPriceRange("all");
                 setCurrentPage(1);
               }}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              variant="primary"
+              size="md"
             >
               Xóa bộ lọc
-            </button>
+            </Button>
           </div>
         )}
 
