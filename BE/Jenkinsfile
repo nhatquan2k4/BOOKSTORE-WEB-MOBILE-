@@ -75,7 +75,7 @@ pipeline {
 
                             docker run -d ^
                               --name bookstore-backend ^
-                              --network docker_bookstore-network ^
+                              --network bookstore-network ^
                               -e ASPNETCORE_ENVIRONMENT=Development ^
                               -p 3030:8080 ^
                               ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
