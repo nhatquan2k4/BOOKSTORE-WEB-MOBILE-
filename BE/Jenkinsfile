@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SERVER_IP   = '192.168.0.102'          // ĐỔI thành IPv4 của máy Windows
-        REGISTRY_URL = "${SERVER_IP}:5000"    // Registry truy cập bằng IP:5000
+        SERVER_IP    = '192.168.0.102'        // IPv4 của máy Windows
+        REGISTRY_URL = '192.168.0.102:5000'   // Registry truy cập bằng IP:5000
         IMAGE_NAME   = 'bookstore-backend'
         IMAGE_TAG    = 'latest'
     }
@@ -19,7 +19,8 @@ pipeline {
         stage('Docker Build') {
             steps {
                 dir('BE') {
-                    sh """
+                    // Jenkins chạy trên Windows nên dùng bat
+                    bat """
                         docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                     """
                 }
@@ -35,10 +36,10 @@ pipeline {
                         passwordVariable: 'REG_PASS'
                     )
                 ]) {
-                    sh """
+                    bat """
                         docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
 
-                        echo "${REG_PASS}" | docker login ${REGISTRY_URL} -u "${REG_USER}" --password-stdin
+                        echo ${REG_PASS} | docker login ${REGISTRY_URL} -u ${REG_USER} --password-stdin
 
                         docker push ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
                     """
@@ -67,7 +68,7 @@ pipeline {
 
                         sshCommand remote: remote, command: """
                             REM ==== Docker Compose (chỉnh path cho đúng máy bạn) ====
-                            docker-compose -f D:\BOOKSTORE-WEB-MOBILE-\BE\docker\docker-compose.yml up -d
+                            docker-compose -f D:/BOOKSTORE-WEB-MOBILE-/BE/docker/docker-compose.yml up -d
 
                             REM ==== Dừng + xóa container cũ nếu có ====
                             docker stop bookstore-backend  2>nul || echo "No old container to stop"
