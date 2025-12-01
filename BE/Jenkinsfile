@@ -56,11 +56,11 @@ pipeline {
                             )
                         ]) {
                             // Stop old container
-                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker stop bookstore-backend 2>nul || echo No container'"
-                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker rm bookstore-backend 2>nul || echo Removed'"
+                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker stop bookstore-backend 2>nul'"
+                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker rm bookstore-backend 2>nul'"
                             
                             // Start infrastructure
-                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'cd D:\\\\BOOKSTORE-WEB-MOBILE-\\\\BE\\\\docker && docker compose up -d'"
+                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'cd /d D:\\\\BOOKSTORE-WEB-MOBILE-\\\\BE\\\\docker & docker compose up -d'"
                             
                             // Login to registry  
                             sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'echo ${REG_PASS} | docker login ${REGISTRY_URL} -u ${REG_USER} --password-stdin'"
