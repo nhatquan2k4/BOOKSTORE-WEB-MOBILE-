@@ -64,36 +64,38 @@ pipeline {
                         remote.identityFile = IDENTITY_FILE
 
                         sshCommand remote: remote, command: """
-                            REM === Stop and remove old backend container if exists ===
-                            docker stop bookstore-backend 2>nul || echo No backend container running
-                            docker rm bookstore-backend 2>nul || echo No backend container to remove
+                            echo "=== Step 1: Stop and remove old backend container ==="
+                            docker stop bookstore-backend 2>nul || echo "No backend container running"
+                            docker rm bookstore-backend 2>nul || echo "No backend container to remove"
 
-                            REM === Start all infrastructure services via docker-compose ===
+                            echo "=== Step 2: Start infrastructure services ==="
                             cd D:/BOOKSTORE-WEB-MOBILE-/BE/docker
                             docker compose up -d
+                            echo "Docker compose completed"
 
-                            REM === Login to registry ===
+                            echo "=== Step 3: Login to registry ==="
                             echo admin123 | docker login ${REGISTRY_URL} -u admin --password-stdin
+                            echo "Registry login completed"
 
-                            REM === Pull latest backend image from registry ===
+                            echo "=== Step 4: Pull backend image ==="
                             docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                            echo "Image pull completed"
 
-                            REM === Deploy backend container ===
-                            docker run -d ^
-                              --name bookstore-backend ^
-                              --network docker_bookstore-network ^
-                              -e ASPNETCORE_ENVIRONMENT=Development ^
-                              -p 3030:8080 ^
-                              ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                            echo "=== Step 5: Deploy backend container ==="
+                            docker run -d --name bookstore-backend --network docker_bookstore-network -e ASPNETCORE_ENVIRONMENT=Development -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                            echo "Container deployed"
 
-                            REM === Wait for backend to be ready ===
-                            timeout /t 5 /nobreak
+                            echo "=== Step 6: Wait for backend to be ready ==="
+                            timeout /t 10 /nobreak
 
-                            REM === Restart nginx to ensure connection ===
+                            echo "=== Step 7: Restart nginx ==="
                             docker restart bookstore-nginx
+                            echo "Nginx restarted"
 
-                            REM === Show running containers ===
-                            docker ps --filter network=docker_bookstore-network
+                            echo "=== Step 8: Show running containers ==="
+                            docker ps --filter network=docker_bookstore-network --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+                            
+                            echo "=== Deployment completed successfully ==="
                         """
                     }
                 }
