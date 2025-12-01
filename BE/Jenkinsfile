@@ -56,20 +56,20 @@ pipeline {
                             )
                         ]) {
                             // Stop old container
-                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker stop bookstore-backend 2>nul'"
-                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker rm bookstore-backend 2>nul'"
+                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker stop bookstore-backend || exit 0'"
+                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker rm bookstore-backend || exit 0'"
                             
                             // Start infrastructure
-                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'cd /d D:\\\\BOOKSTORE-WEB-MOBILE-\\\\BE\\\\docker & docker compose up -d'"
+                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'cd D:/BOOKSTORE-WEB-MOBILE-/BE/docker && docker compose up -d'"
                             
                             // Login to registry  
-                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'echo ${REG_PASS} | docker login ${REGISTRY_URL} -u ${REG_USER} --password-stdin'"
+                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'echo \${REG_PASS} | docker login ${REGISTRY_URL} -u \${REG_USER} --password-stdin'" 
                             
                             // Pull image
-                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}'"
+                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG} || (echo \"Pull failed, checking registry connection...\" && docker images | grep ${IMAGE_NAME} && exit 1)'"
                             
                             // Deploy container
-                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker run -d --name bookstore-backend --network docker_bookstore-network -e ASPNETCORE_ENVIRONMENT=Development -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}'"
+                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker run -d --name bookstore-backend --network docker_bookstore-network -e ASPNETCORE_ENVIRONMENT=Development -e ConnectionStrings__DefaultConnection=\"Server=bookstore-sqlserver;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;TrustServerCertificate=True\" -e MinIO__Endpoint=minio:9000 -e MinIO__AccessKey=minioadmin -e MinIO__SecretKey=minioadmin123 -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}'"
                             
                             // Wait
                             sh "sleep 10"
