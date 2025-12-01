@@ -47,56 +47,58 @@ pipeline {
         stage('Deploy to Windows via SSH') {
             steps {
                 script {
-                    def remote = [:]
-                    remote.name = 'windows-server'
-                    remote.host = SERVER_IP
-                    remote.allowAnyHosts = true
+                    sshagent(['ssh']) {
+                        withCredentials([
+                            usernamePassword(
+                                credentialsId: 'docker-registry',
+                                usernameVariable: 'REG_USER',
+                                passwordVariable: 'REG_PASS'
+                            )
+                        ]) {
+                            sh """
+                                ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} << 'ENDSSH'
+                                    echo "=== Verifying SSH Connection ==="
+                                    hostname
+                                    whoami
+                                    
+                                    echo "=== Step 1: Stop and remove old backend container ==="
+                                    docker stop bookstore-backend 2>nul || echo "No backend container running"
+                                    docker rm bookstore-backend 2>nul || echo "No backend container to remove"
 
-                    withCredentials([
-                        sshUserPrivateKey(
-                            credentialsId: 'ssh',
-                            keyFileVariable: 'IDENTITY_FILE',
-                            passphraseVariable: '',
-                            usernameVariable: 'SSH_USER'
-                        )
-                    ]) {
-                        remote.user         = SSH_USER
-                        remote.identityFile = IDENTITY_FILE
+                                    echo "=== Step 2: Start infrastructure services ==="
+                                    cd /d D:\\BOOKSTORE-WEB-MOBILE-\\BE\\docker
+                                    docker compose up -d
+                                    echo "Docker compose completed"
 
-                        sshCommand remote: remote, command: """
-                            echo "=== Step 1: Stop and remove old backend container ==="
-                            docker stop bookstore-backend 2>nul || echo "No backend container running"
-                            docker rm bookstore-backend 2>nul || echo "No backend container to remove"
+                                    echo "=== Step 3: Login to registry ==="
+                                    echo ${REG_PASS} | docker login ${REGISTRY_URL} -u ${REG_USER} --password-stdin
+                                    echo "Registry login completed"
 
-                            echo "=== Step 2: Start infrastructure services ==="
-                            cd D:/BOOKSTORE-WEB-MOBILE-/BE/docker
-                            docker compose up -d
-                            echo "Docker compose completed"
+                                    echo "=== Step 4: Pull backend image ==="
+                                    docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                                    echo "Image pull completed"
 
-                            echo "=== Step 3: Login to registry ==="
-                            echo admin123 | docker login ${REGISTRY_URL} -u admin --password-stdin
-                            echo "Registry login completed"
+                                    echo "=== Step 5: Deploy backend container ==="
+                                    docker run -d --name bookstore-backend --network docker_bookstore-network -e ASPNETCORE_ENVIRONMENT=Development -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                                    echo "Container deployed"
 
-                            echo "=== Step 4: Pull backend image ==="
-                            docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                            echo "Image pull completed"
+                                    echo "=== Step 6: Wait for backend to be ready ==="
+                                    timeout /t 10 /nobreak
 
-                            echo "=== Step 5: Deploy backend container ==="
-                            docker run -d --name bookstore-backend --network docker_bookstore-network -e ASPNETCORE_ENVIRONMENT=Development -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                            echo "Container deployed"
+                                    echo "=== Step 7: Restart nginx ==="
+                                    docker restart bookstore-nginx
+                                    echo "Nginx restarted"
 
-                            echo "=== Step 6: Wait for backend to be ready ==="
-                            timeout /t 10 /nobreak
-
-                            echo "=== Step 7: Restart nginx ==="
-                            docker restart bookstore-nginx
-                            echo "Nginx restarted"
-
-                            echo "=== Step 8: Show running containers ==="
-                            docker ps --filter network=docker_bookstore-network --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
-                            
-                            echo "=== Deployment completed successfully ==="
-                        """
+                                    echo "=== Step 8: Show running containers ==="
+                                    docker ps --filter network=docker_bookstore-network --format "table {{.Names}}\\t{{.Image}}\\t{{.Status}}"
+                                    
+                                    echo "=== Final Verification ==="
+                                    docker ps -a --filter name=bookstore-backend
+                                    
+                                    echo "=== Deployment completed successfully ==="
+                                ENDSSH
+                            """
+                        }
                     }
                 }
             }
