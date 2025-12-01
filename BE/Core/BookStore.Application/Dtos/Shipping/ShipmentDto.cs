@@ -108,4 +108,4 @@ namespace BookStore.Application.Dtos.Shipping
         public DateTime ArrivedAt { get; set; }
     }
 }
-}
+
