@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
@@ -205,71 +205,8 @@ const newArrivals = [
 ];
 
 export default function DiscoverNowPage() {
-  const trendingRef = useRef<HTMLDivElement>(null);
-  const newArrivalsRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeftTrending, setCanScrollLeftTrending] = useState(false);
-  const [canScrollRightTrending, setCanScrollRightTrending] = useState(true);
-  const [canScrollLeftNewArrivals, setCanScrollLeftNewArrivals] = useState(false);
-  const [canScrollRightNewArrivals, setCanScrollRightNewArrivals] = useState(true);
-
   // hero state
   const [activeHero, setActiveHero] = useState(0);
-
-  const updateArrowsTrending = () => {
-    const container = trendingRef.current;
-    if (!container) return;
-    setCanScrollLeftTrending(container.scrollLeft > 0);
-    setCanScrollRightTrending(
-      container.scrollLeft < container.scrollWidth - container.clientWidth - 10
-    );
-  };
-
-  const updateArrowsNewArrivals = () => {
-    const container = newArrivalsRef.current;
-    if (!container) return;
-    setCanScrollLeftNewArrivals(container.scrollLeft > 0);
-    setCanScrollRightNewArrivals(
-      container.scrollLeft < container.scrollWidth - container.clientWidth - 10
-    );
-  };
-
-  useEffect(() => {
-    const trendingContainer = trendingRef.current;
-    const newArrivalsContainer = newArrivalsRef.current;
-
-    if (trendingContainer) {
-      updateArrowsTrending();
-      trendingContainer.addEventListener("scroll", updateArrowsTrending);
-    }
-
-    if (newArrivalsContainer) {
-      updateArrowsNewArrivals();
-      newArrivalsContainer.addEventListener("scroll", updateArrowsNewArrivals);
-    }
-
-    return () => {
-      if (trendingContainer) {
-        trendingContainer.removeEventListener("scroll", updateArrowsTrending);
-      }
-      if (newArrivalsContainer) {
-        newArrivalsContainer.removeEventListener("scroll", updateArrowsNewArrivals);
-      }
-    };
-  }, []);
-
-  const scrollByStepTrending = (direction: "left" | "right") => {
-    const container = trendingRef.current;
-    if (!container) return;
-    const scrollAmount = direction === "left" ? -300 : 300;
-    container.scrollBy({ left: scrollAmount, behavior: "smooth" });
-  };
-
-  const scrollByStepNewArrivals = (direction: "left" | "right") => {
-    const container = newArrivalsRef.current;
-    if (!container) return;
-    const scrollAmount = direction === "left" ? -300 : 300;
-    container.scrollBy({ left: scrollAmount, behavior: "smooth" });
-  };
 
   const handleNextHero = () => {
     setActiveHero((prev) => (prev + 1) % heroBooks.length);
@@ -290,7 +227,6 @@ export default function DiscoverNowPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      {/* HERO */}
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white py-16 md:py-20">
         <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10 md:gap-6 items-center">
           {/* left */}
@@ -311,12 +247,12 @@ export default function DiscoverNowPage() {
             </p>
 
             <div className="flex gap-3 items-center">
-              <Button
-                asChild
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-5"
+              <Link
+                href={`/discovernow/${heroBooks[activeHero]?.id || 1}`}
+                className="inline-flex items-center justify-center gap-2 font-semibold rounded-full transition-all bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-5 py-2.5"
               >
-                <Link href={`/books/${heroBooks[activeHero].id}`}>Đọc sách</Link>
-              </Button>
+                Khám phá ngay
+              </Link>
               <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -438,7 +374,7 @@ export default function DiscoverNowPage() {
           <div className="mb-8 flex items-center justify-between">
             <h2 className="text-3xl font-bold">Sách Thịnh Hành</h2>
             <Link
-              href="/books?filter=trending"
+              href="/trending"
               className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
             >
               <span>Xem tất cả</span>
@@ -453,127 +389,74 @@ export default function DiscoverNowPage() {
               </svg>
             </Link>
           </div>
-          <div className="relative">
-            <Button
-              type="button"
-              onClick={() => scrollByStepTrending("left")}
-              disabled={!canScrollLeftTrending}
-              variant="secondary"
-              size="sm"
-              className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow-lg disabled:opacity-30"
-              aria-label="Xem trước"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="m15 18-6-6 6-6" />
-              </svg>
-            </Button>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {trendingBooks.map((book) => {
+              const discountPercent =
+                book.originalPrice && book.originalPrice > book.price
+                  ? Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)
+                  : null;
 
-            <div
-              ref={trendingRef}
-              onScroll={updateArrowsTrending}
-              className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              style={{ overflowX: "auto" }}
-            >
-              {trendingBooks.map((book) => {
-                const discountPercent =
-                  book.originalPrice && book.originalPrice > book.price
-                    ? Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)
-                    : null;
+              return (
+                <Link
+                  key={book.id}
+                  href={`/books/${book.id}`}
+                  className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
+                >
+                  <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
+                    <Image
+                      src={book.image}
+                      alt={book.title}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {book.hot && (
+                      <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg animate-pulse">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="mr-1"
+                        >
+                          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                        </svg>
+                        HOT
+                      </Badge>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-sm line-clamp-2 mb-1">{book.title}</h3>
+                  <p className="text-xs text-gray-600 mb-1">{book.author}</p>
 
-                return (
-                  <Link
-                    key={book.id}
-                    href={`/books/${book.id}`}
-                    className="flex h-[320px] w-[180px] min-w-[180px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
-                  >
-                    <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
-                      <Image
-                        src={book.image}
-                        alt={book.title}
-                        fill
-                        sizes="180px"
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      {book.hot && (
-                        <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg animate-pulse">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            className="mr-1"
-                          >
-                            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-                          </svg>
-                          HOT
-                        </Badge>
-                      )}
-                    </div>
-                    <h3 className="font-semibold text-sm line-clamp-2 mb-1">{book.title}</h3>
-                    <p className="text-xs text-gray-600 mb-1">{book.author}</p>
+                  {/* giá */}
+                  <div className="flex items-center gap-2 mt-auto">
+                    <p className="text-blue-600 font-bold text-sm">
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(book.price)}
+                    </p>
 
-                    {/* giá */}
-                    <div className="flex items-center gap-2 mt-auto">
-                      <p className="text-blue-600 font-bold text-sm">
-                        {new Intl.NumberFormat("vi-VN", {
-                          style: "currency",
-                          currency: "VND",
-                        }).format(book.price)}
-                      </p>
-
-                      {book.originalPrice && (
-                        <div className="flex items-center gap-1">
-                          <p className="text-xs text-gray-400 line-through">
-                            {new Intl.NumberFormat("vi-VN", {
-                              style: "currency",
-                              currency: "VND",
-                            }).format(book.originalPrice)}
-                          </p>
-                          {discountPercent && (
-                            <span className="text-xs font-semibold text-red-500">
-                              -{discountPercent}%
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-
-            <Button
-              type="button"
-              onClick={() => scrollByStepTrending("right")}
-              disabled={!canScrollRightTrending}
-              variant="secondary"
-              size="sm"
-              className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow-lg disabled:opacity-30"
-              aria-label="Xem tiếp"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="m9 18 6-6-6-6" />
-              </svg>
-            </Button>
+                    {book.originalPrice && (
+                      <div className="flex items-center gap-1">
+                        <p className="text-xs text-gray-400 line-through">
+                          {new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          }).format(book.originalPrice)}
+                        </p>
+                        {discountPercent && (
+                          <span className="text-xs font-semibold text-red-500">
+                            -{discountPercent}%
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -584,7 +467,7 @@ export default function DiscoverNowPage() {
           <div className="mb-8 flex items-center justify-between">
             <h2 className="text-3xl font-bold">Sách Mới Ra Mắt</h2>
             <Link
-              href="/books?filter=new"
+              href="/new-releases"
               className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
             >
               <span>Xem tất cả</span>
@@ -599,67 +482,39 @@ export default function DiscoverNowPage() {
               </svg>
             </Link>
           </div>
-          <div className="relative">
-            <Button
-              type="button"
-              onClick={() => scrollByStepNewArrivals("left")}
-              disabled={!canScrollLeftNewArrivals}
-              variant="secondary"
-              size="sm"
-              className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow-lg disabled:opacity-30"
-              aria-label="Xem trước"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {newArrivals.map((book) => (
+              <Link
+                key={book.id}
+                href={`/books/${book.id}`}
+                className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
               >
-                <path d="m15 18-6-6 6-6" />
-              </svg>
-            </Button>
-
-            <div
-              ref={newArrivalsRef}
-              onScroll={updateArrowsNewArrivals}
-              className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              style={{ overflowX: "auto" }}
-            >
-              {newArrivals.map((book) => (
-                <Link
-                  key={book.id}
-                  href={`/books/${book.id}`}
-                  className="flex h-[320px] w-[180px] min-w-[180px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
-                >
-                  <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
-                    <Image
-                      src={book.image}
-                      alt={book.title}
-                      fill
-                      sizes="180px"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <Badge className="absolute top-2 right-2 text-xs bg-green-500 text-white font-semibold shadow-lg">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="mr-1"
-                      >
-                        <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
-                      </svg>
-                      MỚI
-                    </Badge>
-                  </div>
-                  <h3 className="font-semibold text-sm line-clamp-2 mb-1">{book.title}</h3>
-                  <p className="text-xs text-gray-600 mb-1">{book.author}</p>
-                  <div className="flex items-center gap-2 mt-auto">
+                <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
+                  <Image
+                    src={book.image}
+                    alt={book.title}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <Badge className="absolute top-2 right-2 text-xs bg-green-500 text-white font-semibold shadow-lg">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="mr-1"
+                    >
+                      <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
+                    </svg>
+                    MỚI
+                  </Badge>
+                </div>
+                <h3 className="font-semibold text-sm line-clamp-2 mb-1">{book.title}</h3>
+                <p className="text-xs text-gray-600 mb-1">{book.author}</p>
+                <div className="mt-auto">
+                  <div className="flex items-center gap-2 mb-1">
                     <p className="text-blue-600 font-bold text-sm">
                       {new Intl.NumberFormat("vi-VN", {
                         style: "currency",
@@ -667,32 +522,12 @@ export default function DiscoverNowPage() {
                       }).format(book.price)}
                     </p>
                   </div>
-                </Link>
-              ))}
-            </div>
-
-            <Button
-              type="button"
-              onClick={() => scrollByStepNewArrivals("right")}
-              disabled={!canScrollRightNewArrivals}
-              variant="secondary"
-              size="sm"
-              className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow-lg disabled:opacity-30"
-              aria-label="Xem tiếp"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="m9 18 6-6-6-6" />
-              </svg>
-            </Button>
+                  <Badge className="bg-emerald-100 text-emerald-700 text-xs">
+                    Mới ra mắt
+                  </Badge>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>

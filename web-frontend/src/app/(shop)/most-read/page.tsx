@@ -283,7 +283,7 @@ export default function MostReadBooksPage() {
   const [sortBy, setSortBy] = useState<SortOption>("read-count");
   const [timeRange, setTimeRange] = useState<TimeRange>("all-time");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 18;
+  const itemsPerPage = 20;
 
   const sortedBooks = [...MOCK_BOOKS].sort((a, b) => {
     switch (sortBy) {
@@ -400,7 +400,7 @@ export default function MostReadBooksPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4">
         {/* Breadcrumb */}
         <div className="mb-6">
@@ -493,18 +493,18 @@ export default function MostReadBooksPage() {
         </Card>
 
         {/* Books grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           {paginatedBooks.map((book, index) => (
             <Link key={book.id} href={`/books/${book.id}`}>
-              <Card className="group h-full border-2 border-transparent hover:border-blue-200 transition-all duration-300">
+              <Card className="flex flex-col h-full rounded-xl bg-white shadow-sm transition hover:shadow-lg group">
                 <CardContent className="p-3">
-                  <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+                  <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                     <Image
                       src={book.cover}
                       alt={book.title}
                       fill
-                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
 
                     {startIndex + index < 3 && (

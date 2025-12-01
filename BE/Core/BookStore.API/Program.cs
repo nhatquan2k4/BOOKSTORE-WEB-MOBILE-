@@ -1,5 +1,6 @@
 using BookStore.API.Filters;
 using BookStore.API.Middlewares;
+using BookStore.API.BackgroundServices;
 using BookStore.Application.IService;
 using BookStore.Application.IService.Catalog;
 using BookStore.Application.IService.Identity.Auth;
@@ -7,6 +8,8 @@ using BookStore.Application.IService.Identity.Email;
 using BookStore.Application.IService.Identity.Permission;
 using BookStore.Application.IService.Identity.Role;
 using BookStore.Application.IService.Identity.User;
+using BookStore.Application.IService.System;
+using BookStore.Application.Services.System;
 using BookStore.Application.Services;
 using BookStore.Application.Services.Catalog;
 using BookStore.Application.Services.Identity.Auth;
@@ -107,8 +110,8 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// Email Services
-builder.Services.AddScoped<IEmailService, BookStore.Application.Services.Identity.Email.EmailService>();
+// Email Services (Identity)
+builder.Services.AddScoped<BookStore.Application.IService.Identity.Email.IEmailService, BookStore.Application.Services.Identity.Email.EmailService>();
 builder.Services.AddScoped<IEmailVerificationService, BookStore.Application.Services.Identity.Email.EmailVerificationService>();
 
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
@@ -213,6 +216,25 @@ builder.Services.AddScoped<BookStore.Application.IService.Comment.ICommentServic
 // NotificationTemplate Repository & Service
 builder.Services.AddScoped<BookStore.Domain.IRepository.System.INotificationTemplateRepository, BookStore.Infrastructure.Repositories.System.NotificationTemplateRepository>();
 builder.Services.AddScoped<BookStore.Application.IService.System.INotificationTemplateService, BookStore.Application.Services.System.NotificationTemplateService>();
+
+// Analytics Repositories
+builder.Services.AddScoped<BookStore.Domain.IRepository.Analytics.IAuditLogRepository, BookStore.Infrastructure.Repositories.Analytics.AuditLogRepository>();
+builder.Services.AddScoped<BookStore.Domain.IRepository.Analytics.IBookViewRepository, BookStore.Infrastructure.Repositories.Analytics.BookViewRepository>();
+
+// Analytics Services
+builder.Services.AddScoped<BookStore.Application.IService.Analytics.IAuditLogService, BookStore.Application.Service.Analytics.AuditLogService>();
+builder.Services.AddScoped<BookStore.Application.IService.Analytics.IBookViewService, BookStore.Application.Service.Analytics.BookViewService>();
+builder.Services.AddScoped<BookStore.Application.IService.Analytics.IDashboardService, BookStore.Application.Service.Analytics.DashboardService>();
+
+// Notification Repository & Service
+builder.Services.AddScoped<BookStore.Domain.IRepository.System.INotificationRepository, BookStore.Infrastructure.Repositories.System.NotificationRepository>();
+builder.Services.AddScoped<BookStore.Application.IService.System.INotificationService, BookStore.Application.Services.System.NotificationService>();
+
+// Event Bus (Singleton because it uses Channel)
+builder.Services.AddSingleton<BookStore.Application.Services.System.IEventBus, BookStore.Application.Services.System.InMemoryEventBus>();
+
+// Background Service for notifications
+builder.Services.AddHostedService<BookStore.API.BackgroundServices.NotificationBackgroundService>();
 
 // Rental Services (Story 18 - Ebook Rental)
 builder.Services.AddScoped<BookStore.Domain.IRepository.Rental.IRentalPlanRepository, BookStore.Infrastructure.Repositories.Rental.RentalPlanRepository>();

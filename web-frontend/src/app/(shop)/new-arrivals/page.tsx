@@ -193,7 +193,7 @@ const MOCK_NEW_BOOKS: Book[] = [
 export default function NewArrivalsPage() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+  const itemsPerPage = 20;
 
   // Sort books
   const sortedBooks = [...MOCK_NEW_BOOKS].sort((a, b) => {
@@ -256,7 +256,7 @@ export default function NewArrivalsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <nav className="mb-6 text-sm text-gray-600">
@@ -274,7 +274,8 @@ export default function NewArrivalsPage() {
             </h1>
           </div>
           <p className="text-gray-600 text-lg">
-            Khám phá {MOCK_NEW_BOOKS.length} đầu sách mới nhất được phát hành gần đây
+            Khám phá {MOCK_NEW_BOOKS.length} đầu sách mới nhất được phát hành
+            gần đây
           </p>
         </div>
 
@@ -305,20 +306,20 @@ export default function NewArrivalsPage() {
         </div>
 
         {/* Books Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           {paginatedBooks.map((book) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 border border-transparent hover:border-blue-100"
+              className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
             >
               {/* Book Cover */}
-              <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                 <Image
                   src={book.cover}
                   alt={book.title}
                   fill
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                  sizes="(max-width: 768px) 50vw, 25vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
 
@@ -353,7 +354,7 @@ export default function NewArrivalsPage() {
 
               {/* Price */}
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <p className="text-blue-600 font-bold text-sm">
+                <p className="text-red-600 font-bold text-sm">
                   {formatPrice(book.price)}
                 </p>
                 {book.originalPrice && (
@@ -361,9 +362,9 @@ export default function NewArrivalsPage() {
                     <p className="text-xs text-gray-400 line-through">
                       {formatPrice(book.originalPrice)}
                     </p>
-                    <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                    <Badge variant="danger" className="text-xs font-bold">
                       -{calculateDiscount(book.originalPrice, book.price)}%
-                    </span>
+                    </Badge>
                   </div>
                 )}
               </div>

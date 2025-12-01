@@ -101,7 +101,7 @@ export function Header() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm sách, tác giả, ISBN..."
+                placeholder="Tìm kiếm sách, tác giả, thể loại, ..."
                 className="w-full pl-12 pr-24 py-3 border-2 border-gray-200 rounded-full focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-gray-700 placeholder:text-gray-400"
               />
               <button
@@ -365,7 +365,7 @@ export function Header() {
         </div>
 
         {/* Navigation - Desktop */}
-        <nav className="hidden md:flex items-center gap-8 py-3 border-t border-gray-100">
+        <nav className="hidden md:flex items-center gap-6 py-3 border-t border-gray-100">
           <Link href="/books" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
             Tất cả sách
           </Link>
@@ -378,6 +378,12 @@ export function Header() {
           <Link href="/promotions" className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors flex items-center gap-1">
             Khuyến mãi
             <Badge variant="danger" className="text-xs">Hot</Badge>
+          </Link>
+          <Link href="/authors" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
+            Tác giả
+          </Link>
+          <Link href="/publishers" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
+            Nhà xuất bản
           </Link>
           <Link href="/literature" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
             Văn học
@@ -446,6 +452,20 @@ export function Header() {
               onClick={() => setShowMobileMenu(false)}
             >
               Khuyến mãi 🔥
+            </Link>
+            <Link
+              href="/authors"
+              className="block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => setShowMobileMenu(false)}
+            >
+              Tác giả
+            </Link>
+            <Link
+              href="/publishers"
+              className="block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => setShowMobileMenu(false)}
+            >
+              Nhà xuất bản
             </Link>
             <Link
               href="/books?category=fiction"

@@ -23,7 +23,7 @@ namespace BookStore.API.Controllers.Review
         /// </summary>
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreateReview(Guid bookId, [FromBody] CreateReviewDto dto)
+        public async Task<IActionResult> CreateReview([FromRoute] Guid bookId, [FromBody] CreateReviewDto dto)
         {
             try
             {
@@ -58,52 +58,12 @@ namespace BookStore.API.Controllers.Review
         }
 
         /// <summary>
-        /// Create a quick rating for a book (User only, must have purchased the book)
-        /// This allows users to rate without writing a full review. Auto-approved.
-        /// </summary>
-        [HttpPost("../rating")]
-        [Authorize]
-        public async Task<IActionResult> CreateQuickRating(Guid bookId, [FromBody] QuickRatingDto dto)
-        {
-            try
-            {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
-                {
-                    return Unauthorized(new { Success = false, Message = "User not authenticated" });
-                }
-
-                var review = await _reviewService.CreateQuickRatingAsync(userId, bookId, dto);
-
-                return Ok(new
-                {
-                    Success = true,
-                    Message = "Rating submitted successfully",
-                    Data = review
-                });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { Success = false, Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    Success = false,
-                    Message = "An error occurred while submitting the rating",
-                    Error = ex.Message
-                });
-            }
-        }
-
-        /// <summary>
         /// Get all approved reviews for a book (Public access)
         /// </summary>
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> GetBookReviews(
-            Guid bookId,
+            [FromRoute] Guid bookId,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] string? sortBy = null)
@@ -147,7 +107,7 @@ namespace BookStore.API.Controllers.Review
         /// </summary>
         [HttpGet("statistics")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetBookReviewStatistics(Guid bookId)
+        public async Task<IActionResult> GetBookReviewStatistics([FromRoute] Guid bookId)
         {
             try
             {
@@ -173,5 +133,157 @@ namespace BookStore.API.Controllers.Review
                 });
             }
         }
+
+        /// <summary>
+        /// Get current user's review for a book (User only)
+        /// </summary>
+        [HttpGet("my-review")]
+        [Authorize]
+        public async Task<IActionResult> GetMyReview([FromRoute] Guid bookId)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                {
+                    return Unauthorized(new { Success = false, Message = "User not authenticated" });
+                }
+
+                var review = await _reviewService.GetUserReviewForBookAsync(userId, bookId);
+
+                if (review == null)
+                {
+                    return NotFound(new { Success = false, Message = "You have not reviewed this book yet" });
+                }
+
+                return Ok(new
+                {
+                    Success = true,
+                    Data = review
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = "An error occurred while retrieving your review",
+                    Error = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Update user's own review for a book (User only)
+        /// </summary>
+        [HttpPut("my-review")]
+        [Authorize]
+        public async Task<IActionResult> UpdateMyReview([FromRoute] Guid bookId, [FromBody] UpdateReviewDto dto)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                {
+                    return Unauthorized(new { Success = false, Message = "User not authenticated" });
+                }
+
+                var review = await _reviewService.UpdateReviewAsync(userId, bookId, dto);
+
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Review updated successfully. It will be re-reviewed by admin.",
+                    Data = review
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = "An error occurred while updating the review",
+                    Error = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Delete user's own review for a book (User only)
+        /// </summary>
+        [HttpDelete("my-review")]
+        [Authorize]
+        public async Task<IActionResult> DeleteMyReview([FromRoute] Guid bookId)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                {
+                    return Unauthorized(new { Success = false, Message = "User not authenticated" });
+                }
+
+                await _reviewService.DeleteUserReviewAsync(userId, bookId);
+
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Your review has been deleted successfully"
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(new { Success = false, Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = "An error occurred while deleting the review",
+                    Error = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Mark a review as helpful (User only, standard e-commerce feature)
+        /// This replaces the need for "comments on reviews"
+        /// </summary>
+        [HttpPost("{reviewId}/helpful")]
+        [Authorize]
+        public async Task<IActionResult> MarkReviewAsHelpful([FromRoute] Guid bookId, [FromRoute] Guid reviewId)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                {
+                    return Unauthorized(new { Success = false, Message = "User not authenticated" });
+                }
+
+                // TODO: Implement helpful tracking (need ReviewHelpful table)
+                // For now, return success message
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Thank you for your feedback! (Feature coming soon)"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = "An error occurred",
+                    Error = ex.Message
+                });
+            }
+        }
+
     }
 }

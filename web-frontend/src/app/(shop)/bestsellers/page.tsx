@@ -491,14 +491,16 @@ export default function BestsellersPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const itemsPerPage = 14; // 2 hàng x 7 sách
+  const itemsPerPage = 20; // responsive grid layout
 
   const filterBooksByTimeRange = (books: Book[], range: TimeRange): Book[] => {
     const now = new Date();
     const oneDay = 24 * 60 * 60 * 1000;
 
     return books.filter((book) => {
-      const daysDiff = Math.floor((now.getTime() - book.lastSoldDate.getTime()) / oneDay);
+      const daysDiff = Math.floor(
+        (now.getTime() - book.lastSoldDate.getTime()) / oneDay
+      );
       switch (range) {
         case "week":
           return daysDiff <= 7;
@@ -541,9 +543,12 @@ export default function BestsellersPage() {
     Math.round(((original - current) / original) * 100);
 
   const getRankBadgeClass = (rank: number) => {
-    if (rank === 1) return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white";
-    if (rank === 2) return "bg-gradient-to-r from-gray-300 to-gray-500 text-white";
-    if (rank === 3) return "bg-gradient-to-r from-orange-400 to-orange-600 text-white";
+    if (rank === 1)
+      return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white";
+    if (rank === 2)
+      return "bg-gradient-to-r from-gray-300 to-gray-500 text-white";
+    if (rank === 3)
+      return "bg-gradient-to-r from-orange-400 to-orange-600 text-white";
     return "bg-gray-200 text-gray-700";
   };
 
@@ -551,7 +556,7 @@ export default function BestsellersPage() {
   const BookCard = ({ book }: { book: Book }) => (
     <Link
       href={`/books/${book.id}`}
-      className="flex h-[320px] w-[180px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group relative"
+      className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group relative"
     >
       {/* Rank badge */}
       <div
@@ -563,12 +568,12 @@ export default function BestsellersPage() {
       </div>
 
       {/* Cover */}
-      <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+      <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
         <Image
           src={book.cover}
           alt={book.title}
           fill
-          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          sizes="(max-width: 768px) 50vw, 25vw"
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
 
@@ -601,15 +606,17 @@ export default function BestsellersPage() {
 
       {/* Price line with discount */}
       <div className="flex flex-wrap items-center gap-2 mt-auto">
-        <p className="text-blue-600 font-bold text-sm">{formatPrice(book.price)}</p>
+        <p className="text-red-600 font-bold text-sm">
+          {formatPrice(book.price)}
+        </p>
         {book.originalPrice && (
           <div className="flex items-center gap-1 flex-wrap">
             <p className="text-xs text-gray-400 line-through">
               {formatPrice(book.originalPrice)}
             </p>
-            <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+            <Badge variant="danger" className="text-xs font-bold">
               -{calculateDiscount(book.originalPrice, book.price)}%
-            </span>
+            </Badge>
           </div>
         )}
       </div>
@@ -754,35 +761,29 @@ export default function BestsellersPage() {
         <div className="mb-6 flex items-center justify-between px-2">
           <p className="text-sm text-gray-600">
             Hiển thị{" "}
-            <span className="font-semibold text-gray-900">{startIndex + 1}</span> -{" "}
+            <span className="font-semibold text-gray-900">
+              {startIndex + 1}
+            </span>{" "}
+            -{" "}
             <span className="font-semibold text-gray-900">
               {Math.min(endIndex, filteredBooks.length)}
             </span>{" "}
             trong tổng số{" "}
-            <span className="font-semibold text-gray-900">{filteredBooks.length}</span> sách
+            <span className="font-semibold text-gray-900">
+              {filteredBooks.length}
+            </span>{" "}
+            sách
           </p>
           <p className="text-sm text-gray-500">
             Trang {currentPage} / {totalPages}
           </p>
         </div>
 
-        {/* Grid 2 hàng sách */}
-        <div className="space-y-8">
-          {/* Row 1 */}
-          <div className="flex flex-wrap gap-9 justify-start">
-            {paginatedBooks.slice(0, 7).map((book) => (
-              <BookCard key={book.id} book={book} />
-            ))}
-          </div>
-
-          {/* Row 2: chỉ hiển thị nếu còn sách */}
-          {paginatedBooks.length > 7 && (
-            <div className="flex flex-wrap gap-9 justify-start">
-              {paginatedBooks.slice(7, 14).map((book) => (
-                <BookCard key={book.id} book={book} />
-              ))}
-            </div>
-          )}
+        {/* Books Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {paginatedBooks.map((book) => (
+            <BookCard key={book.id} book={book} />
+          ))}
         </div>
 
         {/* Pagination */}
