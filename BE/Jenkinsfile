@@ -94,11 +94,12 @@ docker ps --filter network=docker_bookstore-network
 Write-Host "=== Deployment completed ==="
 EOF
 
-                                # Copy script to Windows server
-                                scp -o StrictHostKeyChecking=no deploy.ps1 jenkins_deploy@${SERVER_IP}:C:/temp/deploy.ps1
+                                # Create temp directory and copy script to Windows server
+                                ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} "mkdir C:/Users/jenkins_deploy/temp 2>nul || echo 'Directory exists'"
+                                scp -o StrictHostKeyChecking=no deploy.ps1 jenkins_deploy@${SERVER_IP}:C:/Users/jenkins_deploy/temp/deploy.ps1
                                 
                                 # Execute PowerShell script on Windows
-                                ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} "powershell -ExecutionPolicy Bypass -File C:/temp/deploy.ps1"
+                                ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} "powershell -ExecutionPolicy Bypass -File C:/Users/jenkins_deploy/temp/deploy.ps1"
                             """
                         }
                     }
