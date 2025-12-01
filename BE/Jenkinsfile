@@ -80,6 +80,12 @@ pipeline {
                               -e ASPNETCORE_ENVIRONMENT=Development ^
                               -p 3030:8080 ^
                               ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+
+                            REM === Wait for backend to be ready ===
+                            timeout /t 5 /nobreak
+
+                            REM === Restart nginx to pick up backend hostname ===
+                            docker restart bookstore-nginx
                         """
                     }
                 }
