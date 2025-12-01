@@ -14,6 +14,7 @@ namespace BookStore.Application.Services.Rental
     {
         private readonly IMinIOService _minioService;
         private readonly IUserSubscriptionRepository _subscriptionRepository;
+        private readonly IBookRentalRepository _bookRentalRepository;
         private readonly IBookRepository _bookRepository;
         private readonly ILogger<EbookService> _logger;
         private const string EBOOK_BUCKET = "ebook-files";
@@ -21,11 +22,13 @@ namespace BookStore.Application.Services.Rental
         public EbookService(
             IMinIOService minioService,
             IUserSubscriptionRepository subscriptionRepository,
+            IBookRentalRepository bookRentalRepository,
             IBookRepository bookRepository,
             ILogger<EbookService> logger)
         {
             _minioService = minioService;
             _subscriptionRepository = subscriptionRepository;
+            _bookRentalRepository = bookRentalRepository;
             _bookRepository = bookRepository;
             _logger = logger;
         }
@@ -69,29 +72,37 @@ namespace BookStore.Application.Services.Rental
 
         public async Task<EbookAccessDto> GetEbookAccessLinkAsync(Guid userId, Guid bookId)
         {
-            // Check if user has active subscription
+            // Check if user has active subscription OR has rented this book
             var hasActiveSubscription = await _subscriptionRepository.HasActiveSubscriptionAsync(userId);
-            Guard.Against(!hasActiveSubscription, "Bạn chưa có gói thuê hoặc gói thuê đã hết hạn. Vui lòng mua gói để đọc ebook.");
+            var hasActiveRental = await _bookRentalRepository.HasActiveRentalAsync(userId, bookId);
+
+            Guard.Against(!hasActiveSubscription && !hasActiveRental, "Bạn chưa có gói thuê hoặc gói thuê đã hết hạn. Vui lòng mua gói để đọc ebook.");
 
             // Check if book exists
             var book = await _bookRepository.GetByIdAsync(bookId);
             Guard.Against(book == null, "Không tìm thấy sách");
 
-            // Check if ebook file exists in MinIO
-            var ebookFileName = $"{bookId}.pdf"; // Try PDF first
-            var exists = await _minioService.FileExistsAsync(ebookFileName, EBOOK_BUCKET);
+            // Check if ebook file exists in MinIO (support multiple formats)
+            var supportedFormats = new[] { "pdf", "epub", "cbz", "mobi" };
+            string? ebookFileName = null;
+            bool exists = false;
 
-            if (!exists)
+            foreach (var format in supportedFormats)
             {
-                ebookFileName = $"{bookId}.epub"; // Try EPUB
-                exists = await _minioService.FileExistsAsync(ebookFileName, EBOOK_BUCKET);
+                var fileName = $"{bookId}.{format}";
+                exists = await _minioService.FileExistsAsync(fileName, EBOOK_BUCKET);
+                if (exists)
+                {
+                    ebookFileName = fileName;
+                    break;
+                }
             }
 
-            Guard.Against(!exists, "Sách này chưa có file ebook. Vui lòng liên hệ admin.");
+            Guard.Against(!exists || ebookFileName == null, "Sách này chưa có file ebook. Vui lòng liên hệ admin.");
 
             // Generate presigned URL with 10 minutes expiry (600 seconds)
             var expiryInSeconds = 600; // 10 phút
-            var accessUrl = await _minioService.GetPresignedUrlAsync(ebookFileName, expiryInSeconds, EBOOK_BUCKET);
+            var accessUrl = await _minioService.GetPresignedUrlAsync(ebookFileName!, expiryInSeconds, EBOOK_BUCKET);
             var expiresAt = DateTime.UtcNow.AddSeconds(expiryInSeconds);
 
             _logger.LogInformation($"User {userId} accessed ebook {bookId}. Link expires at {expiresAt}");
@@ -108,37 +119,35 @@ namespace BookStore.Application.Services.Rental
 
         public async Task<bool> EbookExistsAsync(Guid bookId)
         {
-            var ebookFileName = $"{bookId}.pdf";
-            var exists = await _minioService.FileExistsAsync(ebookFileName, EBOOK_BUCKET);
+            var supportedFormats = new[] { "pdf", "epub", "cbz", "mobi" };
 
-            if (!exists)
+            foreach (var format in supportedFormats)
             {
-                ebookFileName = $"{bookId}.epub";
-                exists = await _minioService.FileExistsAsync(ebookFileName, EBOOK_BUCKET);
+                var fileName = $"{bookId}.{format}";
+                var exists = await _minioService.FileExistsAsync(fileName, EBOOK_BUCKET);
+                if (exists)
+                {
+                    return true;
+                }
             }
 
-            return exists;
+            return false;
         }
 
         public async Task DeleteEbookAsync(Guid bookId)
         {
-            var ebookFileName = $"{bookId}.pdf";
-            var exists = await _minioService.FileExistsAsync(ebookFileName, EBOOK_BUCKET);
+            var supportedFormats = new[] { "pdf", "epub", "cbz", "mobi" };
 
-            if (exists)
+            foreach (var format in supportedFormats)
             {
-                await _minioService.DeleteFileAsync(ebookFileName, EBOOK_BUCKET);
-                _logger.LogInformation($"Deleted ebook file {ebookFileName}");
-                return;
-            }
+                var fileName = $"{bookId}.{format}";
+                var exists = await _minioService.FileExistsAsync(fileName, EBOOK_BUCKET);
 
-            ebookFileName = $"{bookId}.epub";
-            exists = await _minioService.FileExistsAsync(ebookFileName, EBOOK_BUCKET);
-
-            if (exists)
-            {
-                await _minioService.DeleteFileAsync(ebookFileName, EBOOK_BUCKET);
-                _logger.LogInformation($"Deleted ebook file {ebookFileName}");
+                if (exists)
+                {
+                    await _minioService.DeleteFileAsync(fileName, EBOOK_BUCKET);
+                    _logger.LogInformation($"Deleted ebook file {fileName}");
+                }
             }
         }
 

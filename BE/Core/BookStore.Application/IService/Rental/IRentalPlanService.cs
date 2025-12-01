@@ -7,6 +7,7 @@ namespace BookStore.Application.IService.Rental
         // CRUD cho Admin
         Task<IEnumerable<RentalPlanDto>> GetAllRentalPlansAsync();
         Task<IEnumerable<RentalPlanDto>> GetActiveRentalPlansAsync();
+        Task<IEnumerable<RentalPlanDto>> GetActiveRentalPlansByTypeAsync(string planType);
         Task<RentalPlanDto?> GetRentalPlanByIdAsync(Guid id);
         Task<RentalPlanDto> CreateRentalPlanAsync(CreateRentalPlanDto dto);
         Task<RentalPlanDto> UpdateRentalPlanAsync(UpdateRentalPlanDto dto);

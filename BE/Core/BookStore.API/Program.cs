@@ -217,8 +217,10 @@ builder.Services.AddScoped<BookStore.Application.IService.System.INotificationTe
 // Rental Services (Story 18 - Ebook Rental)
 builder.Services.AddScoped<BookStore.Domain.IRepository.Rental.IRentalPlanRepository, BookStore.Infrastructure.Repositories.Rental.RentalPlanRepository>();
 builder.Services.AddScoped<BookStore.Domain.IRepository.Rental.IUserSubscriptionRepository, BookStore.Infrastructure.Repositories.Rental.UserSubscriptionRepository>();
+builder.Services.AddScoped<BookStore.Domain.IRepository.Rental.IBookRentalRepository, BookStore.Infrastructure.Repositories.Rental.BookRentalRepository>();
 builder.Services.AddScoped<BookStore.Application.IService.Rental.IRentalPlanService, BookStore.Application.Services.Rental.RentalPlanService>();
 builder.Services.AddScoped<BookStore.Application.IService.Rental.IUserSubscriptionService, BookStore.Application.Services.Rental.UserSubscriptionService>();
+builder.Services.AddScoped<BookStore.Application.IService.Rental.IBookRentalService, BookStore.Application.Services.Rental.BookRentalService>();
 builder.Services.AddScoped<BookStore.Application.IService.Rental.IEbookService, BookStore.Application.Services.Rental.EbookService>();
 
 //Controller
