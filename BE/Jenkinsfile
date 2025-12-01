@@ -60,7 +60,7 @@ pipeline {
                             sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker rm bookstore-backend || exit 0'"
                             
                             // Start infrastructure
-                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker compose -f /d/BOOKSTORE-WEB-MOBILE-/BE/docker/docker-compose.yml up -d'"
+                            sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'docker compose -f D:\\\\\\\\BOOKSTORE-WEB-MOBILE-\\\\\\\\BE\\\\\\\\docker\\\\\\\\docker-compose.yml up -d'"
                             
                             // Login to registry  
                             sh "ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} 'echo \${REG_PASS} | docker login ${REGISTRY_URL} -u \${REG_USER} --password-stdin'" 
