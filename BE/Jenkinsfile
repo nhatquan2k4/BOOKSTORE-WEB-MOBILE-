@@ -5,7 +5,7 @@ pipeline {
         SERVER_IP    = '192.168.0.102'
         REGISTRY_URL = '192.168.0.102:5000'
         IMAGE_NAME   = 'bookstore-backend'
-        IMAGE_TAG    = 'v1'
+        IMAGE_TAG    = "v${BUILD_NUMBER}"
     }
 
     stages {
