@@ -31,13 +31,13 @@ pipeline {
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'docker-registry',
-                        usernameVariable: 'REG_USER',
-                        passwordVariable: 'REG_PASS'
+                        usernameVariable: 'admin',
+                        passwordVariable: 'admin123'
                     )
                 ]) {
                     sh """
                         docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                        echo "${REG_PASS}" | docker login ${REGISTRY_URL} -u "${REG_USER}" --password-stdin
+                        echo "${admin123}" | docker login ${REGISTRY_URL} -u "${admin}" --password-stdin
                         docker push ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
                     """
                 }
