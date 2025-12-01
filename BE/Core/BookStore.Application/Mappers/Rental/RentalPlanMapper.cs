@@ -14,6 +14,7 @@ namespace BookStore.Application.Mappers.Rental
                 Description = entity.Description,
                 Price = entity.Price,
                 DurationDays = entity.DurationDays,
+                PlanType = entity.PlanType,
                 IsActive = entity.IsActive,
                 CreatedAt = entity.CreatedAt
             };
@@ -28,6 +29,7 @@ namespace BookStore.Application.Mappers.Rental
                 Description = dto.Description,
                 Price = dto.Price,
                 DurationDays = dto.DurationDays,
+                PlanType = dto.PlanType,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -39,6 +41,7 @@ namespace BookStore.Application.Mappers.Rental
             entity.Description = dto.Description;
             entity.Price = dto.Price;
             entity.DurationDays = dto.DurationDays;
+            entity.PlanType = dto.PlanType;
             entity.IsActive = dto.IsActive;
         }
     }

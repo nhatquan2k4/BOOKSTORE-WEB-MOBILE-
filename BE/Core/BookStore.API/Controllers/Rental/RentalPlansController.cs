@@ -47,14 +47,28 @@ namespace BookStore.API.Controllers.Rental
         /// <summary>
         /// Lấy các gói thuê đang active (User có thể xem)
         /// GET: api/rental/plans/active
+        /// GET: api/rental/plans/active?type=Subscription (filter theo loại)
+        /// GET: api/rental/plans/active?type=SingleBook
         /// </summary>
         [HttpGet("active")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetActiveRentalPlans()
+        public async Task<IActionResult> GetActiveRentalPlans([FromQuery] string? type = null)
         {
             try
             {
-                var plans = await _rentalPlanService.GetActiveRentalPlansAsync();
+                IEnumerable<RentalPlanDto> plans;
+                
+                if (!string.IsNullOrWhiteSpace(type))
+                {
+                    // Filter by type: "Subscription" hoặc "SingleBook"
+                    plans = await _rentalPlanService.GetActiveRentalPlansByTypeAsync(type);
+                }
+                else
+                {
+                    // Lấy tất cả
+                    plans = await _rentalPlanService.GetActiveRentalPlansAsync();
+                }
+                
                 return Ok(plans);
             }
             catch (Exception ex)
