@@ -5,7 +5,7 @@ pipeline {
         SERVER_IP    = '192.168.0.102'
         REGISTRY_URL = '192.168.0.102:5000'
         IMAGE_NAME   = 'bookstore-backend'
-        IMAGE_TAG    = 'latest'
+        IMAGE_TAG    = 'LATEST'
     }
 
     stages {
@@ -64,16 +64,18 @@ pipeline {
                         remote.identityFile = IDENTITY_FILE
 
                         sshCommand remote: remote, command: """
-                            REM === Run docker-compose on Windows ===
+                            REM === Stop and remove old backend container if exists ===
+                            docker stop bookstore-backend 2>nul || echo No backend container running
+                            docker rm bookstore-backend 2>nul || echo No backend container to remove
+
+                            REM === Start all infrastructure services via docker-compose ===
                             cd D:/BOOKSTORE-WEB-MOBILE-/BE/docker
                             docker compose up -d
 
-                            REM === Restart backend container ===
-                            docker stop bookstore-backend 2>nul || echo no old container
-                            docker rm   bookstore-backend 2>nul || echo no old container
-
+                            REM === Pull latest backend image from registry ===
                             docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
 
+                            REM === Deploy backend container ===
                             docker run -d ^
                               --name bookstore-backend ^
                               --network docker_bookstore-network ^
@@ -84,8 +86,11 @@ pipeline {
                             REM === Wait for backend to be ready ===
                             timeout /t 5 /nobreak
 
-                            REM === Restart nginx to pick up backend hostname ===
+                            REM === Restart nginx to ensure connection ===
                             docker restart bookstore-nginx
+
+                            REM === Show running containers ===
+                            docker ps --filter network=docker_bookstore-network
                         """
                     }
                 }
