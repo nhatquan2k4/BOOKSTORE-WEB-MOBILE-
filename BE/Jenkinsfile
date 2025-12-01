@@ -55,48 +55,50 @@ pipeline {
                                 passwordVariable: 'REG_PASS'
                             )
                         ]) {
+                            // Create PowerShell script
                             sh """
-                                ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} << 'ENDSSH'
-                                    echo "=== Verifying SSH Connection ==="
-                                    hostname
-                                    whoami
-                                    
-                                    echo "=== Step 1: Stop and remove old backend container ==="
-                                    docker stop bookstore-backend 2>nul || echo "No backend container running"
-                                    docker rm bookstore-backend 2>nul || echo "No backend container to remove"
+                                cat > deploy.ps1 << 'EOF'
+Write-Host "=== Step 1: Stop and remove old backend container ==="
+docker stop bookstore-backend 2>\$null
+if (\$?) { Write-Host "Stopped old container" } else { Write-Host "No old container to stop" }
+docker rm bookstore-backend 2>\$null
+if (\$?) { Write-Host "Removed old container" } else { Write-Host "No old container to remove" }
 
-                                    echo "=== Step 2: Start infrastructure services ==="
-                                    cd /d D:\\BOOKSTORE-WEB-MOBILE-\\BE\\docker
-                                    docker compose up -d
-                                    echo "Docker compose completed"
+Write-Host "=== Step 2: Start infrastructure services ==="
+cd D:\\BOOKSTORE-WEB-MOBILE-\\BE\\docker
+docker compose up -d
+Write-Host "Docker compose completed"
 
-                                    echo "=== Step 3: Login to registry ==="
-                                    echo ${REG_PASS} | docker login ${REGISTRY_URL} -u ${REG_USER} --password-stdin
-                                    echo "Registry login completed"
+Write-Host "=== Step 3: Login to registry ==="
+echo '${REG_PASS}' | docker login ${REGISTRY_URL} -u ${REG_USER} --password-stdin
+Write-Host "Registry login completed"
 
-                                    echo "=== Step 4: Pull backend image ==="
-                                    docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                                    echo "Image pull completed"
+Write-Host "=== Step 4: Pull backend image ==="
+docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+Write-Host "Image pull completed"
 
-                                    echo "=== Step 5: Deploy backend container ==="
-                                    docker run -d --name bookstore-backend --network docker_bookstore-network -e ASPNETCORE_ENVIRONMENT=Development -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                                    echo "Container deployed"
+Write-Host "=== Step 5: Deploy backend container ==="
+docker run -d --name bookstore-backend --network docker_bookstore-network -e ASPNETCORE_ENVIRONMENT=Development -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+Write-Host "Container deployed"
 
-                                    echo "=== Step 6: Wait for backend to be ready ==="
-                                    timeout /t 10 /nobreak
+Write-Host "=== Step 6: Wait for backend ==="
+Start-Sleep -Seconds 10
 
-                                    echo "=== Step 7: Restart nginx ==="
-                                    docker restart bookstore-nginx
-                                    echo "Nginx restarted"
+Write-Host "=== Step 7: Restart nginx ==="
+docker restart bookstore-nginx
+Write-Host "Nginx restarted"
 
-                                    echo "=== Step 8: Show running containers ==="
-                                    docker ps --filter network=docker_bookstore-network --format "table {{.Names}}\\t{{.Image}}\\t{{.Status}}"
-                                    
-                                    echo "=== Final Verification ==="
-                                    docker ps -a --filter name=bookstore-backend
-                                    
-                                    echo "=== Deployment completed successfully ==="
-                                ENDSSH
+Write-Host "=== Step 8: Show containers ==="
+docker ps --filter network=docker_bookstore-network
+
+Write-Host "=== Deployment completed ==="
+EOF
+
+                                # Copy script to Windows server
+                                scp -o StrictHostKeyChecking=no deploy.ps1 jenkins_deploy@${SERVER_IP}:C:/temp/deploy.ps1
+                                
+                                # Execute PowerShell script on Windows
+                                ssh -o StrictHostKeyChecking=no jenkins_deploy@${SERVER_IP} "powershell -ExecutionPolicy Bypass -File C:/temp/deploy.ps1"
                             """
                         }
                     }
