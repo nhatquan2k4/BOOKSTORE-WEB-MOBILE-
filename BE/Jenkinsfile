@@ -5,7 +5,7 @@ pipeline {
         SERVER_IP    = '192.168.0.102'
         REGISTRY_URL = '192.168.0.102:5000'
         IMAGE_NAME   = 'bookstore-backend'
-        IMAGE_TAG    = 'LATEST'
+        IMAGE_TAG    = 'v1'
     }
 
     stages {
@@ -31,13 +31,13 @@ pipeline {
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'docker-registry',
-                        usernameVariable: 'admin',
-                        passwordVariable: 'admin123'
+                        usernameVariable: 'REG_USER',
+                        passwordVariable: 'REG_PASS'
                     )
                 ]) {
                     sh """
                         docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                        echo "${admin123}" | docker login ${REGISTRY_URL} -u "${admin}" --password-stdin
+                        echo "${REG_PASS}" | docker login ${REGISTRY_URL} -u "${REG_USER}" --password-stdin
                         docker push ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
                     """
                 }
@@ -71,6 +71,9 @@ pipeline {
                             REM === Start all infrastructure services via docker-compose ===
                             cd D:/BOOKSTORE-WEB-MOBILE-/BE/docker
                             docker compose up -d
+
+                            REM === Login to registry ===
+                            echo admin123 | docker login ${REGISTRY_URL} -u admin --password-stdin
 
                             REM === Pull latest backend image from registry ===
                             docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
