@@ -84,19 +84,8 @@ pipeline {
                                 error "Không tìm thấy Docker Network nào có tên chứa 'bookstore'. Hãy kiểm tra lại docker-compose!"
                             }
 
-                            // 6. Chạy Container mới (Tách thành nhiều lệnh để dễ debug)
-                            sh """
-                                ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} '
-                                    docker run -d --name ${IMAGE_NAME} --network ${networkName} ^
-                                    -e ASPNETCORE_ENVIRONMENT=Development ^
-                                    -e "ConnectionStrings__UsersDb=Server=bookstore-sqlserver;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;TrustServerCertificate=True" ^
-                                    -e MinIO__Endpoint=minio:9000 ^
-                                    -e MinIO__AccessKey=minioadmin ^
-                                    -e MinIO__SecretKey=minioadmin123 ^
-                                    -p 3030:8080 ^
-                                    ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                                '
-                            """
+                            // 6. Chạy Container mới
+                            sh """ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} "docker run -d --name ${IMAGE_NAME} --network ${networkName} -e ASPNETCORE_ENVIRONMENT=Development -e 'ConnectionStrings__UsersDb=Server=bookstore-sqlserver;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;TrustServerCertificate=True' -e MinIO__Endpoint=minio:9000 -e MinIO__AccessKey=minioadmin -e MinIO__SecretKey=minioadmin123 -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""""
                             
                             // 7. Sleep và restart Nginx
                             sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"Start-Sleep -Seconds 5; docker restart bookstore-nginx; docker ps --filter name=${IMAGE_NAME}\""
