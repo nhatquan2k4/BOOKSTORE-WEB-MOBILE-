@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // --- CẤU HÌNH CHUNG ---
-        SERVER_IP    = '192.168.0.101'
+        SERVER_IP    = '192.168.0.102'
         
         // Dùng user 'jenkins' mà chúng ta vừa tạo và cấp quyền
         REMOTE_USER  = 'jenkins' 
@@ -15,7 +15,7 @@ pipeline {
         REGISTRY_ID  = 'docker-registry'
 
         // --- CẤU HÌNH DOCKER ---
-        REGISTRY_URL = '192.168.0.101:5000'
+        REGISTRY_URL = '192.168.0.102:5000'
         IMAGE_NAME   = 'bookstore-backend'
         IMAGE_TAG    = "v${BUILD_NUMBER}"
         
@@ -78,6 +78,7 @@ pipeline {
                             // 5. Tìm tên Network (Đã sửa lại logic cho PowerShell)
                             // Dùng Select-String thay cho grep. Lấy dòng đầu tiên tìm thấy.
                             // Lưu ý: Nếu bạn biết chắc tên network là 'docker_default', hãy điền cứng vào để tránh lỗi.
+                            // Sửa lại dấu nháy đơn bao quanh command cho an toàn
                             def findNetworkCmd = "docker network ls --format '{{.Name}}' | Select-String 'bookstore' | Select-Object -First 1"
                             def networkName = sh(script: "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"${findNetworkCmd}\"", returnStdout: true).trim()
                             
