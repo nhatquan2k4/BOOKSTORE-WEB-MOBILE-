@@ -65,8 +65,8 @@ pipeline {
                             // 1. Login Docker trên Windows
                             sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"echo ${D_PASS} | docker login ${REGISTRY_URL} -u ${D_USER} --password-stdin\""
 
-                            // 2. Stop & Remove container cũ (Thêm || echo để không lỗi nếu chưa có container)
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"docker stop ${IMAGE_NAME} 2> \$null; docker rm ${IMAGE_NAME} 2> \$null; echo 'Cleaned old container'\""
+                            // 2. Stop & Remove container cũ (Dùng try-catch PowerShell để không lỗi nếu chưa có container)
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"try { docker stop ${IMAGE_NAME}; docker rm ${IMAGE_NAME} } catch {}; echo 'Cleaned old container'\""
 
                             // 3. Khởi động Infrastructure (DB, MinIO) bằng Docker Compose
                             // Lưu ý: cd vào thư mục rồi mới chạy lệnh
@@ -75,11 +75,8 @@ pipeline {
                             // 4. Pull Image mới nhất
                             sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""
 
-                            // 5. Tìm tên Network (Đã sửa lại logic cho PowerShell)
-                            // Dùng Select-String thay cho grep. Lấy dòng đầu tiên tìm thấy.
-                            // Lưu ý: Nếu bạn biết chắc tên network là 'docker_default', hãy điền cứng vào để tránh lỗi.
-                            // Sửa lại dấu nháy đơn bao quanh command cho an toàn
-                            def findNetworkCmd = "docker network ls --format '{{\\.Name}}' | Select-String 'bookstore' | Select-Object -ExpandProperty Line | Select-Object -First 1"
+                            // 5. Tìm tên Network (PowerShell syntax)
+                            def findNetworkCmd = "docker network ls --format '{{.Name}}' | Where-Object { \\\$_ -like '*bookstore*' } | Select-Object -First 1"
                             def networkName = sh(script: "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"${findNetworkCmd}\"", returnStdout: true).trim()
                             
                             echo "Found Network: '${networkName}'"
@@ -87,26 +84,13 @@ pipeline {
                                 error "Không tìm thấy Docker Network nào có tên chứa 'bookstore'. Hãy kiểm tra lại docker-compose!"
                             }
 
-                            // 6. Chạy Container mới (Quan trọng: Xử lý ConnectionString)
-                            // ConnectionString chứa dấu ; nên cần bọc kỹ trong dấu nháy đơn '...'
-                            // Minio Endpoint sửa thành IP máy chủ thay vì tên service 'minio' nếu container này chạy lẻ (hoặc phải chung network)
+                            // 6. Chạy Container mới
+                            def runCmd = "docker run -d --name ${IMAGE_NAME} --network ${networkName} -e ASPNETCORE_ENVIRONMENT=Development -e \"ConnectionStrings__UsersDb=Server=bookstore-sqlserver;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;TrustServerCertificate=True\" -e MinIO__Endpoint=minio:9000 -e MinIO__AccessKey=minioadmin -e MinIO__SecretKey=minioadmin123 -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}"
                             
-                            def runCmd = """
-                                docker run -d --name ${IMAGE_NAME} --network ${networkName} `
-                                -e ASPNETCORE_ENVIRONMENT=Development `
-                                -e 'ConnectionStrings__UsersDb=Server=bookstore-sqlserver;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;TrustServerCertificate=True' `
-                                -e MinIO__Endpoint=minio:9000 `
-                                -e MinIO__AccessKey=minioadmin `
-                                -e MinIO__SecretKey=minioadmin123 `
-                                -p 3030:8080 `
-                                ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                            """
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"${runCmd}\""
                             
-                            // Gửi lệnh qua SSH (Dùng replace để xóa xuống dòng thừa giúp lệnh chạy mượt trên 1 dòng)
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"${runCmd.replaceAll('\n', ' ')}\""
-                            
-                            // 7. Restart Nginx và kiểm tra
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"sleep 5; docker restart bookstore-nginx; docker ps --filter name=${IMAGE_NAME}\""
+                            // 7. Sleep và restart Nginx
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"Start-Sleep -Seconds 5; docker restart bookstore-nginx; docker ps --filter name=${IMAGE_NAME}\""
                         }
                     }
                 }
