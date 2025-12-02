@@ -1,4 +1,3 @@
-// Trending Books Page - Trang Sách Thịnh Hành
 "use client";
 
 import { useState } from "react";
@@ -385,6 +384,19 @@ export default function TrendingBooksPage() {
   const displayedBooks = sortedBooks.slice(startIndex, startIndex + booksPerPage);
   const endIndex = startIndex + booksPerPage;
 
+  // Format price
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(price);
+  };
+
+  // Calculate discount
+  const calculateDiscount = (original: number, current: number) => {
+    return Math.round(((original - current) / original) * 100);
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-orange-50 via-rose-50 to-pink-50">
       <div className="container mx-auto px-4 py-8">
@@ -469,31 +481,38 @@ export default function TrendingBooksPage() {
 
               {/* Rating */}
               <div className="flex items-center gap-1 mb-2">
-                <span className="text-yellow-500 text-sm">⭐</span>
-                <span className="text-xs font-medium">{book.rating}</span>
-                <span className="text-xs text-gray-500">({book.reviews})</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="text-yellow-400"
+                >
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                <span className="text-xs text-gray-600">{book.rating}</span>
+                <span className="text-xs text-gray-400">
+                  ({book.reviews})
+                </span>
               </div>
 
               {/* Price */}
-              <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-blue-600">
-                  {book.price.toLocaleString()}₫
-                </span>
-                {book.originalPrice && book.originalPrice > book.price && (
-                  <span className="text-xs text-gray-400 line-through">
-                    {book.originalPrice.toLocaleString()}₫
-                  </span>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <p className="text-red-600 font-bold text-sm">
+                  {formatPrice(book.price)}
+                </p>
+                {book.originalPrice && (
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <p className="text-xs text-gray-400 line-through">
+                      {formatPrice(book.originalPrice)}
+                    </p>
+                    <Badge variant="danger" className="text-xs font-bold">
+                      -{calculateDiscount(book.originalPrice, book.price)}%
+                    </Badge>
+                  </div>
                 )}
               </div>
-
-              {/* Discount Badge */}
-              {book.originalPrice && book.originalPrice > book.price && (
-                <div className="mt-1">
-                  <Badge className="text-xs bg-red-500 text-white">
-                    -{Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)}%
-                  </Badge>
-                </div>
-              )}
             </Link>
           ))}
         </div>
@@ -527,7 +546,7 @@ export default function TrendingBooksPage() {
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
             >
-              Sau →
+              Sau <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </Button>
           </div>
         )}

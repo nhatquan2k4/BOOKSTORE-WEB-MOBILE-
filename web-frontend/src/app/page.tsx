@@ -275,11 +275,11 @@ const calculateDiscount = (original: number, current: number) =>
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const heroImages = [
-    "/image/anh.png",
-    "/image/anh_di_cung_anh_sao_troi.png",
-    "/image/thai_tu_nhap_vai.png",
-    "/image/nhiep_chinh_vuong_diet_hoa_dao.png",
-    "/image/khoi_nguon_phuc_lac.png",
+    "/image/banner1.png",
+    "/image/banner2.png",
+    "/image/banner3.png",
+    "/image/banner4.png",
+    "/image/banner5.png",
   ];
 
   // Carousel logic for featured books
@@ -377,7 +377,7 @@ export default function HomePage() {
             </div>
           ))}
           {/* Gradient overlay - lighter for better image visibility */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/60 to-purple-600/60"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
           {/* Subtle dark overlay */}
           <div className="absolute inset-0 bg-black/20"></div>
         </div>

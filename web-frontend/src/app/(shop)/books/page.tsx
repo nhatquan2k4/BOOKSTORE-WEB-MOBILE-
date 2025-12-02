@@ -869,23 +869,6 @@ export default function AllBooksPage() {
                   <p className="text-xs text-gray-600">{book.author}</p>
                   <p className="text-xs text-gray-500">{book.category}</p>
 
-                  {/* Price */}
-                  <div className="flex items-center gap-2 pt-1 flex-wrap">
-                    <p className="text-red-600 font-bold text-sm">
-                      {formatPrice(book.price)}
-                    </p>
-                    {book.originalPrice && (
-                      <>
-                        <p className="text-xs text-gray-400 line-through">
-                          {formatPrice(book.originalPrice)}
-                        </p>
-                        <Badge variant="danger" className="text-xs font-bold">
-                          -{calculateDiscount(book.originalPrice, book.price)}%
-                        </Badge>
-                      </>
-                    )}
-                  </div>
-
                   {/* Rating */}
                   <div className="flex items-center gap-1 pt-1">
                     <svg
@@ -902,6 +885,23 @@ export default function AllBooksPage() {
                     <span className="text-xs text-gray-400">
                       ({book.reviewCount})
                     </span>
+                  </div>
+
+                  {/* Price */}
+                  <div className="flex items-center gap-2 pt-1 flex-wrap">
+                    <p className="text-red-600 font-bold text-sm">
+                      {formatPrice(book.price)}
+                    </p>
+                    {book.originalPrice && (
+                      <>
+                        <p className="text-xs text-gray-400 line-through">
+                          {formatPrice(book.originalPrice)}
+                        </p>
+                        <Badge variant="danger" className="text-xs font-bold">
+                          -{calculateDiscount(book.originalPrice, book.price)}%
+                        </Badge>
+                      </>
+                    )}
                   </div>
                 </div>
               </Link>

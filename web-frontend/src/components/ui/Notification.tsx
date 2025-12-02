@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Badge } from './Badge';
 
 export interface NotificationItem {
@@ -133,10 +134,11 @@ export function NotificationDropdown({
         ) : (
           <div className="divide-y divide-gray-100">
             {notifications.map((notification) => (
-              <button
+              <Link
                 key={notification.id}
+                href={notification.link || '/account/notifications'}
                 onClick={() => onMarkAsRead(notification.id)}
-                className={`w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left ${
+                className={`block w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left ${
                   notification.isRead ? '' : 'bg-blue-50'
                 }`}
               >
@@ -164,7 +166,7 @@ export function NotificationDropdown({
                     </p>
                   </div>
                 </div>
-              </button>
+              </Link>
             ))}
           </div>
         )}
@@ -173,9 +175,12 @@ export function NotificationDropdown({
       {/* Footer */}
       {notifications.length > 0 && (
         <div className="px-4 py-3 border-t border-gray-200">
-          <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium">
+          <Link 
+            href="/account/notifications" 
+            className="block w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium py-1 hover:bg-blue-50 rounded transition"
+          >
             Xem tất cả thông báo
-          </button>
+          </Link>
         </div>
       )}
     </div>

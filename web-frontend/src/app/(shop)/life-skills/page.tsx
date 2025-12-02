@@ -467,27 +467,10 @@ export default function LifeSkillsPage() {
               <h3 className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
                 {book.title}
               </h3>
-              <p className="text-xs text-gray-600 mb-2">{book.author}</p>
-
-              {/* Price (đưa giảm giá xuống đây) */}
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <p className="text-red-600 font-bold text-sm">
-                  {formatPrice(book.price)}
-                </p>
-                {book.originalPrice && (
-                  <>
-                    <p className="text-xs text-gray-400 line-through">
-                      {formatPrice(book.originalPrice)}
-                    </p>
-                    <Badge variant="danger" className="text-xs font-bold">
-                      -{calculateDiscount(book.originalPrice, book.price)}%
-                    </Badge>
-                  </>
-                )}
-              </div>
+              <p className="text-xs text-gray-600 mb-1">{book.author}</p>
 
               {/* Rating */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 mb-2">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="12"
@@ -502,6 +485,23 @@ export default function LifeSkillsPage() {
                 <span className="text-xs text-gray-400">
                   ({book.reviewCount})
                 </span>
+              </div>
+
+              {/* Price */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-red-600 font-bold text-sm">
+                  {formatPrice(book.price)}
+                </p>
+                {book.originalPrice && (
+                  <>
+                    <p className="text-xs text-gray-400 line-through">
+                      {formatPrice(book.originalPrice)}
+                    </p>
+                    <Badge variant="danger" className="text-xs font-bold">
+                      -{calculateDiscount(book.originalPrice, book.price)}%
+                    </Badge>
+                  </>
+                )}
               </div>
             </Link>
           ))}

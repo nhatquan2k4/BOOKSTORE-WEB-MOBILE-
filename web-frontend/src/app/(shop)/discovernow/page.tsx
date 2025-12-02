@@ -431,7 +431,7 @@ export default function DiscoverNowPage() {
 
                   {/* giá */}
                   <div className="flex items-center gap-2 mt-auto">
-                    <p className="text-blue-600 font-bold text-sm">
+                    <p className="text-red-600 font-bold text-sm">
                       {new Intl.NumberFormat("vi-VN", {
                         style: "currency",
                         currency: "VND",
@@ -447,9 +447,9 @@ export default function DiscoverNowPage() {
                           }).format(book.originalPrice)}
                         </p>
                         {discountPercent && (
-                          <span className="text-xs font-semibold text-red-500">
+                          <Badge className="bg-red-100 text-red-700 text-xs">
                             -{discountPercent}%
-                          </span>
+                          </Badge>
                         )}
                       </div>
                     )}
@@ -515,7 +515,7 @@ export default function DiscoverNowPage() {
                 <p className="text-xs text-gray-600 mb-1">{book.author}</p>
                 <div className="mt-auto">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className="text-blue-600 font-bold text-sm">
+                    <p className="text-red-600 font-bold text-sm">
                       {new Intl.NumberFormat("vi-VN", {
                         style: "currency",
                         currency: "VND",

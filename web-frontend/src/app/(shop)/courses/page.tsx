@@ -478,20 +478,6 @@ export default function CourseBooksPage() {
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 pt-1">
-                  <p className="text-red-600 font-bold text-sm">{formatPrice(book.price)}</p>
-                  {book.originalPrice && (
-                    <>
-                      <p className="text-xs text-gray-400 line-through">
-                        {formatPrice(book.originalPrice)}
-                      </p>
-                      <Badge variant="danger" className="text-xs font-bold">
-                        -{calculateDiscount(book.originalPrice, book.price)}%
-                      </Badge>
-                    </>
-                  )}
-                </div>
-
                 <div className="flex items-center gap-1 pt-1">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -505,6 +491,20 @@ export default function CourseBooksPage() {
                   </svg>
                   <span className="text-xs font-bold text-gray-700">{book.rating}</span>
                   <span className="text-xs text-gray-500">({book.reviewCount})</span>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <p className="text-red-600 font-bold text-sm">{formatPrice(book.price)}</p>
+                  {book.originalPrice && (
+                    <>
+                      <p className="text-xs text-gray-400 line-through">
+                        {formatPrice(book.originalPrice)}
+                      </p>
+                      <Badge variant="danger" className="text-xs font-bold">
+                        -{calculateDiscount(book.originalPrice, book.price)}%
+                      </Badge>
+                    </>
+                  )}
                 </div>
               </div>
             </Link>
