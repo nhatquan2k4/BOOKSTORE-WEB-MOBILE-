@@ -6,7 +6,7 @@ COPY Core/BookStore.API/BookStore.API.csproj Core/BookStore.API/
 COPY Core/BookStore.Application/BookStore.Application.csproj Core/BookStore.Application/
 COPY Core/BookStore.Domain/BookStore.Domain.csproj Core/BookStore.Domain/
 COPY Core/BookStore.Infrastructure/BookStore.Infrastructure.csproj Core/BookStore.Infrastructure/
-COPY Core/BookStore.Tests/BookStore.Tests.csproj Core/BookStore.Tests/
+#COPY Core/BookStore.Tests/BookStore.Tests.csproj Core/BookStore.Tests/
 COPY BookStore.Shared/BookStore.Shared.csproj BookStore.Shared/
 
 # Restore dependencies

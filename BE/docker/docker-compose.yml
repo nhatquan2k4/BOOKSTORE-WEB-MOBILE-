@@ -62,7 +62,7 @@ services:
       - bookstore-network
     entrypoint: >
       /bin/sh -c " mc alias set myminio http://minio:9000 minioadmin minioadmin123; mc mb myminio/bookstore-images --ignore-existing; mc mb myminio/ebook-files --ignore-existing; mc mb myminio/user-avatars --ignore-existing; mc anonymous set download myminio/bookstore-images; mc anonymous set download myminio/ebook-files; mc anonymous set download myminio/user-avatars; echo 'MinIO buckets created successfully!'; "
-  # BookStore API (chạy từ local build)
+  # BookStore API
   bookstore-api:
     build:
       context: ../
@@ -71,22 +71,47 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__UsersDb=Server=sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True
+      - ConnectionStrings__UsersDb=Server=sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True;Encrypt=False
+      - JwtSettings__SecretKey=YourSuperSecretKeyForJWTTokenGenerationMustBeAtLeast32CharactersLong
+      - JwtSettings__Issuer=BookStoreAPI
+      - JwtSettings__Audience=BookStoreClient
+      - JwtSettings__AccessTokenExpirationMinutes=60
+      - JwtSettings__RefreshTokenExpirationDays=30
       - MinIO__Endpoint=minio:9000
+      - MinIO__PublicEndpoint=http://localhost:9000
       - MinIO__AccessKey=minioadmin
       - MinIO__SecretKey=minioadmin123
       - MinIO__BucketName=bookstore-images
       - MinIO__UseSSL=false
+      - EmailSettings__SmtpHost=smtp.gmail.com
+      - EmailSettings__SmtpPort=587
+      - EmailSettings__SmtpUsername=quangtraan20004@gmail.com
+      - EmailSettings__SmtpPassword=quang
+      - EmailSettings__FromEmail=quangtraan20004@gmail.com
+      - EmailSettings__FromName=BookStore
+      - EmailSettings__EnableSsl=true
+      - EmailSettings__TokenExpirationHours=24
+      - EmailSettings__FrontendUrl=http://localhost:3000
     ports:
       - "5276:8080"
     depends_on:
       sqlserver:
         condition: service_healthy
+      sqlserver-init:
+        condition: service_completed_successfully
       minio:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     networks:
       - bookstore-network
-    restart: on-failure
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 volumes:
   sqlserver_data:

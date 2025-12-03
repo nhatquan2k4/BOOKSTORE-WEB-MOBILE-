@@ -160,6 +160,17 @@ namespace BookStore.Application.Services.Identity.Email
         {
             try
             {
+                // Validate email settings
+                if (string.IsNullOrEmpty(_emailSettings?.FromEmail))
+                {
+                    throw new InvalidOperationException("Email settings are not configured. Please configure EmailSettings in appsettings.json");
+                }
+
+                if (string.IsNullOrEmpty(toEmail))
+                {
+                    throw new ArgumentNullException(nameof(toEmail), "Recipient email address cannot be null or empty");
+                }
+
                 using var smtpClient = new SmtpClient(_emailSettings.SmtpHost, _emailSettings.SmtpPort)
                 {
                     Credentials = new NetworkCredential(_emailSettings.SmtpUsername, _emailSettings.SmtpPassword),
@@ -180,8 +191,8 @@ namespace BookStore.Application.Services.Identity.Email
             }
             catch (Exception ex)
             {
-                // Log error
-                throw new InvalidOperationException($"Failed to send email: {ex.Message}", ex);
+                // Log error with more details
+                throw new InvalidOperationException($"Failed to send email to {toEmail}: {ex.Message}", ex);
             }
         }
     }
