@@ -237,16 +237,6 @@ export default function NewArrivalsPage() {
     return Math.round(((original - current) / original) * 100);
   };
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
   // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -348,29 +338,9 @@ export default function NewArrivalsPage() {
                 {book.title}
               </h3>
               <p className="text-xs text-gray-600 mb-1">{book.author}</p>
-              <p className="text-xs text-gray-500 mb-2">
-                Phát hành: {formatDate(book.publishDate)}
-              </p>
-
-              {/* Price */}
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <p className="text-red-600 font-bold text-sm">
-                  {formatPrice(book.price)}
-                </p>
-                {book.originalPrice && (
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <p className="text-xs text-gray-400 line-through">
-                      {formatPrice(book.originalPrice)}
-                    </p>
-                    <Badge variant="danger" className="text-xs font-bold">
-                      -{calculateDiscount(book.originalPrice, book.price)}%
-                    </Badge>
-                  </div>
-                )}
-              </div>
 
               {/* Rating */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 mb-2">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="12"
@@ -385,6 +355,23 @@ export default function NewArrivalsPage() {
                 <span className="text-xs text-gray-400">
                   ({book.reviewCount})
                 </span>
+              </div>
+
+              {/* Price */}
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-red-600 font-bold text-sm">
+                  {formatPrice(book.price)}
+                </p>
+                {book.originalPrice && (
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <p className="text-xs text-gray-400 line-through">
+                      {formatPrice(book.originalPrice)}
+                    </p>
+                    <Badge variant="danger" className="text-xs font-bold">
+                      -{calculateDiscount(book.originalPrice, book.price)}%
+                    </Badge>
+                  </div>
+                )}
               </div>
             </Link>
           ))}

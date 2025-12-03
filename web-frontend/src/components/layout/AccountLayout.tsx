@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import Image from 'next/image';
-import { ReactNode, useMemo, useState, useEffect } from 'react';
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import Image from "next/image";
+import { ReactNode, useMemo, useState, useEffect } from "react";
 
 interface AccountLayoutProps {
   children: ReactNode;
@@ -17,8 +17,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
   // kiểm tra đang ở trang orders hay trang con
   const isInOrders = useMemo(() => {
     return (
-      pathname === '/account/orders' ||
-      pathname?.startsWith('/account/orders/')
+      pathname === "/account/orders" || pathname?.startsWith("/account/orders/")
     );
   }, [pathname]);
 
@@ -39,7 +38,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
   const isActive = (path: string) => pathname === path;
   const isActiveOrders = (path?: string) => {
     if (!path) return false;
-    return pathname === path || pathname?.startsWith('/account/orders/');
+    return pathname === path || pathname?.startsWith("/account/orders/");
   };
 
   return (
@@ -56,7 +55,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                     {user?.avatar ? (
                       <Image
                         src={user.avatar}
-                        alt={user.name || 'User'}
+                        alt={user.name || "User"}
                         fill
                         sizes="48px"
                         className="object-cover"
@@ -79,7 +78,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">
-                      {user?.name || 'Người dùng'}
+                      {user?.name || "Người dùng"}
                     </p>
                     <p className="text-xs text-gray-600 truncate">
                       {user?.email}
@@ -92,18 +91,18 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
               <nav className="py-2">
                 {/* Thông tin cá nhân */}
                 <button
-                  onClick={() => go('/account/profile')}
+                  onClick={() => go("/account/profile")}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                    isActive('/account/profile')
-                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent'
+                    isActive("/account/profile")
+                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
                   }`}
                 >
                   <span
                     className={
-                      isActive('/account/profile')
-                        ? 'text-blue-600'
-                        : 'text-gray-500'
+                      isActive("/account/profile")
+                        ? "text-blue-600"
+                        : "text-gray-500"
                     }
                   >
                     <svg
@@ -127,23 +126,23 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                 <button
                   onClick={() => {
                     if (!isInOrders) {
-                      go('/account/orders');
+                      go("/account/orders");
                     } else {
                       setOrdersOpen((p) => !p);
                     }
                   }}
                   className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-sm transition-colors ${
-                    isActiveOrders('/account/orders')
-                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent'
+                    isActiveOrders("/account/orders")
+                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
                   }`}
                 >
                   <span className="flex items-center gap-3">
                     <span
                       className={
-                        isActiveOrders('/account/orders')
-                          ? 'text-blue-600'
-                          : 'text-gray-500'
+                        isActiveOrders("/account/orders")
+                          ? "text-blue-600"
+                          : "text-gray-500"
                       }
                     >
                       <svg
@@ -164,7 +163,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                   </span>
                   <svg
                     className={`w-4 h-4 transition-transform ${
-                      ordersOpen ? 'rotate-90' : ''
+                      ordersOpen ? "rotate-90" : ""
                     }`}
                     viewBox="0 0 24 24"
                     fill="none"
@@ -181,11 +180,11 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                 {ordersOpen && (
                   <div className="pl-10 pr-2 pb-2 space-y-1">
                     <button
-                      onClick={() => go('/account/orders/physical')}
+                      onClick={() => go("/account/orders/physical")}
                       className={`w-full flex items-center gap-2 px-2 py-2 text-sm rounded-md ${
-                        isActive('/account/orders/physical')
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-600 hover:bg-gray-50'
+                        isActive("/account/orders/physical")
+                          ? "bg-blue-50 text-blue-600"
+                          : "text-gray-600 hover:bg-gray-50"
                       }`}
                     >
                       <svg
@@ -204,11 +203,11 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                       <span>Sách giấy</span>
                     </button>
                     <button
-                      onClick={() => go('/account/orders/digital')}
+                      onClick={() => go("/account/orders/digital")}
                       className={`w-full flex items-center gap-2 px-2 py-2 text-sm rounded-md ${
-                        isActive('/account/orders/digital')
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-600 hover:bg-gray-50'
+                        isActive("/account/orders/digital")
+                          ? "bg-blue-50 text-blue-600"
+                          : "text-gray-600 hover:bg-gray-50"
                       }`}
                     >
                       <svg
@@ -231,18 +230,18 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
 
                 {/* Danh sách yêu thích */}
                 <button
-                  onClick={() => go('/account/wishlist')}
+                  onClick={() => go("/account/wishlist")}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                    isActive('/account/wishlist')
-                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent'
+                    isActive("/account/wishlist")
+                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
                   }`}
                 >
                   <span
                     className={
-                      isActive('/account/wishlist')
-                        ? 'text-blue-600'
-                        : 'text-gray-500'
+                      isActive("/account/wishlist")
+                        ? "text-blue-600"
+                        : "text-gray-500"
                     }
                   >
                     <svg
@@ -264,18 +263,18 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
 
                 {/* Thư viện sách */}
                 <button
-                  onClick={() => go('/account/library-book')}
+                  onClick={() => go("/account/library-book")}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                    isActive('/account/library-book')
-                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent'
+                    isActive("/account/library-book")
+                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
                   }`}
                 >
                   <span
                     className={
-                      isActive('/account/library-book')
-                        ? 'text-blue-600'
-                        : 'text-gray-500'
+                      isActive("/account/library-book")
+                        ? "text-blue-600"
+                        : "text-gray-500"
                     }
                   >
                     <svg
@@ -299,18 +298,18 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
 
                 {/* Địa chỉ nhận hàng */}
                 <button
-                  onClick={() => go('/account/addresses')}
+                  onClick={() => go("/account/addresses")}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                    isActive('/account/addresses')
-                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent'
+                    isActive("/account/addresses")
+                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
                   }`}
                 >
                   <span
                     className={
-                      isActive('/account/addresses')
-                        ? 'text-blue-600'
-                        : 'text-gray-500'
+                      isActive("/account/addresses")
+                        ? "text-blue-600"
+                        : "text-gray-500"
                     }
                   >
                     <svg
@@ -336,20 +335,52 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                   <span>Địa chỉ nhận hàng</span>
                 </button>
 
-                {/* Lịch sử giao dịch */}
                 <button
-                  onClick={() => go('/account/transaction-histories')}
+                  onClick={() => go("/account/notifications")}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                    isActive('/account/transaction-histories')
-                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent'
+                    isActive("/account/notifications")
+                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
                   }`}
                 >
                   <span
                     className={
-                      isActive('/account/transaction-histories')
-                        ? 'text-blue-600'
-                        : 'text-gray-500'
+                      isActive("/account/notifications")
+                        ? "text-blue-600"
+                        : "text-gray-500"
+                    }
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V5a1 1 0 1 0-2 0v.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 1 1-6 0h6z"
+                      />
+                    </svg>
+                  </span>
+                  <span>Thông báo</span>
+                </button>
+
+                {/* Lịch sử giao dịch */}
+                <button
+                  onClick={() => go("/account/transaction-histories")}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                    isActive("/account/transaction-histories")
+                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
+                  }`}
+                >
+                  <span
+                    className={
+                      isActive("/account/transaction-histories")
+                        ? "text-blue-600"
+                        : "text-gray-500"
                     }
                   >
                     <svg
@@ -371,18 +402,18 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
 
                 {/* Thành tích */}
                 <button
-                  onClick={() => go('/account/achievements')}
+                  onClick={() => go("/account/achievements")}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                    isActive('/account/achievements')
-                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent'
+                    isActive("/account/achievements")
+                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
                   }`}
                 >
                   <span
                     className={
-                      isActive('/account/achievements')
-                        ? 'text-blue-600'
-                        : 'text-gray-500'
+                      isActive("/account/achievements")
+                        ? "text-blue-600"
+                        : "text-gray-500"
                     }
                   >
                     <svg
@@ -404,18 +435,18 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
 
                 {/* Hỗ trợ khách hàng */}
                 <button
-                  onClick={() => go('/account/customer-support')}
+                  onClick={() => go("/account/customer-support")}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                    isActive('/account/customer-support')
-                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent'
+                    isActive("/account/customer-support")
+                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
                   }`}
                 >
                   <span
                     className={
-                      isActive('/account/customer-support')
-                        ? 'text-blue-600'
-                        : 'text-gray-500'
+                      isActive("/account/customer-support")
+                        ? "text-blue-600"
+                        : "text-gray-500"
                     }
                   >
                     <svg
@@ -442,7 +473,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                 <div className="mt-4 pt-4 border-t border-gray-200 px-4 pb-4">
                   <button
                     onClick={() => {
-                      router.push('/');
+                      router.push("/");
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   >

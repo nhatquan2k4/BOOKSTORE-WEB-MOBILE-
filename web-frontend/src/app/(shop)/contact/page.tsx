@@ -59,8 +59,8 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Địa chỉ</h3>
                   <p className="text-gray-600">
-                    123 Nguyễn Văn Linh, Quận 7<br />
-                    TP. Hồ Chí Minh, Việt Nam
+                    55 Giải Phóng<br />
+                    TP. Hà Nội, Việt Nam
                   </p>
                 </div>
               </div>
@@ -74,8 +74,8 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Điện thoại</h3>
                   <p className="text-gray-600">
-                    Hotline: 1900 xxxx<br />
-                    Mobile: 0123 456 789
+                    Hotline: 1900 1234<br />
+                    Mobile: 0865 035 893
                   </p>
                 </div>
               </div>
@@ -89,8 +89,7 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Email</h3>
                   <p className="text-gray-600">
-                    support@bookstore.vn<br />
-                    info@bookstore.vn
+                    support@bookstore.vn
                   </p>
                 </div>
               </div>

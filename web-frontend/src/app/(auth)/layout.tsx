@@ -1,5 +1,5 @@
-import React from 'react';
-import Image from 'next/image';
+import React from "react";
+import Image from "next/image";
 
 export default function AuthLayout({
   children,
@@ -7,45 +7,101 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex from-blue-600 to-blue-700" suppressHydrationWarning>
+    <div
+      className="min-h-screen flex bg-slate-50 text-slate-900"
+      suppressHydrationWarning
+    >
       {/* Left side - Branding/Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br  from-blue-600 to-blue-800 p-12 items-center justify-center">
-        <div className="relative z-10 text-white max-w-lg">
-          <h1 className="text-5xl font-bold mb-4">BookStore</h1>
-          <p className="text-xl mb-8 opacity-90">
-            Khám phá thế giới tri thức với hàng ngàn đầu sách chất lượng
-          </p>
-          <div className="space-y-4 text-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">✓</div>
-              <span>Hàng ngàn đầu sách đa dạng</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">✓</div>
-              <span>Giao hàng nhanh chóng toàn quốc</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">✓</div>
-              <span>Ưu đãi đặc biệt cho thành viên</span>
-            </div>
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-blue-50 via-indigo-50 to-slate-100 p-12 items-center justify-center overflow-hidden">
+        {/* Decorative background elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-200 rounded-full opacity-20 blur-3xl animate-pulse"></div>
+        <div
+          className="absolute bottom-0 left-0 w-72 h-72 bg-indigo-200 rounded-full opacity-20 blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        ></div>
+
+        {/* Logo */}
+        <div className="absolute top-8 left-8">
+          <div className="relative w-40 h-12">
+            {" "}
+            {/* Chỉnh độ rộng w-40 cho logo dài */}
+            <Image
+              src="/image/logo.png"
+              alt="Bookstore Logo"
+              fill
+              className="object-contain object-left" // Căn logo sang trái
+            />
           </div>
         </div>
-        
-        {/* Decorative book illustration */}
-        <div className="absolute bottom-0 right-0 w-64 h-64 opacity-20">
-          <svg viewBox="0 0 200 200" fill="currentColor">
-            <path d="M40 40 L160 40 L160 160 L40 160 Z" opacity="0.3"/>
-            <path d="M50 50 L150 50 L150 150 L50 150 Z" opacity="0.5"/>
-            <path d="M60 60 L140 60 L140 140 L60 140 Z"/>
+
+        {/* --- KHU VỰC SÁCH --- */}
+        <div className="relative z-10 w-full h-full max-w-md flex items-center justify-center">
+          <div className="relative w-96 h-96">
+            {/* CUỐN 1: Ở sau - Bên trái */}
+            <div className="absolute top-8 -left-4 w-[250px] h-[358px] rounded-2xl transform -rotate-6 hover:rotate-0 hover:scale-105 transition-all duration-500 cursor-pointer group animate-float shadow-2xl shadow-blue-900/20">
+              <div className="w-full h-full rounded-2xl overflow-hidden relative border border-slate-200">
+                <Image
+                  src="/image/anhbia1.jpg"
+                  alt="Book Cover Back"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
+              </div>
+            </div>
+
+            {/* CUỐN 2: Ở trước - Bên phải */}
+            <div className="absolute top-16 -right-4 w-[250px] h-[358px] rounded-2xl transform rotate-6 hover:rotate-0 hover:scale-105 transition-all duration-500 cursor-pointer group animate-float-delayed shadow-2xl shadow-blue-900/25">
+              <div className="w-full h-full rounded-2xl overflow-hidden relative border border-slate-200">
+                <Image
+                  src="/image/anhbia2.jpg"
+                  alt="Book Cover Front"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/20 opacity-50 pointer-events-none"></div>
+              </div>
+            </div>
+
+            {/* Bóng đổ giả dưới chân sách */}
+            <div className="absolute top-40 left-1/2 transform -translate-x-1/2 w-56 h-12 bg-black/20 blur-xl rounded-full -z-10"></div>
+          </div>
+        </div>
+
+        {/* Decorative elements */}
+        <div className="absolute bottom-8 left-8 w-32 h-40 opacity-30 mix-blend-multiply">
+          <svg viewBox="0 0 100 150" fill="none">
+            <path
+              d="M50 150 Q30 100 50 50 T50 0"
+              stroke="#0f766e"
+              strokeWidth="4"
+              fill="none"
+            />
+            <ellipse
+              cx="30"
+              cy="70"
+              rx="18"
+              ry="28"
+              fill="#14b8a6"
+              opacity="0.7"
+            />
+            <ellipse
+              cx="70"
+              cy="90"
+              rx="18"
+              ry="28"
+              fill="#14b8a6"
+              opacity="0.7"
+            />
           </svg>
         </div>
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          {children}
-        </div>
+      <div className="flex-1 flex items-center justify-center p-8 bg-white">
+        <div className="w-full max-w-md">{children}</div>
       </div>
     </div>
   );
