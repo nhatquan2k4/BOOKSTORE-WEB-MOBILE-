@@ -1,4 +1,4 @@
-// Order Types
+import { User } from './user';
 export interface Order {
   id: string;
   userId: string;
@@ -92,11 +92,4 @@ export interface PlaceOrderRequest {
 export interface PlaceOrderResponse {
   order: Order;
   qrCodeUrl: string;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  fullName?: string;
-  phoneNumber?: string;
 }

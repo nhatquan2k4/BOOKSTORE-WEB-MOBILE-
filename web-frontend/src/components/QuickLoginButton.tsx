@@ -1,8 +1,19 @@
 // Quick Login Button - For Development/Testing
 'use client';
 
-import { loginWithMockAccount, isMockAccountActive } from '@/lib/mock-auth';
+// Đã xóa import gây lỗi: import { loginWithMockAccount, isMockAccountActive } from '@/lib/mock-auth';
 import { useEffect, useState } from 'react';
+
+// --- Thêm đoạn này để thay thế file thiếu ---
+const loginWithMockAccount = async () => {
+  console.log("Mock login feature is currently disabled during build.");
+  alert("Tính năng đăng nhập nhanh đang tắt.");
+};
+
+const isMockAccountActive = () => {
+  return false; // Mặc định là chưa đăng nhập
+};
+// -------------------------------------------
 
 export function QuickLoginButton() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

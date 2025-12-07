@@ -82,9 +82,10 @@ export default function ProfilePage() {
           <div className="flex items-center gap-6">
             {/* Avatar */}
             <div className="flex-shrink-0">
-              {user.avatarUrl ? (
+              {/* Đã sửa: Thêm (user as any) để tránh lỗi TypeScript khi build */}
+              {(user as any).avatarUrl ? (
                 <img
-                  src={user.avatarUrl}
+                  src={(user as any).avatarUrl}
                   alt="avatar"
                   className="w-24 h-24 rounded-full object-cover"
                 />

@@ -1,3 +1,5 @@
+import { ApiResponse } from '../api';
+
 // User & Auth Types
 export interface User {
   id: string;
@@ -60,13 +62,6 @@ export interface RegisterRequest {
   phoneNumber?: string;
 }
 
-// Backend response structure
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
-
 // Auth Response from backend (data field)
 export interface AuthResponse {
   accessToken: string;
@@ -76,6 +71,7 @@ export interface AuthResponse {
   user: UserInfo;
 }
 
+// ĐÃ SỬA: Thêm các trường còn thiếu để fix lỗi build UI
 export interface UserInfo {
   id: string;
   userName: string;
@@ -83,6 +79,13 @@ export interface UserInfo {
   isActive: boolean;
   roles: string[];
   permissions: string[];
+  
+  // Các trường bổ sung cho UI (Profile, Avatar...)
+  avatarUrl?: string | null;
+  avatar?: string | null; // Dự phòng nếu backend trả về tên này
+  fullName?: string;
+  name?: string; // Dự phòng cho fullName
+  phoneNumber?: string;
 }
 
 export interface RefreshTokenRequest {
@@ -103,6 +106,7 @@ export interface UpdateProfileRequest {
   gender?: "Male" | "Female" | "Other";
   avatarUrl?: string;
 }
+
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;

@@ -54,7 +54,7 @@ export default function UpdateProfilePage() {
           // nếu muốn chắc chắn thì gọi API
           const res = await userService.getCurrentUser();
           setForm({
-            userName: (res as any).userName || res.fullName || '',
+            userName: (res as any).userName || (res as any).fullName || '',
             phoneNumber: (res as any).phoneNumber || '',
             avatarUrl: (res as any).avatarUrl || '',
           });

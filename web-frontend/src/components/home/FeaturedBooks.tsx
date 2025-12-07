@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'image';
+import Image from 'next/image';
 import { bookService } from '@/services';
 import type { BookDto } from '@/types/dtos';
 import { Badge } from '@/components/ui';

@@ -75,7 +75,7 @@ const mockTickets: Ticket[] = [
 
 const statusConfig: Record<
   Ticket['status'],
-  { label: string; color: string; icon: JSX.Element }
+  { label: string; color: string; icon: React.ReactNode }
 > = {
   open: {
     label: 'Mở',
@@ -427,7 +427,7 @@ export default function CustomerSupportPage() {
                 </div>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={() => setShowCreateForm(false)}
                 >
                   <svg
@@ -564,7 +564,7 @@ export default function CustomerSupportPage() {
                 </div>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={() => setSelectedTicket(null)}
                 >
                     <svg

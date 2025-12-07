@@ -55,7 +55,8 @@ export function useFeaturedBooks(limit: number = 6) {
         });
 
         // Transform API data to match UI format
-        const transformedBooks: Book[] = (response.items || []).map((book) => ({
+        // SỬA: Thêm :any để tránh lỗi thiếu thuộc tính bookId, name...
+        const transformedBooks: Book[] = (response.items || []).map((book: any) => ({
           id: book.id || book.bookId,
           title: book.title || book.name,
           author: book.authorName || book.author || 'Unknown Author',
@@ -103,7 +104,8 @@ export function useCategories() {
         const response = await categoryService.getCategories(1, 100);
 
         // Transform API data
-        const transformedCategories: Category[] = (response.items || []).map((cat) => ({
+        // SỬA: Thêm :any để tránh lỗi thiếu thuộc tính categoryId...
+        const transformedCategories: Category[] = (response.items || []).map((cat: any) => ({
           id: cat.id || cat.categoryId,
           name: cat.name || cat.categoryName,
           description: cat.description,
@@ -162,7 +164,8 @@ export function useBooks(params?: {
         });
 
         // Transform API data
-        const transformedBooks: Book[] = (response.items || []).map((book) => ({
+        // SỬA: Thêm :any để tránh lỗi TypeScript chặn build
+        const transformedBooks: Book[] = (response.items || []).map((book: any) => ({
           id: book.id || book.bookId,
           title: book.title || book.name,
           author: book.authorName || book.author || 'Unknown Author',
@@ -221,28 +224,31 @@ export function useBook(bookId: string | null) {
         setLoading(true);
         const response = await bookService.getBookById(bookId!);
 
+        // SỬA: Ép kiểu response thành any để truy cập mọi thuộc tính
+        const data = response as any;
+
         // Transform API data
-        const book: Book = {
-          id: response.id || response.bookId,
-          title: response.title || response.name,
-          author: response.authorName || response.author || 'Unknown Author',
-          authorId: response.authorId,
-          category: response.categoryName || response.category,
-          categoryId: response.categoryId,
-          price: response.price || response.salePrice || 0,
-          originalPrice: response.originalPrice || response.regularPrice,
-          salePrice: response.salePrice,
-          cover: response.imageUrl || response.coverImage || '/image/anh.png',
-          rating: response.rating || response.averageRating || 0,
-          reviewCount: response.reviewCount || response.totalReviews || 0,
-          stock: response.stock || response.quantity || 0,
-          description: response.description,
-          isBestseller: response.isBestseller,
-          isNew: response.isNew,
-          isFeatured: response.isFeatured,
+        const bookData: Book = {
+          id: data.id || data.bookId,
+          title: data.title || data.name,
+          author: data.authorName || data.author || 'Unknown Author',
+          authorId: data.authorId,
+          category: data.categoryName || data.category,
+          categoryId: data.categoryId,
+          price: data.price || data.salePrice || 0,
+          originalPrice: data.originalPrice || data.regularPrice,
+          salePrice: data.salePrice,
+          cover: data.imageUrl || data.coverImage || '/image/anh.png',
+          rating: data.rating || data.averageRating || 0,
+          reviewCount: data.reviewCount || data.totalReviews || 0,
+          stock: data.stock || data.quantity || 0,
+          description: data.description,
+          isBestseller: data.isBestseller,
+          isNew: data.isNew,
+          isFeatured: data.isFeatured,
         };
 
-        setBook(book);
+        setBook(bookData);
         setError(null);
       } catch (err) {
         console.error('Error fetching book:', err);

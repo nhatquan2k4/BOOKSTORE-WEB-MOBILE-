@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button, Badge, Breadcrumb } from '@/components/ui';
 import { paymentApi } from '@/lib/api/payment';
 
-export default function QRPaymentPage() {
+// 1. Component con chứa toàn bộ logic chính
+function QRPaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -186,17 +187,6 @@ export default function QRPaymentPage() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // TODO: Tự động kiểm tra thanh toán (cần Sepay API hoặc backend thật)
-  // Hiện tại chỉ dùng nút "Tôi đã thanh toán" để chuyển trang thủ công
-  // useEffect(() => {
-  //   if (paymentStatus !== 'pending' || !sepayOrderId) return;
-  //   const checkPaymentStatus = async () => {
-  //     // Implementation here
-  //   };
-  //   const checkInterval = setInterval(checkPaymentStatus, 5000);
-  //   return () => clearInterval(checkInterval);
-  // }, [paymentStatus, sepayOrderId, type, bookId, orderId, router]);
-
   // Xử lý nút "Tôi đã thanh toán" - Chuyển trang thành công
   const handleCheckPayment = async () => {
     if (!sepayOrderId) {
@@ -215,24 +205,6 @@ export default function QRPaymentPage() {
         : `/payment/success?type=buy&orderId=${orderId}`;
       router.push(successUrl);
     }, 1000);
-
-    // Code cũ với Sepay API (comment out)
-    // try {
-    //   const response = await fetch(`/api/payment/sepay/check-status?orderId=${sepayOrderId}`);
-    //   if (!response.ok) throw new Error('Không thể kiểm tra trạng thái thanh toán');
-    //   const data = await response.json();
-    //   if (data.success && data.status === 'paid') {
-    //     setPaymentStatus('success');
-    //     setTimeout(() => router.push(successUrl), 1000);
-    //   } else {
-    //     setPaymentStatus('failed');
-    //     setTimeout(() => setPaymentStatus('pending'), 3000);
-    //   }
-    // } catch (error) {
-    //   console.error('Error checking payment:', error);
-    //   setPaymentStatus('failed');
-    //   setTimeout(() => setPaymentStatus('pending'), 3000);
-    // }
   };
 
   // Copy thông tin
@@ -277,10 +249,9 @@ export default function QRPaymentPage() {
 
   const bankInfo = getBankInfo();
 
-  // Xây dựng breadcrumb items dựa trên nguồn (không cần Trang chủ vì Breadcrumb component tự thêm)
+  // Xây dựng breadcrumb items
   const getBreadcrumbItems = () => {
     if (type === 'rent') {
-      // Từ trang thuê eBook
       return [
         { label: 'Thuê eBook', href: '/rent' },
         ...(bookId && bookTitle ? [{ label: bookTitle, href: `/rent/${bookId}` }] : []),
@@ -288,9 +259,7 @@ export default function QRPaymentPage() {
       ];
     }
     
-    // Từ giỏ hàng hoặc mua ngay từ chi tiết sách
     if (bookId && bookTitle) {
-      // Mua ngay từ trang chi tiết sách
       return [
         { label: 'Sách', href: '/books' },
         { label: bookTitle, href: `/books/${bookId}` },
@@ -298,7 +267,6 @@ export default function QRPaymentPage() {
       ];
     }
     
-    // Từ giỏ hàng
     return [
       { label: 'Giỏ hàng', href: '/cart' },
       { label: 'Thanh toán QR' }
@@ -723,5 +691,26 @@ export default function QRPaymentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// 2. Fallback UI khi đang tải
+function QRPaymentFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+        <p className="mt-4 text-gray-600">Đang tải trang thanh toán...</p>
+      </div>
+    </div>
+  );
+}
+
+// 3. Component chính Export Default (Có bọc Suspense)
+export default function QRPaymentPage() {
+  return (
+    <Suspense fallback={<QRPaymentFallback />}>
+      <QRPaymentContent />
+    </Suspense>
   );
 }
