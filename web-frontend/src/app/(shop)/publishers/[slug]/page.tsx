@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, use } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -59,11 +59,12 @@ const mockBooks = [
   { id: 6, title: "Điều Kỳ Diệu Của Tiệm Tạp Hóa", author: "Higashino Keigo", price: 125000, image: "/image/anh.png", rating: 4.8 }
 ];
 
-export default function PublisherDetailPage({ params }: { params: { slug: string } }) {
+export default function PublisherDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const [activeTab, setActiveTab] = useState<"books" | "info">("books");
   const [isFollowing, setIsFollowing] = useState(false);
-
-  const publisher = publishers[params.slug];
+  
+  const { slug } = use(params);
+  const publisher = publishers[slug];
 
   if (!publisher) {
     notFound();

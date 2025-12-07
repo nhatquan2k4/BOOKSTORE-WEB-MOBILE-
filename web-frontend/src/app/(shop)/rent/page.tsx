@@ -21,7 +21,7 @@ import { Button, Badge, Input, Breadcrumb} from '@/components/ui';
  * - 180 ngày: 34% giá sách (tiết kiệm 50% - PHỔ BIẾN)
  * - 365 ngày: 51% giá sách (tiết kiệm 60%)
  */
-export function calculateRentalPrice(bookPrice: number, days: number): number {
+function calculateRentalPrice(bookPrice: number, days: number): number {
   // Gói 3 ngày cố định
   if (days === 3) return 10000;
   
@@ -47,7 +47,7 @@ export function calculateRentalPrice(bookPrice: number, days: number): number {
  * @param bookPrice - Giá mua sách
  * @returns Mảng các gói thuê với giá tính toán
  */
-export function generateRentalPlans(bookPrice: number) {
+function generateRentalPlans(bookPrice: number) {
   return [
     { id: 1, duration: "3 ngày", days: 3, price: calculateRentalPrice(bookPrice, 3), discount: 0, popular: false },
     { id: 2, duration: "7 ngày", days: 7, price: calculateRentalPrice(bookPrice, 7), discount: 0, popular: false },
