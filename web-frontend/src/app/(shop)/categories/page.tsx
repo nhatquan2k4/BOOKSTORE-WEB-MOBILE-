@@ -463,7 +463,7 @@ export default function CategoriesPage() {
             Khám phá tất cả các đầu sách trong cửa hàng của chúng tôi
           </p>
           <Link href="/books">
-            <Button variant="default" size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+            <Button variant="primary" size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
               Xem tất cả sách
               <svg
                 xmlns="http://www.w3.org/2000/svg"
