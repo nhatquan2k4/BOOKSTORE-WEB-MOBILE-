@@ -6,7 +6,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { Badge, Button } from "@/components/ui";
 import { Card, CardContent } from "@/components/ui/Card";
+import { bookService, categoryService } from "@/services";
+import type { BookDto, CategoryDto } from "@/types/dtos";
 
+// Fallback data nếu API lỗi
 const featuredBooks = [
   {
     id: 1,

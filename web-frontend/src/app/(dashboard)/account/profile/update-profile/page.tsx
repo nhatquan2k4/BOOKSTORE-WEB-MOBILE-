@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts';
 import { useRouter } from 'next/navigation';
-import { authApi } from '@/lib/api/identity/auth';
+import { userService } from '@/services';
 
 interface ProfileFormValues {
   userName: string;
@@ -52,13 +52,13 @@ export default function UpdateProfilePage() {
           setAvatarPreview((user as any).avatarUrl || null);
         } else {
           // nếu muốn chắc chắn thì gọi API
-          const res = await authApi.getProfile();
+          const res = await userService.getCurrentUser();
           setForm({
-            userName: res.userName || '',
-            phoneNumber: res.phoneNumber || '',
-            avatarUrl: res.avatarUrl || '',
+            userName: (res as any).userName || res.fullName || '',
+            phoneNumber: (res as any).phoneNumber || '',
+            avatarUrl: (res as any).avatarUrl || '',
           });
-          setAvatarPreview(res.avatarUrl || null);
+          setAvatarPreview((res as any).avatarUrl || null);
         }
       } catch (err: any) {
         setLoadError('Không thể tải thông tin tài khoản.');
@@ -96,36 +96,26 @@ export default function UpdateProfilePage() {
 
       // nếu user có chọn file mới → upload trước
       if (avatarFile) {
-        const fd = new FormData();
-        fd.append('file', avatarFile);
-
-        // đổi tên hàm này theo backend của bạn
-        const uploadRes = await authApi.uploadAvatar(fd);
-        // giả sử backend trả { url: '...' }
-        avatarUrl = uploadRes.url;
+        // upload file
+        const uploadRes = await userService.uploadAvatar(avatarFile);
+        // backend trả { avatarUrl: '...' }
+        avatarUrl = uploadRes.avatarUrl;
       }
 
       const payload = {
-        userName: form.userName,
+        fullName: form.userName,
         phoneNumber: form.phoneNumber,
         avatarUrl: avatarUrl,
       };
 
-      const res = await authApi.updateProfile(payload);
+      const res = await userService.updateProfile(payload);
 
-      if (res.success) {
-        setSaveMessage({
-          type: 'success',
-          text: 'Cập nhật thông tin thành công!',
-        });
-        // nếu muốn quay lại luôn:
-        // router.push('/account/profile');
-      } else {
-        setSaveMessage({
-          type: 'error',
-          text: res.message || 'Cập nhật thất bại, vui lòng thử lại.',
-        });
-      }
+      setSaveMessage({
+        type: 'success',
+        text: 'Cập nhật thông tin thành công!',
+      });
+      // nếu muốn quay lại luôn:
+      // router.push('/account/profile');
     } catch (err: any) {
       setSaveMessage({
         type: 'error',

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { authApi } from '@/lib/api/identity/auth';
+import { authService } from '@/services';
 
 export default function ProfilePage() {
   const { user, isLoggedIn, isLoading } = useAuth();
@@ -27,7 +27,7 @@ export default function ProfilePage() {
       setSendingEmail(true);
       setEmailMessage(null);
 
-      const response = await authApi.resendVerificationEmail(user.email);
+      const response = await authService.resendVerificationEmail(user.email);
 
       if (response.success) {
         setEmailMessage({

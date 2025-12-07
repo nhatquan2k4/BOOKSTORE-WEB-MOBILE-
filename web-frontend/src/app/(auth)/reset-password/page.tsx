@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { authApi } from "@/lib/api/identity/auth";
+import { authService } from "@/services";
 import { AuthCard, AuthCardIcon } from "@/components/auth";
 import { FormField } from "@/components/auth";
 import { PasswordInput } from "@/components/auth";
@@ -73,25 +73,18 @@ export default function ResetPasswordPage() {
     }
     
     try {
-      const response = await authApi.resetPassword({
-        email: data.email,
-        token: token,
-        newPassword: data.password,
-        confirmNewPassword: data.confirmPassword,
-      });
+      const response = await authService.resetPassword(
+        token,
+        data.password,
+        data.confirmPassword
+      );
 
-      if (response.success) {
-        setSuccessMessage(
-          response.message || "Mật khẩu đã được đặt lại thành công!"
-        );
-        setTimeout(() => {
-          router.push("/login?reset=success");
-        }, 2000);
-      } else {
-        setErrorMessage(
-          response.message || "Không thể đặt lại mật khẩu. Vui lòng thử lại."
-        );
-      }
+      setSuccessMessage(
+        response.message || "Mật khẩu đã được đặt lại thành công!"
+      );
+      setTimeout(() => {
+        router.push("/login?reset=success");
+      }, 2000);
     } catch (err: any) {
       setErrorMessage(
         err?.response?.data?.message ||

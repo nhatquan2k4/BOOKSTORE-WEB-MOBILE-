@@ -1,8 +1,19 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { cartApi } from '@/lib/api/cart';
-import { Cart, AddToCartRequest, UpdateCartItemRequest } from '@/types/cart';
+import { cartService } from '@/services';
+import { Cart, AddToCartRequest, UpdateCartItemRequest } from '@/types/models/cart';
+
+// Helper to convert CartDto to Cart model
+function convertCartDto(cartDto: any): Cart {
+  return {
+    id: cartDto.id || '',
+    userId: cartDto.userId || '',
+    items: cartDto.items || [],
+    totalAmount: cartDto.totalAmount || 0,
+    updatedAt: cartDto.updatedAt || new Date().toISOString(),
+  };
+}
 
 export function useCart(userId?: string) {
   const [cart, setCart] = useState<Cart | null>(null);
@@ -10,13 +21,15 @@ export function useCart(userId?: string) {
   const [error, setError] = useState<string | null>(null);
 
   const loadCart = useCallback(async () => {
-    if (!userId) return;
-    
     try {
       setIsLoading(true);
       setError(null);
-      const response = await cartApi.getByUserId(userId);
-      setCart(response.data);
+      const cartDto = await cartService.getMyCart();
+      if (cartDto) {
+        setCart(convertCartDto(cartDto));
+      } else {
+        setCart(null);
+      }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Không thể tải giỏ hàng';
       setError(errorMessage);
@@ -24,15 +37,20 @@ export function useCart(userId?: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, []);
 
   const addItem = async (request: AddToCartRequest) => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await cartApi.addItem(request);
-      setCart(response.data);
-      return response.data;
+      const cartDto = await cartService.addToCart({
+        bookId: request.bookId,
+        quantity: request.quantity,
+        userId: userId,
+      });
+      const updatedCart = convertCartDto(cartDto);
+      setCart(updatedCart);
+      return updatedCart;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Không thể thêm sản phẩm';
       setError(errorMessage);
@@ -46,9 +64,10 @@ export function useCart(userId?: string) {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await cartApi.updateItem(itemId, request);
-      setCart(response.data);
-      return response.data;
+      const cartDto = await cartService.updateCartItemQuantity(itemId, request.quantity);
+      const updatedCart = convertCartDto(cartDto);
+      setCart(updatedCart);
+      return updatedCart;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Không thể cập nhật sản phẩm';
       setError(errorMessage);
@@ -62,15 +81,20 @@ export function useCart(userId?: string) {
     try {
       setIsLoading(true);
       setError(null);
-      await cartApi.removeItem(itemId);
+      const cartDto = await cartService.removeCartItem(itemId);
       
-      // Remove item from local state
-      if (cart) {
-        setCart({
-          ...cart,
-          items: cart.items.filter((item) => item.id !== itemId),
-          totalItems: cart.totalItems - 1,
-        });
+      // Update local state with new cart
+      if (cartDto) {
+        setCart(convertCartDto(cartDto));
+      } else {
+        // If cart is now empty
+        if (cart) {
+          setCart({
+            ...cart,
+            items: [],
+            totalAmount: 0,
+          });
+        }
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Không thể xóa sản phẩm';
@@ -82,12 +106,10 @@ export function useCart(userId?: string) {
   };
 
   const clearCart = async () => {
-    if (!userId) return;
-    
     try {
       setIsLoading(true);
       setError(null);
-      await cartApi.clear(userId);
+      await cartService.clearCart();
       setCart(null);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Không thể xóa giỏ hàng';
@@ -99,11 +121,11 @@ export function useCart(userId?: string) {
   };
 
   const getItemCount = () => {
-    return cart?.totalItems || 0;
+    return cart?.items?.length || 0;
   };
 
   const getTotalPrice = () => {
-    return cart?.totalPrice || 0;
+    return cart?.totalAmount || 0;
   };
 
   return {

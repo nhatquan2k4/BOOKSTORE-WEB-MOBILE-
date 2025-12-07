@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, XCircle, Mail, RefreshCw, Loader2 } from "lucide-react";
-import { authApi } from "@/lib/api/identity/auth";
+import { authService } from "@/services";
 
 type VerificationStatus = "verifying" | "success" | "error";
 type ResendStatus = "idle" | "sending" | "sent";
@@ -31,7 +31,7 @@ export default function VerifyEmailPage() {
   const verifyEmail = async (verificationToken: string) => {
     try {
       setStatus("verifying");
-      const response = await authApi.verifyEmail(verificationToken);
+      const response = await authService.verifyEmail(verificationToken);
 
       if (response.success) {
         setStatus("success");
@@ -62,7 +62,7 @@ export default function VerifyEmailPage() {
 
     try {
       setResendStatus("sending");
-      const response = await authApi.resendVerificationEmail(email);
+      const response = await authService.resendVerificationEmail(email);
 
       if (response.success) {
         setResendStatus("sent");

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button, Badge, Breadcrumb } from '@/components/ui';
-import { paymentApi } from '@/lib/api';
+import { paymentApi } from '@/lib/api/payment';
 
 export default function QRPaymentPage() {
   const router = useRouter();
