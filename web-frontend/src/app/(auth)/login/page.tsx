@@ -23,7 +23,14 @@ type LoginFormData = LoginRequest & {
   remember?: boolean;
 };
 
+interface Sparkle {
+  id: number;
+  x: number;
+  y: number;
+}
+
 function LoginContent() {
+  const [sparkles, setSparkles] = useState<Sparkle[]>([]);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
@@ -35,6 +42,28 @@ function LoginContent() {
 
   const [errorMessage, setErrorMessage] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
+
+  const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Chỉ kích hoạt khi click vào background, không phải vào form
+    if (e.target === e.currentTarget) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const newSparkle: Sparkle = {
+        id: Date.now(),
+        x,
+        y,
+      };
+
+      setSparkles((prev) => [...prev, newSparkle]);
+
+      // Xóa sparkle sau 1 giây
+      setTimeout(() => {
+        setSparkles((prev) => prev.filter((s) => s.id !== newSparkle.id));
+      }, 1000);
+    }
+  };
 
   useEffect(() => {
     if (searchParams.get("registered") === "true") {
@@ -83,8 +112,69 @@ function LoginContent() {
   };
 
   return (
-    <AuthCard title="Đăng nhập" subtitle="Chào mừng bạn trở lại!">
-      {infoMessage && (
+    <div className="relative" onClick={handleBackgroundClick}>
+      {/* Sparkle effects */}
+      {sparkles.map((sparkle) => (
+        <div
+          key={sparkle.id}
+          className="pointer-events-none fixed z-50"
+          style={{
+            left: sparkle.x,
+            top: sparkle.y,
+          }}
+        >
+          {/* Main star */}
+          <div className="absolute animate-sparkle">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="text-yellow-400"
+              style={{
+                filter: "drop-shadow(0 0 6px rgba(251, 191, 36, 0.8))",
+              }}
+            >
+              <path
+                d="M12 2L14.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                fill="currentColor"
+              />
+            </svg>
+          </div>
+
+          {/* Small sparkles around */}
+          <div className="absolute animate-sparkle-small" style={{ top: "-12px", left: "-8px" }}>
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2L14.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                fill="#FCD34D"
+              />
+            </svg>
+          </div>
+
+          <div className="absolute animate-sparkle-small" style={{ top: "12px", left: "16px", animationDelay: "0.1s" }}>
+            <svg width="6" height="6" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2L14.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                fill="#FDE68A"
+              />
+            </svg>
+          </div>
+
+          <div className="absolute animate-sparkle-small" style={{ top: "8px", left: "-12px", animationDelay: "0.2s" }}>
+            <svg width="7" height="7" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2L14.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                fill="#FBBF24"
+              />
+            </svg>
+          </div>
+        </div>
+      ))}
+
+      <AuthCard title="Đăng nhập" subtitle="Chào mừng bạn trở lại!">
+        {infoMessage && (
         <Alert variant="warning" className="mb-6" onClose={() => setInfoMessage("")}>
           {infoMessage}
         </Alert>
@@ -186,6 +276,7 @@ function LoginContent() {
         </Link>
       </div>
     </AuthCard>
+    </div>
   );
 }
 

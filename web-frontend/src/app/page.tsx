@@ -278,8 +278,8 @@ const calculateDiscount = (original: number, current: number) =>
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const heroImages = [
-    "/image/banner1.png",
-    "/image/banner2.png",
+    "/image/banner1.jpg",
+    "/image/banner2.jpg",
     "/image/banner3.png",
     "/image/banner4.png",
     "/image/banner5.png",
@@ -479,7 +479,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold">Danh mục nổi bật</h2>
-            <Link href="/books">
+            <Link href="/categories">
               <Button variant="ghost" size="sm">
                 Xem tất cả
                 <svg
