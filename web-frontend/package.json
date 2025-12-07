@@ -5,9 +5,6 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "build:github": "cross-env GITHUB_PAGES=true REPO_NAME=BOOKSTORE-WEB-MOBILE- next build",
-    "export": "next export",
-    "deploy": "npm run build:github && touch out/.nojekyll && gh-pages -d out -t true",
     "start": "next start",
     "lint": "eslint"
   },
@@ -16,7 +13,6 @@
     "axios": "^1.13.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "gh-pages": "^6.3.0",
     "lucide-react": "^0.552.0",
     "next": "^15.5.7",
     "react": "19.1.0",
@@ -32,7 +28,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.5",
     "tailwindcss": "^4",
