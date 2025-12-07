@@ -12,6 +12,7 @@ using BookStore.Domain.Entities.System;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using BookStore.Domain.Entities.Pricing_Inventory;
+using Microsoft.Extensions.Configuration;
 
 namespace BookStore.Infrastructure.Data
 {
@@ -20,6 +21,21 @@ namespace BookStore.Infrastructure.Data
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
+        }
+
+        // Constructor for design-time operations (migrations)
+        public AppDbContext() : base()
+        {
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            // Chỉ configure nếu chưa được configure (design-time only)
+            if (!optionsBuilder.IsConfigured)
+            {
+                // Dùng SA user để tránh lỗi authentication từ host vào container
+                optionsBuilder.UseSqlServer("Server=localhost,1433;Database=BookStore;User Id=sa;Password=YourStrong@Password123;MultipleActiveResultSets=true;TrustServerCertificate=True;Encrypt=False");
+            }
         }
 
         #region Identity

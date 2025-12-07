@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 
 type Book = {
@@ -277,20 +278,20 @@ const MOCK_BOOKS: Book[] = [
 ];
 
 const SUBCATEGORIES = [
-  { id: "all", name: "Tất cả", icon: "🌏" },
-  { id: "english", name: "Tiếng Anh", icon: "🇬🇧" },
-  { id: "japanese", name: "Tiếng Nhật", icon: "🇯🇵" },
-  { id: "korean", name: "Tiếng Hàn", icon: "🇰🇷" },
-  { id: "chinese", name: "Tiếng Trung", icon: "🇨🇳" },
-  { id: "french", name: "Tiếng Pháp", icon: "🇫🇷" },
-  { id: "german", name: "Tiếng Đức", icon: "🇩🇪" },
+  { id: "all", name: "Tất cả"},
+  { id: "english", name: "Tiếng Anh"},
+  { id: "japanese", name: "Tiếng Nhật"},
+  { id: "korean", name: "Tiếng Hàn"},
+  { id: "chinese", name: "Tiếng Trung"},
+  { id: "french", name: "Tiếng Pháp"},
+  { id: "german", name: "Tiếng Đức"},
 ];
 
 export default function LanguageBooksPage() {
   const [selectedSubcategory, setSelectedSubcategory] = useState<SubCategory>("all");
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 18;
+  const itemsPerPage = 20;
 
   const filteredBooks =
     selectedSubcategory === "all"
@@ -352,7 +353,7 @@ export default function LanguageBooksPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-sky-50">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4 py-8">
         <nav className="mb-6 text-sm text-gray-600">
           <Link href="/" className="hover:text-teal-600">
@@ -363,30 +364,13 @@ export default function LanguageBooksPage() {
 
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-teal-600"
-            >
-              <path d="M3 5v14" />
-              <path d="M8 5v14" />
-              <path d="M12 5v14" />
-              <path d="M17 5v14" />
-              <path d="M21 5v14" />
-            </svg>
             <h1 className="text-5xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
               Sách Ngoại Ngữ
             </h1>
           </div>
-          <p className="text-gray-700 text-lg font-medium">
-            🌍 {MOCK_BOOKS.length} giáo trình ngoại ngữ - Chuẩn quốc tế từ A1-C2
+          <p className="text-gray-700 text-lg font-medium flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+            {MOCK_BOOKS.length} giáo trình ngoại ngữ - Chuẩn quốc tế từ A1-C2
           </p>
         </div>
 
@@ -394,21 +378,17 @@ export default function LanguageBooksPage() {
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Ngôn ngữ:</h3>
           <div className="flex flex-wrap gap-2 mb-4">
             {SUBCATEGORIES.map((cat) => (
-              <button
+              <Button
                 key={cat.id}
                 onClick={() => {
                   setSelectedSubcategory(cat.id as SubCategory);
                   setCurrentPage(1);
                 }}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  selectedSubcategory === cat.id
-                    ? "bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                variant={selectedSubcategory === cat.id ? "primary" : "outline"}
+                size="sm"
               >
-                <span className="mr-2">{cat.icon}</span>
                 {cat.name}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -429,30 +409,30 @@ export default function LanguageBooksPage() {
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
-                <option value="popular">🔥 Phổ biến nhất</option>
-                <option value="level">📊 Theo trình độ</option>
-                <option value="rating">⭐ Đánh giá cao</option>
-                <option value="price-asc">💰 Giá tăng dần</option>
-                <option value="price-desc">💎 Giá giảm dần</option>
+                <option value="popular">Phổ biến nhất</option>
+                <option value="level">Theo trình độ</option>
+                <option value="rating">Đánh giá cao</option>
+                <option value="price-asc">Giá tăng dần</option>
+                <option value="price-desc">Giá giảm dần</option>
               </select>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           {paginatedBooks.map((book) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-3 shadow-md hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-teal-300"
+              className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
             >
-              <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                 <Image
                   src={book.cover}
                   alt={book.title}
                   fill
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                  className="object-cover group-hover:scale-110 transition-transform duration-300"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
 
                 <div className="absolute top-2 left-2 flex flex-col gap-1">
@@ -464,17 +444,12 @@ export default function LanguageBooksPage() {
                     {book.level}
                   </div>
                   {book.hasAudio && (
-                    <Badge className="text-xs bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-bold">
-                      🎧 AUDIO
+                    <Badge className="text-xs bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-bold flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>
+                      AUDIO
                     </Badge>
                   )}
                 </div>
-
-                {book.originalPrice && (
-                  <Badge variant="danger" className="absolute bottom-2 left-2 text-xs font-bold">
-                    -{calculateDiscount(book.originalPrice, book.price)}%
-                  </Badge>
-                )}
               </div>
 
               <div className="space-y-1">
@@ -483,18 +458,8 @@ export default function LanguageBooksPage() {
                 </h3>
                 <p className="text-xs text-gray-600 font-medium">{book.author}</p>
                 <p className="text-xs text-teal-600 font-semibold">
-                  {SUBCATEGORIES.find((c) => c.id === book.subcategory)?.icon}{" "}
                   {SUBCATEGORIES.find((c) => c.id === book.subcategory)?.name}
                 </p>
-
-                <div className="flex items-center gap-2 pt-1">
-                  <p className="text-teal-600 font-bold text-sm">{formatPrice(book.price)}</p>
-                  {book.originalPrice && (
-                    <p className="text-xs text-gray-400 line-through">
-                      {formatPrice(book.originalPrice)}
-                    </p>
-                  )}
-                </div>
 
                 <div className="flex items-center gap-1 pt-1">
                   <svg
@@ -509,6 +474,20 @@ export default function LanguageBooksPage() {
                   </svg>
                   <span className="text-xs font-bold text-gray-700">{book.rating}</span>
                   <span className="text-xs text-gray-500">({book.reviewCount})</span>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <p className="text-red-600 font-bold text-sm">{formatPrice(book.price)}</p>
+                  {book.originalPrice && (
+                    <>
+                      <p className="text-xs text-gray-400 line-through">
+                        {formatPrice(book.originalPrice)}
+                      </p>
+                      <Badge variant="danger" className="text-xs font-bold">
+                        -{calculateDiscount(book.originalPrice, book.price)}%
+                      </Badge>
+                    </>
+                  )}
                 </div>
               </div>
             </Link>
@@ -527,20 +506,29 @@ export default function LanguageBooksPage() {
 
         <div className="mt-12 bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl p-8 text-white">
           <div className="text-center">
-            <h2 className="text-3xl font-bold mb-4">🌍 Học Ngoại Ngữ Hiệu Quả</h2>
+            <h2 className="text-3xl font-bold mb-4 flex items-center justify-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              Học Ngoại Ngữ Hiệu Quả
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">📚</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Giáo trình chuẩn</h3>
                 <p className="text-sm opacity-90">Theo tiêu chuẩn CEFR quốc tế A1-C2</p>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">🎧</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Tài liệu Audio</h3>
                 <p className="text-sm opacity-90">Luyện nghe và phát âm chuẩn xác</p>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-4xl mb-3">🏆</div>
+                <div className="mb-3 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </div>
                 <h3 className="font-bold text-lg mb-2">Thi chứng chỉ</h3>
                 <p className="text-sm opacity-90">IELTS, TOEIC, JLPT, HSK, TOPIK</p>
               </div>

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button, Badge, Breadcrumb } from '@/components/ui';
-import { paymentApi } from '@/lib/api';
+import { paymentApi } from '@/lib/api/payment';
 
-export default function QRPaymentPage() {
+// 1. Component con chứa toàn bộ logic chính
+function QRPaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -186,17 +187,6 @@ export default function QRPaymentPage() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // TODO: Tự động kiểm tra thanh toán (cần Sepay API hoặc backend thật)
-  // Hiện tại chỉ dùng nút "Tôi đã thanh toán" để chuyển trang thủ công
-  // useEffect(() => {
-  //   if (paymentStatus !== 'pending' || !sepayOrderId) return;
-  //   const checkPaymentStatus = async () => {
-  //     // Implementation here
-  //   };
-  //   const checkInterval = setInterval(checkPaymentStatus, 5000);
-  //   return () => clearInterval(checkInterval);
-  // }, [paymentStatus, sepayOrderId, type, bookId, orderId, router]);
-
   // Xử lý nút "Tôi đã thanh toán" - Chuyển trang thành công
   const handleCheckPayment = async () => {
     if (!sepayOrderId) {
@@ -215,24 +205,6 @@ export default function QRPaymentPage() {
         : `/payment/success?type=buy&orderId=${orderId}`;
       router.push(successUrl);
     }, 1000);
-
-    // Code cũ với Sepay API (comment out)
-    // try {
-    //   const response = await fetch(`/api/payment/sepay/check-status?orderId=${sepayOrderId}`);
-    //   if (!response.ok) throw new Error('Không thể kiểm tra trạng thái thanh toán');
-    //   const data = await response.json();
-    //   if (data.success && data.status === 'paid') {
-    //     setPaymentStatus('success');
-    //     setTimeout(() => router.push(successUrl), 1000);
-    //   } else {
-    //     setPaymentStatus('failed');
-    //     setTimeout(() => setPaymentStatus('pending'), 3000);
-    //   }
-    // } catch (error) {
-    //   console.error('Error checking payment:', error);
-    //   setPaymentStatus('failed');
-    //   setTimeout(() => setPaymentStatus('pending'), 3000);
-    // }
   };
 
   // Copy thông tin
@@ -277,10 +249,9 @@ export default function QRPaymentPage() {
 
   const bankInfo = getBankInfo();
 
-  // Xây dựng breadcrumb items dựa trên nguồn
+  // Xây dựng breadcrumb items
   const getBreadcrumbItems = () => {
     if (type === 'rent') {
-      // Từ trang thuê eBook
       return [
         { label: 'Thuê eBook', href: '/rent' },
         ...(bookId && bookTitle ? [{ label: bookTitle, href: `/rent/${bookId}` }] : []),
@@ -288,9 +259,7 @@ export default function QRPaymentPage() {
       ];
     }
     
-    // Từ giỏ hàng hoặc mua ngay từ chi tiết sách
     if (bookId && bookTitle) {
-      // Mua ngay từ trang chi tiết sách
       return [
         { label: 'Sách', href: '/books' },
         { label: bookTitle, href: `/books/${bookId}` },
@@ -298,7 +267,6 @@ export default function QRPaymentPage() {
       ];
     }
     
-    // Từ giỏ hàng
     return [
       { label: 'Giỏ hàng', href: '/cart' },
       { label: 'Thanh toán QR' }
@@ -514,16 +482,22 @@ export default function QRPaymentPage() {
 
                   {paymentStatus === 'failed' && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                      <p className="text-sm text-red-600 text-center">
-                        ⚠️ Chưa nhận được thanh toán. Vui lòng kiểm tra lại hoặc thử lại sau ít phút.
+                      <p className="text-sm text-red-600 text-center flex items-center justify-center gap-2">
+                        <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Chưa nhận được thanh toán. Vui lòng kiểm tra lại hoặc thử lại sau ít phút.
                       </p>
                     </div>
                   )}
                   
                   {!qrCodeUrl && !isLoadingQR && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                      <p className="text-sm text-yellow-700 text-center">
-                        ⚠️ Không thể tạo mã QR. Vui lòng thử lại hoặc liên hệ hỗ trợ.
+                      <p className="text-sm text-yellow-700 text-center flex items-center justify-center gap-2">
+                        <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Không thể tạo mã QR. Vui lòng thử lại hoặc liên hệ hỗ trợ.
                       </p>
                     </div>
                   )}
@@ -650,8 +624,11 @@ export default function QRPaymentPage() {
                         </svg>
                       </button>
                     </div>
-                    <p className="text-xs text-amber-700 mt-1">
-                       Nhập chính xác để tự động xác nhận
+                    <p className="text-xs text-amber-700 mt-1 flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      Nhập chính xác để tự động xác nhận
                     </p>
                   </div>
                 </div>
@@ -714,5 +691,26 @@ export default function QRPaymentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// 2. Fallback UI khi đang tải
+function QRPaymentFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+        <p className="mt-4 text-gray-600">Đang tải trang thanh toán...</p>
+      </div>
+    </div>
+  );
+}
+
+// 3. Component chính Export Default (Có bọc Suspense)
+export default function QRPaymentPage() {
+  return (
+    <Suspense fallback={<QRPaymentFallback />}>
+      <QRPaymentContent />
+    </Suspense>
   );
 }

@@ -6,7 +6,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { Badge, Button } from "@/components/ui";
 import { Card, CardContent } from "@/components/ui/Card";
+import { bookService, categoryService } from "@/services";
+import type { BookDto, CategoryDto } from "@/types/dtos";
 
+// Fallback data nếu API lỗi
 const featuredBooks = [
   {
     id: 1,
@@ -77,62 +80,209 @@ const featuredBooks = [
 ];
 
 const categories = [
-  { id: 1, name: "Lập trình", count: 1234, color: "from-blue-500 to-cyan-500", image: "/image/lap_trinh.jpg", href: "/programming" },
-  { id: 2, name: "Kinh doanh", count: 856, color: "from-purple-500 to-pink-500", image: "/image/kinh_doanh.jpg", href: "/business" },
-  { id: 3, name: "Thiết kế", count: 645, color: "from-orange-500 to-red-500", image: "/image/thiet_ke.jpg", href: "/design" },
-  { id: 4, name: "Khoa học", count: 432, color: "from-green-500 to-teal-500", image: "/image/khoa_hoc.png", href: "/courses" },
-  { id: 5, name: "Văn học", count: 1567, color: "from-indigo-500 to-purple-500", image: "/image/van_hoc.jpg", href: "/literature" },
-  { id: 6, name: "Kỹ năng sống", count: 892, color: "from-pink-500 to-rose-500", image: "/image/ky_nang_song.jpg", href: "/life-skills" },
-  { id: 7, name: "Thiếu nhi", count: 543, color: "from-yellow-500 to-orange-500", image: "/image/thieu_nhi.jpg", href: "/children" },
-  { id: 8, name: "Ngoại ngữ", count: 721, color: "from-cyan-500 to-blue-500", image: "/image/ngoai_ngu.jpg", href: "/foreign-languages" },
+  {
+    id: 1,
+    name: "Lập trình",
+    count: 1234,
+    color: "from-blue-500 to-cyan-500",
+    image: "/image/lap_trinh.jpg",
+    href: "/programming",
+  },
+  {
+    id: 2,
+    name: "Kinh doanh",
+    count: 856,
+    color: "from-purple-500 to-pink-500",
+    image: "/image/kinh_doanh.jpg",
+    href: "/business",
+  },
+  {
+    id: 3,
+    name: "Thiết kế",
+    count: 645,
+    color: "from-orange-500 to-red-500",
+    image: "/image/thiet_ke.jpg",
+    href: "/design",
+  },
+  {
+    id: 4,
+    name: "Khoa học",
+    count: 432,
+    color: "from-green-500 to-teal-500",
+    image: "/image/khoa_hoc.png",
+    href: "/courses",
+  },
+  {
+    id: 5,
+    name: "Văn học",
+    count: 1567,
+    color: "from-indigo-500 to-purple-500",
+    image: "/image/van_hoc.jpg",
+    href: "/literature",
+  },
+  {
+    id: 6,
+    name: "Kỹ năng sống",
+    count: 892,
+    color: "from-pink-500 to-rose-500",
+    image: "/image/ky_nang_song.jpg",
+    href: "/life-skills",
+  },
+  {
+    id: 7,
+    name: "Thiếu nhi",
+    count: 543,
+    color: "from-yellow-500 to-orange-500",
+    image: "/image/thieu_nhi.jpg",
+    href: "/children",
+  },
+  {
+    id: 8,
+    name: "Ngoại ngữ",
+    count: 721,
+    color: "from-cyan-500 to-blue-500",
+    image: "/image/ngoai_ngu.jpg",
+    href: "/foreign-languages",
+  },
 ];
 
 const popularBooks = [
-  { id: "p1", title: "Bố Già", author: "Mario Puzo", price: 120000, originalPrice: 150000, cover: "/image/anh.png" },
-  { id: "p2", title: "Tuổi trẻ đáng giá bao nhiêu", author: "Rosie Nguyễn", price: 85000, originalPrice: 0, cover: "/image/anh.png" },
-  { id: "p3", title: "Đắc nhân tâm", author: "Dale Carnegie", price: 95000, originalPrice: 120000, cover: "/image/anh.png" },
-  { id: "p4", title: "Nhà giả kim", author: "Paulo Coelho", price: 78000, originalPrice: 0, cover: "/image/anh.png" },
-  { id: "p5", title: "Càng kỷ luật càng tự do", author: "Jocko Willink", price: 110000, originalPrice: 135000, cover: "/image/anh.png" },
-  { id: "p6", title: "Nghĩ giàu làm giàu", author: "Napoleon Hill", price: 125000, originalPrice: 0, cover: "/image/anh.png" },
-  { id: "p7", title: "7 thói quen hiệu quả", author: "Stephen Covey", price: 140000, originalPrice: 180000, cover: "/image/anh.png" },
-  { id: "p8", title: "Quẳng gánh lo đi mà vui sống", author: "Dale Carnegie", price: 88000, originalPrice: 105000, cover: "/image/anh.png" },
-  { id: "p9", title: "Sapiens: Lược sử loài người", author: "Yuval Noah Harari", price: 195000, originalPrice: 250000, cover: "/image/anh.png" },
-  { id: "p10", title: "Homo Deus", author: "Yuval Noah Harari", price: 185000, originalPrice: 0, cover: "/image/anh.png" },
-  { id: "p11", title: "Atomic Habits", author: "James Clear", price: 160000, originalPrice: 195000, cover: "/image/anh.png" },
-  { id: "p12", title: "Deep Work", author: "Cal Newport", price: 145000, originalPrice: 175000, cover: "/image/anh.png" },
+  {
+    id: "p1",
+    title: "Bố Già",
+    author: "Mario Puzo",
+    price: 120000,
+    originalPrice: 150000,
+    cover: "/image/anh.png",
+  },
+  {
+    id: "p2",
+    title: "Tuổi trẻ đáng giá bao nhiêu",
+    author: "Rosie Nguyễn",
+    price: 85000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+  },
+  {
+    id: "p3",
+    title: "Đắc nhân tâm",
+    author: "Dale Carnegie",
+    price: 95000,
+    originalPrice: 120000,
+    cover: "/image/anh.png",
+  },
+  {
+    id: "p4",
+    title: "Nhà giả kim",
+    author: "Paulo Coelho",
+    price: 78000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+  },
+  {
+    id: "p5",
+    title: "Càng kỷ luật càng tự do",
+    author: "Jocko Willink",
+    price: 110000,
+    originalPrice: 135000,
+    cover: "/image/anh.png",
+  },
+  {
+    id: "p6",
+    title: "Nghĩ giàu làm giàu",
+    author: "Napoleon Hill",
+    price: 125000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+  },
+  {
+    id: "p7",
+    title: "7 thói quen hiệu quả",
+    author: "Stephen Covey",
+    price: 140000,
+    originalPrice: 180000,
+    cover: "/image/anh.png",
+  },
+  {
+    id: "p8",
+    title: "Quẳng gánh lo đi mà vui sống",
+    author: "Dale Carnegie",
+    price: 88000,
+    originalPrice: 105000,
+    cover: "/image/anh.png",
+  },
+  {
+    id: "p9",
+    title: "Sapiens: Lược sử loài người",
+    author: "Yuval Noah Harari",
+    price: 195000,
+    originalPrice: 250000,
+    cover: "/image/anh.png",
+  },
+  {
+    id: "p10",
+    title: "Homo Deus",
+    author: "Yuval Noah Harari",
+    price: 185000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+  },
+  {
+    id: "p11",
+    title: "Atomic Habits",
+    author: "James Clear",
+    price: 160000,
+    originalPrice: 195000,
+    cover: "/image/anh.png",
+  },
+  {
+    id: "p12",
+    title: "Deep Work",
+    author: "Cal Newport",
+    price: 145000,
+    originalPrice: 175000,
+    cover: "/image/anh.png",
+  },
 ];
 
 const benefits = [
   {
-    
     title: "Miễn phí vận chuyển",
     description: "Cho đơn hàng từ 500.000₫",
   },
   {
-    
     title: "Thanh toán an toàn",
     description: "Bảo mật thông tin 100%",
   },
   {
-    
     title: "Đọc eBook",
     description: "Mọi lúc, mọi nơi",
   },
   {
-    
     title: "Ưu đãi hấp dẫn",
     description: "Giảm giá lên đến 50%",
   },
 ];
 
+// Helper format tiền
+const formatVnd = (price: number) =>
+  new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(price);
+
+// Helper tính %
+const calculateDiscount = (original: number, current: number) =>
+  Math.round(((original - current) / original) * 100);
+
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const heroImages = [
-    "/image/anh.png",
-    "/image/anh_di_cung_anh_sao_troi.png",
-    "/image/thai_tu_nhap_vai.png",
-    "/image/nhiep_chinh_vuong_diet_hoa_dao.png",
-    "/image/khoi_nguon_phuc_lac.png",
+    "/image/banner1.png",
+    "/image/banner2.png",
+    "/image/banner3.png",
+    "/image/banner4.png",
+    "/image/banner5.png",
   ];
 
   // Carousel logic for featured books
@@ -161,14 +311,14 @@ export default function HomePage() {
 
   const scrollByStepFeatured = (dir: "left" | "right") => {
     if (!featuredRef.current) return;
-    const step = 300;
+    const step = 350;
     const delta = dir === "left" ? -step : step;
     featuredRef.current.scrollBy({ left: delta, behavior: "smooth" });
   };
 
   const scrollByStepPopular = (dir: "left" | "right") => {
     if (!popularRef.current) return;
-    const step = 300;
+    const step = 350;
     const delta = dir === "left" ? -step : step;
     popularRef.current.scrollBy({ left: delta, behavior: "smooth" });
   };
@@ -176,17 +326,17 @@ export default function HomePage() {
   useEffect(() => {
     const featuredRefCurrent = featuredRef.current;
     const popularRefCurrent = popularRef.current;
-    
+
     if (featuredRefCurrent) {
       updateArrowsFeatured();
       featuredRefCurrent.addEventListener("scroll", updateArrowsFeatured);
     }
-    
+
     if (popularRefCurrent) {
       updateArrowsPopular();
       popularRefCurrent.addEventListener("scroll", updateArrowsPopular);
     }
-    
+
     return () => {
       if (featuredRefCurrent) {
         featuredRefCurrent.removeEventListener("scroll", updateArrowsFeatured);
@@ -201,7 +351,7 @@ export default function HomePage() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroImages.length);
-    }, 3000); // Change slide every 3 seconds
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [heroImages.length]);
@@ -230,7 +380,7 @@ export default function HomePage() {
             </div>
           ))}
           {/* Gradient overlay - lighter for better image visibility */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/60 to-purple-600/60"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
           {/* Subtle dark overlay */}
           <div className="absolute inset-0 bg-black/20"></div>
         </div>
@@ -240,40 +390,81 @@ export default function HomePage() {
           <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2"></div>
         </div>
-        
+
         <div className="container mx-auto px-4 relative z-20">
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
             <Badge variant="success" className="mb-6 inline-block">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline mr-1">
-                <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="inline mr-1"
+              >
+                <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" />
               </svg>
               Giảm giá đến 50% - Ưu đãi có hạn!
             </Badge>
-            
+
             <h1 className="text-6xl font-bold mb-6 leading-tight">
               Khám phá thế giới tri thức
             </h1>
             <p className="text-xl mb-12 text-blue-100">
-              Hơn 10,000+ đầu sách từ các tác giả nổi tiếng thế giới.
-              Mua sách giấy hoặc thuê eBook - trải nghiệm đọc không giới hạn!
+              Hơn 10,000+ đầu sách từ các tác giả nổi tiếng thế giới. Mua sách
+              giấy hoặc thuê eBook - trải nghiệm đọc không giới hạn!
             </p>
-            
+
             <div className="flex gap-4 justify-center">
               <Link href="/discovernow">
-                <Button variant="primary" size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="bg-white text-blue-600 hover:bg-gray-100"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mr-2"
+                  >
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
                   </svg>
                   Khám phá ngay
                 </Button>
               </Link>
               <Link href="/rent">
-                <Button variant="outline" size="lg" className="border-2 border-white text-white hover:bg-white/10">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
-                    <path d="M8 7h8"/>
-                    <path d="M8 11h8"/>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-2 border-white text-white hover:bg-white/10"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mr-2"
+                  >
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+                    <path d="M8 7h8" />
+                    <path d="M8 11h8" />
                   </svg>
                   Thuê eBook
                 </Button>
@@ -291,8 +482,19 @@ export default function HomePage() {
             <Link href="/books">
               <Button variant="ghost" size="sm">
                 Xem tất cả
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1">
-                  <path d="m9 18 6-6-6-6"/>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="ml-1"
+                >
+                  <path d="m9 18 6-6-6-6" />
                 </svg>
               </Button>
             </Link>
@@ -301,7 +503,7 @@ export default function HomePage() {
             {categories.slice(0, 8).map((cat) => (
               <Link key={cat.id} href={cat.href}>
                 <div className="relative h-48 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 group">
-                  {/* Background Image with Overlay - Less blur for better visibility */}
+                  {/* Background Image with Overlay */}
                   <div className="absolute inset-0">
                     <Image
                       src={cat.image}
@@ -310,23 +512,39 @@ export default function HomePage() {
                       sizes="(max-width: 768px) 50vw, 25vw"
                       className="object-cover blur-[1px] group-hover:scale-110 transition-transform duration-300"
                     />
-                    {/* Lighter Gradient Overlay - reduced opacity */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-20`}></div>
-                    {/* Lighter dark overlay */}
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-20`}
+                    ></div>
                     <div className="absolute inset-0 bg-black/5"></div>
                   </div>
-                  
+
                   {/* Content */}
                   <div className="relative z-10 p-6 h-full flex flex-col justify-between">
                     <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center shadow-lg">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white drop-shadow-md">
-                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-white drop-shadow-md"
+                      >
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
                       </svg>
                     </div>
-                    
+
                     <div>
-                      <h3 className="font-bold text-xl mb-2 text-white drop-shadow-lg">{cat.name}</h3>
-                      <Badge variant="default" className="text-xs bg-white/95 text-gray-900 border-white/60 shadow-md">
+                      <h3 className="font-bold text-xl mb-2 text-white drop-shadow-lg">
+                        {cat.name}
+                      </h3>
+                      <Badge
+                        variant="default"
+                        className="text-xs bg-white/95 text-gray-900 border-white/60 shadow-md"
+                      >
                         {cat.count} sách
                       </Badge>
                     </div>
@@ -344,12 +562,23 @@ export default function HomePage() {
           <div className="mb-8 flex items-center justify-between">
             <h2 className="text-3xl font-bold">Sách nổi bật</h2>
             <Link
-              href="/books?filter=featured"
+              href="/featured"
               className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
             >
-              <Link href="/featured">Xem tất cả</Link>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <span>Xem tất cả</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>
@@ -364,9 +593,17 @@ export default function HomePage() {
               className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow-lg disabled:opacity-30"
               aria-label="Xem trước"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m15 18-6-6 6-6"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
               </svg>
             </Button>
 
@@ -374,7 +611,7 @@ export default function HomePage() {
             <div
               ref={featuredRef}
               onScroll={updateArrowsFeatured}
-              className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
+              className="flex gap-5 overflow-x-auto pb-4 pr-4 pl-10 md:pl-12 md:pr-12 scroll-smooth
                         [-ms-overflow-style:none] [scrollbar-width:none] 
                         [&::-webkit-scrollbar]:hidden"
               style={{ overflowX: "auto" }}
@@ -383,43 +620,72 @@ export default function HomePage() {
                 <Link
                   key={book.id}
                   href={`/books/${book.id}`}
-                  className="flex h-[320px] w-[180px] min-w-[180px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
+                  className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
+                             border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
                 >
-                  <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+                  {/* Ảnh sách full khung */}
+                  <div className="relative w-full aspect-[4/5]">
                     <Image
                       src={book.cover}
                       alt={book.title}
                       fill
-                      sizes="180px"
+                      sizes="260px"
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    {book.originalPrice > 0 && (
-                      <Badge variant="danger" className="absolute top-2 left-2 text-xs">
-                        -{Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)}%
-                      </Badge>
-                    )}
+
+                    {/* Badge level + mới 2024 giống mẫu */}
                     {book.hot && (
-                      <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg animate-pulse">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="mr-1">
-                          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
-                        </svg>
-                        HOT
+                      <div className="absolute top-2 left-2 flex items-center gap-1">
+                        <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-600 text-white shadow">
+                          Advanced
+                        </Badge>
+                      </div>
+                    )}
+
+                    <div className="absolute top-2 right-2">
+                      <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow">
+                        MỚI 2024
                       </Badge>
-                    )}
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                    {book.title}
-                  </h3>
-                  <p className="text-xs text-gray-600 mb-1">{book.author}</p>
-                  <div className="flex items-center gap-2 mt-auto">
-                    <p className="text-blue-600 font-bold text-sm">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(book.price)}
-                    </p>
-                    {book.originalPrice > 0 && (
-                      <p className="text-xs text-gray-400 line-through">
-                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(book.originalPrice)}
-                      </p>
-                    )}
+
+                  {/* Nội dung */}
+                  <div className="p-3 flex flex-col gap-1 flex-1">
+                    <h3 className="font-semibold text-sm line-clamp-2">
+                      {book.title}
+                    </h3>
+                    <p className="text-xs text-gray-600">{book.author}</p>
+
+                    {/* Giá + % giảm */}
+                    <div className="mt-2 flex items-end justify-between gap-2">
+                      <div className="flex flex-col">
+                        <p className="text-red-600 font-bold text-sm">
+                          {formatVnd(book.price)}
+                        </p>
+                        {book.originalPrice > 0 && (
+                          <p className="text-xs text-gray-400 line-through">
+                            {formatVnd(book.originalPrice)}
+                          </p>
+                        )}
+                      </div>
+
+                      {book.originalPrice > 0 && (
+                        <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                          -{calculateDiscount(book.originalPrice, book.price)}%
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Rating */}
+                    <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
+                      <span className="text-yellow-400">★</span>
+                      <span className="font-semibold">
+                        {book.rating.toFixed(1)}
+                      </span>
+                      <span className="text-gray-400">
+                        ({book.reviews.toLocaleString()})
+                      </span>
+                    </div>
                   </div>
                 </Link>
               ))}
@@ -435,9 +701,17 @@ export default function HomePage() {
               className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow-lg disabled:opacity-30"
               aria-label="Xem tiếp"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m9 18 6-6-6-6"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m9 18 6-6-6-6" />
               </svg>
             </Button>
 
@@ -454,12 +728,23 @@ export default function HomePage() {
           <div className="mb-8 flex items-center justify-between">
             <h2 className="text-3xl font-bold">Sách được đọc nhiều nhất</h2>
             <Link
-              href="/books?filter=popular"
+              href="/most-read"
               className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
             >
-              <Link href="/most-read">Xem tất cả</Link>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <span>Xem tất cả</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>
@@ -474,9 +759,17 @@ export default function HomePage() {
               className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow-lg disabled:opacity-30"
               aria-label="Xem trước"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m15 18-6-6 6-6"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
               </svg>
             </Button>
 
@@ -484,7 +777,7 @@ export default function HomePage() {
             <div
               ref={popularRef}
               onScroll={updateArrowsPopular}
-              className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
+              className="flex gap-5 overflow-x-auto pb-4 pr-4 pl-10 md:pl-12 md:pr-12 scroll-smooth
                         [-ms-overflow-style:none] [scrollbar-width:none]
                         [&::-webkit-scrollbar]:hidden"
               style={{ overflowX: "auto" }}
@@ -493,35 +786,51 @@ export default function HomePage() {
                 <Link
                   key={book.id}
                   href={`/books/${book.id}`}
-                  className="flex h-[320px] w-[180px] min-w-[180px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
+                  className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
+                             border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
                 >
-                  <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+                  {/* Ảnh sách */}
+                  <div className="relative w-full aspect-[4/5]">
                     <Image
                       src={book.cover}
                       alt={book.title}
                       fill
-                      sizes="180px"
+                      sizes="260px"
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    {book.originalPrice > 0 && (
-                      <Badge variant="danger" className="absolute top-2 left-2 text-xs">
-                        -{Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)}%
+
+                    <div className="absolute top-2 right-2">
+                      <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow">
+                        MỚI 2024
                       </Badge>
-                    )}
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                    {book.title}
-                  </h3>
-                  <p className="text-xs text-gray-600 mb-1">{book.author}</p>
-                  <div className="flex items-center gap-2 mt-auto">
-                    <p className="text-blue-600 font-bold text-sm">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(book.price)}
-                    </p>
-                    {book.originalPrice > 0 && (
-                      <p className="text-xs text-gray-400 line-through">
-                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(book.originalPrice)}
-                      </p>
-                    )}
+
+                  {/* Nội dung */}
+                  <div className="p-3 flex flex-col gap-1 flex-1">
+                    <h3 className="font-semibold text-sm line-clamp-2">
+                      {book.title}
+                    </h3>
+                    <p className="text-xs text-gray-600">{book.author}</p>
+
+                    <div className="mt-2 flex items-end justify-between gap-2">
+                      <div className="flex flex-col">
+                        <p className="text-red-600 font-bold text-sm">
+                          {formatVnd(book.price)}
+                        </p>
+                        {book.originalPrice > 0 && (
+                          <p className="text-xs text-gray-400 line-through">
+                            {formatVnd(book.originalPrice)}
+                          </p>
+                        )}
+                      </div>
+
+                      {book.originalPrice > 0 && (
+                        <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                          -{calculateDiscount(book.originalPrice, book.price)}%
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </Link>
               ))}
@@ -537,9 +846,17 @@ export default function HomePage() {
               className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow-lg disabled:opacity-30"
               aria-label="Xem tiếp"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m9 18 6-6-6-6"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m9 18 6-6-6-6" />
               </svg>
             </Button>
 
@@ -560,37 +877,65 @@ export default function HomePage() {
                 <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-1/2 translate-x-1/2"></div>
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-1/2 -translate-x-1/2"></div>
               </div>
-              
+
               <div className="relative flex flex-col md:flex-row items-center justify-between gap-4 px-6 md:px-8 py-5">
                 {/* Left side - Icon & Text */}
                 <div className="flex items-center gap-4 text-white">
                   {/* Icon with animation */}
                   <div className="flex-shrink-0 w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg animate-bounce">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
-                      <path d="M15 18H9"/>
-                      <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
-                      <circle cx="17" cy="18" r="2"/>
-                      <circle cx="7" cy="18" r="2"/>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="28"
+                      height="28"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-white"
+                    >
+                      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+                      <path d="M15 18H9" />
+                      <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+                      <circle cx="17" cy="18" r="2" />
+                      <circle cx="7" cy="18" r="2" />
                     </svg>
                   </div>
-                  
+
                   {/* Text */}
                   <div>
                     <h3 className="text-lg md:text-xl font-bold text-white mb-0.5">
                       Miễn phí vận chuyển
                     </h3>
                     <p className="text-sm md:text-base text-white/90 font-medium">
-                      Cho đơn hàng từ <span className="font-bold text-yellow-200">500.000₫</span>
+                      Cho đơn hàng từ{" "}
+                      <span className="font-bold text-yellow-200">
+                        500.000₫
+                      </span>
                     </p>
                   </div>
                 </div>
-                
+
                 {/* Right side - Badge */}
                 <div className="flex items-center gap-3">
-                  <Badge variant="default" className="bg-white text-emerald-600 font-bold text-sm px-4 py-2 shadow-lg border-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline mr-1.5">
-                      <path d="M20 6 9 17l-5-5"/>
+                  <Badge
+                    variant="default"
+                    className="bg-white text-emerald-600 font-bold text-sm px-4 py-2 shadow-lg border-0"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="inline mr-1.5"
+                    >
+                      <path d="M20 6 9 17l-5-5" />
                     </svg>
                     Áp dụng toàn quốc
                   </Badge>
@@ -601,37 +946,72 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Rental CTA */}
       <section className="py-16 bg-gradient-to-r from-purple-500 to-pink-500 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full translate-x-1/3 -translate-y-1/3"></div>
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-1/3 translate-y-1/3"></div>
         </div>
-        
+
         <div className="container mx-auto px-4 text-center relative z-10">
           <Badge variant="warning" className="mb-6 inline-block">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline mr-1">
-              <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="inline mr-1"
+            >
+              <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" />
             </svg>
             Ưu đãi đặc biệt
           </Badge>
-          
-          <h2 className="text-5xl font-bold mb-4">Thuê eBook - Tiết kiệm hơn</h2>
+
+          <h2 className="text-5xl font-bold mb-4">
+            Thuê eBook - Tiết kiệm hơn
+          </h2>
           <p className="text-2xl mb-8 text-purple-100">
             Chỉ từ 10.000₫ - Đọc không giới hạn trên mọi thiết bị
           </p>
-          
+
           <div className="flex gap-4 justify-center items-center mb-8">
-            <Badge variant="success" className="text-base px-4 py-2">✓ Không quảng cáo</Badge>
-            <Badge variant="success" className="text-base px-4 py-2">✓ Tải offline</Badge>
-            <Badge variant="success" className="text-base px-4 py-2">✓ Hủy bất kỳ lúc nào</Badge>
+            <Badge variant="success" className="text-base px-4 py-2">
+              ✓ Không quảng cáo
+            </Badge>
+            <Badge variant="success" className="text-base px-4 py-2">
+              ✓ Tải offline
+            </Badge>
+            <Badge variant="success" className="text-base px-4 py-2">
+              ✓ Hủy bất kỳ lúc nào
+            </Badge>
           </div>
-          
+
           <Link href="/rental">
-            <Button variant="primary" size="lg" className="bg-white text-purple-600 hover:bg-gray-100">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
-                <path d="M8 7h8"/>
-                <path d="M8 11h8"/>
+            <Button
+              variant="primary"
+              size="lg"
+              className="bg-white text-purple-600 hover:bg-gray-100"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="mr-2"
+              >
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+                <path d="M8 7h8" />
+                <path d="M8 11h8" />
               </svg>
               Dùng thử ngay - Miễn phí 7 ngày
             </Button>
@@ -642,40 +1022,82 @@ export default function HomePage() {
       {/* Benefits Section */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Tại sao chọn chúng tôi?</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">
+            Tại sao chọn chúng tôi?
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {benefits.map((benefit, idx) => (
               <Card key={idx} hover className="text-center">
                 <CardContent className="p-6">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-3xl">
                     {idx === 0 && (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
-                        <path d="M15 18H9"/>
-                        <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
-                        <circle cx="17" cy="18" r="2"/>
-                        <circle cx="7" cy="18" r="2"/>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+                        <path d="M15 18H9" />
+                        <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+                        <circle cx="17" cy="18" r="2" />
+                        <circle cx="7" cy="18" r="2" />
                       </svg>
                     )}
                     {idx === 1 && (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect width="20" height="16" x="2" y="4" rx="2"/>
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect width="20" height="16" x="2" y="4" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
                     )}
                     {idx === 2 && (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
-                        <path d="M8 7h8"/>
-                        <path d="M8 11h8"/>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+                        <path d="M8 7h8" />
+                        <path d="M8 11h8" />
                       </svg>
                     )}
                     {idx === 3 && (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
-                        <path d="m15 9-6 6"/>
-                        <path d="M9 9h.01"/>
-                        <path d="M15 15h.01"/>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                        <path d="m15 9-6 6" />
+                        <path d="M9 9h.01" />
+                        <path d="M15 15h.01" />
                       </svg>
                     )}
                   </div>
@@ -686,7 +1108,7 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-      </section>  
+      </section>
     </div>
   );
 }

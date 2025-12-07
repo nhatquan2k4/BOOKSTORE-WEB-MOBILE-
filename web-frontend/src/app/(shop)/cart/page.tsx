@@ -107,7 +107,7 @@ export default function CartPage() {
   const selectedItems = cartItems.filter((item) => item.selected);
   const subtotal = selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalQuantity = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
-  
+
   let discount = 0;
   if (appliedVoucher) {
     if (appliedVoucher.discount > 0) {
@@ -116,7 +116,7 @@ export default function CartPage() {
       discount = appliedVoucher.maxDiscount; // Free ship
     }
   }
-  
+
   const shippingFee = subtotal >= 500000 ? 0 : 30000;
   const finalShippingFee = appliedVoucher?.code === "FREESHIP" ? 0 : shippingFee;
   const total = subtotal - discount + finalShippingFee;
@@ -156,17 +156,17 @@ export default function CartPage() {
   const handleApplyVoucher = () => {
     setVoucherError("");
     const voucher = MOCK_VOUCHERS.find((v) => v.code === voucherCode.toUpperCase());
-    
+
     if (!voucher) {
       setVoucherError("Mã giảm giá không hợp lệ");
       return;
     }
-    
+
     if (subtotal < voucher.minOrder) {
       setVoucherError(`Đơn hàng tối thiểu ${formatCurrency(voucher.minOrder)} để áp dụng mã này`);
       return;
     }
-    
+
     setAppliedVoucher(voucher);
     setVoucherCode("");
   };
@@ -222,6 +222,7 @@ export default function CartPage() {
             )}
           </div>
         </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Cart Items */}
           <div className="lg:col-span-2 space-y-4">
@@ -251,13 +252,16 @@ export default function CartPage() {
                   description="Bạn chưa có sản phẩm nào trong giỏ hàng"
                   action={{
                     label: 'Mua sắm ngay',
-                    onClick: () => globalThis.location.href = '/books'
+                    onClick: () => (globalThis.location.href = '/books')
                   }}
                 />
               </div>
             ) : (
               cartItems.map((item) => (
-                <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all p-5">
+                <div
+                  key={item.id}
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all p-5"
+                >
                   <div className="flex gap-5">
                     {/* Checkbox */}
                     <div className="flex-shrink-0 pt-2">
@@ -291,9 +295,9 @@ export default function CartPage() {
                         {item.title}
                       </Link>
                       <p className="text-sm text-gray-600 mt-1">Tác giả: {item.author}</p>
-                      
-                      {/* Price */}
-                      <div className="mt-3 flex items-center gap-2">
+
+                      {/* Price + % giảm – CHỈNH SỬA Ở ĐÂY CHO GIỐNG TRANG CHI TIẾT */}
+                      <div className="mt-3 flex flex-wrap items-end gap-x-2 gap-y-1">
                         <span className="text-xl font-bold text-red-600">
                           {formatCurrency(item.price)}
                         </span>
@@ -303,7 +307,13 @@ export default function CartPage() {
                               {formatCurrency(item.originalPrice)}
                             </span>
                             <Badge variant="danger" size="sm">
-                              -{Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)}%
+                              -{Math.max(
+                                0,
+                                Math.round(
+                                  (1 - item.price / item.originalPrice) * 100
+                                )
+                              )}
+                              %
                             </Badge>
                           </>
                         )}
@@ -338,8 +348,8 @@ export default function CartPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
                           </button>
-                          <Badge 
-                            variant={item.stock < 5 ? "warning" : "default"} 
+                          <Badge
+                            variant={item.stock < 5 ? "warning" : "default"}
                             size="sm"
                             className="ml-1"
                           >
@@ -411,7 +421,7 @@ export default function CartPage() {
                         value={voucherCode}
                         onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
                         placeholder="Nhập mã giảm giá"
-                        className={voucherError ? 'border-red-500' : ''}
+                        className={voucherError ? "border-red-500" : ""}
                       />
                     </div>
                     <Button
@@ -491,14 +501,14 @@ export default function CartPage() {
                     <span className="text-gray-700">Tạm tính ({totalQuantity} sản phẩm)</span>
                     <span className="font-semibold text-gray-900">{formatCurrency(subtotal)}</span>
                   </div>
-                  
+
                   {discount > 0 && (
                     <div className="flex justify-between text-base">
                       <span className="text-gray-700">Giảm giá</span>
                       <span className="font-semibold text-green-600">-{formatCurrency(discount)}</span>
                     </div>
                   )}
-                  
+
                   <div className="flex justify-between text-base">
                     <span className="text-gray-700">Phí vận chuyển</span>
                     <span className="font-semibold text-gray-900">
@@ -511,7 +521,7 @@ export default function CartPage() {
                       )}
                     </span>
                   </div>
-                  
+
                   {subtotal < 500000 && finalShippingFee > 0 && (
                     <Alert variant="info" className="bg-blue-50 border-blue-200">
                       <div className="flex items-center gap-2">
@@ -524,7 +534,7 @@ export default function CartPage() {
                       </div>
                     </Alert>
                   )}
-                  
+
                   <div className="border-t-2 border-gray-200 pt-4 flex justify-between items-center">
                     <span className="text-xl font-bold text-gray-900">Tổng cộng</span>
                     <span className="text-3xl font-bold text-red-600">{formatCurrency(total)}</span>
@@ -543,11 +553,11 @@ export default function CartPage() {
                       alert("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán");
                       return;
                     }
-                    
+
                     // Chuyển hướng đến trang QR payment cho mua sách
                     const orderId = `ORD${Date.now()}`;
                     const queryParams = new URLSearchParams({
-                      type: 'buy',
+                      type: "buy",
                       orderId: orderId,
                       amount: String(total),
                       items: String(selectedItems.length),

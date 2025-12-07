@@ -212,7 +212,7 @@ export default function TransactionHistoriesPage() {
                         {typeConfig[txn.type].label}
                       </h3>
                       <Badge
-                        variant="secondary"
+                        variant="default"
                         className={statusConfig[txn.status].color}
                       >
                         {statusConfig[txn.status].label}

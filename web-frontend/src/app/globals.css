@@ -45,5 +45,58 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /* Custom animations for auth page */
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px) rotate(-6deg);
+    }
+    50% {
+      transform: translateY(-10px) rotate(-6deg);
+    }
+  }
+
+  @keyframes float-delayed {
+    0%, 100% {
+      transform: translateY(0px) rotate(6deg);
+    }
+    50% {
+      transform: translateY(-15px) rotate(6deg);
+    }
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes glow {
+    0%, 100% {
+      box-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+    }
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float-delayed 7s ease-in-out infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 4s ease-in-out infinite;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
 }
 

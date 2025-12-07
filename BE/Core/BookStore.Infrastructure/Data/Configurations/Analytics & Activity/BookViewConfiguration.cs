@@ -12,26 +12,44 @@ namespace BookStore.Infrastructure.Data.Configurations.AnalyticsActivity
 
             builder.HasKey(v => v.Id);
 
-            builder.Property(v => v.IPAddress)
-                .HasMaxLength(100);
+            builder.Property(v => v.IpAddress)
+                .HasMaxLength(45)
+                .HasComment("IP address of the viewer");
+
+            builder.Property(v => v.UserAgent)
+                .HasMaxLength(500)
+                .HasComment("Browser/client user agent");
+
+            builder.Property(v => v.SessionId)
+                .HasMaxLength(100)
+                .HasComment("Session ID for tracking unique sessions");
 
             builder.Property(v => v.ViewedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 
-            // 🔗 n-1: Book → BookViews
+            // Foreign key relationships
             builder.HasOne(v => v.Book)
                 .WithMany()
                 .HasForeignKey(v => v.BookId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // 🔗 n-1: User → BookViews (tùy chọn)
             builder.HasOne(v => v.User)
                 .WithMany()
                 .HasForeignKey(v => v.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // 📈 Index giúp đếm lượt xem nhanh
-            builder.HasIndex(v => new { v.BookId, v.ViewedAt });
+            // Indexes for analytics queries
+            builder.HasIndex(v => v.BookId)
+                .HasDatabaseName("IX_BookViews_BookId");
+
+            builder.HasIndex(v => v.UserId)
+                .HasDatabaseName("IX_BookViews_UserId");
+
+            builder.HasIndex(v => v.ViewedAt)
+                .HasDatabaseName("IX_BookViews_ViewedAt");
+
+            builder.HasIndex(v => new { v.BookId, v.ViewedAt })
+                .HasDatabaseName("IX_BookViews_BookId_ViewedAt");
         }
     }
 }
