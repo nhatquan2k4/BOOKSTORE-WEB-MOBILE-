@@ -680,26 +680,6 @@ function CarouselBookCard({ book }: { book: CarouselBook }) {
         <h3 className="font-semibold text-sm line-clamp-2">{book.title}</h3>
         <p className="text-xs text-gray-600">{book.author}</p>
 
-        {/* Giá + % giảm */}
-        <div className="mt-2 flex items-end justify-between gap-2">
-          <div className="flex flex-col">
-            <p className="text-red-600 font-bold text-sm">
-              {formatCurrency(book.price)}
-            </p>
-            {hasDiscount && (
-              <p className="text-xs text-gray-400 line-through">
-                {formatCurrency(book.originalPrice)}
-              </p>
-            )}
-          </div>
-
-          {hasDiscount && (
-            <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
-              -{calculateDiscountPercent(book.originalPrice, book.price)}%
-            </span>
-          )}
-        </div>
-
         {/* Rating */}
         <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
           <span className="text-yellow-400">★</span>
@@ -707,6 +687,23 @@ function CarouselBookCard({ book }: { book: CarouselBook }) {
           <span className="text-gray-400">
             ({book.reviews.toLocaleString()})
           </span>
+        </div>
+
+        {/* Giá: Giá giảm - Giá gốc - % giảm */}
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
+          <p className="text-red-600 font-bold text-sm">
+            {formatCurrency(book.price)}
+          </p>
+          {hasDiscount && (
+            <>
+              <p className="text-xs text-gray-400 line-through">
+                {formatCurrency(book.originalPrice)}
+              </p>
+              <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                -{calculateDiscountPercent(book.originalPrice, book.price)}%
+              </span>
+            </>
+          )}
         </div>
       </div>
     </Link>
