@@ -6,8 +6,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Badge, Button } from "@/components/ui";
 import { Card, CardContent } from "@/components/ui/Card";
-import { bookService, categoryService } from "@/services";
-import type { BookDto, CategoryDto } from "@/types/dtos";
 
 // Fallback data nếu API lỗi
 const featuredBooks = [
@@ -154,6 +152,8 @@ const popularBooks = [
     price: 120000,
     originalPrice: 150000,
     cover: "/image/anh.png",
+    rating: 4.8,
+    reviews: 2345,
   },
   {
     id: "p2",
@@ -162,6 +162,8 @@ const popularBooks = [
     price: 85000,
     originalPrice: 0,
     cover: "/image/anh.png",
+    rating: 4.7,
+    reviews: 1876,
   },
   {
     id: "p3",
@@ -170,6 +172,8 @@ const popularBooks = [
     price: 95000,
     originalPrice: 120000,
     cover: "/image/anh.png",
+    rating: 4.9,
+    reviews: 5432,
   },
   {
     id: "p4",
@@ -178,6 +182,8 @@ const popularBooks = [
     price: 78000,
     originalPrice: 0,
     cover: "/image/anh.png",
+    rating: 4.8,
+    reviews: 3210,
   },
   {
     id: "p5",
@@ -186,6 +192,8 @@ const popularBooks = [
     price: 110000,
     originalPrice: 135000,
     cover: "/image/anh.png",
+    rating: 4.6,
+    reviews: 987,
   },
   {
     id: "p6",
@@ -194,6 +202,8 @@ const popularBooks = [
     price: 125000,
     originalPrice: 0,
     cover: "/image/anh.png",
+    rating: 4.7,
+    reviews: 1654,
   },
   {
     id: "p7",
@@ -656,26 +666,6 @@ export default function HomePage() {
                     </h3>
                     <p className="text-xs text-gray-600">{book.author}</p>
 
-                    {/* Giá + % giảm */}
-                    <div className="mt-2 flex items-end justify-between gap-2">
-                      <div className="flex flex-col">
-                        <p className="text-red-600 font-bold text-sm">
-                          {formatVnd(book.price)}
-                        </p>
-                        {book.originalPrice > 0 && (
-                          <p className="text-xs text-gray-400 line-through">
-                            {formatVnd(book.originalPrice)}
-                          </p>
-                        )}
-                      </div>
-
-                      {book.originalPrice > 0 && (
-                        <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
-                          -{calculateDiscount(book.originalPrice, book.price)}%
-                        </span>
-                      )}
-                    </div>
-
                     {/* Rating */}
                     <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
                       <span className="text-yellow-400">★</span>
@@ -685,6 +675,23 @@ export default function HomePage() {
                       <span className="text-gray-400">
                         ({book.reviews.toLocaleString()})
                       </span>
+                    </div>
+
+                    {/* Giá: Giá giảm - Giá gốc - % giảm */}
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <p className="text-red-600 font-bold text-sm">
+                        {formatVnd(book.price)}
+                      </p>
+                      {book.originalPrice > 0 && (
+                        <>
+                          <p className="text-xs text-gray-400 line-through">
+                            {formatVnd(book.originalPrice)}
+                          </p>
+                          <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                            -{calculateDiscount(book.originalPrice, book.price)}%
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </Link>
@@ -813,22 +820,33 @@ export default function HomePage() {
                     </h3>
                     <p className="text-xs text-gray-600">{book.author}</p>
 
-                    <div className="mt-2 flex items-end justify-between gap-2">
-                      <div className="flex flex-col">
-                        <p className="text-red-600 font-bold text-sm">
-                          {formatVnd(book.price)}
-                        </p>
-                        {book.originalPrice > 0 && (
+                    {/* Rating */}
+                    {book.rating && book.reviews && (
+                      <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
+                        <span className="text-yellow-400">★</span>
+                        <span className="font-semibold">
+                          {book.rating.toFixed(1)}
+                        </span>
+                        <span className="text-gray-400">
+                          ({book.reviews.toLocaleString()})
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Giá: Giá giảm - Giá gốc - % giảm */}
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <p className="text-red-600 font-bold text-sm">
+                        {formatVnd(book.price)}
+                      </p>
+                      {book.originalPrice > 0 && (
+                        <>
                           <p className="text-xs text-gray-400 line-through">
                             {formatVnd(book.originalPrice)}
                           </p>
-                        )}
-                      </div>
-
-                      {book.originalPrice > 0 && (
-                        <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
-                          -{calculateDiscount(book.originalPrice, book.price)}%
-                        </span>
+                          <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                            -{calculateDiscount(book.originalPrice, book.price)}%
+                          </span>
+                        </>
                       )}
                     </div>
                   </div>
