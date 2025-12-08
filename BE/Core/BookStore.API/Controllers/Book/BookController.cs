@@ -201,7 +201,7 @@ namespace BookStore.API.Controllers.Book
         public async Task<ActionResult<BookDetailDto>> Update(Guid id, [FromBody] UpdateBookDto dto)
         {
             if (id != dto.Id)
-                return BadRequest(new { message = "ID trong URL kh�ng kh?p v?i ID trong body" });
+                return BadRequest(new { message = "ID trong URL không khớp với ID trong body" });
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -222,7 +222,7 @@ namespace BookStore.API.Controllers.Book
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "C� l?i x?y ra khi c?p nh?t s�ch", details = ex.Message });
+                    new { message = "Có lỗi xảy ra khi cập nhật sách", details = ex.Message });
             }
         }
 
