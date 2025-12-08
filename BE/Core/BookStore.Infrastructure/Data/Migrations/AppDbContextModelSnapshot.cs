@@ -4,19 +4,16 @@ using BookStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace BookStore.Infrastructure.Migrations
+namespace BookStore.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251118043744_AddNotificationTemplateEntity")]
-    partial class AddNotificationTemplateEntity
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,35 +32,62 @@ namespace BookStore.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasComment("Loại hành động: Create, Update, Delete...");
+                        .HasComment("Action type: CREATE, UPDATE, DELETE, etc.");
 
-                    b.Property<string>("ChangedBy")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                    b.Property<Guid>("AdminId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETUTCDATE()");
 
-                    b.Property<string>("NewValues")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasComment("Human-readable description of the action");
 
-                    b.Property<string>("OldValues")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RecordId")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("TableName")
+                    b.Property<string>("EntityId")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(100)")
+                        .HasComment("ID of the entity being audited");
+
+                    b.Property<string>("EntityName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasComment("Entity name being audited");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
+
+                    b.Property<string>("NewValues")
+                        .HasColumnType("nvarchar(max)")
+                        .HasComment("JSON of new values");
+
+                    b.Property<string>("OldValues")
+                        .HasColumnType("nvarchar(max)")
+                        .HasComment("JSON of old values");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TableName", "Action");
+                    b.HasIndex("AdminId")
+                        .HasDatabaseName("IX_AuditLogs_AdminId");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_AuditLogs_CreatedAt");
+
+                    b.HasIndex("EntityName")
+                        .HasDatabaseName("IX_AuditLogs_EntityName");
+
+                    b.HasIndex("EntityName", "EntityId")
+                        .HasDatabaseName("IX_AuditLogs_Entity");
 
                     b.ToTable("AuditLogs", "analytics");
                 });
@@ -77,9 +101,20 @@ namespace BookStore.Infrastructure.Migrations
                     b.Property<Guid>("BookId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("IPAddress")
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)")
+                        .HasComment("IP address of the viewer");
+
+                    b.Property<string>("SessionId")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(100)")
+                        .HasComment("Session ID for tracking unique sessions");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasComment("Browser/client user agent");
 
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -91,9 +126,17 @@ namespace BookStore.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("BookId")
+                        .HasDatabaseName("IX_BookViews_BookId");
 
-                    b.HasIndex("BookId", "ViewedAt");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_BookViews_UserId");
+
+                    b.HasIndex("ViewedAt")
+                        .HasDatabaseName("IX_BookViews_ViewedAt");
+
+                    b.HasIndex("BookId", "ViewedAt")
+                        .HasDatabaseName("IX_BookViews_BookId_ViewedAt");
 
                     b.ToTable("BookViews", "analytics");
                 });
@@ -239,9 +282,6 @@ namespace BookStore.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("AverageRating")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<Guid?>("BookFormatId")
                         .HasColumnType("uniqueidentifier");
 
@@ -278,9 +318,6 @@ namespace BookStore.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
-
-                    b.Property<int>("TotalReviews")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -1556,10 +1593,16 @@ namespace BookStore.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1727,12 +1770,79 @@ namespace BookStore.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("PlanType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("SingleBook")
+                        .HasComment("Loại gói: Subscription (đọc tất cả) hoặc SingleBook (thuê từng quyển)");
+
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("PlanType");
+
                     b.ToTable("RentalPlans", "rental");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Rental.UserSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsPaid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("PaymentTransactionCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("RentalPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Active");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EndDate");
+
+                    b.HasIndex("PaymentTransactionCode");
+
+                    b.HasIndex("RentalPlanId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("UserSubscriptions", "rental");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Shipping.Shipment", b =>
@@ -2230,7 +2340,7 @@ namespace BookStore.Infrastructure.Migrations
                     b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
                         .WithMany()
                         .HasForeignKey("BookId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("BookStore.Domain.Entities.Common.Comment", "ParentComment")
                         .WithMany("Replies")
@@ -2240,12 +2350,12 @@ namespace BookStore.Infrastructure.Migrations
                     b.HasOne("BookStore.Domain.Entities.Common.Review", "Review")
                         .WithMany()
                         .HasForeignKey("ReviewId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Book");
@@ -2273,7 +2383,7 @@ namespace BookStore.Infrastructure.Migrations
                     b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
                         .WithMany("Reviews")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Book");
@@ -2418,7 +2528,7 @@ namespace BookStore.Infrastructure.Migrations
                     b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
                         .WithMany()
                         .HasForeignKey("BookId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("BookStore.Domain.Entities.Ordering.Order", "Order")
@@ -2599,6 +2709,25 @@ namespace BookStore.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("BookRental");
+                });
+
+            modelBuilder.Entity("BookStore.Domain.Entities.Rental.UserSubscription", b =>
+                {
+                    b.HasOne("BookStore.Domain.Entities.Rental.RentalPlan", "RentalPlan")
+                        .WithMany("UserSubscriptions")
+                        .HasForeignKey("RentalPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RentalPlan");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Shipping.Shipment", b =>
@@ -2804,6 +2933,8 @@ namespace BookStore.Infrastructure.Migrations
             modelBuilder.Entity("BookStore.Domain.Entities.Rental.RentalPlan", b =>
                 {
                     b.Navigation("BookRentals");
+
+                    b.Navigation("UserSubscriptions");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Shipping.Shipment", b =>

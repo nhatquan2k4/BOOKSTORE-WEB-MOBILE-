@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace BookStore.Infrastructure.Migrations
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
+namespace BookStore.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -24,6 +26,9 @@ namespace BookStore.Infrastructure.Migrations
                 name: "ordering");
 
             migrationBuilder.EnsureSchema(
+                name: "common");
+
+            migrationBuilder.EnsureSchema(
                 name: "pricing");
 
             migrationBuilder.EnsureSchema(
@@ -31,9 +36,6 @@ namespace BookStore.Infrastructure.Migrations
 
             migrationBuilder.EnsureSchema(
                 name: "identity");
-
-            migrationBuilder.EnsureSchema(
-                name: "common");
 
             migrationBuilder.EnsureSchema(
                 name: "shipping");
@@ -44,13 +46,16 @@ namespace BookStore.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Action = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, comment: "Loại hành động: Create, Update, Delete..."),
-                    TableName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    RecordId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    OldValues = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    NewValues = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ChangedBy = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()")
+                    AdminId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Action = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, comment: "Action type: CREATE, UPDATE, DELETE, etc."),
+                    EntityName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false, comment: "Entity name being audited"),
+                    EntityId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false, comment: "ID of the entity being audited"),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true, comment: "Human-readable description of the action"),
+                    OldValues = table.Column<string>(type: "nvarchar(max)", nullable: true, comment: "JSON of old values"),
+                    NewValues = table.Column<string>(type: "nvarchar(max)", nullable: true, comment: "JSON of new values"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    IpAddress = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: true),
+                    UserAgent = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -147,6 +152,26 @@ namespace BookStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "NotificationTemplates",
+                schema: "system",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Code = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false, comment: "Unique code identifying the template"),
+                    Subject = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false, comment: "Email subject template"),
+                    Body = table.Column<string>(type: "nvarchar(max)", nullable: false, comment: "Email body template (HTML format)"),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true, comment: "Template description for admin reference"),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true, comment: "Whether this template is active"),
+                    Placeholders = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true, comment: "Available placeholders (JSON format)"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_NotificationTemplates", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "OrderAddresses",
                 schema: "ordering",
                 columns: table => new
@@ -237,6 +262,7 @@ namespace BookStore.Infrastructure.Migrations
                     Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     DurationDays = table.Column<int>(type: "int", nullable: false),
+                    PlanType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "SingleBook", comment: "Loại gói: Subscription (đọc tất cả) hoặc SingleBook (thuê từng quyển)"),
                     IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()")
                 },
@@ -257,23 +283,6 @@ namespace BookStore.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Roles", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Shippers",
-                schema: "shipping",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false, comment: "Tên shipper hoặc tên công ty vận chuyển"),
-                    PhoneNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
-                    VehicleNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Shippers", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -301,6 +310,8 @@ namespace BookStore.Infrastructure.Migrations
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Address = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    Priority = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
@@ -514,6 +525,31 @@ namespace BookStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Shippers",
+                schema: "shipping",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false, comment: "Tên shipper hoặc tên công ty vận chuyển"),
+                    PhoneNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
+                    VehicleNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Shippers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Shippers_Users_UserId",
+                        column: x => x.UserId,
+                        principalSchema: "identity",
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "UserActivities",
                 schema: "analytics",
                 columns: table => new
@@ -642,6 +678,41 @@ namespace BookStore.Infrastructure.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserSubscriptions",
+                schema: "rental",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RentalPlanId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Active"),
+                    IsPaid = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    PaymentTransactionCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserSubscriptions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UserSubscriptions_RentalPlans_RentalPlanId",
+                        column: x => x.RentalPlanId,
+                        principalSchema: "rental",
+                        principalTable: "RentalPlans",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_UserSubscriptions_Users_UserId",
+                        column: x => x.UserId,
+                        principalSchema: "identity",
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -816,8 +887,10 @@ namespace BookStore.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     BookId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    IPAddress = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    ViewedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()")
+                    ViewedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    IpAddress = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: true, comment: "IP address of the viewer"),
+                    UserAgent = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true, comment: "Browser/client user agent"),
+                    SessionId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true, comment: "Session ID for tracking unique sessions")
                 },
                 constraints: table =>
                 {
@@ -903,40 +976,6 @@ namespace BookStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Reviews",
-                schema: "common",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    BookId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Rating = table.Column<int>(type: "int", nullable: false, comment: "Điểm đánh giá từ 1–5 sao"),
-                    Comment = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false, comment: "Nội dung đánh giá của người dùng"),
-                    IsEdited = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Reviews", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Reviews_Books_BookId",
-                        column: x => x.BookId,
-                        principalSchema: "catalog",
-                        principalTable: "Books",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Reviews_Users_UserId",
-                        column: x => x.UserId,
-                        principalSchema: "identity",
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "StockItems",
                 columns: table => new
                 {
@@ -976,7 +1015,8 @@ namespace BookStore.Infrastructure.Migrations
                     BookId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
                     UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    AddedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()")
+                    AddedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()")
                 },
                 constraints: table =>
                 {
@@ -1141,7 +1181,7 @@ namespace BookStore.Infrastructure.Migrations
                         principalSchema: "catalog",
                         principalTable: "Books",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_OrderItems_Orders_OrderId",
                         column: x => x.OrderId,
@@ -1210,6 +1250,53 @@ namespace BookStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Reviews",
+                schema: "common",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BookId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OrderId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Rating = table.Column<int>(type: "int", nullable: false, comment: "Điểm đánh giá từ 1–5 sao"),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true, comment: "Tiêu đề đánh giá"),
+                    Content = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false, comment: "Nội dung đánh giá của người dùng"),
+                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Pending", comment: "Trạng thái: Pending, Approved, Rejected"),
+                    IsVerifiedPurchase = table.Column<bool>(type: "bit", nullable: false, defaultValue: false, comment: "Đã xác thực mua hàng"),
+                    IsEdited = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ApprovedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ApprovedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reviews", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Reviews_Books_BookId",
+                        column: x => x.BookId,
+                        principalSchema: "catalog",
+                        principalTable: "Books",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Reviews_Orders_OrderId",
+                        column: x => x.OrderId,
+                        principalSchema: "ordering",
+                        principalTable: "Orders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Reviews_Users_UserId",
+                        column: x => x.UserId,
+                        principalSchema: "identity",
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Shipments",
                 schema: "shipping",
                 columns: table => new
@@ -1268,6 +1355,54 @@ namespace BookStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Comments",
+                schema: "common",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BookId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ReviewId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ParentCommentId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Content = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false, comment: "Comment content"),
+                    IsEdited = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Comments", x => x.Id);
+                    table.CheckConstraint("CK_Comment_BookOrReview", "(BookId IS NOT NULL AND ReviewId IS NULL) OR (BookId IS NULL AND ReviewId IS NOT NULL)");
+                    table.ForeignKey(
+                        name: "FK_Comments_Books_BookId",
+                        column: x => x.BookId,
+                        principalSchema: "catalog",
+                        principalTable: "Books",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Comments_Comments_ParentCommentId",
+                        column: x => x.ParentCommentId,
+                        principalSchema: "common",
+                        principalTable: "Comments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Comments_Reviews_ReviewId",
+                        column: x => x.ReviewId,
+                        principalSchema: "common",
+                        principalTable: "Reviews",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Comments_Users_UserId",
+                        column: x => x.UserId,
+                        principalSchema: "identity",
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ShipmentRoutePoints",
                 schema: "shipping",
                 columns: table => new
@@ -1315,11 +1450,40 @@ namespace BookStore.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.InsertData(
+                schema: "identity",
+                table: "Roles",
+                columns: new[] { "Id", "Description", "Name" },
+                values: new object[,]
+                {
+                    { new Guid("11111111-1111-1111-1111-111111111111"), "Administrator with full system access", "Admin" },
+                    { new Guid("22222222-2222-2222-2222-222222222222"), "Regular user with basic access", "User" },
+                    { new Guid("33333333-3333-3333-3333-333333333333"), "Delivery personnel with shipping access", "Shipper" }
+                });
+
             migrationBuilder.CreateIndex(
-                name: "IX_AuditLogs_TableName_Action",
+                name: "IX_AuditLogs_AdminId",
                 schema: "analytics",
                 table: "AuditLogs",
-                columns: new[] { "TableName", "Action" });
+                column: "AdminId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AuditLogs_CreatedAt",
+                schema: "analytics",
+                table: "AuditLogs",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AuditLogs_Entity",
+                schema: "analytics",
+                table: "AuditLogs",
+                columns: new[] { "EntityName", "EntityId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AuditLogs_EntityName",
+                schema: "analytics",
+                table: "AuditLogs",
+                column: "EntityName");
 
             migrationBuilder.CreateIndex(
                 name: "IX_BookAuthors_AuthorId",
@@ -1382,6 +1546,12 @@ namespace BookStore.Infrastructure.Migrations
                 column: "PublisherId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_BookViews_BookId",
+                schema: "analytics",
+                table: "BookViews",
+                column: "BookId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_BookViews_BookId_ViewedAt",
                 schema: "analytics",
                 table: "BookViews",
@@ -1392,6 +1562,12 @@ namespace BookStore.Infrastructure.Migrations
                 schema: "analytics",
                 table: "BookViews",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BookViews_ViewedAt",
+                schema: "analytics",
+                table: "BookViews",
+                column: "ViewedAt");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CartItems_BookId",
@@ -1416,6 +1592,36 @@ namespace BookStore.Infrastructure.Migrations
                 schema: "catalog",
                 table: "Categories",
                 column: "ParentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_BookId",
+                schema: "common",
+                table: "Comments",
+                column: "BookId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_CreatedAt",
+                schema: "common",
+                table: "Comments",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_ParentCommentId",
+                schema: "common",
+                table: "Comments",
+                column: "ParentCommentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_ReviewId",
+                schema: "common",
+                table: "Comments",
+                column: "ReviewId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_UserId",
+                schema: "common",
+                table: "Comments",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Coupons_Code",
@@ -1463,6 +1669,19 @@ namespace BookStore.Infrastructure.Migrations
                 schema: "system",
                 table: "Notifications",
                 columns: new[] { "UserId", "IsRead" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NotificationTemplates_Code",
+                schema: "system",
+                table: "NotificationTemplates",
+                column: "Code",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NotificationTemplates_IsActive",
+                schema: "system",
+                table: "NotificationTemplates",
+                column: "IsActive");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderHistories_OrderId",
@@ -1596,10 +1815,34 @@ namespace BookStore.Infrastructure.Migrations
                 column: "BookRentalId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_RentalPlans_PlanType",
+                schema: "rental",
+                table: "RentalPlans",
+                column: "PlanType");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reviews_BookId",
+                schema: "common",
+                table: "Reviews",
+                column: "BookId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Reviews_BookId_UserId",
                 schema: "common",
                 table: "Reviews",
                 columns: new[] { "BookId", "UserId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reviews_OrderId",
+                schema: "common",
+                table: "Reviews",
+                column: "OrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reviews_Status",
+                schema: "common",
+                table: "Reviews",
+                column: "Status");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Reviews_UserId",
@@ -1653,6 +1896,12 @@ namespace BookStore.Infrastructure.Migrations
                 column: "ShipmentId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Shippers_UserId",
+                schema: "shipping",
+                table: "Shippers",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_StockItems_BookId",
                 table: "StockItems",
                 column: "BookId",
@@ -1701,6 +1950,36 @@ namespace BookStore.Infrastructure.Migrations
                 table: "Users",
                 column: "Email",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserSubscriptions_EndDate",
+                schema: "rental",
+                table: "UserSubscriptions",
+                column: "EndDate");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserSubscriptions_PaymentTransactionCode",
+                schema: "rental",
+                table: "UserSubscriptions",
+                column: "PaymentTransactionCode");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserSubscriptions_RentalPlanId",
+                schema: "rental",
+                table: "UserSubscriptions",
+                column: "RentalPlanId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserSubscriptions_UserId",
+                schema: "rental",
+                table: "UserSubscriptions",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserSubscriptions_UserId_Status",
+                schema: "rental",
+                table: "UserSubscriptions",
+                columns: new[] { "UserId", "Status" });
         }
 
         /// <inheritdoc />
@@ -1739,6 +2018,10 @@ namespace BookStore.Infrastructure.Migrations
                 schema: "ordering");
 
             migrationBuilder.DropTable(
+                name: "Comments",
+                schema: "common");
+
+            migrationBuilder.DropTable(
                 name: "EmailVerificationTokens");
 
             migrationBuilder.DropTable(
@@ -1750,6 +2033,10 @@ namespace BookStore.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Notifications",
+                schema: "system");
+
+            migrationBuilder.DropTable(
+                name: "NotificationTemplates",
                 schema: "system");
 
             migrationBuilder.DropTable(
@@ -1792,10 +2079,6 @@ namespace BookStore.Infrastructure.Migrations
                 schema: "rental");
 
             migrationBuilder.DropTable(
-                name: "Reviews",
-                schema: "common");
-
-            migrationBuilder.DropTable(
                 name: "RolePermissions",
                 schema: "identity");
 
@@ -1831,6 +2114,10 @@ namespace BookStore.Infrastructure.Migrations
                 schema: "identity");
 
             migrationBuilder.DropTable(
+                name: "UserSubscriptions",
+                schema: "rental");
+
+            migrationBuilder.DropTable(
                 name: "Authors",
                 schema: "catalog");
 
@@ -1841,6 +2128,10 @@ namespace BookStore.Infrastructure.Migrations
             migrationBuilder.DropTable(
                 name: "Carts",
                 schema: "ordering");
+
+            migrationBuilder.DropTable(
+                name: "Reviews",
+                schema: "common");
 
             migrationBuilder.DropTable(
                 name: "Discounts",

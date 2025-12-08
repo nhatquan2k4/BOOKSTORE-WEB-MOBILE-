@@ -345,20 +345,16 @@ using (var scope = app.Services.CreateScope())
             }
         }
 
-        // Seed Roles and Permissions
+        // Seed all data
         try
         {
-            logger.LogInformation("Seeding basic roles...");
-            await RoleSeeder.SeedAsync(context);
-            logger.LogInformation("Basic roles seeded successfully");
-
-            logger.LogInformation("Starting to seed roles and permissions...");
-            await RolePermissionSeeder.SeedAsync(context);
-            logger.LogInformation("Roles and permissions seeded successfully");
+            logger.LogInformation("Starting database seeding...");
+            await DatabaseSeeder.SeedAllAsync(context);
+            logger.LogInformation("✅ Database seeded successfully!");
         }
         catch (Exception seedEx)
         {
-            logger.LogError(seedEx, "An error occurred while seeding roles and permissions");
+            logger.LogError(seedEx, "❌ An error occurred while seeding database");
         }
     }
     catch (Exception ex)

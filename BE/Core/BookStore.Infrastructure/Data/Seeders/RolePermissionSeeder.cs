@@ -7,6 +7,10 @@ namespace BookStore.Infrastructure.Data.Seeders
     {
         public static async Task SeedAsync(AppDbContext context)
         {
+            // Kiểm tra nếu đã có permissions thì bỏ qua
+            if (await context.Permissions.AnyAsync())
+                return;
+
             // Roles đã được seed bởi RoleSeeder, không cần tạo lại ở đây
 
             // ===== ĐỊNH NGHĨA CÁC PERMISSIONS =====
@@ -109,7 +113,31 @@ namespace BookStore.Infrastructure.Data.Seeders
                 // System Permissions
                 new Permission { Id = Guid.NewGuid(), Name = "System.ViewLogs", Description = "Xem logs hệ thống" },
                 new Permission { Id = Guid.NewGuid(), Name = "System.ManageSettings", Description = "Quản lý cài đặt hệ thống" },
-                new Permission { Id = Guid.NewGuid(), Name = "System.ManageNotifications", Description = "Quản lý thông báo" }
+                new Permission { Id = Guid.NewGuid(), Name = "System.ManageNotifications", Description = "Quản lý thông báo" },
+                
+                // Publisher Management Permissions
+                new Permission { Id = Guid.NewGuid(), Name = "Publisher.View", Description = "Xem nhà xuất bản" },
+                new Permission { Id = Guid.NewGuid(), Name = "Publisher.Create", Description = "Tạo nhà xuất bản mới" },
+                new Permission { Id = Guid.NewGuid(), Name = "Publisher.Update", Description = "Cập nhật nhà xuất bản" },
+                new Permission { Id = Guid.NewGuid(), Name = "Publisher.Delete", Description = "Xóa nhà xuất bản" },
+                
+                // Warehouse Management Permissions
+                new Permission { Id = Guid.NewGuid(), Name = "Warehouse.View", Description = "Xem kho" },
+                new Permission { Id = Guid.NewGuid(), Name = "Warehouse.Create", Description = "Tạo kho mới" },
+                new Permission { Id = Guid.NewGuid(), Name = "Warehouse.Update", Description = "Cập nhật kho" },
+                new Permission { Id = Guid.NewGuid(), Name = "Warehouse.Delete", Description = "Xóa kho" },
+                
+                // Coupon Management Permissions
+                new Permission { Id = Guid.NewGuid(), Name = "Coupon.View", Description = "Xem mã giảm giá" },
+                new Permission { Id = Guid.NewGuid(), Name = "Coupon.Create", Description = "Tạo mã giảm giá" },
+                new Permission { Id = Guid.NewGuid(), Name = "Coupon.Update", Description = "Cập nhật mã giảm giá" },
+                new Permission { Id = Guid.NewGuid(), Name = "Coupon.Delete", Description = "Xóa mã giảm giá" },
+                
+                // Notification Permissions
+                new Permission { Id = Guid.NewGuid(), Name = "Notification.View", Description = "Xem thông báo" },
+                new Permission { Id = Guid.NewGuid(), Name = "Notification.Create", Description = "Tạo thông báo" },
+                new Permission { Id = Guid.NewGuid(), Name = "Notification.Send", Description = "Gửi thông báo" },
+                new Permission { Id = Guid.NewGuid(), Name = "Notification.Delete", Description = "Xóa thông báo" }
             };
 
             await context.Permissions.AddRangeAsync(permissions);
@@ -145,8 +173,10 @@ namespace BookStore.Infrastructure.Data.Seeders
                 "Book.View",
                 "Category.View",
                 "Author.View",
+                "Publisher.View",
                 "Price.View",
                 "Discount.View",
+                "Coupon.View",
                 
                 // Quản lý tài khoản
                 "User.View",
@@ -178,7 +208,10 @@ namespace BookStore.Infrastructure.Data.Seeders
                 "Rental.View",
                 "Rental.Create",
                 "Rental.Return",
-                "Rental.Extend"
+                "Rental.Extend",
+                
+                // Thông báo
+                "Notification.View"
             };
 
             foreach (var permissionName in userPermissionNames)
