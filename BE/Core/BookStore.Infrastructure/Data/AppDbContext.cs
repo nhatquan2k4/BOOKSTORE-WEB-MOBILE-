@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using BookStore.Domain.Entities.Pricing_Inventory;
 using Microsoft.Extensions.Configuration;
+using BookStore.Infrastructure.Data.Seeders;
 
 namespace BookStore.Infrastructure.Data
 {
