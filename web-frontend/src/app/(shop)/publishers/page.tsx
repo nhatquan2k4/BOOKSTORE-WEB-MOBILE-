@@ -1,77 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { publisherService } from "@/services";
+import type { PublisherDto } from "@/types/dtos";
 
-// Mock data
-const publishers = [
-  {
-    id: 1,
-    name: "NXB Kim Đồng",
-    slug: "nxb-kim-dong",
-    logo: "https://via.placeholder.com/100",
-    description: "Nhà xuất bản chuyên về sách thiếu nhi và văn học tuổi teen",
-    bookCount: 1234,
-    foundedYear: 1957,
-    category: "Thiếu nhi"
-  },
-  {
-    id: 2,
-    name: "NXB Trẻ",
-    slug: "nxb-tre",
-    logo: "https://via.placeholder.com/100",
-    description: "Xuất bản sách văn học, kỹ năng sống, kinh tế",
-    bookCount: 2156,
-    foundedYear: 1981,
-    category: "Tổng hợp"
-  },
-  {
-    id: 3,
-    name: "NXB Văn học",
-    slug: "nxb-van-hoc",
-    logo: "https://via.placeholder.com/100",
-    description: "Chuyên về văn học trong nước và dịch văn học thế giới",
-    bookCount: 987,
-    foundedYear: 1957,
-    category: "Văn học"
-  },
-  {
-    id: 4,
-    name: "NXB Thế Giới",
-    slug: "nxb-the-gioi",
-    logo: "https://via.placeholder.com/100",
-    description: "Xuất bản sách về khoa học, công nghệ, lịch sử thế giới",
-    bookCount: 1567,
-    foundedYear: 1957,
-    category: "Khoa học"
-  },
-  {
-    id: 5,
-    name: "NXB Lao Động",
-    slug: "nxb-lao-dong",
-    logo: "https://via.placeholder.com/100",
-    description: "Sách kỹ năng sống, kinh tế, quản trị",
-    bookCount: 876,
-    foundedYear: 1958,
-    category: "Kinh tế"
-  },
-  {
-    id: 6,
-    name: "NXB Phụ Nữ",
-    slug: "nxb-phu-nu",
-    logo: "https://via.placeholder.com/100",
-    description: "Sách về gia đình, làm đẹp, nuôi dạy con",
-    bookCount: 654,
-    foundedYear: 1957,
-    category: "Gia đình"
-  }
-];
+type Publisher = {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string;
+  description: string;
+  bookCount: number;
+  foundedYear: number;
+  category: string;
+};
 
 const categories = ["Tất cả", "Văn học", "Thiếu nhi", "Kinh tế", "Khoa học", "Gia đình", "Tổng hợp"];
 
 export default function PublishersPage() {
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
+  const [publishers, setPublishers] = useState<Publisher[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    const fetchPublishers = async () => {
+      try {
+        setLoading(true);
+        const response = await publisherService.getPublishers(currentPage, 20);
+        
+        if (response.items && response.items.length > 0) {
+          const transformedPublishers: Publisher[] = response.items.map((pub: PublisherDto) => ({
+            id: pub.id,
+            name: pub.name,
+            slug: pub.id,
+            logo: "https://via.placeholder.com/100",
+            description: pub.address || "Nhà xuất bản uy tín",
+            bookCount: pub.bookCount || 0,
+            foundedYear: 1957,
+            category: "Tổng hợp",
+          }));
+          setPublishers(transformedPublishers);
+        } else {
+          setPublishers([]);
+        }
+      } catch (error) {
+        console.error("Error fetching publishers:", error);
+        setPublishers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPublishers();
+  }, [currentPage]);
 
   const filteredPublishers = publishers.filter(pub => {
     const matchesCategory = selectedCategory === "Tất cả" || pub.category === selectedCategory;
@@ -80,7 +63,6 @@ export default function PublishersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl font-bold mb-4">Nhà xuất bản</h1>
@@ -91,14 +73,12 @@ export default function PublishersPage() {
       </div>
 
       <div className="container mx-auto px-4 py-12">
-        {/* Breadcrumb */}
         <nav className="text-sm text-gray-600 mb-8">
           <Link href="/" className="hover:text-blue-600">Trang chủ</Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900">Nhà xuất bản</span>
         </nav>
 
-        {/* Category Filter */}
         <div className="flex flex-wrap gap-3 justify-center mb-8">
           {categories.map(cat => (
             <Button
@@ -112,8 +92,24 @@ export default function PublishersPage() {
           ))}
         </div>
 
-        {/* Publishers Grid */}
-        {filteredPublishers.length === 0 ? (
+        {loading ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-xl p-6 shadow-sm animate-pulse">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                  <div className="flex-1">
+                    <div className="h-5 bg-gray-200 rounded mb-2 w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+                <div className="h-3 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-4/5 mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+              </div>
+            ))}
+          </div>
+        ) : filteredPublishers.length === 0 ? (
           <div className="bg-white rounded-xl p-12 text-center">
             <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -162,7 +158,6 @@ export default function PublishersPage() {
           </div>
         )}
 
-        {/* Stats */}
         <div className="bg-white rounded-xl shadow-sm p-8 mt-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>

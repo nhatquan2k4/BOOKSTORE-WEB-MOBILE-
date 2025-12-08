@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { authorService } from "@/services";
+import type { AuthorDto } from "@/types/dtos";
 
 type Author = {
   id: string;
@@ -25,50 +27,44 @@ const formatNumber = (num: number) => {
 
 export default function AuthorsPage() {
   const [filterCategory, setFilterCategory] = useState("all");
+  const [authors, setAuthors] = useState<Author[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Mock data
-  const MOCK_AUTHORS: Author[] = [
-    {
-      id: "1",
-      name: "James Clear",
-      avatar: "/image/anh.png",
-      bookCount: 12,
-      followers: 45600,
-      bio: "Tác giả bestseller của Atomic Habits, chuyên gia về thói quen và năng suất",
-      categories: ["Kỹ năng sống", "Tự phát triển"],
-    },
-    {
-      id: "2",
-      name: "Nguyễn Nhật Ánh",
-      avatar: "/image/anh.png",
-      bookCount: 28,
-      followers: 128000,
-      bio: "Nhà văn nổi tiếng Việt Nam với nhiều tác phẩm văn học tuổi teen đình đám",
-      categories: ["Văn học", "Thiếu nhi"],
-    },
-    {
-      id: "3",
-      name: "Yuval Noah Harari",
-      avatar: "/image/anh.png",
-      bookCount: 8,
-      followers: 89000,
-      bio: "Sử gia và triết gia người Israel, tác giả của Sapiens và Homo Deus",
-      categories: ["Khoa học", "Lịch sử"],
-    },
-    {
-      id: "4",
-      name: "Dale Carnegie",
-      avatar: "/image/anh.png",
-      bookCount: 15,
-      followers: 156000,
-      bio: "Nhà văn và diễn giả người Mỹ, nổi tiếng với Đắc Nhân Tâm",
-      categories: ["Kỹ năng sống", "Kinh doanh"],
-    },
-  ];
+  // Fetch authors from API
+  useEffect(() => {
+    const fetchAuthors = async () => {
+      try {
+        setLoading(true);
+        const response = await authorService.getAuthors(currentPage, 20);
+        
+        if (response.items && response.items.length > 0) {
+          const transformedAuthors: Author[] = response.items.map((author: AuthorDto) => ({
+            id: author.id,
+            name: author.name,
+            avatar: author.avartarUrl || "/image/anh.png",
+            bookCount: author.bookCount || 0,
+            followers: 0, // TODO: Add followers from backend
+            bio: `Tác giả của ${author.bookCount} cuốn sách`, // TODO: Add bio from backend
+            categories: [], // TODO: Add categories from backend
+          }));
+          setAuthors(transformedAuthors);
+        } else {
+          setAuthors([]);
+        }
+      } catch (error) {
+        console.error("Error fetching authors:", error);
+        setAuthors([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAuthors();
+  }, [currentPage]);
 
   const categories = ["Tất cả", "Kỹ năng sống", "Văn học", "Khoa học", "Kinh tế"];
 
-  const filteredAuthors = MOCK_AUTHORS.filter((author) => {
+  const filteredAuthors = authors.filter((author) => {
     const matchCategory =
       filterCategory === "all" ||
       filterCategory === "Tất cả" ||
@@ -113,9 +109,26 @@ export default function AuthorsPage() {
         </div>
 
         {/* Authors Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAuthors.map((author) => (
-            <Link
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-xl shadow-sm p-6 animate-pulse">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-20 h-20 bg-gray-200 rounded-full flex-shrink-0"></div>
+                  <div className="flex-1">
+                    <div className="h-5 bg-gray-200 rounded mb-2 w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+                <div className="h-3 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-4/5"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAuthors.map((author) => (
+              <Link
               key={author.id}
               href={`/authors/${author.id}`}
               className="bg-white rounded-xl shadow-sm hover:shadow-lg transition p-6 group"
@@ -153,9 +166,10 @@ export default function AuthorsPage() {
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
-        {filteredAuthors.length === 0 && (
+        {!loading && filteredAuthors.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-600">Không tìm thấy tác giả phù hợp</p>
           </div>

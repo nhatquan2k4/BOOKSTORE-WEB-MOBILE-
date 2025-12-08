@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 type Book = {
   id: string;
@@ -25,258 +27,6 @@ type Book = {
 type SortOption = "popular" | "rating" | "price-asc" | "price-desc" | "level";
 type SubCategory = "all" | "english" | "japanese" | "korean" | "chinese" | "french" | "german";
 
-const MOCK_BOOKS: Book[] = [
-  {
-    id: "1",
-    title: "English Grammar in Use",
-    author: "Raymond Murphy",
-    subcategory: "english",
-    price: 245000,
-    originalPrice: 310000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 5678,
-    stock: 85,
-    level: "B1",
-    hasAudio: true,
-  },
-  {
-    id: "2",
-    title: "IELTS Cambridge 15 - Academic",
-    author: "Cambridge University Press",
-    subcategory: "english",
-    price: 325000,
-    originalPrice: 410000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 4321,
-    stock: 92,
-    level: "B2",
-    hasAudio: true,
-  },
-  {
-    id: "3",
-    title: "Minna no Nihongo - Sơ Cấp 1",
-    author: "3A Network",
-    subcategory: "japanese",
-    price: 195000,
-    originalPrice: 245000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 3456,
-    stock: 78,
-    level: "A1",
-    hasAudio: true,
-  },
-  {
-    id: "4",
-    title: "Korean Grammar in Use - Beginning",
-    author: "Ahn Jean-myung",
-    subcategory: "korean",
-    price: 285000,
-    originalPrice: 360000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 2987,
-    stock: 65,
-    level: "A1",
-    hasAudio: true,
-  },
-  {
-    id: "5",
-    title: "HSK Standard Course 4 - Tiếng Trung",
-    author: "Beijing Language and Culture University Press",
-    subcategory: "chinese",
-    price: 235000,
-    originalPrice: 295000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 2134,
-    stock: 58,
-    level: "B1",
-    hasAudio: true,
-  },
-  {
-    id: "6",
-    title: "Le Nouveau Taxi! 1 - Tiếng Pháp",
-    author: "Hachette Livre",
-    subcategory: "french",
-    price: 275000,
-    originalPrice: 345000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1765,
-    stock: 48,
-    level: "A1",
-    hasAudio: true,
-  },
-  {
-    id: "7",
-    title: "Menschen A2 - Tiếng Đức",
-    author: "Hueber Verlag",
-    subcategory: "german",
-    price: 295000,
-    originalPrice: 370000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1543,
-    stock: 42,
-    level: "A2",
-    hasAudio: true,
-  },
-  {
-    id: "8",
-    title: "Oxford Advanced Learner's Dictionary",
-    author: "Oxford University Press",
-    subcategory: "english",
-    price: 385000,
-    originalPrice: 480000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 4567,
-    stock: 95,
-    level: "C1",
-  },
-  {
-    id: "9",
-    title: "TOEIC Official Test-Preparation Guide",
-    author: "ETS",
-    subcategory: "english",
-    price: 345000,
-    originalPrice: 430000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 3876,
-    stock: 72,
-    level: "B2",
-    hasAudio: true,
-  },
-  {
-    id: "10",
-    title: "Soumatome N3 - Kanji",
-    author: "Ask Publishing",
-    subcategory: "japanese",
-    price: 165000,
-    originalPrice: 205000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 2456,
-    stock: 68,
-    level: "B1",
-  },
-  {
-    id: "11",
-    title: "TOPIK Essential Grammar - Intermediate",
-    author: "Darakwon",
-    subcategory: "korean",
-    price: 255000,
-    originalPrice: 320000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2134,
-    stock: 55,
-    level: "B1",
-    hasAudio: true,
-  },
-  {
-    id: "12",
-    title: "HSK 6 - Đề Thi Thử",
-    author: "Beijing Language University",
-    subcategory: "chinese",
-    price: 295000,
-    originalPrice: 370000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1654,
-    stock: 38,
-    level: "C1",
-    hasAudio: true,
-  },
-  {
-    id: "13",
-    title: "Alter Ego+ B2 - Tiếng Pháp",
-    author: "Hachette FLE",
-    subcategory: "french",
-    price: 325000,
-    originalPrice: 405000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1432,
-    stock: 35,
-    level: "B2",
-    hasAudio: true,
-  },
-  {
-    id: "14",
-    title: "Studio 21 B1 - Tiếng Đức",
-    author: "Cornelsen Verlag",
-    subcategory: "german",
-    price: 315000,
-    originalPrice: 395000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1234,
-    stock: 42,
-    level: "B1",
-    hasAudio: true,
-  },
-  {
-    id: "15",
-    title: "Tactics for Listening - Expanding",
-    author: "Jack Richards",
-    subcategory: "english",
-    price: 215000,
-    originalPrice: 270000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 2876,
-    stock: 82,
-    level: "B1",
-    hasAudio: true,
-  },
-  {
-    id: "16",
-    title: "Genki II - Japanese Workbook",
-    author: "The Japan Times",
-    subcategory: "japanese",
-    price: 245000,
-    originalPrice: 310000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2987,
-    stock: 58,
-    level: "A2",
-  },
-  {
-    id: "17",
-    title: "Yonsei Korean 3 - Textbook",
-    author: "Yonsei University Press",
-    subcategory: "korean",
-    price: 275000,
-    originalPrice: 345000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1876,
-    stock: 48,
-    level: "B1",
-    hasAudio: true,
-  },
-  {
-    id: "18",
-    title: "Integrated Chinese Level 2",
-    author: "Cheng & Tsui",
-    subcategory: "chinese",
-    price: 265000,
-    originalPrice: 330000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1765,
-    stock: 52,
-    level: "A2",
-    hasAudio: true,
-  },
-];
-
 const SUBCATEGORIES = [
   { id: "all", name: "Tất cả"},
   { id: "english", name: "Tiếng Anh"},
@@ -291,12 +41,56 @@ export default function LanguageBooksPage() {
   const [selectedSubcategory, setSelectedSubcategory] = useState<SubCategory>("all");
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [currentPage, setCurrentPage] = useState(1);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 20;
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await bookService.getBooks({
+          pageNumber: currentPage,
+          pageSize: itemsPerPage,
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
+            id: book.id,
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            subcategory: "all",
+            price: book.discountPrice || book.currentPrice || 0,
+            originalPrice: book.currentPrice,
+            cover: "/image/anh.png",
+            rating: book.averageRating || 4.5,
+            reviewCount: book.totalReviews || 0,
+            stock: book.stockQuantity || 0,
+            level: "B1",
+            hasAudio: false,
+          }));
+          setBooks(transformedBooks);
+          setTotalItems(response.totalCount || 0);
+        } else {
+          setBooks([]);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setBooks([]);
+        setTotalItems(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, [currentPage]);
 
   const filteredBooks =
     selectedSubcategory === "all"
-      ? MOCK_BOOKS
-      : MOCK_BOOKS.filter((book) => book.subcategory === selectedSubcategory);
+      ? books
+      : books.filter((book) => book.subcategory === selectedSubcategory);
 
   const sortedBooks = [...filteredBooks].sort((a, b) => {
     switch (sortBy) {
@@ -370,7 +164,7 @@ export default function LanguageBooksPage() {
           </div>
           <p className="text-gray-700 text-lg font-medium flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-            {MOCK_BOOKS.length} giáo trình ngoại ngữ - Chuẩn quốc tế từ A1-C2
+            {totalItems} giáo trình ngoại ngữ - Chuẩn quốc tế từ A1-C2
           </p>
         </div>
 
@@ -419,9 +213,21 @@ export default function LanguageBooksPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          {paginatedBooks.map((book) => (
-            <Link
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                <div className="aspect-[3/4] bg-gray-200 rounded-lg mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {paginatedBooks.map((book) => (
+              <Link
               key={book.id}
               href={`/books/${book.id}`}
               className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
@@ -492,7 +298,8 @@ export default function LanguageBooksPage() {
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
         {totalPages > 1 && (
           <div className="flex justify-center mb-8">
