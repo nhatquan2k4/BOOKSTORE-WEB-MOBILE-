@@ -42,7 +42,7 @@ export default function CheckoutScreen() {
   };
 
   // Cart / product quantity
-  const { items, setQuantity } = useCart();
+  const { items } = useCart();
   const cartItem = book ? items.find((i) => i.id === book.id) : null;
   const qty = qtyParam ?? (cartItem ? cartItem.quantity : 1);
 
