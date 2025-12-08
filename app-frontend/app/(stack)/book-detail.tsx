@@ -2,14 +2,14 @@ import { getBookById, popularBooks } from '@/data/mockBooks';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { Modal, Pressable } from 'react-native';
-import { useCart } from '@/app/providers/CartProvider';
 import {
   Animated,
   Dimensions,
   Image,
+  Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCart } from '@/app/providers/CartProvider';
 
 const { width } = Dimensions.get('window');
 const COVER_WIDTH = 220;

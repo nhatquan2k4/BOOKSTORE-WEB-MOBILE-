@@ -86,7 +86,7 @@ services:
       - EmailSettings__SmtpHost=smtp.gmail.com
       - EmailSettings__SmtpPort=587
       - EmailSettings__SmtpUsername=quangtraan20004@gmail.com
-      - EmailSettings__SmtpPassword=quang
+      - EmailSettings__SmtpPassword=Quang
       - EmailSettings__FromEmail=quangtraan20004@gmail.com
       - EmailSettings__FromName=BookStore
       - EmailSettings__EnableSsl=true

@@ -1,12 +1,44 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/app/providers/AuthProvider';
 
 export default function ProfileScreen() {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const router = useRouter();
+  const { logout, user } = useAuth();
+
+  // Xử lý đăng xuất
+  const handleLogout = () => {
+    Alert.alert(
+      'Xác nhận đăng xuất',
+      'Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?',
+      [
+        {
+          text: 'Huỷ',
+          style: 'cancel',
+        },
+        {
+          text: 'Đăng xuất',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoggingOut(true);
+            try {
+              await logout();
+              // AuthProvider sẽ tự động redirect về login
+            } catch (error) {
+              Alert.alert('Lỗi', 'Không thể đăng xuất. Vui lòng thử lại.');
+            } finally {
+              setIsLoggingOut(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const otherSettings = [
     { id: 1, icon: 'person-outline', label: 'Hồ sơ của tôi', hasArrow: true, onPress: () => router.push('/(stack)/profile-details') },
@@ -36,8 +68,8 @@ export default function ProfileScreen() {
             <Text style={styles.avatarEmoji}>👨</Text>
           </View>
           <View>
-            <Text style={styles.userName}>Nguyên Phạm</Text>
-            <Text style={styles.userRole}>Thành viên</Text>
+            <Text style={styles.userName}>{user?.userName || 'Người dùng'}</Text>
+            <Text style={styles.userRole}>{user?.email || 'Thành viên'}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -113,13 +145,19 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Deactivate Account */}
-      <TouchableOpacity style={styles.deactivateButton}>
+      {/* Logout Button */}
+      <TouchableOpacity 
+        style={[styles.deactivateButton, isLoggingOut && styles.deactivateButtonDisabled]} 
+        onPress={handleLogout}
+        disabled={isLoggingOut}
+      >
         <View style={styles.settingLeft}>
           <View style={styles.iconContainer}>
             <Ionicons name="log-out-outline" size={20} color="#d32f2f" />
           </View>
-          <Text style={styles.deactivateText}>Đăng xuất</Text>
+          <Text style={styles.deactivateText}>
+            {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
+          </Text>
         </View>
       </TouchableOpacity>
 
@@ -250,6 +288,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+  },
+  deactivateButtonDisabled: {
+    opacity: 0.5,
   },
   deactivateText: {
     fontSize: 15,
