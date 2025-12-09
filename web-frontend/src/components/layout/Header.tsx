@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -12,6 +12,8 @@ import {
 } from "@/components/ui";
 import { useCartStore } from "@/store/cartStore";
 import { useAuth } from "@/contexts";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 export function Header() {
   const router = useRouter();
@@ -19,6 +21,12 @@ export function Header() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  
+  // Search results state
+  const [searchResults, setSearchResults] = useState<BookDto[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   // Get auth state from context
   const { user: currentUser, isLoggedIn, logout } = useAuth();
@@ -31,12 +39,61 @@ export function Header() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } =
     useNotifications();
 
+  // Debounced search effect
+  useEffect(() => {
+    const searchBooks = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSearchResults([]);
+        setShowSearchResults(false);
+        return;
+      }
+
+      setSearchLoading(true);
+      try {
+        const result = await bookService.getBooks({
+          searchTerm: searchQuery.trim(),
+          pageSize: 8,
+          pageNumber: 1,
+        });
+        setSearchResults(result.items || []);
+        setShowSearchResults(true);
+      } catch (error) {
+        console.error("Search error:", error);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(searchBooks, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
+
+  // Click outside to close search results
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/books?search=${encodeURIComponent(searchQuery)}`);
       setSearchQuery("");
+      setShowSearchResults(false);
     }
+  };
+
+  const handleBookClick = (bookId: string) => {
+    router.push(`/books/${bookId}`);
+    setSearchQuery("");
+    setShowSearchResults(false);
   };
 
   const handleLogout = async () => {
@@ -137,45 +194,124 @@ export function Header() {
           </Link>
 
           {/* Search Bar - Desktop */}
-          <form
-            onSubmit={handleSearch}
-            className="hidden md:flex flex-1 max-w-2xl mx-6"
-          >
-            <div className="relative w-full">
-              <svg
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm sách, tác giả, thể loại, ..."
-                className="w-full pl-12 pr-24 py-3 border-2 border-gray-200 rounded-full focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-gray-700 placeholder:text-gray-400"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-5 py-2 bg-blue-600 rounded-full flex items-center gap-2 hover:bg-blue-700 transition-colors text-white font-medium"
-              >
+          <div ref={searchRef} className="hidden md:flex flex-1 max-w-2xl mx-6 relative">
+            <form onSubmit={handleSearch} className="w-full">
+              <div className="relative w-full">
                 <svg
-                  className="w-4 h-4"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  strokeWidth={2}
                 >
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
-                <span className="hidden lg:inline">Tìm</span>
-              </button>
-            </div>
-          </form>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => {
+                    if (searchResults.length > 0) setShowSearchResults(true);
+                  }}
+                  placeholder="Tìm kiếm sách, tác giả, thể loại, ..."
+                  className="w-full pl-12 pr-24 py-3 border-2 border-gray-200 rounded-full focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-gray-700 placeholder:text-gray-400"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-5 py-2 bg-blue-600 rounded-full flex items-center gap-2 hover:bg-blue-700 transition-colors text-white font-medium"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                  </svg>
+                  <span className="hidden lg:inline">Tìm</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Search Results Dropdown */}
+            {showSearchResults && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50 max-h-[500px] overflow-y-auto">
+                {searchLoading ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <div className="inline-block w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="mt-2">Đang tìm kiếm...</p>
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <>
+                    {searchResults.map((book) => (
+                      <button
+                        key={book.id}
+                        onClick={() => handleBookClick(book.id)}
+                        className="w-full flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-0"
+                      >
+                        <div className="relative w-16 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                          {book.images && book.images.length > 0 ? (
+                            <Image
+                              src={book.images[0].imageUrl}
+                              alt={book.title}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 line-clamp-2 mb-1">
+                            {book.title}
+                          </h4>
+                          <p className="text-sm text-gray-500 mb-2">
+                            {book.authorNames?.join(", ") || "Chưa cập nhật"}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            {book.discountPrice ? (
+                              <>
+                                <span className="font-bold text-red-600">
+                                  {book.discountPrice.toLocaleString("vi-VN")}₫
+                                </span>
+                                <span className="text-sm text-gray-400 line-through">
+                                  {book.currentPrice.toLocaleString("vi-VN")}₫
+                                </span>
+                              </>
+                            ) : (
+                              <span className="font-bold text-gray-900">
+                                {book.currentPrice.toLocaleString("vi-VN")}₫
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                    <button
+                      onClick={handleSearch}
+                      className="w-full p-4 text-center text-blue-600 hover:bg-blue-50 font-medium transition-colors"
+                    >
+                      Xem tất cả kết quả →
+                    </button>
+                  </>
+                ) : (
+                  <div className="p-8 text-center text-gray-500">
+                    <svg className="w-16 h-16 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="font-medium">Không tìm thấy kết quả</p>
+                    <p className="text-sm mt-1">Thử tìm kiếm với từ khóa khác</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Actions */}
           <div className="flex items-center gap-3 lg:gap-4">
@@ -684,6 +820,89 @@ export function Header() {
                 </button>
               </div>
             </form>
+
+            {/* Mobile Search Results */}
+            {showSearchResults && searchQuery.trim().length >= 2 && (
+              <div className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[400px] overflow-y-auto">
+                {searchLoading ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <div className="inline-block w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="mt-2 text-sm">Đang tìm kiếm...</p>
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <>
+                    {searchResults.map((book) => (
+                      <button
+                        key={book.id}
+                        onClick={() => {
+                          handleBookClick(book.id);
+                          setShowMobileMenu(false);
+                        }}
+                        className="w-full flex items-start gap-3 p-3 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-0"
+                      >
+                        <div className="relative w-12 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                          {book.images && book.images.length > 0 ? (
+                            <Image
+                              src={book.images[0].imageUrl}
+                              alt={book.title}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                            {book.title}
+                          </h4>
+                          <p className="text-xs text-gray-500 mb-1">
+                            {book.authorNames?.join(", ") || "Chưa cập nhật"}
+                          </p>
+                          <div className="flex items-center gap-1.5">
+                            {book.discountPrice ? (
+                              <>
+                                <span className="text-sm font-bold text-red-600">
+                                  {book.discountPrice.toLocaleString("vi-VN")}₫
+                                </span>
+                                <span className="text-xs text-gray-400 line-through">
+                                  {book.currentPrice.toLocaleString("vi-VN")}₫
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-sm font-bold text-gray-900">
+                                {book.currentPrice.toLocaleString("vi-VN")}₫
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => {
+                        handleSearch(new Event("submit") as any);
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full p-3 text-center text-sm text-blue-600 hover:bg-blue-50 font-medium transition-colors"
+                    >
+                      Xem tất cả kết quả →
+                    </button>
+                  </>
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    <svg className="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm font-medium">Không tìm thấy kết quả</p>
+                    <p className="text-xs mt-1">Thử tìm kiếm với từ khóa khác</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Mobile Navigation */}

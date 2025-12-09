@@ -5,7 +5,7 @@
 namespace BookStore.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCommentEntity : Migration
+    public partial class RemoveBookRatingColumns : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

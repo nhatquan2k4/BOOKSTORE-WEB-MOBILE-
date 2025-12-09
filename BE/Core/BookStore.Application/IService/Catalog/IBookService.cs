@@ -29,5 +29,8 @@ namespace BookStore.Application.IService.Catalog
         Task<List<BookDto>> GetByAuthorAsync(Guid authorId, int top = 10);
         Task<List<BookDto>> GetByPublisherAsync(Guid publisherId, int top = 10);
         Task<List<BookDto>> SearchAsync(string searchTerm, int top = 20);
+
+        // Smart recommendations
+        Task<List<BookDto>> GetRecommendationsAsync(List<Guid> excludeBookIds, List<Guid> categoryIds, int limit = 8);
     }
 }

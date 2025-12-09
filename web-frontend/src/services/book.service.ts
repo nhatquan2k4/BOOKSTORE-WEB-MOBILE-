@@ -177,4 +177,37 @@ export const bookService = {
       return handleApiError(error);
     }
   },
+
+  /**
+   * Lấy gợi ý sách thông minh dựa trên giỏ hàng
+   * @param excludeBookIds - Danh sách ID sách cần loại trừ (đã có trong giỏ)
+   * @param categoryIds - Danh sách ID danh mục quan tâm
+   * @param limit - Số lượng gợi ý tối đa
+   */
+  async getRecommendations(
+    excludeBookIds: string[] = [],
+    categoryIds: string[] = [],
+    limit: number = 8
+  ): Promise<BookDto[]> {
+    try {
+      const params = new URLSearchParams();
+      
+      if (excludeBookIds.length > 0) {
+        params.append('excludeBookIds', excludeBookIds.join(','));
+      }
+      
+      if (categoryIds.length > 0) {
+        params.append('categoryIds', categoryIds.join(','));
+      }
+      
+      params.append('limit', limit.toString());
+
+      const response = await axiosInstance.get<BookDto[]>(
+        `${BOOK_BASE_URL}/recommendations?${params.toString()}`
+      );
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
 };

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
   Button,
   Badge,
 } from '@/components/ui';
+import { notificationService } from '@/services/notification.service';
 
 type NotificationType = 'order' | 'promotion' | 'review' | 'system' | 'payment';
 
@@ -19,80 +20,6 @@ interface Notification {
   createdAt: string;
   actionUrl?: string;
 }
-
-const mockNotifications: Notification[] = [
-  {
-    id: 'NOTIF-001',
-    type: 'order',
-    title: 'Đơn hàng đã được xác nhận',
-    message: 'Đơn hàng #DH-12345 của bạn đã được xác nhận và đang chuẩn bị giao.',
-    isRead: false,
-    createdAt: '2024-11-06T14:30:00',
-    actionUrl: '/account/orders',
-  },
-  {
-    id: 'NOTIF-002',
-    type: 'promotion',
-    title: 'Khuyến mãi đặc biệt 50%',
-    message: 'Giảm giá 50% cho tất cả sách lập trình. Áp dụng đến hết ngày 30/11.',
-    isRead: false,
-    createdAt: '2024-11-06T10:15:00',
-    actionUrl: '/books/programming',
-  },
-  {
-    id: 'NOTIF-003',
-    type: 'order',
-    title: 'Đơn hàng đang giao',
-    message: 'Đơn hàng #DH-12340 đang trên đường giao đến bạn. Dự kiến giao trong hôm nay.',
-    isRead: true,
-    createdAt: '2024-11-05T16:45:00',
-    actionUrl: '/account/orders',
-  },
-  {
-    id: 'NOTIF-004',
-    type: 'payment',
-    title: 'Thanh toán thành công',
-    message: 'Bạn đã thanh toán thành công 450.000đ cho đơn hàng #DH-12345.',
-    isRead: true,
-    createdAt: '2024-11-05T09:20:00',
-    actionUrl: '/account/transaction-histories',
-  },
-  {
-    id: 'NOTIF-005',
-    type: 'review',
-    title: 'Đánh giá sản phẩm',
-    message: 'Hãy đánh giá sản phẩm "Clean Code" để nhận 50 điểm thưởng.',
-    isRead: false,
-    createdAt: '2024-11-04T11:00:00',
-    actionUrl: '/books/BOOK-001',
-  },
-  {
-    id: 'NOTIF-006',
-    type: 'system',
-    title: 'Cập nhật điều khoản sử dụng',
-    message: 'Chúng tôi đã cập nhật điều khoản sử dụng. Vui lòng xem lại.',
-    isRead: true,
-    createdAt: '2024-11-03T08:00:00',
-  },
-  {
-    id: 'NOTIF-007',
-    type: 'order',
-    title: 'Đơn hàng đã giao thành công',
-    message: 'Đơn hàng #DH-12338 đã được giao thành công. Cảm ơn bạn đã mua hàng!',
-    isRead: true,
-    createdAt: '2024-11-02T17:30:00',
-    actionUrl: '/account/orders',
-  },
-  {
-    id: 'NOTIF-008',
-    type: 'promotion',
-    title: 'Sinh nhật BookStore',
-    message: 'Mừng sinh nhật 5 tuổi! Giảm 20% toàn bộ sách văn học.',
-    isRead: true,
-    createdAt: '2024-11-01T00:00:00',
-    actionUrl: '/books/literature',
-  },
-];
 
 const notificationTypeConfig: Record<
   NotificationType,
@@ -164,11 +91,43 @@ const notificationTypeConfig: Record<
 };
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<NotificationType | 'all'>('all');
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const unreadCount = useMemo(
+  // Fetch notifications from API
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+        const notifResponse = await notificationService.getMyNotifications(1, 50);
+
+        // Transform API data to component format
+        const transformedNotifications: Notification[] = notifResponse.items.map((item) => ({
+          id: item.id,
+          type: (item.type || 'system') as NotificationType,
+          title: item.title,
+          message: item.message,
+          isRead: item.isRead,
+          createdAt: item.createdAt,
+          actionUrl: item.link,
+        }));
+
+        setNotifications(transformedNotifications);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+        // Keep empty array if API fails
+        setNotifications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+  const displayUnreadCount = useMemo(
     () => notifications.filter((n) => !n.isRead).length,
     [notifications]
   );
@@ -178,18 +137,33 @@ export default function NotificationsPage() {
     return notifications.filter((n) => n.type === selectedFilter);
   }, [notifications, selectedFilter]);
 
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      await notificationService.markAsRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  const markAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
   };
 
-  const clearAll = () => {
-    setNotifications([]);
+  const clearAll = async () => {
+    try {
+      await notificationService.deleteAllRead();
+      setNotifications((prev) => prev.filter((n) => !n.isRead));
+    } catch (error) {
+      console.error('Failed to clear all:', error);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -210,6 +184,24 @@ export default function NotificationsPage() {
     });
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 w-64 rounded bg-gray-200"></div>
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-24 rounded-lg bg-gray-200"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -222,9 +214,9 @@ export default function NotificationsPage() {
                 <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
               </svg>
               Thông báo
-              {unreadCount > 0 && (
+              {displayUnreadCount > 0 && (
                 <Badge variant="danger" className="text-sm">
-                  {unreadCount} mới
+                  {displayUnreadCount} mới
                 </Badge>
               )}
             </h1>
@@ -233,7 +225,7 @@ export default function NotificationsPage() {
                 size="sm"
                 variant="outline"
                 onClick={markAllAsRead}
-                disabled={unreadCount === 0}
+                disabled={displayUnreadCount === 0}
               >
                 <svg className="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 6 9 17l-5-5" />

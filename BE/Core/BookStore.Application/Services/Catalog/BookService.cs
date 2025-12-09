@@ -522,5 +522,79 @@ namespace BookStore.Application.Services.Catalog
         }
 
         #endregion
+
+        #region Smart Recommendations
+
+        public async Task<List<BookDto>> GetRecommendationsAsync(List<Guid> excludeBookIds, List<Guid> categoryIds, int limit = 8)
+        {
+            try
+            {
+                var allBooks = await _bookRepository.GetAllAsync();
+                var availableBooks = allBooks.Where(b => b.IsAvailable).ToList();
+
+                // Remove excluded books (already in cart)
+                if (excludeBookIds.Any())
+                {
+                    availableBooks = availableBooks.Where(b => !excludeBookIds.Contains(b.Id)).ToList();
+                }
+
+                var recommendations = new List<Book>();
+
+                // Strategy 1: Content-based filtering - Books in same categories (70% weight)
+                if (categoryIds.Any())
+                {
+                    var sameCategoryBooks = availableBooks
+                        .Where(b => b.BookCategories.Any(bc => categoryIds.Contains(bc.CategoryId)))
+                        .OrderByDescending(b => b.BookCategories.Count(bc => categoryIds.Contains(bc.CategoryId))) // More matching categories = higher priority
+                        .ThenByDescending(b => b.Prices
+                            .Where(p => p.IsCurrent && p.EffectiveFrom <= DateTime.UtcNow && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
+                            .OrderByDescending(p => p.EffectiveFrom)
+                            .FirstOrDefault()?.Amount ?? 0) // Higher price = potentially premium quality
+                        .Take((int)(limit * 0.7))
+                        .ToList();
+
+                    recommendations.AddRange(sameCategoryBooks);
+                }
+
+                // Strategy 2: Popular books fallback (30% weight) - Best sellers not in same category
+                var remainingSlots = limit - recommendations.Count;
+                if (remainingSlots > 0)
+                {
+                    var popularBooks = availableBooks
+                        .Where(b => !recommendations.Contains(b))
+                        .OrderByDescending(b => b.StockItem?.QuantityOnHand ?? 0) // High stock might indicate popularity
+                        .ThenByDescending(b => b.CreatedAt) // Recent books
+                        .Take(remainingSlots)
+                        .ToList();
+
+                    recommendations.AddRange(popularBooks);
+                }
+
+                // Strategy 3: If still not enough, fill with random available books
+                remainingSlots = limit - recommendations.Count;
+                if (remainingSlots > 0)
+                {
+                    var random = new Random();
+                    var fillerBooks = availableBooks
+                        .Where(b => !recommendations.Contains(b))
+                        .OrderBy(b => random.Next())
+                        .Take(remainingSlots)
+                        .ToList();
+
+                    recommendations.AddRange(fillerBooks);
+                }
+
+                // Map to DTOs
+                return recommendations.Select(MapToBookDto).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting recommendations: {ex.Message}");
+                // Return empty list on error rather than throwing
+                return new List<BookDto>();
+            }
+        }
+
+        #endregion
     }
 }

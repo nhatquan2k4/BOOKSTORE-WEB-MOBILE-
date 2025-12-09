@@ -13,7 +13,7 @@ namespace BookStore.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20251124045630_AddCommentEntity")]
-    partial class AddCommentEntity
+    partial class RemoveBookRatingColumns
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

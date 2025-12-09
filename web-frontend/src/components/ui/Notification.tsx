@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Badge } from './Badge';
+import { notificationService } from '@/services/notification.service';
 
 export interface NotificationItem {
   id: string;
@@ -189,45 +190,66 @@ export function NotificationDropdown({
 
 // Hook để quản lý notifications
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: '1',
-      title: 'Đơn hàng đã được xác nhận',
-      message: 'Đơn hàng #12345 của bạn đã được xác nhận và đang được chuẩn bị',
-      type: 'order',
-      isRead: false,
-      createdAt: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-    },
-    {
-      id: '2',
-      title: 'Giảm giá 50% cho sách mới',
-      message: 'Khuyến mãi đặc biệt! Giảm giá 50% cho tất cả sách mới phát hành',
-      type: 'promotion',
-      isRead: false,
-      createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-    },
-    {
-      id: '3',
-      title: 'Đánh giá sản phẩm',
-      message: 'Hãy đánh giá sản phẩm bạn đã mua để nhận 100 điểm thưởng',
-      type: 'review',
-      isRead: true,
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    },
-  ]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
+  // Fetch notifications from API
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+        const response = await notificationService.getMyNotifications(1, 20);
+        
+        // Transform API data to component format
+        const transformedNotifications: NotificationItem[] = response.items.map((item) => ({
+          id: item.id,
+          title: item.title,
+          message: item.message,
+          type: (item.type || 'system') as NotificationItem['type'],
+          isRead: item.isRead,
+          createdAt: new Date(item.createdAt),
+          link: item.link,
+        }));
+
+        setNotifications(transformedNotifications);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+        setNotifications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+  const markAsRead = async (id: string) => {
+    try {
+      await notificationService.markAsRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  const markAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
   };
 
-  const clearAll = () => {
-    setNotifications([]);
+  const clearAll = async () => {
+    try {
+      await notificationService.deleteAllRead();
+      setNotifications((prev) => prev.filter((n) => !n.isRead));
+    } catch (error) {
+      console.error('Failed to clear all:', error);
+    }
   };
 
   const addNotification = (notification: Omit<NotificationItem, 'id' | 'isRead' | 'createdAt'>) => {
@@ -247,5 +269,6 @@ export function useNotifications() {
     clearAll,
     addNotification,
     unreadCount: notifications.filter((n) => !n.isRead).length,
+    loading,
   };
 }

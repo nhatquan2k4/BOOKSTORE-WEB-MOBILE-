@@ -5,208 +5,129 @@ import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
-// 10 sách cho hero
-const heroBooks = [
-  {
-    id: 1,
-    title: "[Sách ngoại văn] The Garden Party, and Other Stories",
-    desc: `"The Garden Party, and Other Stories" là tuyển tập truyện ngắn nổi bật của Katherine Mansfield, khắc họa cảm xúc tinh tế và những khoảnh khắc đời thường.`,
-    image: "/image/anh.png",
-  },
-  {
-    id: 2,
-    title: "This Side of Paradise",
-    desc: "Tác phẩm kinh điển về tuổi trẻ và khát vọng trong xã hội Mỹ đầu thế kỉ 20.",
-    image: "/image/anh.png",
-  },
-  {
-    id: 3,
-    title: "Anne of the Island",
-    desc: "Hành trình trưởng thành dịu dàng và giàu cảm xúc của Anne Shirley.",
-    image: "/image/anh.png",
-  },
-  {
-    id: 4,
-    title: "Pride and Prejudice",
-    desc: "Câu chuyện tình yêu, giai cấp và định kiến xã hội Anh thế kỉ 19.",
-    image: "/image/anh.png",
-  },
-  {
-    id: 5,
-    title: "The Great Gatsby",
-    desc: "Bức tranh hào nhoáng nhưng trống rỗng của kỉ nguyên Jazz.",
-    image: "/image/anh.png",
-  },
-  {
-    id: 6,
-    title: "Little Women",
-    desc: "Tình cảm gia đình và hành trình trưởng thành của bốn chị em.",
-    image: "/image/anh.png",
-  },
-  {
-    id: 7,
-    title: "Wuthering Heights",
-    desc: "Mối tình dữ dội và ám ảnh trên đồng hoang nước Anh.",
-    image: "/image/anh.png",
-  },
-  {
-    id: 8,
-    title: "Jane Eyre",
-    desc: "Một trong những tiểu thuyết nữ quyền sớm và nổi bật.",
-    image: "/image/anh.png",
-  },
-  {
-    id: 9,
-    title: "A Tale of Two Cities",
-    desc: "Câu chuyện cảm động trong bối cảnh cách mạng Pháp.",
-    image: "/image/anh.png",
-  },
-  {
-    id: 10,
-    title: "The Picture of Dorian Gray",
-    desc: "Tác phẩm đầy chất triết lí về cái đẹp và sự suy đồi.",
-    image: "/image/anh.png",
-  },
-];
+interface HeroBook {
+  id: string;
+  title: string;
+  desc: string;
+  image: string;
+}
 
-const trendingBooks = [
-  {
-    id: 1,
-    title: "Clean Code",
-    author: "Robert C. Martin",
-    price: 350000,
-    originalPrice: 450000,
-    rating: 4.8,
-    image: "/image/anh.png",
-    hot: true,
-  },
-  {
-    id: 2,
-    title: "Design Patterns",
-    author: "Gang of Four",
-    price: 420000,
-    originalPrice: 520000,
-    rating: 4.9,
-    image: "/image/anh.png",
-    hot: true,
-  },
-  {
-    id: 3,
-    title: "The Pragmatic Programmer",
-    author: "Andy Hunt",
-    price: 380000,
-    originalPrice: 480000,
-    rating: 4.7,
-    image: "/image/anh.png",
-    hot: false,
-  },
-  {
-    id: 4,
-    title: "Refactoring",
-    author: "Martin Fowler",
-    price: 400000,
-    originalPrice: 500000,
-    rating: 4.8,
-    image: "/image/anh.png",
-    hot: true,
-  },
-  {
-    id: 5,
-    title: "Head First Design Patterns",
-    author: "Eric Freeman",
-    price: 360000,
-    originalPrice: 460000,
-    rating: 4.6,
-    image: "/image/anh.png",
-    hot: false,
-  },
-  {
-    id: 6,
-    title: "Code Complete",
-    author: "Steve McConnell",
-    price: 450000,
-    originalPrice: 550000,
-    rating: 4.9,
-    image: "/image/anh.png",
-    hot: true,
-  },
-  {
-    id: 7,
-    title: "The Clean Coder",
-    author: "Robert C. Martin",
-    price: 340000,
-    originalPrice: 440000,
-    rating: 4.7,
-    image: "/image/anh.png",
-    hot: false,
-  },
-  {
-    id: 8,
-    title: "Working Effectively with Legacy Code",
-    author: "Michael Feathers",
-    price: 390000,
-    originalPrice: 490000,
-    rating: 4.6,
-    image: "/image/anh.png",
-    hot: false,
-  },
-];
+interface TrendingBook {
+  id: string;
+  title: string;
+  author: string;
+  price: number;
+  originalPrice?: number;
+  rating: number;
+  image: string;
+  hot: boolean;
+}
 
-const newArrivals = [
-  {
-    id: 1,
-    title: "JavaScript: The Good Parts",
-    author: "Douglas Crockford",
-    price: 320000,
-    rating: 4.5,
-    image: "/image/anh.png",
-  },
-  {
-    id: 2,
-    title: "You Don't Know JS",
-    author: "Kyle Simpson",
-    price: 350000,
-    rating: 4.8,
-    image: "/image/anh.png",
-  },
-  {
-    id: 3,
-    title: "Eloquent JavaScript",
-    author: "Marijn Haverbeke",
-    price: 310000,
-    rating: 4.7,
-    image: "/image/anh.png",
-  },
-  {
-    id: 4,
-    title: "Learning React",
-    author: "Alex Banks",
-    price: 380000,
-    rating: 4.6,
-    image: "/image/anh.png",
-  },
-  {
-    id: 5,
-    title: "Node.js Design Patterns",
-    author: "Mario Casciaro",
-    price: 400000,
-    rating: 4.7,
-    image: "/image/anh.png",
-  },
-  {
-    id: 6,
-    title: "TypeScript Deep Dive",
-    author: "Basarat Ali Syed",
-    price: 360000,
-    rating: 4.8,
-    image: "/image/anh.png",
-  },
-];
+interface NewArrival {
+  id: string;
+  title: string;
+  author: string;
+  price: number;
+  rating: number;
+  image: string;
+}
 
 export default function DiscoverNowPage() {
   // hero state
   const [activeHero, setActiveHero] = useState(0);
+  const [heroBooks, setHeroBooks] = useState<HeroBook[]>([]);
+  const [trendingBooks, setTrendingBooks] = useState<TrendingBook[]>([]);
+  const [newArrivals, setNewArrivals] = useState<NewArrival[]>([]);
+  const [loadingHero, setLoadingHero] = useState(true);
+  const [loadingTrending, setLoadingTrending] = useState(true);
+  const [loadingNewArrivals, setLoadingNewArrivals] = useState(true);
+
+  useEffect(() => {
+    const fetchHeroBooks = async () => {
+      try {
+        setLoadingHero(true);
+        const response = await bookService.getBooks({
+          pageNumber: 1,
+          pageSize: 10,
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformed: HeroBook[] = response.items.map((book: BookDto) => ({
+            id: book.id,
+            title: book.title,
+            desc: `${book.authorNames?.[0] || "Tác giả không xác định"} - ${book.categoryNames?.[0] || "Sách hay"}`,
+            image: "/image/anh.png",
+          }));
+          setHeroBooks(transformed);
+        }
+      } catch (error) {
+        console.error("Error fetching hero books:", error);
+      } finally {
+        setLoadingHero(false);
+      }
+    };
+
+    const fetchTrendingBooks = async () => {
+      try {
+        setLoadingTrending(true);
+        const response = await bookService.getBooks({
+          pageNumber: 1,
+          pageSize: 8,
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformed: TrendingBook[] = response.items.map((book: BookDto) => ({
+            id: book.id,
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            price: book.discountPrice || book.currentPrice || 0,
+            originalPrice: book.currentPrice,
+            rating: book.averageRating || 4.5,
+            image: "/image/anh.png",
+            hot: book.discountPrice ? true : false,
+          }));
+          setTrendingBooks(transformed);
+        }
+      } catch (error) {
+        console.error("Error fetching trending books:", error);
+      } finally {
+        setLoadingTrending(false);
+      }
+    };
+
+    const fetchNewArrivals = async () => {
+      try {
+        setLoadingNewArrivals(true);
+        const response = await bookService.getBooks({
+          pageNumber: 1,
+          pageSize: 6,
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformed: NewArrival[] = response.items.map((book: BookDto) => ({
+            id: book.id,
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            price: book.discountPrice || book.currentPrice || 0,
+            rating: book.averageRating || 4.5,
+            image: "/image/anh.png",
+          }));
+          setNewArrivals(transformed);
+        }
+      } catch (error) {
+        console.error("Error fetching new arrivals:", error);
+      } finally {
+        setLoadingNewArrivals(false);
+      }
+    };
+
+    fetchHeroBooks();
+    fetchTrendingBooks();
+    fetchNewArrivals();
+  }, []);
 
   const handleNextHero = () => {
     setActiveHero((prev) => (prev + 1) % heroBooks.length);
@@ -218,33 +139,55 @@ export default function DiscoverNowPage() {
 
   // tự động chuyển sau 3s
   useEffect(() => {
+    if (heroBooks.length === 0) return;
+    
     const timer = setInterval(() => {
       setActiveHero((prev) => (prev + 1) % heroBooks.length);
     }, 3000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [heroBooks.length]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white py-16 md:py-20">
         <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10 md:gap-6 items-center">
-          {/* left */}
-          <div className="md:w-1/2 z-10">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide mb-4">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              BookStore đề xuất
-            </div>
+          {loadingHero ? (
+            <>
+              {/* left skeleton */}
+              <div className="md:w-1/2 z-10 animate-pulse">
+                <div className="h-6 w-32 bg-white/10 rounded-full mb-4"></div>
+                <div className="h-4 w-48 bg-white/10 rounded mb-3"></div>
+                <div className="h-12 bg-white/10 rounded mb-4"></div>
+                <div className="h-20 bg-white/10 rounded mb-6"></div>
+                <div className="flex gap-3">
+                  <div className="h-10 w-32 bg-white/10 rounded-full"></div>
+                  <div className="h-10 w-40 bg-white/10 rounded-full"></div>
+                </div>
+              </div>
+              {/* right skeleton */}
+              <div className="md:w-1/2 relative h-[400px] md:h-[420px] w-full">
+                <div className="absolute top-4 right-0 w-[260px] h-[360px] md:w-[280px] md:h-[380px] bg-white/10 rounded-3xl animate-pulse"></div>
+              </div>
+            </>
+          ) : heroBooks.length > 0 ? (
+            <>
+              {/* left */}
+              <div className="md:w-1/2 z-10">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide mb-4">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  BookStore đề xuất
+                </div>
 
-            <p className="text-sm text-white/70 mb-3">Sách điện tử / Ngoại văn</p>
+                <p className="text-sm text-white/70 mb-3">Sách điện tử / Ngoại văn</p>
 
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
-              {heroBooks[activeHero].title}
-            </h1>
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
+                  {heroBooks[activeHero]?.title}
+                </h1>
 
-            <p className="text-sm md:text-base text-white/75 mb-6 line-clamp-4 md:line-clamp-5 max-w-xl">
-              {heroBooks[activeHero].desc}
-            </p>
+                <p className="text-sm md:text-base text-white/75 mb-6 line-clamp-4 md:line-clamp-5 max-w-xl">
+                  {heroBooks[activeHero]?.desc}
+                </p>
 
             <div className="flex gap-3 items-center">
               <Link
@@ -365,6 +308,8 @@ export default function DiscoverNowPage() {
               ))}
             </div>
           </div>
+            </>
+          ) : null}
         </div>
       </section>
 
@@ -389,14 +334,26 @@ export default function DiscoverNowPage() {
               </svg>
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {trendingBooks.map((book) => {
-              const discountPercent =
-                book.originalPrice && book.originalPrice > book.price
-                  ? Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)
-                  : null;
+          {loadingTrending ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                  <div className="aspect-[2/3] bg-gray-200 rounded-lg mb-3"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {trendingBooks.map((book) => {
+                const discountPercent =
+                  book.originalPrice && book.originalPrice > book.price
+                    ? Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)
+                    : null;
 
-              return (
+                return (
                 <Link
                   key={book.id}
                   href={`/books/${book.id}`}
@@ -456,8 +413,9 @@ export default function DiscoverNowPage() {
                   </div>
                 </Link>
               );
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -482,13 +440,25 @@ export default function DiscoverNowPage() {
               </svg>
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {newArrivals.map((book) => (
-              <Link
-                key={book.id}
-                href={`/books/${book.id}`}
-                className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
-              >
+          {loadingNewArrivals ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                  <div className="aspect-[2/3] bg-gray-200 rounded-lg mb-3"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {newArrivals.map((book) => (
+                <Link
+                  key={book.id}
+                  href={`/books/${book.id}`}
+                  className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
+                >
                 <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                   <Image
                     src={book.image}
@@ -526,9 +496,10 @@ export default function DiscoverNowPage() {
                     Mới ra mắt
                   </Badge>
                 </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>

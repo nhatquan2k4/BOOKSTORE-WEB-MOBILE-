@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button, Badge, Card, CardContent } from '@/components/ui';
+import { bookService } from '@/services';
+import type { BookDetailDto } from '@/types/dtos';
 
 /**
  * Hàm tính giá thuê dựa trên giá mua của sách
@@ -80,41 +82,61 @@ const generateRentalPlans = (purchasePrice: number) => {
   });
 };
 
-// Mock data - giữ nguyên UI
-const bookData = {
-  id: 1,
-  title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
-  author: 'Robert C. Martin',
-  publisher: 'Prentice Hall',
-  publishYear: 2008,
-  pages: 464,
-  language: 'Tiếng Anh',
-  format: 'ePub, PDF, Mobi',
-  size: '2.5 MB',
-  isbn: '978-0132350884',
-  category: 'Lập trình',
-  rating: 4.8,
-  reviews: 1234,
-  cover: '/image/anh.png',
-  description:
-    "Even bad code can function. But if code isn't clean, it can bring a development organization to its knees. Every year, countless hours and significant resources are lost because of poorly written code. But it doesn't have to be that way. Noted software expert Robert C. Martin presents a revolutionary paradigm with Clean Code: A Handbook of Agile Software Craftsmanship.",
-  features: [
-    'Đọc offline không cần kết nối internet',
-    'Đồng bộ trên nhiều thiết bị',
-    'Tìm kiếm và highlight văn bản',
-    'Đánh dấu trang và ghi chú',
-    'Chế độ đọc ban đêm',
-    'Điều chỉnh font chữ và cỡ chữ',
-  ],
-  purchasePrice: 350_000,
-};
-
 export default function RentDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const id = params.id as string;
+
+  const [book, setBook] = useState<BookDetailDto | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch book detail from API
+  useEffect(() => {
+    const fetchBookDetail = async () => {
+      try {
+        setLoading(true);
+        const bookData = await bookService.getBookById(id);
+        setBook(bookData);
+      } catch (error) {
+        console.error("Error fetching book detail:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (id) fetchBookDetail();
+  }, [id]);
+
+  // Transform BookDetailDto to display format
+  const bookData = book ? {
+    id: book.id,
+    title: book.title,
+    author: book.authors?.[0]?.name || "Tác giả không xác định",
+    publisher: book.publisher?.name || "NXB",
+    publishYear: book.publicationYear,
+    pages: book.pageCount,
+    language: book.language,
+    format: 'ePub, PDF, Mobi',
+    size: '2.5 MB',
+    isbn: book.isbn,
+    category: book.categories?.[0]?.name || "Chưa phân loại",
+    rating: 4.5,
+    reviews: 0,
+    cover: book.images?.[0]?.imageUrl || '/image/anh.png',
+    description: book.description || "Chưa có mô tả",
+    features: [
+      'Đọc offline không cần kết nối internet',
+      'Đồng bộ trên nhiều thiết bị',
+      'Tìm kiếm và highlight văn bản',
+      'Đánh dấu trang và ghi chú',
+      'Chế độ đọc ban đêm',
+      'Điều chỉnh font chữ và cỡ chữ',
+    ],
+    purchasePrice: book.metadata?.find(m => m.key === "currentPrice")?.value ? parseInt(book.metadata.find(m => m.key === "currentPrice")!.value) : 350_000,
+  } : null;
 
   // Tính gói thuê từ giá mua
-  const purchasePrice = bookData.purchasePrice;
+  const purchasePrice = bookData?.purchasePrice || 350_000;
   const rentalPlans = useMemo(
     () => generateRentalPlans(purchasePrice),
     [purchasePrice]
@@ -127,6 +149,7 @@ export default function RentDetailPage() {
   const currentPlan = rentalPlans.find((p) => p.id === selectedPlan);
 
   const handleRentNow = () => {
+    if (!bookData) return;
     // Chuyển thẳng đến trang QR để thanh toán thuê eBook
     const queryParams = new URLSearchParams({
       type: 'rent',
@@ -141,8 +164,58 @@ export default function RentDetailPage() {
   };
 
   const handleBuyNow = () => {
+    if (!bookData) return;
     router.push(`/checkout?type=buy&bookId=${params.id ?? bookData.id}`);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-pulse">
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-xl shadow-sm p-6 md:p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                  <div>
+                    <div className="aspect-[3/4] bg-gray-200 rounded-lg"></div>
+                    <div className="grid grid-cols-3 gap-4 mt-6">
+                      <div className="h-20 bg-gray-200 rounded-lg"></div>
+                      <div className="h-20 bg-gray-200 rounded-lg"></div>
+                      <div className="h-20 bg-gray-200 rounded-lg"></div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="h-8 bg-gray-200 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-32 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+                <div className="h-8 bg-gray-200 rounded"></div>
+                <div className="h-48 bg-gray-200 rounded"></div>
+                <div className="h-12 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!bookData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Không tìm thấy sách</h2>
+          <Link href="/rent" className="text-blue-600 hover:underline">Quay lại trang thuê sách</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
