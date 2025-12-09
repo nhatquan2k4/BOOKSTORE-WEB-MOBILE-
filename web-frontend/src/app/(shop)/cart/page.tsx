@@ -133,8 +133,8 @@ export default function CartPage() {
         const suggestions = recommendations.slice(0, 4).map((book) => ({
           id: book.id,
           title: book.title,
-          author: book.authorNames || "Chưa rõ tác giả",
-          cover: book.images?.[0] || "/image/anh.png",
+          author: book.authorNames?.[0] || "Chưa rõ tác giả",
+          cover: "/image/anh.png", // BookDto doesn't include images, use placeholder
           price: book.currentPrice || 0,
         }));
 
@@ -724,7 +724,7 @@ export default function CartPage() {
                       items: String(selectedItems.length),
                       subtotal: String(subtotal),
                       discount: String(discount),
-                      shipping: String(finalShippingFee),
+                      shipping: String(shippingFee),
                     });
                     router.push(`/payment/qr?${queryParams.toString()}`);
                   }}

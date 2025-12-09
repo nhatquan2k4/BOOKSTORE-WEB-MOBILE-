@@ -64,7 +64,6 @@ export default function TrendingBooksPage() {
             weeklyOrders: 500,
             category: book.categoryNames?.[0] || "Chưa phân loại",
             isHot: book.discountPrice ? true : false,
-            position: book.id,
           }));
           setBooks(transformedBooks);
           setTotalItems(response.totalCount || 0);
