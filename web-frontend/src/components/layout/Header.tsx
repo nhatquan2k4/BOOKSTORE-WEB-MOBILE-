@@ -12,7 +12,7 @@ import {
 } from "@/components/ui";
 import { useCartStore } from "@/store/cartStore";
 import { useAuth } from "@/contexts";
-import { bookService } from "@/services";
+import { bookService, cartService } from "@/services";
 import type { BookDto } from "@/types/dtos";
 
 export function Header() {
@@ -31,9 +31,36 @@ export function Header() {
   // Get auth state from context
   const { user: currentUser, isLoggedIn, logout } = useAuth();
 
-  // Get cart count from store
-  const cartItems = useCartStore((state) => state.cartItems);
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  // Get cart count from API
+  const [cartCount, setCartCount] = useState(0);
+
+  // Fetch cart count from API
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      if (isLoggedIn) {
+        try {
+          const count = await cartService.getCartItemCount();
+          setCartCount(count);
+        } catch (error) {
+          console.error("Failed to fetch cart count:", error);
+          setCartCount(0);
+        }
+      } else {
+        setCartCount(0);
+      }
+    };
+
+    fetchCartCount();
+    
+    // Poll cart count every 30 seconds when logged in
+    const interval = setInterval(() => {
+      if (isLoggedIn) {
+        fetchCartCount();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isLoggedIn]);
 
   // Get notifications
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } =
