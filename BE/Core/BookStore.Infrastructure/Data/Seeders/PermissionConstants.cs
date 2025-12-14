@@ -103,6 +103,30 @@ namespace BookStore.Infrastructure.Data.Seeders
         public const string SystemViewLogs = "System.ViewLogs";
         public const string SystemManageSettings = "System.ManageSettings";
         public const string SystemManageNotifications = "System.ManageNotifications";
+        
+        // Publisher Management Permissions
+        public const string PublisherView = "Publisher.View";
+        public const string PublisherCreate = "Publisher.Create";
+        public const string PublisherUpdate = "Publisher.Update";
+        public const string PublisherDelete = "Publisher.Delete";
+        
+        // Warehouse Management Permissions
+        public const string WarehouseView = "Warehouse.View";
+        public const string WarehouseCreate = "Warehouse.Create";
+        public const string WarehouseUpdate = "Warehouse.Update";
+        public const string WarehouseDelete = "Warehouse.Delete";
+        
+        // Coupon Management Permissions
+        public const string CouponView = "Coupon.View";
+        public const string CouponCreate = "Coupon.Create";
+        public const string CouponUpdate = "Coupon.Update";
+        public const string CouponDelete = "Coupon.Delete";
+        
+        // Notification Permissions
+        public const string NotificationView = "Notification.View";
+        public const string NotificationCreate = "Notification.Create";
+        public const string NotificationSend = "Notification.Send";
+        public const string NotificationDelete = "Notification.Delete";
     }
 
     /// <summary>

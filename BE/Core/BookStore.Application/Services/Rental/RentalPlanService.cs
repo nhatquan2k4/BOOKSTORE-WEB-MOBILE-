@@ -32,6 +32,19 @@ namespace BookStore.Application.Services.Rental
             return plans.Select(p => p.ToDto());
         }
 
+        public async Task<IEnumerable<RentalPlanDto>> GetActiveRentalPlansByTypeAsync(string planType)
+        {
+            var plans = await _rentalPlanRepository.GetActiveRentalPlansAsync();
+            
+            // Filter by PlanType
+            if (!string.IsNullOrWhiteSpace(planType))
+            {
+                plans = plans.Where(p => p.PlanType.Equals(planType, StringComparison.OrdinalIgnoreCase));
+            }
+            
+            return plans.Select(p => p.ToDto());
+        }
+
         public async Task<RentalPlanDto?> GetRentalPlanByIdAsync(Guid id)
         {
             var plan = await _rentalPlanRepository.GetByIdAsync(id);

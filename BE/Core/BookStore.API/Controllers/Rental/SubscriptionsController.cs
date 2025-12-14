@@ -51,6 +51,49 @@ namespace BookStore.API.Controllers.Rental
         }
 
         /// <summary>
+        /// [TESTING ONLY] Mua gói thuê KHÔNG CẦN THANH TOÁN (Mock payment)
+        /// POST: api/rental/subscriptions/subscribe-mock
+        /// Dùng để test trong môi trường dev
+        /// </summary>
+        [HttpPost("subscribe-mock")]
+        public async Task<IActionResult> SubscribeMock([FromBody] SubscribeMockDto dto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                
+                // Tạo mã giao dịch giả lập
+                var mockTransactionCode = $"MOCK_{DateTime.UtcNow:yyyyMMddHHmmss}_{Guid.NewGuid().ToString().Substring(0, 8)}";
+                
+                var subscribeDto = new SubscribeRentalPlanDto
+                {
+                    RentalPlanId = dto.RentalPlanId,
+                    PaymentMethod = "Cash" // Mock = cash để tự động active
+                };
+
+                var result = await _subscriptionService.SubscribeAsync(userId, subscribeDto);
+
+                if (!result.Success)
+                    return BadRequest(result);
+
+                return Ok(new
+                {
+                    result.Success,
+                    result.Message,
+                    Subscription = result.Subscription,
+                    result.PaymentTransactionCode,
+                    MockTransactionCode = mockTransactionCode,
+                    Warning = "⚠️ ĐÂY LÀ THANH TOÁN GIẢ LẬP - CHỈ DÙNG ĐỂ TEST!"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in mock subscription");
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Kiểm tra user có subscription còn hạn không
         /// GET: api/rental/subscriptions/check
         /// </summary>
@@ -179,5 +222,13 @@ namespace BookStore.API.Controllers.Rental
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập"));
         }
+    }
+
+    /// <summary>
+    /// DTO cho mock subscription (testing only)
+    /// </summary>
+    public class SubscribeMockDto
+    {
+        public Guid RentalPlanId { get; set; }
     }
 }

@@ -10,6 +10,7 @@ namespace BookStore.Application.Dtos.Rental
         public string? Description { get; set; }
         public decimal Price { get; set; }
         public int DurationDays { get; set; }
+        public string PlanType { get; set; } = "SingleBook"; // "Subscription" | "SingleBook"
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
     }
@@ -23,6 +24,7 @@ namespace BookStore.Application.Dtos.Rental
         public string? Description { get; set; }
         public decimal Price { get; set; }
         public int DurationDays { get; set; }
+        public string PlanType { get; set; } = "SingleBook"; // "Subscription" | "SingleBook"
     }
 
     /// <summary>
@@ -35,6 +37,7 @@ namespace BookStore.Application.Dtos.Rental
         public string? Description { get; set; }
         public decimal Price { get; set; }
         public int DurationDays { get; set; }
+        public string PlanType { get; set; } = "SingleBook"; // "Subscription" | "SingleBook"
         public bool IsActive { get; set; }
     }
 }

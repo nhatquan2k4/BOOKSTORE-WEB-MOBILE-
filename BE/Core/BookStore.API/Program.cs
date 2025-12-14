@@ -239,8 +239,10 @@ builder.Services.AddHostedService<BookStore.API.BackgroundServices.NotificationB
 // Rental Services (Story 18 - Ebook Rental)
 builder.Services.AddScoped<BookStore.Domain.IRepository.Rental.IRentalPlanRepository, BookStore.Infrastructure.Repositories.Rental.RentalPlanRepository>();
 builder.Services.AddScoped<BookStore.Domain.IRepository.Rental.IUserSubscriptionRepository, BookStore.Infrastructure.Repositories.Rental.UserSubscriptionRepository>();
+builder.Services.AddScoped<BookStore.Domain.IRepository.Rental.IBookRentalRepository, BookStore.Infrastructure.Repositories.Rental.BookRentalRepository>();
 builder.Services.AddScoped<BookStore.Application.IService.Rental.IRentalPlanService, BookStore.Application.Services.Rental.RentalPlanService>();
 builder.Services.AddScoped<BookStore.Application.IService.Rental.IUserSubscriptionService, BookStore.Application.Services.Rental.UserSubscriptionService>();
+builder.Services.AddScoped<BookStore.Application.IService.Rental.IBookRentalService, BookStore.Application.Services.Rental.BookRentalService>();
 builder.Services.AddScoped<BookStore.Application.IService.Rental.IEbookService, BookStore.Application.Services.Rental.EbookService>();
 
 //Controller
@@ -343,20 +345,16 @@ using (var scope = app.Services.CreateScope())
             }
         }
 
-        // Seed Roles and Permissions
+        // Seed all data
         try
         {
-            logger.LogInformation("Seeding basic roles...");
-            await RoleSeeder.SeedAsync(context);
-            logger.LogInformation("Basic roles seeded successfully");
-
-            logger.LogInformation("Starting to seed roles and permissions...");
-            await RolePermissionSeeder.SeedAsync(context);
-            logger.LogInformation("Roles and permissions seeded successfully");
+            logger.LogInformation("Starting database seeding...");
+            await DatabaseSeeder.SeedAllAsync(context);
+            logger.LogInformation("✅ Database seeded successfully!");
         }
         catch (Exception seedEx)
         {
-            logger.LogError(seedEx, "An error occurred while seeding roles and permissions");
+            logger.LogError(seedEx, "❌ An error occurred while seeding database");
         }
     }
     catch (Exception ex)
