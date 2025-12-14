@@ -58,14 +58,17 @@ namespace BookStore.Application.Services.Inventory
 
         public async Task<WarehouseDto?> UpdateWarehouseAsync(Guid id, UpdateWarehouseDto dto)
         {
-            var warehouse = await _repository.GetByIdAsync(id);
+            // Load warehouse with StockItems for accurate statistics
+            var warehouse = await _warehouseRepository.GetWarehouseWithStatisticsAsync(id);
             if (warehouse == null) return null;
 
             warehouse.UpdateFromDto(dto);
+            warehouse.UpdatedAt = DateTime.UtcNow;
 
             _repository.Update(warehouse);
             await _repository.SaveChangesAsync();
 
+            // Reload with fresh statistics
             return await GetWarehouseByIdAsync(id);
         }
 

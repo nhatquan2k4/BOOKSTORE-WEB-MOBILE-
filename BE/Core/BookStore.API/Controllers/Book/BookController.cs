@@ -277,5 +277,45 @@ namespace BookStore.API.Controllers.Book
             var exists = await _bookService.IsISBNExistsAsync(isbn, excludeBookId);
             return Ok(new { exists, isbn });
         }
+
+        /// <summary>
+        /// Lấy gợi ý sách thông minh dựa trên giỏ hàng và hành vi người dùng
+        /// </summary>
+        /// <param name="excludeBookIds">Danh sách ID sách cần loại trừ (thường là sách đã có trong giỏ)</param>
+        /// <param name="categoryIds">Danh sách ID danh mục quan tâm (từ sách trong giỏ)</param>
+        /// <param name="limit">Số lượng gợi ý tối đa (mặc định: 8)</param>
+        /// <returns>Danh sách BookDto được gợi ý</returns>
+        [HttpGet("recommendations")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<IEnumerable<BookDto>>> GetRecommendations(
+            [FromQuery] string? excludeBookIds = null,
+            [FromQuery] string? categoryIds = null,
+            [FromQuery] int limit = 8)
+        {
+            try
+            {
+                var excludeIds = string.IsNullOrWhiteSpace(excludeBookIds)
+                    ? new List<Guid>()
+                    : excludeBookIds.Split(',')
+                        .Select(id => Guid.TryParse(id.Trim(), out var guid) ? guid : Guid.Empty)
+                        .Where(id => id != Guid.Empty)
+                        .ToList();
+
+                var catIds = string.IsNullOrWhiteSpace(categoryIds)
+                    ? new List<Guid>()
+                    : categoryIds.Split(',')
+                        .Select(id => Guid.TryParse(id.Trim(), out var guid) ? guid : Guid.Empty)
+                        .Where(id => id != Guid.Empty)
+                        .ToList();
+
+                var recommendations = await _bookService.GetRecommendationsAsync(excludeIds, catIds, limit);
+                return Ok(recommendations);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi lấy gợi ý sách", details = ex.Message });
+            }
+        }
     }
 }

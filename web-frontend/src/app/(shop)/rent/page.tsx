@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button, Badge, Input, Breadcrumb} from '@/components/ui';
+import { bookService } from '@/services';
+import type { BookDto } from '@/types/dtos';
 
 /**
  * Hàm tính toán giá thuê sách dựa trên giá mua và số ngày thuê
@@ -21,7 +23,7 @@ import { Button, Badge, Input, Breadcrumb} from '@/components/ui';
  * - 180 ngày: 34% giá sách (tiết kiệm 50% - PHỔ BIẾN)
  * - 365 ngày: 51% giá sách (tiết kiệm 60%)
  */
-export function calculateRentalPrice(bookPrice: number, days: number): number {
+function calculateRentalPrice(bookPrice: number, days: number): number {
   // Gói 3 ngày cố định
   if (days === 3) return 10000;
   
@@ -46,8 +48,10 @@ export function calculateRentalPrice(bookPrice: number, days: number): number {
  * Tạo danh sách các gói thuê cho một cuốn sách
  * @param bookPrice - Giá mua sách
  * @returns Mảng các gói thuê với giá tính toán
+ * @internal Dùng cho trang chi tiết sách thuê
  */
-export function generateRentalPlans(bookPrice: number) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function generateRentalPlans(bookPrice: number) {
   return [
     { id: 1, duration: "3 ngày", days: 3, price: calculateRentalPrice(bookPrice, 3), discount: 0, popular: false },
     { id: 2, duration: "7 ngày", days: 7, price: calculateRentalPrice(bookPrice, 7), discount: 0, popular: false },
@@ -60,114 +64,19 @@ export function generateRentalPlans(bookPrice: number) {
   ];
 }
 
-// Mock data - sẽ được thay thế bằng API call
-const booksRawData = [
-  {
-    id: 1,
-    title: "Clean Code: A Handbook of Agile Software Craftsmanship",
-    author: "Robert C. Martin",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.8,
-    reviews: 1234,
-    purchasePrice: 350000,
-    format: "ePub, PDF",
-  },
-  {
-    id: 2,
-    title: "Design Patterns: Elements of Reusable Object-Oriented Software",
-    author: "Gang of Four",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.9,
-    reviews: 856,
-    purchasePrice: 280000,
-    format: "ePub, PDF",
-  },
-  {
-    id: 3,
-    title: "The Pragmatic Programmer",
-    author: "Andrew Hunt, David Thomas",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.7,
-    reviews: 645,
-    purchasePrice: 320000,
-    format: "ePub, PDF, Mobi",
-  },
-  {
-    id: 4,
-    title: "Refactoring: Improving the Design of Existing Code",
-    author: "Martin Fowler",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.6,
-    reviews: 432,
-    purchasePrice: 290000,
-    format: "ePub, PDF",
-  },
-  {
-    id: 5,
-    title: "Introduction to Algorithms",
-    author: "Thomas H. Cormen",
-    cover: "/image/anh.png",
-    category: "Khoa học máy tính",
-    rating: 4.9,
-    reviews: 1567,
-    purchasePrice: 450000,
-    format: "PDF",
-  },
-  {
-    id: 6,
-    title: "You Don't Know JS",
-    author: "Kyle Simpson",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.5,
-    reviews: 892,
-    purchasePrice: 180000,
-    format: "ePub, PDF, Mobi",
-  },
-  {
-    id: 7,
-    title: "Eloquent JavaScript",
-    author: "Marijn Haverbeke",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.7,
-    reviews: 723,
-    purchasePrice: 250000,
-    format: "ePub, PDF",
-  },
-  {
-    id: 8,
-    title: "Python Crash Course",
-    author: "Eric Matthes",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.8,
-    reviews: 1102,
-    purchasePrice: 280000,
-    format: "ePub, PDF, Mobi",
-  },
-];
-
-// Tạo dữ liệu sách với giá thuê được tính toán tự động
-const rentableBooks = booksRawData.map(book => ({
-  ...book,
-  startPrice: calculateRentalPrice(book.purchasePrice, 3), // Gói 3 ngày
-  popularPrice: calculateRentalPrice(book.purchasePrice, 180), // Gói 180 ngày (phổ biến)
-}));
-
-const categories = [
-  "Tất cả",
-  "Lập trình",
-  "Khoa học máy tính",
-  "Kinh doanh",
-  "Thiết kế",
-  "Văn học",
-  "Kỹ năng sống",
-];
+interface RentableBook {
+  id: string;
+  title: string;
+  author: string;
+  cover: string;
+  category: string;
+  rating: number;
+  reviews: number;
+  purchasePrice: number;
+  format: string;
+  startPrice: number;
+  popularPrice: number;
+}
 
 const sortOptions = [
   { value: "popular", label: "Phổ biến nhất" },
@@ -181,6 +90,56 @@ export default function RentPage() {
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("popular");
+  const [activeHero, setActiveHero] = useState(0);
+  const [rentableBooks, setRentableBooks] = useState<RentableBook[]>([]);
+  const [categories, setCategories] = useState<string[]>(["Tất cả"]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+
+  // Fetch books from API
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await bookService.getBooks({
+          pageNumber: 1,
+          pageSize: 50, // Lấy nhiều sách cho trang thuê
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformed: RentableBook[] = response.items.map((book: BookDto) => {
+            const purchasePrice = book.currentPrice || 0;
+            return {
+              id: book.id,
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              cover: "/image/anh.png",
+              category: book.categoryNames?.[0] || "Chưa phân loại",
+              rating: book.averageRating || 4.5,
+              reviews: book.totalReviews || 0,
+              purchasePrice: purchasePrice,
+              format: "ePub, PDF",
+              startPrice: calculateRentalPrice(purchasePrice, 3),
+              popularPrice: calculateRentalPrice(purchasePrice, 180),
+            };
+          });
+          setRentableBooks(transformed);
+          setTotalItems(response.totalCount || 0);
+          
+          // Extract unique categories
+          const uniqueCategories = ["Tất cả", ...new Set(transformed.map(b => b.category))];
+          setCategories(uniqueCategories);
+        }
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setRentableBooks([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchBooks();
+  }, []);
 
   const filteredBooks = rentableBooks.filter(book => {
     const matchCategory = selectedCategory === "Tất cả" || book.category === selectedCategory;
@@ -189,101 +148,213 @@ export default function RentPage() {
     return matchCategory && matchSearch;
   });
 
+  // Hero carousel
+  const heroBooks = rentableBooks.slice(0, 6);
+
+  const handleNextHero = () => {
+    setActiveHero((prev) => (prev + 1) % heroBooks.length);
+  };
+
+  const handlePrevHero = () => {
+    setActiveHero((prev) => (prev - 1 + heroBooks.length) % heroBooks.length);
+  };
+
+  // Auto-advance carousel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveHero((prev) => (prev + 1) % heroBooks.length);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [heroBooks.length]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Breadcrumb */}
-        <Breadcrumb items={[{ label: "Thuê eBook" }]} />
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white py-20 overflow-hidden">
-        {/* Decorative Elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-64 h-64 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-        </div>
+      <Breadcrumb items={[{ label: "Thuê eBook" }]} />
+      
+      {/* Hero Section - Similar to DiscoverNow */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white py-16 md:py-20">
+        <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10 md:gap-6 items-center">
+          {loading ? (
+            <>
+              {/* left skeleton */}
+              <div className="md:w-1/2 z-10 animate-pulse">
+                <div className="h-6 w-40 bg-white/10 rounded-full mb-4"></div>
+                <div className="h-4 w-48 bg-white/10 rounded mb-3"></div>
+                <div className="h-12 bg-white/10 rounded mb-4"></div>
+                <div className="h-20 bg-white/10 rounded mb-6"></div>
+                <div className="flex gap-3">
+                  <div className="h-10 w-32 bg-white/10 rounded-full"></div>
+                  <div className="h-10 w-48 bg-white/10 rounded-full"></div>
+                </div>
+              </div>
+              {/* right skeleton */}
+              <div className="md:w-1/2 relative h-[400px] md:h-[420px] w-full">
+                <div className="absolute top-4 right-0 w-[260px] h-[360px] md:w-[280px] md:h-[380px] bg-white/10 rounded-3xl animate-pulse"></div>
+              </div>
+            </>
+          ) : heroBooks.length > 0 ? (
+            <>
+              {/* left */}
+              <div className="md:w-1/2 z-10">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide mb-4">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Thuê eBook tiết kiệm
+                </div>
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-block mb-4 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold">
-              Đọc thông minh - Tiết kiệm hơn
+                <p className="text-sm text-white/70 mb-3">Sách điện tử / {heroBooks[activeHero]?.category || "Lập trình"}</p>
+
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
+                  {heroBooks[activeHero]?.title || "Thuê eBook - Tri thức trong tầm tay"}
+                </h1>
+
+                <p className="text-sm md:text-base text-white/75 mb-6 line-clamp-4 md:line-clamp-5 max-w-xl">
+                  Truy cập hàng ngàn đầu sách điện tử với chi phí thấp. Đọc không giới hạn, học không ngừng nghỉ! Chỉ từ 10,000₫ cho 3 ngày thuê.
+                </p>
+
+            <div className="flex gap-3 items-center">
+              <Link
+                href={`/rent/${heroBooks[activeHero]?.id || 1}`}
+                className="inline-flex items-center justify-center gap-2 font-semibold rounded-full transition-all bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-5 py-2.5"
+              >
+                Thuê ngay
+              </Link>
+              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                  />
+                </svg>
+                Thêm vào yêu thích
+              </Button>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Thuê eBook - Tri thức trong tầm tay
-            </h1>
-            <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-              Truy cập hàng ngàn đầu sách điện tử với chi phí thấp. Đọc không giới hạn, học không ngừng nghỉ!
-            </p>
-            
+
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-12">
+            <div className="grid grid-cols-3 gap-6 mt-8">
               <div>
-                <div className="text-3xl font-bold mb-2">5000+</div>
-                <div className="text-blue-100 text-sm">eBook có sẵn</div>
+                <div className="text-2xl font-bold mb-1">5000+</div>
+                <div className="text-white/60 text-xs">eBook có sẵn</div>
               </div>
               <div>
-                <div className="text-3xl font-bold mb-2">Từ 10K</div>
-                <div className="text-blue-100 text-sm">Cho 7 ngày</div>
+                <div className="text-2xl font-bold mb-1">Từ 10K</div>
+                <div className="text-white/60 text-xs">Cho 3 ngày</div>
               </div>
               <div>
-                <div className="text-3xl font-bold mb-2">40%</div>
-                <div className="text-blue-100 text-sm">Tiết kiệm tối đa</div>
+                <div className="text-2xl font-bold mb-1">60%</div>
+                <div className="text-white/60 text-xs">Tiết kiệm tối đa</div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Benefits Section */}
-      <section className="py-12 bg-white border-b">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          {/* right - Book carousel */}
+          <div className="md:w-1/2 relative h-[400px] md:h-[420px] w-full">
+            {heroBooks.map((book, index) => {
+              const offset = index - activeHero;
+              const isActive = index === activeHero;
+              return (
+                <div
+                  key={book.id}
+                  className="absolute top-4 right-0 w-[260px] h-[360px] md:w-[280px] md:h-[380px] rounded-3xl overflow-hidden bg-slate-700/30 border border-white/10 shadow-2xl backdrop-blur"
+                  style={{
+                    transform: `translateX(${offset * -110}px) translateY(${
+                      Math.abs(offset) * 14
+                    }px) scale(${1 - Math.abs(offset) * 0.04})`,
+                    opacity: Math.abs(offset) > 2 ? 0 : 1,
+                    zIndex: 40 - Math.abs(offset),
+                    transition: "all 0.35s ease",
+                  }}
+                >
+                  <div className="relative w-full h-full">
+                    <Image src={book.cover} alt={book.title} fill className="object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/0 to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <p className="text-xs text-white/60 mb-1">eBook</p>
+                      <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-2">
+                        {book.title}
+                      </h3>
+                      <p className="text-[10px] text-white/50 line-clamp-1">{book.author}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs font-bold text-emerald-400">
+                          Từ {book.startPrice.toLocaleString('vi-VN')}₫
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {isActive && (
+                    <div className="absolute top-3 left-3 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold text-slate-950">
+                      Tiết kiệm
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* arrows */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+              <button
+                onClick={handlePrevHero}
+                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
+                aria-label="Previous"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m15 18-6-6 6-6" />
                 </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Tiết kiệm chi phí</h3>
-                <p className="text-sm text-gray-600">Chỉ trả một phần nhỏ so với mua sách</p>
-              </div>
+              </button>
+              <button
+                onClick={handleNextHero}
+                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
+                aria-label="Next"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
             </div>
 
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Đa thiết bị</h3>
-                <p className="text-sm text-gray-600">Đọc trên điện thoại, máy tính, máy tính bảng</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Linh hoạt</h3>
-                <p className="text-sm text-gray-600">Chọn thời gian thuê phù hợp với nhu cầu</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Truy cập ngay</h3>
-                <p className="text-sm text-gray-600">Đọc ngay sau khi thanh toán</p>
-              </div>
+            {/* dots */}
+            <div className="absolute bottom-2 right-0 flex gap-2">
+              {heroBooks.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveHero(idx)}
+                  className={`h-1.5 rounded-full transition-all ${
+                    idx === activeHero ? "w-6 bg-white" : "w-2 bg-white/40"
+                  }`}
+                  aria-label={`Chuyển tới slide ${idx + 1}`}
+                />
+              ))}
             </div>
           </div>
+            </>
+          ) : null}
         </div>
       </section>
 
@@ -327,31 +398,47 @@ export default function RentPage() {
             {/* Category Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
               {categories.map((category) => (
-                <button
+                <Button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-6 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all ${
-                    selectedCategory === category
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-600 hover:text-blue-600'
+                  variant={selectedCategory === category ? "primary" : "outline"}
+                  size="sm"
+                  className={`whitespace-nowrap ${
+                    selectedCategory === category ? 'shadow-lg' : ''
                   }`}
                 >
                   {category}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
           {/* Results Count */}
-          <div className="mb-6">
-            <p className="text-gray-600">
-              Tìm thấy <span className="font-semibold text-gray-900">{filteredBooks.length}</span> sách
-            </p>
-          </div>
+          {!loading && (
+            <div className="mb-6">
+              <p className="text-gray-600">
+                Tìm thấy <span className="font-semibold text-gray-900">{filteredBooks.length}</span> sách 
+                {selectedCategory === "Tất cả" && ` (Tổng: ${totalItems})`}
+              </p>
+            </div>
+          )}
 
           {/* Books Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredBooks.map((book) => (
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {Array.from({ length: 12 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-xl shadow-sm p-4 animate-pulse">
+                  <div className="aspect-[3/4] bg-gray-200 rounded-lg mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                  <div className="h-3 bg-gray-200 rounded mb-3 w-1/2"></div>
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredBooks.map((book) => (
               <Link
                 key={book.id}
                 href={`/rent/${book.id}`}
@@ -430,10 +517,11 @@ export default function RentPage() {
                 </div>
               </Link>
             ))}
-          </div>
+            </div>
+          )}
 
           {/* Empty State */}
-          {filteredBooks.length === 0 && (
+          {!loading && filteredBooks.length === 0 && (
             <div className="text-center py-16">
               <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-12 h-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

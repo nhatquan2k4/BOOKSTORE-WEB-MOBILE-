@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/contexts";
-import type { RegisterRequest } from "@/types/user";
+import type { RegisterRequest } from "@/types/models/user";
 import { AuthCard } from "@/components/auth";
 import { FormField, FormLabel, FormError } from "@/components/auth";
 import { PasswordInput } from "@/components/auth";

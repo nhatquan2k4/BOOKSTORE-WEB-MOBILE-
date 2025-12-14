@@ -35,7 +35,7 @@ function PaymentSuccessContent() {
             </div>
 
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              🎉 Thanh toán thành công!
+              Thanh toán thành công!
             </h1>
             
             <p className="text-gray-600 mb-2">
@@ -56,7 +56,10 @@ function PaymentSuccessContent() {
                       Bạn có thể bắt đầu đọc ngay bây giờ. Sách sẽ có sẵn trong thời gian thuê của bạn.
                     </p>
                     <Badge variant="success" className="bg-green-500">
-                      ✓ Đã kích hoạt
+                      <svg className="w-3.5 h-3.5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Đã kích hoạt
                     </Badge>
                   </div>
                 </div>
@@ -142,8 +145,11 @@ function PaymentSuccessContent() {
               )}
             </div>
 
-            <Link href="/" className="inline-block mt-6 text-sm text-gray-600 hover:text-blue-600 transition">
-              ← Về trang chủ
+            <Link href="/" className="inline-flex items-center gap-1 mt-6 text-sm text-gray-600 hover:text-blue-600 transition">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Về trang chủ
             </Link>
           </div>
 
@@ -155,11 +161,15 @@ function PaymentSuccessContent() {
             </h3>
             <ul className="space-y-3 text-sm text-gray-700">
               <li className="flex items-start gap-3">
-                <span className="text-green-600 font-bold">✓</span>
+                <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
                 <span>Bạn sẽ nhận được email xác nhận trong vài phút</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-green-600 font-bold">✓</span>
+                <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
                 <span>
                   {type === 'rent' 
                     ? 'eBook sẵn sàng để đọc trên mọi thiết bị' 
@@ -168,7 +178,9 @@ function PaymentSuccessContent() {
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-green-600 font-bold">✓</span>
+                <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
                 <span>Cần hỗ trợ? Liên hệ CSKH 24/7: <strong>1900-xxxx</strong></span>
               </li>
             </ul>

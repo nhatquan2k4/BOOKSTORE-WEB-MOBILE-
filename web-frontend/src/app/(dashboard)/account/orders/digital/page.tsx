@@ -90,7 +90,7 @@ const mockDigitalOrders: DigitalOrder[] = [
 
 const statusConfig: Record<
   DigitalOrder['status'],
-  { label: string; color: string; icon: JSX.Element }
+  { label: string; color: string; icon: React.ReactNode }
 > = {
   processing: {
     label: 'Đang xử lý',

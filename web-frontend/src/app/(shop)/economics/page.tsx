@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 // ============================================================================
 // TYPES
@@ -32,233 +35,77 @@ type SubCategoryFilter =
   | "business";
 
 // ============================================================================
-// MOCK DATA
-// ============================================================================
-const MOCK_ECONOMICS_BOOKS: Book[] = [
-  {
-    id: "1",
-    title: "Chiến Tranh Tiền Tệ",
-    author: "Song Hongbing",
-    subCategory: "finance",
-    price: 165000,
-    originalPrice: 210000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 1876,
-    description: "Lịch sử và tương lai của hệ thống tài chính thế giới",
-    isRecommended: true,
-  },
-  {
-    id: "2",
-    title: "Kinh Tế Học Vĩ Mô",
-    author: "N. Gregory Mankiw",
-    subCategory: "macro",
-    price: 285000,
-    originalPrice: 350000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 2345,
-    description: "Nguyên lý kinh tế học vĩ mô cơ bản",
-    isRecommended: true,
-  },
-  {
-    id: "3",
-    title: "Nhà Đầu Tư Thông Minh",
-    author: "Benjamin Graham",
-    subCategory: "investing",
-    price: 295000,
-    originalPrice: 370000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 3456,
-    description: "Kinh thánh của đầu tư giá trị",
-    isRecommended: true,
-  },
-  {
-    id: "4",
-    title: "Kinh Tế Học Vi Mô",
-    author: "N. Gregory Mankiw",
-    subCategory: "micro",
-    price: 275000,
-    originalPrice: 340000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 1987,
-    description: "Nguyên lý kinh tế học vi mô cơ bản",
-    isRecommended: false,
-  },
-  {
-    id: "5",
-    title: "Nghĩ Giàu Làm Giàu",
-    author: "Napoleon Hill",
-    subCategory: "business",
-    price: 115000,
-    originalPrice: 145000,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviewCount: 1987,
-    description: "13 nguyên tắc nghĩ giàu làm giàu",
-    isRecommended: false,
-  },
-  {
-    id: "6",
-    title: "Phân Tích Chứng Khoán",
-    author: "Benjamin Graham",
-    subCategory: "investing",
-    price: 385000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1543,
-    description: "Phân tích cơ bản và định giá cổ phiếu",
-    isRecommended: false,
-  },
-  {
-    id: "7",
-    title: "Nghệ Thuật Bán Hàng Vĩ Đại",
-    author: "Brian Tracy",
-    subCategory: "business",
-    price: 168000,
-    originalPrice: 210000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 876,
-    description: "Chiến lược bán hàng hiệu quả",
-    isRecommended: false,
-  },
-  {
-    id: "8",
-    title: "Tài Chính Doanh Nghiệp",
-    author: "Stephen Ross",
-    subCategory: "finance",
-    price: 345000,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviewCount: 1234,
-    description: "Nguyên lý tài chính doanh nghiệp hiện đại",
-    isRecommended: false,
-  },
-  {
-    id: "9",
-    title: "Bố Già Của Phố Wall",
-    author: "Benjamin Graham",
-    subCategory: "investing",
-    price: 245000,
-    originalPrice: 310000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2876,
-    description: "Triết lý đầu tư của Warren Buffett",
-    isRecommended: false,
-  },
-  {
-    id: "10",
-    title: "Kinh Tế Học Hành Vi",
-    author: "Dan Ariely",
-    subCategory: "micro",
-    price: 195000,
-    originalPrice: 245000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 1876,
-    description: "Tại sao con người ra quyết định phi lý",
-    isRecommended: false,
-  },
-  {
-    id: "11",
-    title: "Từ Tốt Đến Vĩ Đại",
-    author: "Jim Collins",
-    subCategory: "business",
-    price: 215000,
-    originalPrice: 270000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 2345,
-    description: "Tại sao một số công ty thành công vượt bậc",
-    isRecommended: false,
-  },
-  {
-    id: "12",
-    title: "Lạm Phát Và Khủng Hoảng",
-    author: "Paul Krugman",
-    subCategory: "macro",
-    price: 185000,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviewCount: 987,
-    description: "Phân tích khủng hoảng kinh tế thế giới",
-    isRecommended: false,
-  },
-  {
-    id: "13",
-    title: "Đầu Tư Chứng Khoán",
-    author: "William J. O'Neil",
-    subCategory: "investing",
-    price: 265000,
-    originalPrice: 330000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 1543,
-    description: "Phương pháp CAN SLIM đầu tư thành công",
-    isRecommended: false,
-  },
-  {
-    id: "14",
-    title: "Marketing 4.0",
-    author: "Philip Kotler",
-    subCategory: "business",
-    price: 195000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 2876,
-    description: "Marketing trong kỷ nguyên số",
-    isRecommended: false,
-  },
-  {
-    id: "15",
-    title: "Ngân Hàng Trung Ương",
-    author: "Frederic Mishkin",
-    subCategory: "finance",
-    price: 285000,
-    cover: "/image/anh.png",
-    rating: 4.4,
-    reviewCount: 876,
-    description: "Chính sách tiền tệ và ngân hàng trung ương",
-    isRecommended: false,
-  },
-  {
-    id: "16",
-    title: "Kinh Tế Thế Giới Phẳng",
-    author: "Thomas Friedman",
-    subCategory: "macro",
-    price: 235000,
-    originalPrice: 295000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 1987,
-    description: "Toàn cầu hóa trong thế kỷ 21",
-    isRecommended: false,
-  },
-];
-
-// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 export default function EconomicsPage() {
   const [selectedCategory, setSelectedCategory] =
     useState<SubCategoryFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 20;
+
+  // Fetch books from API
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        // Fetch books with "Kinh tế" category
+        const response = await bookService.getBooks({
+          pageNumber: currentPage,
+          pageSize: itemsPerPage,
+          // categoryId: "economics-category-id", // Replace with actual category ID
+        });
+        
+        if (response.items && response.items.length > 0) {
+          // Transform API data to match component Book type
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
+            id: book.id,
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            cover: "/image/anh.png", // Default cover since BookDto doesn't have images array
+            rating: book.averageRating || 4.5,
+            reviewCount: book.totalReviews || 0,
+            price: book.discountPrice || book.currentPrice || 0,
+            originalPrice: book.currentPrice && book.discountPrice && book.discountPrice < book.currentPrice 
+              ? book.currentPrice 
+              : undefined,
+            description: book.title, // Use title as description since BookDto doesn't have description
+            isRecommended: (book.totalReviews || 0) > 2000,
+            subCategory: "all", // Map to appropriate subcategory if available
+          }));
+          
+          setBooks(transformedBooks);
+          setTotalItems(response.totalCount || 0);
+        } else {
+          // No API data available
+          setBooks([]);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error("Error fetching economics books:", error);
+        // Set empty on error
+        setBooks([]);
+        setTotalItems(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, [currentPage]);
 
   // Filter books
   const filteredBooks =
     selectedCategory === "all"
-      ? MOCK_ECONOMICS_BOOKS
-      : MOCK_ECONOMICS_BOOKS.filter(
+      ? books
+      : books.filter(
           (book) => book.subCategory === selectedCategory
         );
 
   // Pagination
-  const totalPages = Math.ceil(filteredBooks.length / itemsPerPage);
+  const totalPages = Math.ceil((totalItems || filteredBooks.length) / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedBooks = filteredBooks.slice(startIndex, endIndex);
@@ -291,7 +138,7 @@ export default function EconomicsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <nav className="mb-6 text-sm text-gray-600">
@@ -304,21 +151,6 @@ export default function EconomicsPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-emerald-600"
-            >
-              <line x1="12" y1="1" x2="12" y2="23" />
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
             <h1 className="text-4xl font-bold text-gray-900">Kinh Tế</h1>
           </div>
           <p className="text-gray-600 text-lg">
@@ -329,13 +161,10 @@ export default function EconomicsPage() {
 
         {/* Category Filters */}
         <div className="mb-8 flex flex-wrap gap-3">
-          <button
+          <Button
             onClick={() => handleCategoryChange("all")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "all"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "all" ? "primary" : "outline"}
+            size="sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -351,73 +180,68 @@ export default function EconomicsPage() {
             >
               <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
             </svg>
-            Tất cả ({MOCK_ECONOMICS_BOOKS.length})
-          </button>
-          <button
+            Tất cả ({books.length})
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("macro")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "macro"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "macro" ? "primary" : "outline"}
+            size="sm"
           >
             Kinh tế vĩ mô (
-            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "macro")
-              .length}
+            {
+              books.filter((b) => b.subCategory === "macro")
+                .length
+            }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("micro")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "micro"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "micro" ? "primary" : "outline"}
+            size="sm"
           >
             Kinh tế vi mô (
-            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "micro")
-              .length}
+            {
+              books.filter((b) => b.subCategory === "micro")
+                .length
+            }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("finance")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "finance"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "finance" ? "primary" : "outline"}
+            size="sm"
           >
             Tài chính (
-            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "finance")
-              .length}
+            {
+              books.filter((b) => b.subCategory === "finance")
+                .length
+            }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("investing")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "investing"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "investing" ? "primary" : "outline"}
+            size="sm"
           >
             Đầu tư (
-            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "investing")
-              .length}
+            {
+              books.filter((b) => b.subCategory === "investing")
+                .length
+            }
             )
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleCategoryChange("business")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              selectedCategory === "business"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+            variant={selectedCategory === "business" ? "primary" : "outline"}
+            size="sm"
           >
             Kinh doanh (
-            {MOCK_ECONOMICS_BOOKS.filter((b) => b.subCategory === "business")
-              .length}
+            {
+              books.filter((b) => b.subCategory === "business")
+                .length
+            }
             )
-          </button>
+          </Button>
         </div>
 
         {/* Result Count */}
@@ -430,21 +254,34 @@ export default function EconomicsPage() {
           <span className="font-semibold">{filteredBooks.length}</span> sách
         </div>
 
-        {/* Books Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
-          {paginatedBooks.map((book) => (
+        {/* Loading State */}
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex flex-col rounded-xl bg-white p-3 shadow-sm animate-pulse">
+                <div className="w-full aspect-[3/4] bg-gray-200 rounded-lg mb-3" />
+                <div className="h-4 bg-gray-200 rounded mb-2" />
+                <div className="h-3 bg-gray-200 rounded w-2/3 mb-2" />
+                <div className="h-4 bg-gray-200 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Books Grid */
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {paginatedBooks.map((book) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-lg hover:border-emerald-100 transition-all duration-300"
+              className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
             >
               {/* Book Cover */}
-              <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                 <Image
                   src={book.cover}
                   alt={book.title}
                   fill
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                  sizes="(max-width: 768px) 50vw, 25vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
 
@@ -476,27 +313,10 @@ export default function EconomicsPage() {
               <h3 className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-emerald-600 transition-colors">
                 {book.title}
               </h3>
-              <p className="text-xs text-gray-600 mb-2">{book.author}</p>
-
-              {/* Price (đưa giảm giá xuống đây) */}
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <p className="text-emerald-600 font-bold text-sm">
-                  {formatPrice(book.price)}
-                </p>
-                {book.originalPrice && (
-                  <>
-                    <p className="text-xs text-gray-400 line-through">
-                      {formatPrice(book.originalPrice)}
-                    </p>
-                    <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
-                      -{calculateDiscount(book.originalPrice, book.price)}%
-                    </span>
-                  </>
-                )}
-              </div>
+              <p className="text-xs text-gray-600 mb-1">{book.author}</p>
 
               {/* Rating */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 mb-2">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="12"
@@ -512,9 +332,27 @@ export default function EconomicsPage() {
                   ({book.reviewCount})
                 </span>
               </div>
+
+              {/* Price */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-red-600 font-bold text-sm">
+                  {formatPrice(book.price)}
+                </p>
+                {book.originalPrice && (
+                  <>
+                    <p className="text-xs text-gray-400 line-through">
+                      {formatPrice(book.originalPrice)}
+                    </p>
+                    <Badge variant="danger" className="text-xs font-bold">
+                      -{calculateDiscount(book.originalPrice, book.price)}%
+                    </Badge>
+                  </>
+                )}
+              </div>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (

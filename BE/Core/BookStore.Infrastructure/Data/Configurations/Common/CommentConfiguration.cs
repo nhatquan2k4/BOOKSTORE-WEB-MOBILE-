@@ -42,19 +42,19 @@ namespace BookStore.Infrastructure.Data.Configurations.Common
             builder.HasOne(c => c.User)
                 .WithMany()
                 .HasForeignKey(c => c.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Book → Comments (optional)
             builder.HasOne(c => c.Book)
                 .WithMany()
                 .HasForeignKey(c => c.BookId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
 
             // Review → Comments (optional)
             builder.HasOne(c => c.Review)
                 .WithMany()
                 .HasForeignKey(c => c.ReviewId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
 
             // Self-referencing for replies
             builder.HasOne(c => c.ParentComment)

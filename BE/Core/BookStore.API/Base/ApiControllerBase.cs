@@ -2,6 +2,7 @@
 using BookStore.Shared.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace BookStore.API.Base
 {
@@ -9,6 +10,21 @@ namespace BookStore.API.Base
     [ApiController]
     public class ApiControllerBase : ControllerBase
     {
+        /// <summary>
+        /// Get current authenticated user's ID from JWT token
+        /// </summary>
+        protected Guid GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                throw new UnauthorizedAccessException("User ID not found in token");
+            }
+
+            return userId;
+        }
+
         /// <summary>
         /// Xử lý Result<T> và trả về IActionResult tương ứng
         /// Sử dụng cho pattern Result<T> trong tương lai

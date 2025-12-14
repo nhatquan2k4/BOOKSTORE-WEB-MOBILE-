@@ -161,5 +161,37 @@ namespace BookStore.Infrastructure.Repositories.Ordering
                 .OrderBy(o => o.PaidAt)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Order>> GetCompletedOrdersByDateRangeAsync(DateTime from, DateTime to)
+        {
+            return await _dbSet
+                .Where(o => o.CompletedAt.HasValue &&
+                           o.CompletedAt.Value >= from &&
+                           o.CompletedAt.Value <= to)
+                .Include(o => o.Items)
+                .ToListAsync();
+        }
+
+        public async Task<Dictionary<Guid, int>> GetTopSellingBooksAsync(DateTime from, DateTime to, int top = 10)
+        {
+            return await _context.OrderItems
+                .Where(oi => oi.Order.CompletedAt.HasValue &&
+                            oi.Order.CompletedAt.Value >= from &&
+                            oi.Order.CompletedAt.Value <= to)
+                .GroupBy(oi => oi.BookId)
+                .Select(g => new { BookId = g.Key, Quantity = g.Sum(oi => oi.Quantity) })
+                .OrderByDescending(x => x.Quantity)
+                .Take(top)
+                .ToDictionaryAsync(x => x.BookId, x => x.Quantity);
+        }
+
+        public async Task<Dictionary<string, int>> GetOrderCountsByStatusAsync(DateTime from, DateTime to)
+        {
+            return await _dbSet
+                .Where(o => o.CreatedAt >= from && o.CreatedAt <= to)
+                .GroupBy(o => o.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Status, x => x.Count);
+        }
     }
 }

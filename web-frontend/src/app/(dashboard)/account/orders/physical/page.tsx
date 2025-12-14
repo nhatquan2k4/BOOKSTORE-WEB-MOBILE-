@@ -142,7 +142,7 @@ const mockPhysicalOrders: PhysicalOrder[] = [
 
 const statusConfig: Record<
   PhysicalOrder['status'],
-  { label: string; color: string; icon: JSX.Element }
+  { label: string; color: string; icon: React.ReactNode }
 > = {
   pending: {
     label: 'Chờ xác nhận',
@@ -390,7 +390,7 @@ export default function PhysicalOrdersPage() {
                     <div className="flex items-center gap-3 mb-2">
                       <CardTitle>{order.id}</CardTitle>
                       <Badge
-                        variant="secondary"
+                        variant="default"
                         className={`flex items-center gap-1 border ${statusConfig[order.status].color}`}
                       >
                         {statusConfig[order.status].icon}

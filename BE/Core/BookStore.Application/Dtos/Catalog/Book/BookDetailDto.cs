@@ -24,16 +24,5 @@ namespace BookStore.Application.Dtos.Catalog.Book
         public List<BookImageDto> Images { get; set; } = new();
         public List<BookFileDto> Files { get; set; } = new();
         public List<BookMetadataDto> Metadata { get; set; } = new();
-        // public decimal? CurrentPrice { get; set; }
-        // public decimal? DiscountPrice { get; set; }
-        // public decimal? FinalPrice { get; set; }
-        // public decimal? DiscountPercentage { get; set; }
-        // public int? StockQuantity { get; set; }
-        // public bool InStock { get; set; }
-        // public double? AverageRating { get; set; }
-        // public int TotalReviews { get; set; }
-        // public List<ReviewDto> RecentReviews { get; set; } = new();
-        // public bool IsRentable { get; set; }
-        // public decimal? RentalPricePerDay { get; set; }
     }
 }

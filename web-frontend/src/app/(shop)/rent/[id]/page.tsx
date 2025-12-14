@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button, Badge, Card, CardContent } from '@/components/ui';
+import { bookService } from '@/services';
+import type { BookDetailDto } from '@/types/dtos';
 
 /**
  * Hàm tính giá thuê dựa trên giá mua của sách
@@ -80,43 +82,64 @@ const generateRentalPlans = (purchasePrice: number) => {
   });
 };
 
-// Mock data - giữ nguyên UI
-const bookData = {
-  id: 1,
-  title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
-  author: 'Robert C. Martin',
-  publisher: 'Prentice Hall',
-  publishYear: 2008,
-  pages: 464,
-  language: 'Tiếng Anh',
-  format: 'ePub, PDF, Mobi',
-  size: '2.5 MB',
-  isbn: '978-0132350884',
-  category: 'Lập trình',
-  rating: 4.8,
-  reviews: 1234,
-  cover: '/image/anh.png',
-  description:
-    "Even bad code can function. But if code isn't clean, it can bring a development organization to its knees. Every year, countless hours and significant resources are lost because of poorly written code. But it doesn't have to be that way. Noted software expert Robert C. Martin presents a revolutionary paradigm with Clean Code: A Handbook of Agile Software Craftsmanship.",
-  features: [
-    'Đọc offline không cần kết nối internet',
-    'Đồng bộ trên nhiều thiết bị',
-    'Tìm kiếm và highlight văn bản',
-    'Đánh dấu trang và ghi chú',
-    'Chế độ đọc ban đêm',
-    'Điều chỉnh font chữ và cỡ chữ',
-  ],
-  purchasePrice: 350_000,
-};
-
 export default function RentDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const id = params.id as string;
 
-  // Tính gói thuê từ giá mua (để không phải hard-code nữa)
+  const [book, setBook] = useState<BookDetailDto | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch book detail from API
+  useEffect(() => {
+    const fetchBookDetail = async () => {
+      try {
+        setLoading(true);
+        const bookData = await bookService.getBookById(id);
+        setBook(bookData);
+      } catch (error) {
+        console.error("Error fetching book detail:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (id) fetchBookDetail();
+  }, [id]);
+
+  // Transform BookDetailDto to display format
+  const bookData = book ? {
+    id: book.id,
+    title: book.title,
+    author: book.authors?.[0]?.name || "Tác giả không xác định",
+    publisher: book.publisher?.name || "NXB",
+    publishYear: book.publicationYear,
+    pages: book.pageCount,
+    language: book.language,
+    format: 'ePub, PDF, Mobi',
+    size: '2.5 MB',
+    isbn: book.isbn,
+    category: book.categories?.[0]?.name || "Chưa phân loại",
+    rating: 4.5,
+    reviews: 0,
+    cover: book.images?.[0]?.imageUrl || '/image/anh.png',
+    description: book.description || "Chưa có mô tả",
+    features: [
+      'Đọc offline không cần kết nối internet',
+      'Đồng bộ trên nhiều thiết bị',
+      'Tìm kiếm và highlight văn bản',
+      'Đánh dấu trang và ghi chú',
+      'Chế độ đọc ban đêm',
+      'Điều chỉnh font chữ và cỡ chữ',
+    ],
+    purchasePrice: book.metadata?.find(m => m.key === "currentPrice")?.value ? parseInt(book.metadata.find(m => m.key === "currentPrice")!.value) : 350_000,
+  } : null;
+
+  // Tính gói thuê từ giá mua
+  const purchasePrice = bookData?.purchasePrice || 350_000;
   const rentalPlans = useMemo(
-    () => generateRentalPlans(bookData.purchasePrice),
-    [bookData.purchasePrice]
+    () => generateRentalPlans(purchasePrice),
+    [purchasePrice]
   );
 
   // chọn mặc định gói thứ 2 (7 ngày) cho hợp lý
@@ -126,6 +149,7 @@ export default function RentDetailPage() {
   const currentPlan = rentalPlans.find((p) => p.id === selectedPlan);
 
   const handleRentNow = () => {
+    if (!bookData) return;
     // Chuyển thẳng đến trang QR để thanh toán thuê eBook
     const queryParams = new URLSearchParams({
       type: 'rent',
@@ -140,30 +164,74 @@ export default function RentDetailPage() {
   };
 
   const handleBuyNow = () => {
+    if (!bookData) return;
     router.push(`/checkout?type=buy&bookId=${params.id ?? bookData.id}`);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-pulse">
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-xl shadow-sm p-6 md:p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                  <div>
+                    <div className="aspect-[3/4] bg-gray-200 rounded-lg"></div>
+                    <div className="grid grid-cols-3 gap-4 mt-6">
+                      <div className="h-20 bg-gray-200 rounded-lg"></div>
+                      <div className="h-20 bg-gray-200 rounded-lg"></div>
+                      <div className="h-20 bg-gray-200 rounded-lg"></div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="h-8 bg-gray-200 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-32 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+                <div className="h-8 bg-gray-200 rounded"></div>
+                <div className="h-48 bg-gray-200 rounded"></div>
+                <div className="h-12 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!bookData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Không tìm thấy sách</h2>
+          <Link href="/rent" className="text-blue-600 hover:underline">Quay lại trang thuê sách</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Breadcrumb */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Link href="/" className="hover:text-blue-600 transition">
-              Trang chủ
-            </Link>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            <Link href="/rent" className="hover:text-blue-600 transition">
-              Thuê eBook
-            </Link>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            <span className="text-gray-900 font-medium line-clamp-1">{bookData.title}</span>
-          </div>
-        </div>
+      <div className="container mx-auto px-4 py-3">
+        <nav className="flex items-center gap-2 text-sm text-gray-600">
+          <Link href="/" className="hover:text-blue-600 transition">
+            Trang chủ
+          </Link>
+          <span>/</span>
+          <Link href="/rent" className="hover:text-blue-600 transition">
+            Thuê eBook
+          </Link>
+          <span>/</span>
+          <span className="text-gray-900">{bookData.title}</span>
+        </nav>
       </div>
 
       <div className="container mx-auto px-4 py-8">
@@ -273,36 +341,42 @@ export default function RentDetailPage() {
               {/* Tabs */}
               <div className="border-b border-gray-200 mb-6">
                 <div className="flex gap-8">
-                  <button
+                  <Button
                     onClick={() => setActiveTab('description')}
-                    className={`pb-4 border-b-2 font-semibold transition ${
+                    variant={activeTab === 'description' ? 'primary' : 'outline'}
+                    size="md"
+                    className={`pb-4 border-b-2 ${
                       activeTab === 'description'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                        ? 'border-blue-600'
+                        : 'border-transparent'
                     }`}
                   >
                     Mô tả
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setActiveTab('details')}
-                    className={`pb-4 border-b-2 font-semibold transition ${
+                    variant={activeTab === 'details' ? 'primary' : 'outline'}
+                    size="md"
+                    className={`pb-4 border-b-2 ${
                       activeTab === 'details'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                        ? 'border-blue-600'
+                        : 'border-transparent'
                     }`}
                   >
                     Chi tiết
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setActiveTab('reviews')}
-                    className={`pb-4 border-b-2 font-semibold transition ${
+                    variant={activeTab === 'reviews' ? 'primary' : 'outline'}
+                    size="md"
+                    className={`pb-4 border-b-2 ${
                       activeTab === 'reviews'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                        ? 'border-blue-600'
+                        : 'border-transparent'
                     }`}
                   >
                     Đánh giá ({bookData.reviews})
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -379,13 +453,15 @@ export default function RentDetailPage() {
                   {/* Rental Plans */}
                   <div className="space-y-3 mb-6">
                     {rentalPlans.map((plan) => (
-                      <button
+                      <Button
                         key={plan.id}
                         onClick={() => setSelectedPlan(plan.id)}
-                        className={`w-full p-4 rounded-lg border-2 transition-all ${
+                        variant={selectedPlan === plan.id ? 'primary' : 'outline'}
+                        size="md"
+                        className={`w-full p-4 ${
                           selectedPlan === plan.id
-                            ? 'border-blue-600 bg-blue-50 shadow-md'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                            ? 'bg-blue-50 shadow-md'
+                            : ''
                         } relative`}
                       >
                         {plan.popular && (
@@ -416,7 +492,7 @@ export default function RentDetailPage() {
                             )} */}
                           </div>
                         </div>
-                      </button>
+                      </Button>
                     ))}
                   </div>
 
