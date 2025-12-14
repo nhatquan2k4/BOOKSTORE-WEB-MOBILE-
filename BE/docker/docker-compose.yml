@@ -61,8 +61,28 @@ services:
     networks:
       - bookstore-network
     entrypoint: >
-      /bin/sh -c " mc alias set myminio http://minio:9000 minioadmin minioadmin123; mc mb myminio/bookstore-images --ignore-existing; mc mb myminio/ebook-files --ignore-existing; mc mb myminio/user-avatars --ignore-existing; mc anonymous set download myminio/bookstore-images; mc anonymous set download myminio/ebook-files; mc anonymous set download myminio/user-avatars; echo 'MinIO buckets created successfully!'; "
-  # BookStore API
+      /bin/sh -c " mc alias set myminio http://minio:9000 minioadmin minioadmin123; mc mb myminio/book-images --ignore-existing; mc mb myminio/ebook-files --ignore-existing; mc mb myminio/user-avatars --ignore-existing; mc anonymous set download myminio/bookstore-images; mc anonymous set download myminio/ebook-files; mc anonymous set download myminio/user-avatars; echo 'MinIO buckets created successfully!'; "
+
+  nginx:
+    image: nginx:alpine
+    container_name: bookstore-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - minio
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
   bookstore-api:
     build:
       context: ../
@@ -81,7 +101,7 @@ services:
       - MinIO__PublicEndpoint=http://localhost:9000
       - MinIO__AccessKey=minioadmin
       - MinIO__SecretKey=minioadmin123
-      - MinIO__BucketName=bookstore-images
+      - MinIO__BucketName=book-images  # <-- ĐÃ SỬA: Dùng 'book-images' cho giống Team
       - MinIO__UseSSL=false
       - EmailSettings__SmtpHost=smtp.gmail.com
       - EmailSettings__SmtpPort=587
@@ -117,7 +137,6 @@ volumes:
   sqlserver_data:
   minio_data:
   nginx_logs:
-
 
 networks:
   bookstore-network:

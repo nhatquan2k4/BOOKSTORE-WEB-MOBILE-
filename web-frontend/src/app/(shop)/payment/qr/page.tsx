@@ -36,7 +36,6 @@ function QRPaymentContent() {
   
   // Tương thích ngược với code cũ
   const amount = searchParams.get('amount') || price || '450000';
-  const bankCode = searchParams.get('bank') || 'MOMO'; // MOMO, VNPAY, ZALOPAY
 
   // Format số tiền
   const formatCurrency = (value: string) => {
@@ -214,41 +213,6 @@ function QRPaymentContent() {
     setTimeout(() => setShowCopiedAlert(false), 2000);
   };
 
-  const getBankInfo = () => {
-    switch (bankCode) {
-      case 'MOMO':
-        return {
-          name: 'MoMo',
-          logo: '/image/momo-logo.png',
-          color: 'from-pink-500 to-pink-600',
-          qrCode: '/image/qr-momo.png', // Thay bằng QR code thật
-        };
-      case 'VNPAY':
-        return {
-          name: 'VNPay',
-          logo: '/image/vnpay-logo.png',
-          color: 'from-blue-500 to-blue-600',
-          qrCode: '/image/qr-vnpay.png',
-        };
-      case 'ZALOPAY':
-        return {
-          name: 'ZaloPay',
-          logo: '/image/zalopay-logo.png',
-          color: 'from-blue-400 to-cyan-500',
-          qrCode: '/image/qr-zalopay.png',
-        };
-      default:
-        return {
-          name: 'Ngân hàng',
-          logo: '/image/bank-logo.png',
-          color: 'from-gray-500 to-gray-600',
-          qrCode: '/image/qr-bank.png',
-        };
-    }
-  };
-
-  const bankInfo = getBankInfo();
-
   // Xây dựng breadcrumb items
   const getBreadcrumbItems = () => {
     if (type === 'rent') {
@@ -398,12 +362,6 @@ function QRPaymentContent() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r ${bankInfo.color} text-white mb-4`}>
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-              </svg>
-              <span className="font-semibold">Thanh toán qua {bankInfo.name}</span>
-            </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Quét mã QR để thanh toán
             </h1>
@@ -446,7 +404,7 @@ function QRPaymentContent() {
                         <span className="text-2xl font-bold text-blue-600">1</span>
                       </div>
                       <p className="text-sm text-gray-700">
-                        Mở ứng dụng <span className="font-semibold">{bankInfo.name}</span>
+                        Mở ứng dụng <span className="font-semibold">ngân hàng</span>
                       </p>
                     </div>
 
@@ -549,7 +507,7 @@ function QRPaymentContent() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Phương thức:</span>
-                    <span className="font-semibold text-gray-900">{bankInfo.name}</span>
+                    <span className="font-semibold text-gray-900">Chuyển khoản QR</span>
                   </div>
                 </div>
 

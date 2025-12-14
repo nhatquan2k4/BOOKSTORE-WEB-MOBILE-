@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 type Book = {
   id: string;
@@ -24,238 +26,6 @@ type Book = {
 type SortOption = "popular" | "rating" | "price-asc" | "price-desc" | "name";
 type SubCategory = "all" | "ui-ux" | "graphic" | "web" | "product" | "brand" | "motion";
 
-const MOCK_BOOKS: Book[] = [
-  {
-    id: "1",
-    title: "The Design of Everyday Things",
-    author: "Don Norman",
-    subcategory: "ui-ux",
-    price: 285000,
-    originalPrice: 350000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 3456,
-    stock: 65,
-    tools: ["Figma", "Sketch"],
-  },
-  {
-    id: "2",
-    title: "Refactoring UI",
-    author: "Adam Wathan & Steve Schoger",
-    subcategory: "ui-ux",
-    price: 395000,
-    originalPrice: 480000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 2876,
-    stock: 42,
-    tools: ["Tailwind CSS"],
-  },
-  {
-    id: "3",
-    title: "Thiết Kế Logo - Nghệ Thuật Branding",
-    author: "Nguyễn Văn A",
-    subcategory: "brand",
-    price: 245000,
-    originalPrice: 310000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1654,
-    stock: 55,
-    tools: ["Illustrator"],
-  },
-  {
-    id: "4",
-    title: "Photoshop CC - Từ Cơ Bản Đến Nâng Cao",
-    author: "Trần Minh B",
-    subcategory: "graphic",
-    price: 195000,
-    originalPrice: 245000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 2134,
-    stock: 78,
-    tools: ["Photoshop"],
-  },
-  {
-    id: "5",
-    title: "Responsive Web Design with HTML5 and CSS",
-    author: "Ben Frain",
-    subcategory: "web",
-    price: 325000,
-    originalPrice: 400000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1987,
-    stock: 48,
-    tools: ["HTML", "CSS"],
-  },
-  {
-    id: "6",
-    title: "UX Design Essentials - Adobe XD",
-    author: "Chris Minnick",
-    subcategory: "ui-ux",
-    price: 275000,
-    originalPrice: 340000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1543,
-    stock: 52,
-    tools: ["Adobe XD"],
-  },
-  {
-    id: "7",
-    title: "Illustrator CC - Thiết Kế Vector",
-    author: "Lê Thị C",
-    subcategory: "graphic",
-    price: 215000,
-    originalPrice: 270000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 1876,
-    stock: 62,
-    tools: ["Illustrator"],
-  },
-  {
-    id: "8",
-    title: "Product Design - From Idea to Market",
-    author: "Laura Klein",
-    subcategory: "product",
-    price: 355000,
-    originalPrice: 440000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1432,
-    stock: 38,
-    tools: ["Figma", "Miro"],
-  },
-  {
-    id: "9",
-    title: "Brand Identity Design",
-    author: "Alina Wheeler",
-    subcategory: "brand",
-    price: 385000,
-    originalPrice: 475000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 2345,
-    stock: 32,
-  },
-  {
-    id: "10",
-    title: "After Effects - Motion Graphics",
-    author: "Mark Christiansen",
-    subcategory: "motion",
-    price: 425000,
-    originalPrice: 520000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1765,
-    stock: 28,
-    tools: ["After Effects"],
-  },
-  {
-    id: "11",
-    title: "Figma for UI/UX Design",
-    author: "Thomas Lowry",
-    subcategory: "ui-ux",
-    price: 295000,
-    originalPrice: 360000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 2987,
-    stock: 58,
-    tools: ["Figma"],
-  },
-  {
-    id: "12",
-    title: "Typography Essentials",
-    author: "Ina Saltz",
-    subcategory: "graphic",
-    price: 265000,
-    originalPrice: 330000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1234,
-    stock: 45,
-  },
-  {
-    id: "13",
-    title: "Web Design with Figma",
-    author: "Mizko",
-    subcategory: "web",
-    price: 315000,
-    originalPrice: 390000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1654,
-    stock: 42,
-    tools: ["Figma"],
-  },
-  {
-    id: "14",
-    title: "The Product Book",
-    author: "Product School",
-    subcategory: "product",
-    price: 365000,
-    originalPrice: 450000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2134,
-    stock: 35,
-  },
-  {
-    id: "15",
-    title: "InDesign CC - Layout Design",
-    author: "Ngô Văn D",
-    subcategory: "graphic",
-    price: 235000,
-    originalPrice: 290000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 987,
-    stock: 52,
-    tools: ["InDesign"],
-  },
-  {
-    id: "16",
-    title: "Cinema 4D - 3D Motion Graphics",
-    author: "Chris Schmidt",
-    subcategory: "motion",
-    price: 445000,
-    originalPrice: 540000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 1543,
-    stock: 25,
-    tools: ["Cinema 4D"],
-  },
-  {
-    id: "17",
-    title: "Color Theory for Designers",
-    author: "Jim Krause",
-    subcategory: "graphic",
-    price: 185000,
-    originalPrice: 230000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1432,
-    stock: 68,
-  },
-  {
-    id: "18",
-    title: "Building Design Systems",
-    author: "Sarrah Vesselov & Taurie Davis",
-    subcategory: "ui-ux",
-    price: 375000,
-    originalPrice: 460000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1876,
-    stock: 38,
-  },
-];
-
 const SUBCATEGORIES = [
   { id: "all", name: "Tất cả"},
   { id: "ui-ux", name: "UI/UX Design"},
@@ -271,11 +41,53 @@ export default function DesignBooksPage() {
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await bookService.getBooks({
+          pageNumber: currentPage,
+          pageSize: itemsPerPage,
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
+            id: book.id,
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            subcategory: "all",
+            price: book.discountPrice || book.currentPrice || 0,
+            originalPrice: book.currentPrice,
+            cover: "/image/anh.png",
+            rating: book.averageRating || 4.5,
+            reviewCount: book.totalReviews || 0,
+            stock: book.stockQuantity || 0,
+          }));
+          setBooks(transformedBooks);
+          setTotalItems(response.totalCount || 0);
+        } else {
+          setBooks([]);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setBooks([]);
+        setTotalItems(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, [currentPage]);
 
   const filteredBooks =
     selectedSubcategory === "all"
-      ? MOCK_BOOKS
-      : MOCK_BOOKS.filter((book) => book.subcategory === selectedSubcategory);
+      ? books
+      : books.filter((book) => book.subcategory === selectedSubcategory);
 
   const sortedBooks = [...filteredBooks].sort((a, b) => {
     switch (sortBy) {
@@ -294,7 +106,7 @@ export default function DesignBooksPage() {
     }
   });
 
-  const totalPages = Math.ceil(sortedBooks.length / itemsPerPage);
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedBooks = sortedBooks.slice(startIndex, endIndex);
@@ -354,7 +166,7 @@ export default function DesignBooksPage() {
           </div>
           <p className="text-gray-700 text-lg font-medium flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg>
-            {MOCK_BOOKS.length} cuốn sách thiết kế - Sáng tạo không giới hạn
+            {totalItems} cuốn sách thiết kế - Sáng tạo không giới hạn
           </p>
         </div>
 
@@ -379,8 +191,8 @@ export default function DesignBooksPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="text-sm text-gray-600">
               Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
-              <span className="font-semibold">{Math.min(endIndex, sortedBooks.length)}</span> /{" "}
-              <span className="font-semibold">{sortedBooks.length}</span>
+              <span className="font-semibold">{Math.min(endIndex, totalItems)}</span> /{" "}
+              <span className="font-semibold">{totalItems}</span>
             </div>
 
             <div>
@@ -403,8 +215,20 @@ export default function DesignBooksPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          {paginatedBooks.map((book) => (
+        {loading ? (
+          <div className="grid md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                <div className="aspect-[2/3] bg-gray-200 rounded-lg mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {paginatedBooks.map((book) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
@@ -481,7 +305,8 @@ export default function DesignBooksPage() {
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
         {totalPages > 1 && (
           <div className="flex justify-center mb-8">

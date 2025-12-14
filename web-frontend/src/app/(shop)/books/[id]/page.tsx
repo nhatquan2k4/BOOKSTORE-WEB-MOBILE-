@@ -3,11 +3,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, use, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Button, Badge, Alert } from "@/components/ui";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { bookService } from "@/services";
+import type { BookDetailDto, BookDto } from "@/types/dtos";
 
 // ============================================================================
 // TYPES
@@ -680,26 +682,6 @@ function CarouselBookCard({ book }: { book: CarouselBook }) {
         <h3 className="font-semibold text-sm line-clamp-2">{book.title}</h3>
         <p className="text-xs text-gray-600">{book.author}</p>
 
-        {/* Giá + % giảm */}
-        <div className="mt-2 flex items-end justify-between gap-2">
-          <div className="flex flex-col">
-            <p className="text-red-600 font-bold text-sm">
-              {formatCurrency(book.price)}
-            </p>
-            {hasDiscount && (
-              <p className="text-xs text-gray-400 line-through">
-                {formatCurrency(book.originalPrice)}
-              </p>
-            )}
-          </div>
-
-          {hasDiscount && (
-            <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
-              -{calculateDiscountPercent(book.originalPrice, book.price)}%
-            </span>
-          )}
-        </div>
-
         {/* Rating */}
         <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
           <span className="text-yellow-400">★</span>
@@ -708,6 +690,23 @@ function CarouselBookCard({ book }: { book: CarouselBook }) {
             ({book.reviews.toLocaleString()})
           </span>
         </div>
+
+        {/* Giá: Giá giảm - Giá gốc - % giảm */}
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
+          <p className="text-red-600 font-bold text-sm">
+            {formatCurrency(book.price)}
+          </p>
+          {hasDiscount && (
+            <>
+              <p className="text-xs text-gray-400 line-through">
+                {formatCurrency(book.originalPrice)}
+              </p>
+              <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                -{calculateDiscountPercent(book.originalPrice, book.price)}%
+              </span>
+            </>
+          )}
+        </div>
       </div>
     </Link>
   );
@@ -715,9 +714,17 @@ function CarouselBookCard({ book }: { book: CarouselBook }) {
 
 // ============================================================================
 
-export default function BookDetailPage({ params }: { params: Promise<Params> }) {
-  const { id } = use(params);
+export default function BookDetailPage() {
+  const params = useParams();
+  const id = params?.id as string;
   const router = useRouter();
+  
+  // -------- API States --------
+  const [book, setBook] = useState<BookDetailDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [suggestedBooks, setSuggestedBooks] = useState<CarouselBook[]>([]);
+  const [popularBooks, setPopularBooks] = useState<CarouselBook[]>([]);
+  const [relatedBooks, setRelatedBooks] = useState<CarouselBook[]>([]);
 
   // -------- UI States --------
   const [activeTab, setActiveTab] = useState<"desc" | "review" | "comments">(
@@ -811,12 +818,75 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
   }
 
   // =====================================================================
-  // DATA - Thay thế bằng API calls khi nối backend
+  // Transform function for BookDto to CarouselBook
   // =====================================================================
-  const book = MOCK_BOOK; // GET /api/books/:id
-  const suggestedBooks = MOCK_SUGGESTED_BOOKS; // GET /api/books/suggested
-  const popularBooks = MOCK_POPULAR_BOOKS; // GET /api/books/popular
-  const relatedBooks = MOCK_RELATED_BOOKS; // GET /api/books/by-author/:authorId
+  const transformBookDto = (dto: BookDto): CarouselBook => ({
+    id: dto.id,
+    title: dto.title,
+    author: dto.authorNames?.[0] || "Tác giả không xác định",
+    price: dto.discountPrice || dto.currentPrice || 0,
+    originalPrice: dto.currentPrice || 0,
+    cover: "/image/anh.png",
+    rating: dto.averageRating || 4.5,
+    reviews: dto.totalReviews || 0,
+    hot: dto.discountPrice ? true : false,
+  });
+
+  // =====================================================================
+  // Fetch data from API
+  // =====================================================================
+  useEffect(() => {
+    const fetchBookDetail = async () => {
+      try {
+        setLoading(true);
+        const bookData = await bookService.getBookById(id);
+        setBook(bookData);
+        
+        // Fetch suggested books (newest)
+        const newest = await bookService.getNewestBooks(8);
+        const suggested = newest.map(transformBookDto);
+        setSuggestedBooks(suggested);
+        
+        // Fetch popular books (most viewed)
+        const mostViewed = await bookService.getMostViewedBooks(8);
+        const popular = mostViewed.map(transformBookDto);
+        setPopularBooks(popular);
+        
+        // Fetch related books (same category if available)
+        if (bookData.categories && bookData.categories.length > 0) {
+          const byCat = await bookService.getBooksByCategory(bookData.categories[0].id, 12);
+          const related = byCat.map(transformBookDto);
+          setRelatedBooks(related);
+        }
+      } catch (error) {
+        console.error("Error fetching book detail:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (id) fetchBookDetail();
+  }, [id]);
+
+  // Transform BookDetailDto to display format
+  const displayBook = book ? {
+    id: book.id,
+    title: book.title,
+    author: book.authors?.[0]?.name || "Tác giả không xác định",
+    category: book.categories?.[0]?.name || "Chưa phân loại",
+    publisher: book.publisher?.name || "NXB",
+    price: book.metadata?.find(m => m.key === "currentPrice")?.value ? parseInt(book.metadata.find(m => m.key === "currentPrice")!.value) : 100000,
+    originalPrice: book.metadata?.find(m => m.key === "originalPrice")?.value ? parseInt(book.metadata.find(m => m.key === "originalPrice")!.value) : 150000,
+    rating: 4.5,
+    reviewCount: 0,
+    stock: book.metadata?.find(m => m.key === "stockQuantity")?.value ? parseInt(book.metadata.find(m => m.key === "stockQuantity")!.value) : 12,
+    year: book.publicationYear,
+    weight: 500,
+    size: `${book.pageCount} trang`,
+    language: book.language,
+    cover: book.images?.[0]?.imageUrl || "/image/anh.png",
+    description: book.description || "",
+  } : null;
 
   const [reviews, setReviews] = useState<Review[]>(MOCK_INITIAL_REVIEWS);
 
@@ -948,9 +1018,9 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
     );
     const newAverageRating = totalRating / updatedReviews.length;
 
-    // update mock book (khi chưa nối API)
-    book.rating = Math.round(newAverageRating * 10) / 10;
-    book.reviewCount = updatedReviews.length;
+    // TODO: When API is available, send the new review to backend
+    // For now, reviews are only stored in local state
+    console.log('New review added. Average rating:', newAverageRating);
 
     setNewReview("");
     setNewReviewRating(5);
@@ -958,10 +1028,10 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
 
   // Mô tả: rút gọn + xem thêm
   const DESC_LIMIT = 300;
-  const isLongDesc = book.description.length > DESC_LIMIT;
+  const isLongDesc = (displayBook?.description?.length || 0) > DESC_LIMIT;
   const shortDesc = isLongDesc
-    ? book.description.substring(0, DESC_LIMIT) + "..."
-    : book.description;
+    ? (displayBook?.description || "").substring(0, DESC_LIMIT) + "..."
+    : (displayBook?.description || "");
 
   // Rating stars (có nửa sao)
   const Star = ({ filled = false }: { filled?: boolean }) => (
@@ -1027,21 +1097,23 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
 
   // -------- Mua ngay --------
   function handleBuyNow() {
+    if (!book || !displayBook) return;
     const orderId = `ORD${Date.now()}`;
     const queryParams = new URLSearchParams({
       type: "buy",
       bookId: String(id),
-      bookTitle: book.title,
-      bookCover: book.cover,
+      bookTitle: displayBook.title,
+      bookCover: displayBook.cover,
       orderId: orderId,
-      price: String(book.price),
-      amount: String(book.price),
+      price: String(displayBook.price),
+      amount: String(displayBook.price),
     });
     router.push(`/payment/qr?${queryParams.toString()}`);
   }
 
   // -------- Share Facebook --------
   function handleShareToFacebook() {
+    if (!displayBook) return;
     const url =
       typeof window !== "undefined"
         ? window.location.href
@@ -1051,7 +1123,7 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
     )}`;
     if (typeof navigator !== "undefined" && (navigator as any).share) {
       (navigator as any)
-        .share({ title: "Chia sẻ sách", text: book.title, url })
+        .share({ title: "Chia sẻ sách", text: displayBook.title, url })
         .catch(() =>
           window.open(fbShare, "_blank", "noopener,noreferrer")
         );
@@ -1060,17 +1132,51 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
     }
   }
 
+  // Loading state
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-6 py-10">
+          <div className="animate-pulse space-y-8">
+            <div className="h-8 w-64 rounded bg-gray-200"></div>
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+              <div className="h-96 rounded-xl bg-gray-200"></div>
+              <div className="space-y-4">
+                <div className="h-8 w-3/4 rounded bg-gray-200"></div>
+                <div className="h-6 w-1/2 rounded bg-gray-200"></div>
+                <div className="h-6 w-2/3 rounded bg-gray-200"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // If no book data loaded, show error state
+  if (!book || !displayBook) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-6 py-10">
+          <div className="rounded-2xl bg-white p-8 text-center shadow-md">
+            <p className="text-lg text-gray-600">Không tìm thấy thông tin sách</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   const hasMainDiscount =
-    book.originalPrice > 0 && book.originalPrice > book.price;
+    displayBook.originalPrice > 0 && displayBook.originalPrice > displayBook.price;
   const mainDiscountPercent = hasMainDiscount
-    ? calculateDiscountPercent(book.originalPrice, book.price)
+    ? calculateDiscountPercent(displayBook.originalPrice, displayBook.price)
     : 0;
 
   return (
     <main className="min-h-screen bg-gray-50">
       <Breadcrumb items={[
         { label: 'Sách', href: '/books' },
-        { label: book.title }
+        { label: displayBook.title }
       ]} />
       <div className="container mx-auto px-6 py-10 text-gray-900">
 
@@ -1078,8 +1184,8 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
         <div className="grid grid-cols-1 gap-8 rounded-2xl bg-white p-6 shadow-md lg:grid-cols-2">
           <div className="flex justify-center">
             <Image
-              src={book.cover}
-              alt={book.title}
+              src={displayBook.cover}
+              alt={displayBook.title}
               width={400}
               height={600}
               className="rounded-xl object-cover"
@@ -1087,32 +1193,32 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
           </div>
 
           <div className="space-y-4">
-            <h1 className="text-3xl font-semibold">{book.title}</h1>
+            <h1 className="text-3xl font-semibold">{displayBook.title}</h1>
 
             {/* Rating + tổng lượt đánh giá */}
             <div className="flex items-center gap-2">
-              <RatingStars rating={book.rating} />
+              <RatingStars rating={displayBook.rating} />
               <span className="text-sm text-slate-500">
-                {book.rating.toFixed(1)} / 5 •{" "}
+                {displayBook.rating.toFixed(1)} / 5 •{" "}
                 {totalReviews.toLocaleString("vi-VN")} đánh giá
               </span>
             </div>
 
-            <p className="text-sm text-slate-500">Tác giả: {book.author}</p>
+            <p className="text-sm text-slate-500">Tác giả: {displayBook.author}</p>
             <p className="text-sm text-slate-500">
-              Nhà xuất bản: {book.publisher}
+              Nhà xuất bản: {displayBook.publisher}
             </p>
 
             {/* Giá + % giảm + tình trạng */}
             <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
               <p className="text-2xl font-bold text-red-600">
-                {formatCurrency(book.price)}
+                {formatCurrency(displayBook.price)}
               </p>
 
               {hasMainDiscount && (
                 <>
                   <p className="text-sm text-gray-400 line-through">
-                    {formatCurrency(book.originalPrice)}
+                    {formatCurrency(displayBook.originalPrice)}
                   </p>
                   <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-xs font-semibold px-2 py-0.5">
                     -{mainDiscountPercent}%
@@ -1120,12 +1226,12 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                 </>
               )}
 
-              {book.stock > 0 ? (
+              {displayBook.stock > 0 ? (
                 <Badge
-                  variant={book.stock < 5 ? "warning" : "success"}
+                  variant={displayBook.stock < 5 ? "warning" : "success"}
                   size="sm"
                 >
-                  Còn {book.stock} cuốn
+                  Còn {displayBook.stock} cuốn
                 </Badge>
               ) : (
                 <Badge variant="danger" size="sm">
@@ -1135,7 +1241,7 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
             </div>
 
             {/* Low stock warning */}
-            {book.stock > 0 && book.stock < 5 && (
+            {displayBook.stock > 0 && displayBook.stock < 5 && (
               <Alert variant="warning">
                 <div className="flex items-center gap-2">
                   <svg
@@ -1152,7 +1258,7 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                     />
                   </svg>
                   <span>
-                    Chỉ còn {book.stock} cuốn! Đặt hàng ngay để không bỏ lỡ
+                    Chỉ còn {displayBook.stock} cuốn! Đặt hàng ngay để không bỏ lỡ
                   </span>
                 </div>
               </Alert>
@@ -1164,7 +1270,7 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                 variant="danger"
                 className="shadow-sm"
                 onClick={handleBuyNow}
-                disabled={book.stock === 0}
+                disabled={displayBook.stock === 0}
               >
                 Mua ngay
               </Button>
@@ -1172,7 +1278,7 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
               <Button
                 variant="primary"
                 className="shadow-sm"
-                disabled={book.stock === 0}
+                disabled={displayBook.stock === 0}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -1289,7 +1395,7 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
             </div>
 
             {/* Free shipping info */}
-            {book.price >= 500000 && (
+            {displayBook.price >= 500000 && (
               <Alert variant="success">
                 <div className="flex items-center gap-2">
                   <svg
@@ -1319,16 +1425,16 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                 <ul className="space-y-3 text-sm">
                   <li className="flex justify-between">
                     <strong className="text-gray-600">Mã sách:</strong>
-                    <span>{book.id}</span>
+                    <span>{displayBook.id}</span>
                   </li>
                   <li className="flex justify-between">
                     <strong className="text-gray-600">Tác giả:</strong>
-                    <span>{book.author}</span>
+                    <span>{displayBook.author}</span>
                   </li>
                   <li className="flex justify-between">
                     <strong className="text-gray-600">Thể loại:</strong>
                     <Badge variant="info" size="sm">
-                      {book.category}
+                      {displayBook.category}
                     </Badge>
                   </li>
                   <li className="flex justify-between">
@@ -1337,19 +1443,19 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                   </li>
                   <li className="flex justify-between">
                     <strong className="text-gray-600">Ngôn ngữ:</strong>
-                    <span>{book.language}</span>
+                    <span>{displayBook.language}</span>
                   </li>
                   <li className="flex justify-between">
                     <strong className="text-gray-600">Nhà xuất bản:</strong>
-                    <span>{book.publisher}</span>
+                    <span>{displayBook.publisher}</span>
                   </li>
                   <li className="flex justify-between">
                     <strong className="text-gray-600">Năm xuất bản:</strong>
-                    <span>{book.year}</span>
+                    <span>{displayBook.year}</span>
                   </li>
                   <li className="flex justify-between">
                     <strong className="text-gray-600">Tình trạng:</strong>
-                    {book.stock > 0 ? (
+                    {displayBook.stock > 0 ? (
                       <Badge variant="success" size="sm">
                         Còn hàng
                       </Badge>
@@ -1361,11 +1467,11 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                   </li>
                   <li className="flex justify-between">
                     <strong className="text-gray-600">Trọng lượng:</strong>
-                    <span>{book.weight}g</span>
+                    <span>{displayBook.weight}g</span>
                   </li>
                   <li className="flex justify-between">
                     <strong className="text-gray-600">Kích thước:</strong>
-                    <span>{book.size}</span>
+                    <span>{displayBook.size}</span>
                   </li>
                 </ul>
               </CardContent>
@@ -1415,7 +1521,7 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
           {activeTab === "desc" && (
             <div className="relative rounded-xl bg-white p-6 shadow-md">
               <p className="whitespace-pre-line text-sm leading-relaxed text-gray-700">
-                {descExpanded ? book.description : shortDesc}
+                {descExpanded ? displayBook.description : shortDesc}
               </p>
               {isLongDesc && (
                 <Button
@@ -1439,10 +1545,10 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
                 {/* Điểm trung bình */}
                 <div className="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-6">
                   <div className="text-5xl font-bold text-blue-600">
-                    {book.rating.toFixed(1)}
+                    {displayBook.rating.toFixed(1)}
                   </div>
                   <div className="mt-2 flex items-center gap-1">
-                    <RatingStars rating={book.rating} />
+                    <RatingStars rating={displayBook.rating} />
                   </div>
                   <p className="mt-2 text-sm text-gray-600">
                     {totalReviews} đánh giá

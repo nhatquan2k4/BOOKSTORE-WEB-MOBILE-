@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 type Book = {
   id: string;
@@ -25,7 +27,7 @@ type Book = {
 type SortOption = "popular" | "rating" | "price-asc" | "price-desc" | "age";
 type SubCategory = "all" | "picture" | "fairy-tale" | "education" | "comics" | "adventure" | "science";
 
-const MOCK_BOOKS: Book[] = [
+const OLD_DATA = [
   {
     id: "1",
     title: "Đắc Nhân Tâm Dành Cho Tuổi Teen",
@@ -281,11 +283,54 @@ export default function ChildrenBooksPage() {
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await bookService.getBooks({
+          pageNumber: currentPage,
+          pageSize: itemsPerPage,
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
+            id: book.id,
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            subcategory: "all",
+            price: book.discountPrice || book.currentPrice || 0,
+            originalPrice: book.currentPrice,
+            cover: "/image/anh.png",
+            rating: book.averageRating || 4.5,
+            reviewCount: book.totalReviews || 0,
+            stock: book.stockQuantity || 0,
+            ageRange: "3-6",
+          }));
+          setBooks(transformedBooks);
+          setTotalItems(response.totalCount || 0);
+        } else {
+          setBooks([]);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setBooks([]);
+        setTotalItems(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, [currentPage]);
 
   const filteredBooks =
     selectedSubcategory === "all"
-      ? MOCK_BOOKS
-      : MOCK_BOOKS.filter((book) => book.subcategory === selectedSubcategory);
+      ? books
+      : books.filter((book) => book.subcategory === selectedSubcategory);
 
   const sortedBooks = [...filteredBooks].sort((a, b) => {
     switch (sortBy) {
@@ -304,7 +349,7 @@ export default function ChildrenBooksPage() {
     }
   });
 
-  const totalPages = Math.ceil(sortedBooks.length / itemsPerPage);
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedBooks = sortedBooks.slice(startIndex, endIndex);
@@ -342,7 +387,7 @@ export default function ChildrenBooksPage() {
             </h1>
           </div>
           <p className="text-gray-700 text-lg font-medium flex items-center gap-2">
-            {MOCK_BOOKS.length} cuốn sách thiếu nhi - Nuôi dưỡng trí tưởng tượng và khám phá
+            {totalItems} cuốn sách thiếu nhi - Nuôi dưỡng trí tưởng tượng và khám phá
           </p>
         </div>
 
@@ -367,8 +412,8 @@ export default function ChildrenBooksPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="text-sm text-gray-600">
               Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
-              <span className="font-semibold">{Math.min(endIndex, sortedBooks.length)}</span> /{" "}
-              <span className="font-semibold">{sortedBooks.length}</span>
+              <span className="font-semibold">{Math.min(endIndex, totalItems)}</span> /{" "}
+              <span className="font-semibold">{totalItems}</span>
             </div>
 
             <div>
@@ -391,8 +436,20 @@ export default function ChildrenBooksPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          {paginatedBooks.map((book) => (
+        {loading ? (
+          <div className="grid md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                <div className="aspect-[2/3] bg-gray-200 rounded-lg mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {paginatedBooks.map((book) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
@@ -463,7 +520,8 @@ export default function ChildrenBooksPage() {
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
         {totalPages > 1 && (
           <div className="flex justify-center mb-8">

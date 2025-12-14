@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button, Badge, Input, Breadcrumb} from '@/components/ui';
+import { bookService } from '@/services';
+import type { BookDto } from '@/types/dtos';
 
 /**
  * Hàm tính toán giá thuê sách dựa trên giá mua và số ngày thuê
@@ -46,7 +48,9 @@ function calculateRentalPrice(bookPrice: number, days: number): number {
  * Tạo danh sách các gói thuê cho một cuốn sách
  * @param bookPrice - Giá mua sách
  * @returns Mảng các gói thuê với giá tính toán
+ * @internal Dùng cho trang chi tiết sách thuê
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateRentalPlans(bookPrice: number) {
   return [
     { id: 1, duration: "3 ngày", days: 3, price: calculateRentalPrice(bookPrice, 3), discount: 0, popular: false },
@@ -60,114 +64,19 @@ function generateRentalPlans(bookPrice: number) {
   ];
 }
 
-// Mock data - sẽ được thay thế bằng API call
-const booksRawData = [
-  {
-    id: 1,
-    title: "Clean Code: A Handbook of Agile Software Craftsmanship",
-    author: "Robert C. Martin",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.8,
-    reviews: 1234,
-    purchasePrice: 350000,
-    format: "ePub, PDF",
-  },
-  {
-    id: 2,
-    title: "Design Patterns: Elements of Reusable Object-Oriented Software",
-    author: "Gang of Four",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.9,
-    reviews: 856,
-    purchasePrice: 280000,
-    format: "ePub, PDF",
-  },
-  {
-    id: 3,
-    title: "The Pragmatic Programmer",
-    author: "Andrew Hunt, David Thomas",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.7,
-    reviews: 645,
-    purchasePrice: 320000,
-    format: "ePub, PDF, Mobi",
-  },
-  {
-    id: 4,
-    title: "Refactoring: Improving the Design of Existing Code",
-    author: "Martin Fowler",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.6,
-    reviews: 432,
-    purchasePrice: 290000,
-    format: "ePub, PDF",
-  },
-  {
-    id: 5,
-    title: "Introduction to Algorithms",
-    author: "Thomas H. Cormen",
-    cover: "/image/anh.png",
-    category: "Khoa học máy tính",
-    rating: 4.9,
-    reviews: 1567,
-    purchasePrice: 450000,
-    format: "PDF",
-  },
-  {
-    id: 6,
-    title: "You Don't Know JS",
-    author: "Kyle Simpson",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.5,
-    reviews: 892,
-    purchasePrice: 180000,
-    format: "ePub, PDF, Mobi",
-  },
-  {
-    id: 7,
-    title: "Eloquent JavaScript",
-    author: "Marijn Haverbeke",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.7,
-    reviews: 723,
-    purchasePrice: 250000,
-    format: "ePub, PDF",
-  },
-  {
-    id: 8,
-    title: "Python Crash Course",
-    author: "Eric Matthes",
-    cover: "/image/anh.png",
-    category: "Lập trình",
-    rating: 4.8,
-    reviews: 1102,
-    purchasePrice: 280000,
-    format: "ePub, PDF, Mobi",
-  },
-];
-
-// Tạo dữ liệu sách với giá thuê được tính toán tự động
-const rentableBooks = booksRawData.map(book => ({
-  ...book,
-  startPrice: calculateRentalPrice(book.purchasePrice, 3), // Gói 3 ngày
-  popularPrice: calculateRentalPrice(book.purchasePrice, 180), // Gói 180 ngày (phổ biến)
-}));
-
-const categories = [
-  "Tất cả",
-  "Lập trình",
-  "Khoa học máy tính",
-  "Kinh doanh",
-  "Thiết kế",
-  "Văn học",
-  "Kỹ năng sống",
-];
+interface RentableBook {
+  id: string;
+  title: string;
+  author: string;
+  cover: string;
+  category: string;
+  rating: number;
+  reviews: number;
+  purchasePrice: number;
+  format: string;
+  startPrice: number;
+  popularPrice: number;
+}
 
 const sortOptions = [
   { value: "popular", label: "Phổ biến nhất" },
@@ -182,6 +91,55 @@ export default function RentPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("popular");
   const [activeHero, setActiveHero] = useState(0);
+  const [rentableBooks, setRentableBooks] = useState<RentableBook[]>([]);
+  const [categories, setCategories] = useState<string[]>(["Tất cả"]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+
+  // Fetch books from API
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await bookService.getBooks({
+          pageNumber: 1,
+          pageSize: 50, // Lấy nhiều sách cho trang thuê
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformed: RentableBook[] = response.items.map((book: BookDto) => {
+            const purchasePrice = book.currentPrice || 0;
+            return {
+              id: book.id,
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              cover: "/image/anh.png",
+              category: book.categoryNames?.[0] || "Chưa phân loại",
+              rating: book.averageRating || 4.5,
+              reviews: book.totalReviews || 0,
+              purchasePrice: purchasePrice,
+              format: "ePub, PDF",
+              startPrice: calculateRentalPrice(purchasePrice, 3),
+              popularPrice: calculateRentalPrice(purchasePrice, 180),
+            };
+          });
+          setRentableBooks(transformed);
+          setTotalItems(response.totalCount || 0);
+          
+          // Extract unique categories
+          const uniqueCategories = ["Tất cả", ...new Set(transformed.map(b => b.category))];
+          setCategories(uniqueCategories);
+        }
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setRentableBooks([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchBooks();
+  }, []);
 
   const filteredBooks = rentableBooks.filter(book => {
     const matchCategory = selectedCategory === "Tất cả" || book.category === selectedCategory;
@@ -218,22 +176,42 @@ export default function RentPage() {
       {/* Hero Section - Similar to DiscoverNow */}
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white py-16 md:py-20">
         <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10 md:gap-6 items-center">
-          {/* left */}
-          <div className="md:w-1/2 z-10">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide mb-4">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              Thuê eBook tiết kiệm
-            </div>
+          {loading ? (
+            <>
+              {/* left skeleton */}
+              <div className="md:w-1/2 z-10 animate-pulse">
+                <div className="h-6 w-40 bg-white/10 rounded-full mb-4"></div>
+                <div className="h-4 w-48 bg-white/10 rounded mb-3"></div>
+                <div className="h-12 bg-white/10 rounded mb-4"></div>
+                <div className="h-20 bg-white/10 rounded mb-6"></div>
+                <div className="flex gap-3">
+                  <div className="h-10 w-32 bg-white/10 rounded-full"></div>
+                  <div className="h-10 w-48 bg-white/10 rounded-full"></div>
+                </div>
+              </div>
+              {/* right skeleton */}
+              <div className="md:w-1/2 relative h-[400px] md:h-[420px] w-full">
+                <div className="absolute top-4 right-0 w-[260px] h-[360px] md:w-[280px] md:h-[380px] bg-white/10 rounded-3xl animate-pulse"></div>
+              </div>
+            </>
+          ) : heroBooks.length > 0 ? (
+            <>
+              {/* left */}
+              <div className="md:w-1/2 z-10">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide mb-4">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Thuê eBook tiết kiệm
+                </div>
 
-            <p className="text-sm text-white/70 mb-3">Sách điện tử / {heroBooks[activeHero]?.category || "Lập trình"}</p>
+                <p className="text-sm text-white/70 mb-3">Sách điện tử / {heroBooks[activeHero]?.category || "Lập trình"}</p>
 
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
-              {heroBooks[activeHero]?.title || "Thuê eBook - Tri thức trong tầm tay"}
-            </h1>
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
+                  {heroBooks[activeHero]?.title || "Thuê eBook - Tri thức trong tầm tay"}
+                </h1>
 
-            <p className="text-sm md:text-base text-white/75 mb-6 line-clamp-4 md:line-clamp-5 max-w-xl">
-              Truy cập hàng ngàn đầu sách điện tử với chi phí thấp. Đọc không giới hạn, học không ngừng nghỉ! Chỉ từ 10,000₫ cho 3 ngày thuê.
-            </p>
+                <p className="text-sm md:text-base text-white/75 mb-6 line-clamp-4 md:line-clamp-5 max-w-xl">
+                  Truy cập hàng ngàn đầu sách điện tử với chi phí thấp. Đọc không giới hạn, học không ngừng nghỉ! Chỉ từ 10,000₫ cho 3 ngày thuê.
+                </p>
 
             <div className="flex gap-3 items-center">
               <Link
@@ -375,6 +353,8 @@ export default function RentPage() {
               ))}
             </div>
           </div>
+            </>
+          ) : null}
         </div>
       </section>
 
@@ -434,15 +414,31 @@ export default function RentPage() {
           </div>
 
           {/* Results Count */}
-          <div className="mb-6">
-            <p className="text-gray-600">
-              Tìm thấy <span className="font-semibold text-gray-900">{filteredBooks.length}</span> sách
-            </p>
-          </div>
+          {!loading && (
+            <div className="mb-6">
+              <p className="text-gray-600">
+                Tìm thấy <span className="font-semibold text-gray-900">{filteredBooks.length}</span> sách 
+                {selectedCategory === "Tất cả" && ` (Tổng: ${totalItems})`}
+              </p>
+            </div>
+          )}
 
           {/* Books Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredBooks.map((book) => (
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {Array.from({ length: 12 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-xl shadow-sm p-4 animate-pulse">
+                  <div className="aspect-[3/4] bg-gray-200 rounded-lg mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                  <div className="h-3 bg-gray-200 rounded mb-3 w-1/2"></div>
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredBooks.map((book) => (
               <Link
                 key={book.id}
                 href={`/rent/${book.id}`}
@@ -521,10 +517,11 @@ export default function RentPage() {
                 </div>
               </Link>
             ))}
-          </div>
+            </div>
+          )}
 
           {/* Empty State */}
-          {filteredBooks.length === 0 && (
+          {!loading && filteredBooks.length === 0 && (
             <div className="text-center py-16">
               <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-12 h-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

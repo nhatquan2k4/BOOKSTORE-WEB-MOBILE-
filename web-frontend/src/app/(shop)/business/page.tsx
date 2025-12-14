@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 type Book = {
   id: string;
@@ -24,230 +26,6 @@ type Book = {
 type SortOption = "popular" | "rating" | "price-asc" | "price-desc" | "name";
 type SubCategory = "all" | "startup" | "marketing" | "leadership" | "strategy" | "sales" | "finance";
 
-const MOCK_BOOKS: Book[] = [
-  {
-    id: "1",
-    title: "Từ Tốt Đến Vĩ Đại",
-    author: "Jim Collins",
-    subcategory: "leadership",
-    price: 165000,
-    originalPrice: 210000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 3456,
-    stock: 85,
-    isBestseller: true,
-  },
-  {
-    id: "2",
-    title: "The Lean Startup",
-    author: "Eric Ries",
-    subcategory: "startup",
-    price: 185000,
-    originalPrice: 230000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1876,
-    stock: 55,
-    isBestseller: true,
-  },
-  {
-    id: "3",
-    title: "Nghĩ Giàu Làm Giàu",
-    author: "Napoleon Hill",
-    subcategory: "strategy",
-    price: 115000,
-    originalPrice: 145000,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviewCount: 1987,
-    stock: 110,
-  },
-  {
-    id: "4",
-    title: "Nghệ Thuật Bán Hàng Vĩ Đại",
-    author: "Brian Tracy",
-    subcategory: "sales",
-    price: 168000,
-    originalPrice: 210000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 876,
-    stock: 85,
-    isBestseller: true,
-  },
-  {
-    id: "5",
-    title: "Chiến Lược Đại Dương Xanh",
-    author: "W. Chan Kim & Renée Mauborgne",
-    subcategory: "strategy",
-    price: 195000,
-    originalPrice: 245000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2134,
-    stock: 65,
-  },
-  {
-    id: "6",
-    title: "Thế Giới Phẳng",
-    author: "Thomas L. Friedman",
-    subcategory: "strategy",
-    price: 215000,
-    originalPrice: 270000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1654,
-    stock: 45,
-  },
-  {
-    id: "7",
-    title: "Khởi Nghiệp Tinh Gọn",
-    author: "Ash Maurya",
-    subcategory: "startup",
-    price: 175000,
-    originalPrice: 220000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 987,
-    stock: 70,
-  },
-  {
-    id: "8",
-    title: "Marketing 4.0",
-    author: "Philip Kotler",
-    subcategory: "marketing",
-    price: 225000,
-    originalPrice: 280000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2345,
-    stock: 55,
-    isBestseller: true,
-  },
-  {
-    id: "9",
-    title: "Làm Chủ Doanh Nghiệp",
-    author: "Michael E. Gerber",
-    subcategory: "leadership",
-    price: 155000,
-    originalPrice: 195000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 1432,
-    stock: 75,
-  },
-  {
-    id: "10",
-    title: "Những Người Xuất Chúng",
-    author: "Malcolm Gladwell",
-    subcategory: "strategy",
-    price: 135000,
-    originalPrice: 170000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1876,
-    stock: 90,
-  },
-  {
-    id: "11",
-    title: "Zero to One",
-    author: "Peter Thiel",
-    subcategory: "startup",
-    price: 195000,
-    originalPrice: 245000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2567,
-    stock: 50,
-    isBestseller: true,
-  },
-  {
-    id: "12",
-    title: "Quản Trị Marketing Căn Bản",
-    author: "Philip Kotler",
-    subcategory: "marketing",
-    price: 245000,
-    originalPrice: 310000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 3456,
-    stock: 42,
-  },
-  {
-    id: "13",
-    title: "Nghệ Thuật Đàm Phán",
-    author: "Chris Voss",
-    subcategory: "sales",
-    price: 185000,
-    originalPrice: 230000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1987,
-    stock: 68,
-  },
-  {
-    id: "14",
-    title: "Tài Chính Doanh Nghiệp",
-    author: "Aswath Damodaran",
-    subcategory: "finance",
-    price: 275000,
-    originalPrice: 340000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1234,
-    stock: 38,
-  },
-  {
-    id: "15",
-    title: "Lãnh Đạo Không Chức Danh",
-    author: "Robin Sharma",
-    subcategory: "leadership",
-    price: 145000,
-    originalPrice: 185000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 1654,
-    stock: 82,
-  },
-  {
-    id: "16",
-    title: "The Hard Thing About Hard Things",
-    author: "Ben Horowitz",
-    subcategory: "startup",
-    price: 205000,
-    originalPrice: 255000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1543,
-    stock: 48,
-  },
-  {
-    id: "17",
-    title: "Positioning: Trận Chiến Trong Tâm Trí",
-    author: "Al Ries & Jack Trout",
-    subcategory: "marketing",
-    price: 165000,
-    originalPrice: 205000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2134,
-    stock: 62,
-  },
-  {
-    id: "18",
-    title: "Phân Tích Tài Chính Doanh Nghiệp",
-    author: "Trần Ngọc Thơ",
-    subcategory: "finance",
-    price: 195000,
-    originalPrice: 240000,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviewCount: 876,
-    stock: 52,
-  },
-];
-
 const SUBCATEGORIES = [
   { id: "all", name: "Tất cả"},
   { id: "startup", name: "Khởi nghiệp" },
@@ -263,11 +41,53 @@ export default function BusinessBooksPage() {
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await bookService.getBooks({
+          pageNumber: currentPage,
+          pageSize: itemsPerPage,
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
+            id: book.id,
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            subcategory: "all",
+            price: book.discountPrice || book.currentPrice || 0,
+            originalPrice: book.currentPrice,
+            cover: "/image/anh.png",
+            rating: book.averageRating || 4.5,
+            reviewCount: book.totalReviews || 0,
+            stock: book.stockQuantity || 0,
+          }));
+          setBooks(transformedBooks);
+          setTotalItems(response.totalCount || 0);
+        } else {
+          setBooks([]);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setBooks([]);
+        setTotalItems(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, [currentPage]);
 
   const filteredBooks =
     selectedSubcategory === "all"
-      ? MOCK_BOOKS
-      : MOCK_BOOKS.filter((book) => book.subcategory === selectedSubcategory);
+      ? books
+      : books.filter((book) => book.subcategory === selectedSubcategory);
 
   const sortedBooks = [...filteredBooks].sort((a, b) => {
     switch (sortBy) {
@@ -286,7 +106,7 @@ export default function BusinessBooksPage() {
     }
   });
 
-  const totalPages = Math.ceil(sortedBooks.length / itemsPerPage);
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedBooks = sortedBooks.slice(startIndex, endIndex);
@@ -324,7 +144,7 @@ export default function BusinessBooksPage() {
             </h1>
           </div>
           <p className="text-gray-700 text-lg font-medium flex items-center gap-2">
-            {MOCK_BOOKS.length} cuốn sách kinh doanh - Bí quyết thành công trong sự nghiệp
+            {totalItems} cuốn sách kinh doanh - Bí quyết thành công trong sự nghiệp
           </p>
         </div>
 
@@ -349,8 +169,8 @@ export default function BusinessBooksPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="text-sm text-gray-600">
               Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
-              <span className="font-semibold">{Math.min(endIndex, sortedBooks.length)}</span> /{" "}
-              <span className="font-semibold">{sortedBooks.length}</span>
+              <span className="font-semibold">{Math.min(endIndex, totalItems)}</span> /{" "}
+              <span className="font-semibold">{totalItems}</span>
             </div>
 
             <div>
@@ -373,8 +193,20 @@ export default function BusinessBooksPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          {paginatedBooks.map((book) => (
+        {loading ? (
+          <div className="grid md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                <div className="aspect-[2/3] bg-gray-200 rounded-lg mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {paginatedBooks.map((book) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
@@ -439,7 +271,8 @@ export default function BusinessBooksPage() {
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
         {totalPages > 1 && (
           <div className="flex justify-center mb-8">
