@@ -48,4 +48,12 @@ namespace BookStore.Application.Dtos.Rental
         public bool HasActiveSubscription { get; set; }
         public UserSubscriptionDto? ActiveSubscription { get; set; }
     }
+
+    /// <summary>
+    /// DTO để mock thanh toán subscription (testing only)
+    /// </summary>
+    public class SubscribeMockDto
+    {
+        public Guid RentalPlanId { get; set; }
+    }
 }

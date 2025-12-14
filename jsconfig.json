@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "checkJs": false,
+    "jsx": "preserve"
+  },
+  "exclude": [
+    "node_modules",
+    "**/node_modules/*"
+  ]
+}

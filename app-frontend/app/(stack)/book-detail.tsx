@@ -3,10 +3,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
+  Animated,
   Dimensions,
   Image,
+  Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -15,8 +18,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCart } from '@/app/providers/CartProvider';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const COVER_WIDTH = 220;
 
 export default function BookDetail() {
@@ -44,10 +48,46 @@ export default function BookDetail() {
     setActiveImageIndex(index);
   };
 
-  const handleBuyNow = () => {
-    console.log('Buy now book:', book.id);
-    // TODO: Navigate to checkout or add to cart
-    // router.push('/(stack)/checkout');
+  // buy-sheet state (quantity selector shown before navigating to checkout)
+  const [buySheetVisible, setBuySheetVisible] = useState(false);
+  const [buyQty, setBuyQty] = useState(1);
+  const buySheetAnim = useRef(new Animated.Value(0)).current; // 0 hidden -> 1 visible
+
+  const openBuySheet = () => {
+    setBuyQty(1);
+    setBuySheetVisible(true);
+    buySheetAnim.setValue(0);
+    Animated.timing(buySheetAnim, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+  };
+
+  const closeBuySheet = (cb?: () => void) => {
+    Animated.timing(buySheetAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => {
+      setBuySheetVisible(false);
+      cb && cb();
+    });
+  };
+
+  const confirmBuy = () => {
+    closeBuySheet(() => router.push(`/(stack)/checkout?bookId=${book.id}&qty=${buyQty}`));
+  };
+
+  const handleBuyNow = () => openBuySheet();
+  const { addToCart } = useCart();
+
+  const [rentModalVisible, setRentModalVisible] = useState(false);
+  const [selectedRentOption, setSelectedRentOption] = useState<string | null>(null);
+
+
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const showToast = (text: string) => {
+    setToastVisible(true);
+    toastAnim.setValue(0);
+    Animated.timing(toastAnim, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+    setTimeout(() => {
+      Animated.timing(toastAnim, { toValue: 0, duration: 220, useNativeDriver: true }).start(() => setToastVisible(false));
+    }, 1100);
   };
 
   return (
@@ -119,16 +159,16 @@ export default function BookDetail() {
           <View style={styles.titlePriceRow}>
             <View style={styles.titleContainer}>
               <Text style={styles.title}>{book.title}</Text>
-              <Text style={styles.author}>by {book.author}</Text>
+              <Text style={styles.author}>bởi {book.author}</Text>
             </View>
-            <Text style={styles.price}>${book.price?.toFixed(2) || '0.00'}</Text>
+            <Text style={styles.price}>{(book.price || 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
           </View>
 
           {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{book.pages}</Text>
-              <Text style={styles.statLabel}>Pages</Text>
+              <Text style={styles.statLabel}>Trang</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
@@ -136,41 +176,147 @@ export default function BookDetail() {
                 <Ionicons name="star" size={16} color="#FFB800" />
                 <Text style={styles.statNumber}>{book.rating}</Text>
               </View>
-              <Text style={styles.statLabel}>Rating</Text>
+              <Text style={styles.statLabel}>Sao</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{book.language}</Text>
-              <Text style={styles.statLabel}>Language</Text>
+              <Text style={styles.statLabel}>Ngôn ngữ</Text>
             </View>
           </View>
 
           {/* Description */}
           <View style={styles.descriptionSection}>
-            <Text style={styles.descriptionTitle}>Description</Text>
+            <Text style={styles.descriptionTitle}>Mô tả</Text>
             <Text style={styles.description} numberOfLines={showFullDescription ? undefined : 3}>
               {book.description}
             </Text>
             {!showFullDescription && (
               <TouchableOpacity onPress={() => setShowFullDescription(true)}>
-                <Text style={styles.readMore}>Read More...</Text>
+                <Text style={styles.readMore}>Xem thêm...</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        <View style={{ height: 100 }} />
+  <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* Bottom Button */}
       <View style={[styles.bottomButton, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity style={styles.addToCartButton}>
+        <TouchableOpacity
+          style={styles.addToCartButton}
+          onPress={() => {
+            addToCart({ id: book.id, title: book.title, price: book.price || 0 });
+            showToast('Đã thêm vào giỏ');
+          }}
+        >
           <Ionicons name="bag-outline" size={24} color="#FF4757" />
         </TouchableOpacity>
+        <TouchableOpacity style={styles.rentButton} onPress={() => setRentModalVisible(true)}>
+          <Text style={styles.rentButtonText}>Thuê</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.buyButton} onPress={handleBuyNow}>
-          <Text style={styles.buyButtonText}>Buy Now</Text>
+          <Text style={styles.buyButtonText}>Mua Ngay</Text>
         </TouchableOpacity>
       </View>
+
+      {toastVisible && (
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            { opacity: toastAnim, transform: [{ translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] },
+          ]}
+          pointerEvents="none"
+        >
+          <View style={styles.toastBubble}>
+            <Text style={styles.toastText}>Đã thêm vào giỏ</Text>
+          </View>
+        </Animated.View>
+      )}
+
+      {/* Rent options modal */}
+      <Modal visible={rentModalVisible} transparent animationType="fade" onRequestClose={() => setRentModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Chọn thời gian thuê</Text>
+            {['1 tuần', '1 tháng', '3 tháng'].map((opt) => (
+              <Pressable
+                key={opt}
+                onPress={() => setSelectedRentOption(opt)}
+                style={[styles.rentOption, selectedRentOption === opt ? styles.rentOptionSelected : null]}
+              >
+                <Text style={[styles.rentOptionText, selectedRentOption === opt ? styles.rentOptionTextSelected : null]}>{opt}</Text>
+              </Pressable>
+            ))}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => { setSelectedRentOption(null); setRentModalVisible(false); }}>
+                <Text style={styles.modalCancelText}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirm, !selectedRentOption ? { opacity: 0.5 } : null]}
+                onPress={() => {
+                  if (!selectedRentOption) return;
+                  setRentModalVisible(false);
+                  showToast(`Đã thuê (${selectedRentOption})`);
+                  setSelectedRentOption(null);
+                }}
+              >
+                <Text style={styles.modalConfirmText}>Xác nhận</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Buy now full-screen overlay + sliding bottom sheet */}
+      <Modal visible={buySheetVisible} transparent animationType="none" onRequestClose={() => closeBuySheet()}>
+        <View style={{ flex: 1 }}>
+          {/* dimmed overlay that closes when pressed */}
+          <Animated.View style={[styles.fullOverlay, { opacity: buySheetAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.35] }) }]}>
+            <Pressable style={{ flex: 1 }} onPress={() => closeBuySheet()} />
+          </Animated.View>
+
+          {/* sliding sheet */}
+          <Animated.View
+            style={[
+              styles.sheetCard,
+              {
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                transform: [
+                  { translateY: buySheetAnim.interpolate({ inputRange: [0, 1], outputRange: [360, 0] }) },
+                ],
+              },
+            ]}
+          >
+            {/* Product info */}
+            <View style={styles.popProductRow}>
+              <Image source={{ uri: book.cover }} style={styles.popCover} />
+              <View style={styles.popProductInfo}>
+                <Text numberOfLines={1} style={styles.popTitle}>{book.title}</Text>
+                <Text style={styles.popPrice}>{(book.price || 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
+              </View>
+            </View>
+
+            <View style={styles.sheetBodyRow}>
+              <Text style={styles.sheetLabelLeft}>Số lượng</Text>
+              <View style={styles.qtyRowRight}>
+                <TouchableOpacity style={styles.stepBtn} onPress={() => setBuyQty(Math.max(1, buyQty - 1))}><Text style={styles.stepText}>−</Text></TouchableOpacity>
+                <Text style={styles.qtyText}>{buyQty}</Text>
+                <TouchableOpacity style={styles.stepBtn} onPress={() => setBuyQty(buyQty + 1)}><Text style={styles.stepText}>+</Text></TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.sheetFooter}>
+              <TouchableOpacity style={styles.sheetConfirm} onPress={confirmBuy}><Text style={styles.sheetConfirmText}>Mua Ngay</Text></TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -195,17 +341,17 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  backgroundColor: '#fff',
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 3,
   },
   coverContainer: {
     alignItems: 'center',
@@ -360,6 +506,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  rentButton: {
+    width: 64,
+    height: 56,
+    borderRadius: 30,
+    backgroundColor: '#FFF3E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rentButtonText: {
+    fontSize: 14,
+    color: '#FF8A00',
+    fontWeight: '600',
+  },
   buyButton: {
     flex: 1,
     height: 56,
@@ -373,4 +532,56 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
+  toast: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: 100,
+    backgroundColor: '#333',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+  },
+  toastText: { color: '#fff', fontWeight: '600' },
+  toastContainer: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' },
+  toastBubble: { backgroundColor: 'rgba(0,0,0,0.85)', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, elevation: 8 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
+  modalCard: { width: '86%', backgroundColor: '#fff', borderRadius: 12, padding: 18, alignItems: 'center' },
+  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  rentOption: { width: '100%', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: '#eee', marginBottom: 8, alignItems: 'center' },
+  rentOptionSelected: { borderColor: '#FF8A00', backgroundColor: '#FFF4E6' },
+  rentOptionText: { fontSize: 16, color: '#333' },
+  rentOptionTextSelected: { color: '#FF8A00', fontWeight: '700' },
+  modalActions: { flexDirection: 'row', marginTop: 12, width: '100%', justifyContent: 'space-between' },
+  modalCancel: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', marginRight: 8, borderWidth: 1, borderColor: '#DDD' },
+  modalCancelText: { color: '#333', fontWeight: '600' },
+  modalConfirm: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', marginLeft: 8, backgroundColor: '#FF8A00' },
+  modalConfirmText: { color: '#fff', fontWeight: '700' },
+  sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.3)' },
+  sheetCard: { backgroundColor: '#fff', padding: 16, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
+  sheetHeader: { alignItems: 'center', marginBottom: 8 },
+  sheetTitle: { fontSize: 16, fontWeight: '700' },
+  sheetBody: { alignItems: 'center', paddingVertical: 8 },
+  sheetLabel: { color: '#666', marginBottom: 12 },
+  qtyRow: { flexDirection: 'row', alignItems: 'center' },
+  stepBtn: { width: 40, height: 40, borderRadius: 8, backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center' },
+  stepText: { fontSize: 20, fontWeight: '700', color: '#333' },
+  qtyText: { fontSize: 18, marginHorizontal: 12, minWidth: 36, textAlign: 'center' },
+  sheetBodyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
+  sheetLabelLeft: { fontSize: 16, color: '#333' },
+  qtyRowRight: { flexDirection: 'row', alignItems: 'center' },
+  sheetFooter: { paddingTop: 12 },
+  sheetConfirm: { backgroundColor: '#FF4757', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  sheetConfirmText: { color: '#fff', fontWeight: '700' },
+  popOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
+  popCard: { width: '86%', backgroundColor: '#fff', borderRadius: 12, padding: 16, elevation: 10 },
+  popProductRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  popCover: { width: 64, height: 92, borderRadius: 8, marginRight: 12 },
+  popProductInfo: { flex: 1 },
+  popTitle: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
+  popPrice: { fontSize: 14, color: '#FF4757', marginTop: 4 },
+  fullOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
 });
