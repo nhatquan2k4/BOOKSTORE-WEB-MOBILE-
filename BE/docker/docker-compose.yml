@@ -76,6 +76,50 @@ services:
     networks:
       - bookstore-network
     restart: unless-stopped
+  # BookStore API
+  bookstore-api:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    container_name: bookstore-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__UsersDb=Server=sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True;Encrypt=False
+      - JwtSettings__SecretKey=YourSuperSecretKeyForJWTTokenGenerationMustBeAtLeast32CharactersLong
+      - JwtSettings__Issuer=BookStoreAPI
+      - JwtSettings__Audience=BookStoreClient
+      - JwtSettings__AccessTokenExpirationMinutes=60
+      - JwtSettings__RefreshTokenExpirationDays=30
+      - MinIO__Endpoint=minio:9000
+      - MinIO__PublicEndpoint=http://localhost:9000
+      - MinIO__AccessKey=minioadmin
+      - MinIO__SecretKey=minioadmin123
+      - MinIO__BucketName=bookstore-images
+      - MinIO__UseSSL=false
+      - EmailSettings__SmtpHost=smtp.gmail.com
+      - EmailSettings__SmtpPort=587
+      - EmailSettings__SmtpUsername=quangtraan20004@gmail.com
+      - EmailSettings__SmtpPassword=
+      - EmailSettings__FromEmail=quangtraan20004@gmail.com
+      - EmailSettings__FromName=BookStore
+      - EmailSettings__EnableSsl=true
+      - EmailSettings__TokenExpirationHours=24
+      - EmailSettings__FrontendUrl=http://localhost:3000
+    ports:
+      - "5276:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      sqlserver-init:
+        condition: service_completed_successfully
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    networks:
+      - bookstore-network
+    restart: unless-stopped
     healthcheck:
       test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
       interval: 10s

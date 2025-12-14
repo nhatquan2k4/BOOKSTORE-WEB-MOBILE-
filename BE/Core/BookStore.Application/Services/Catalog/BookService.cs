@@ -563,7 +563,7 @@ namespace BookStore.Application.Services.Catalog
                     var popularBooks = availableBooks
                         .Where(b => !recommendations.Contains(b))
                         .OrderByDescending(b => b.StockItem?.QuantityOnHand ?? 0) // High stock might indicate popularity
-                        .ThenByDescending(b => b.CreatedAt) // Recent books
+                        .ThenByDescending(b => b.PublicationYear) // Recent books by publication year
                         .Take(remainingSlots)
                         .ToList();
 
