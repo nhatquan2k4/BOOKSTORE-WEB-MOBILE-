@@ -2,16 +2,13 @@ pipeline {
     agent any
 
     environment {
-        // --- CẤU HÌNH CHUNG ---
+
         SERVER_IP    = '192.168.0.102'
         
-        // Dùng user 'jenkins' mà chúng ta vừa tạo và cấp quyền
         REMOTE_USER  = 'jenkins' 
         
-        // ID Credential SSH Key (phải khớp với cái bạn đã tạo)
         SSH_CRED_ID  = 'windows-ssh-creds'
         
-        // ID Credential Docker Hub (hoặc Registry riêng)
         REGISTRY_ID  = 'docker-registry'
 
         // --- CẤU HÌNH DOCKER ---
@@ -19,9 +16,6 @@ pipeline {
         IMAGE_NAME   = 'bookstore-backend'
         IMAGE_TAG    = "v${BUILD_NUMBER}"
         
-        // --- CẤU HÌNH DEPLOY ---
-        // Đường dẫn đến file docker-compose của DB/Minio trên máy Windows
-        // Lưu ý: Dùng \\ để escape dấu \
         COMPOSE_PATH = 'D:\\BOOKSTORE-WEB-MOBILE-\\BE\\docker'
     }
 
@@ -35,7 +29,6 @@ pipeline {
         stage('Docker Build') {
             steps {
                 dir('BE') {
-                    // Build image
                     sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
                 }
             }
@@ -69,7 +62,6 @@ pipeline {
                             sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"try { docker stop ${IMAGE_NAME}; docker rm ${IMAGE_NAME} } catch {}; echo 'Cleaned old container'\""
 
                             // 3. Khởi động Infrastructure (DB, MinIO) bằng Docker Compose
-                            // Lưu ý: cd vào thư mục rồi mới chạy lệnh
                             sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"cd ${COMPOSE_PATH}; docker compose up -d\""
 
                             // 4. Pull Image mới nhất

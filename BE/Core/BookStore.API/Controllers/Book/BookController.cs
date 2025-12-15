@@ -53,7 +53,7 @@ namespace BookStore.API.Controllers.Book
         /// <param name="id">ID của sách</param>
         /// <returns>BookDetailDto</returns>
         [HttpGet("{id:guid}")]
-        [Authorize(Roles = "Admin")]
+        // Remove [Authorize] here - everyone should view book details
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<BookDetailDto>> GetById(Guid id)
@@ -132,10 +132,11 @@ namespace BookStore.API.Controllers.Book
         /// <returns>Danh sách BookDto</returns>
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IEnumerable<BookDto>>> Search([FromQuery] string searchTerm, [FromQuery] int top = 20)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
-                return BadRequest(new { message = "T? kh�a t�m ki?m kh�ng du?c d? tr?ng" });
+                return BadRequest(new { message = "Từ khóa tìm kiếm không được để trống" });
 
             var books = await _bookService.SearchAsync(searchTerm, top);
             return Ok(books);
@@ -147,6 +148,7 @@ namespace BookStore.API.Controllers.Book
         /// <param name="dto">Thông tin sách</param>
         /// <returns>BookDetailDto được tạo</returns>
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(BookDetailDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -187,7 +189,6 @@ namespace BookStore.API.Controllers.Book
                     new { message = "Có lỗi xảy ra khi tạo sách", details = ex.Message });
             }
         }
-
         /// <summary>
         /// Cập nhật sách
         /// </summary>
@@ -195,6 +196,7 @@ namespace BookStore.API.Controllers.Book
         /// <param name="dto">Thông tin cập nhật</param>
         /// <returns>BookDetailDto được cập nhật</returns>
         [HttpPut("{id:guid}")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

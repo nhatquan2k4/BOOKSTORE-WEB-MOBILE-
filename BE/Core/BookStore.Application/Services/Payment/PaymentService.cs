@@ -1,5 +1,6 @@
 using BookStore.Application.Dtos.Payment;
 using BookStore.Application.IService.Payment;
+using BookStore.Application.Mappers.Payment;
 using BookStore.Domain.Entities.Ordering___Payment;
 using BookStore.Domain.IRepository.Ordering;
 using BookStore.Domain.IRepository.Payment;
@@ -24,24 +25,23 @@ namespace BookStore.Application.Services.Payment
             _logger = logger;
         }
 
-        #region Get Payments
 
         public async Task<PaymentTransactionDto?> GetPaymentByIdAsync(Guid paymentId)
         {
             var payment = await _paymentRepository.GetPaymentWithOrderAsync(paymentId);
-            return payment == null ? null : MapToPaymentDto(payment);
+            return payment?.ToDto();
         }
 
         public async Task<PaymentTransactionDto?> GetPaymentByOrderIdAsync(Guid orderId)
         {
             var payment = await _paymentRepository.GetByOrderIdAsync(orderId);
-            return payment == null ? null : MapToPaymentDto(payment);
+            return payment?.ToDto();
         }
 
         public async Task<PaymentTransactionDto?> GetPaymentByTransactionCodeAsync(string transactionCode)
         {
             var payment = await _paymentRepository.GetByTransactionCodeAsync(transactionCode);
-            return payment == null ? null : MapToPaymentDto(payment);
+            return payment?.ToDto();
         }
 
         public async Task<(List<PaymentTransactionDto> Items, int TotalCount)> GetPaymentsByProviderAsync(string provider, int pageNumber = 1, int pageSize = 20)
@@ -49,7 +49,7 @@ namespace BookStore.Application.Services.Payment
             var skip = (pageNumber - 1) * pageSize;
             var payments = await _paymentRepository.GetByProviderAsync(provider, skip, pageSize);
 
-            var paymentDtos = payments.Select(MapToPaymentDto).ToList();
+            var paymentDtos = payments.Select(p => p.ToDto()).ToList();
             var totalCount = paymentDtos.Count; // Approximate
 
             return (paymentDtos, totalCount);
@@ -60,15 +60,12 @@ namespace BookStore.Application.Services.Payment
             var skip = (pageNumber - 1) * pageSize;
             var payments = await _paymentRepository.GetByStatusAsync(status, skip, pageSize);
 
-            var paymentDtos = payments.Select(MapToPaymentDto).ToList();
+            var paymentDtos = payments.Select(p => p.ToDto()).ToList();
             var totalCount = paymentDtos.Count; // Approximate
 
             return (paymentDtos, totalCount);
         }
 
-        #endregion
-
-        #region Create Payment
 
         public async Task<PaymentTransactionDto> CreatePaymentAsync(CreatePaymentDto dto)
         {
@@ -100,7 +97,7 @@ namespace BookStore.Application.Services.Payment
 
             _logger.LogInformation($"Payment created: {transactionCode} for order {dto.OrderId}");
 
-            return MapToPaymentDto(payment);
+            return payment.ToDto();
         }
 
         public async Task<PaymentTransactionDto> CreatePaymentForOrderAsync(Guid orderId, string provider = "VietQR", string paymentMethod = "Online")
@@ -119,9 +116,6 @@ namespace BookStore.Application.Services.Payment
             return await CreatePaymentAsync(dto);
         }
 
-        #endregion
-
-        #region Update Payment
 
         public async Task<PaymentTransactionDto> UpdatePaymentStatusAsync(UpdatePaymentStatusDto dto)
         {
@@ -145,7 +139,7 @@ namespace BookStore.Application.Services.Payment
             }
 
             var updatedPayment = await _paymentRepository.GetPaymentWithOrderAsync(dto.PaymentId);
-            return MapToPaymentDto(updatedPayment!);
+            return updatedPayment!.ToDto();
         }
 
         public async Task<PaymentTransactionDto> ProcessPaymentCallbackAsync(PaymentCallbackDto dto)
@@ -188,9 +182,6 @@ namespace BookStore.Application.Services.Payment
             await UpdatePaymentStatusAsync(dto);
         }
 
-        #endregion
-
-        #region Validation & Check
 
         public async Task<bool> IsTransactionCodeExistsAsync(string transactionCode)
         {
@@ -200,7 +191,7 @@ namespace BookStore.Application.Services.Payment
         public async Task<List<PaymentTransactionDto>> GetExpiredPendingPaymentsAsync(int minutesThreshold = 15)
         {
             var expiredPayments = await _paymentRepository.GetExpiredPendingPaymentsAsync(minutesThreshold);
-            return expiredPayments.Select(MapToPaymentDto).ToList();
+            return expiredPayments.Select(p => p.ToDto()).ToList();
         }
 
         public async Task CancelExpiredPaymentsAsync()
@@ -219,35 +210,14 @@ namespace BookStore.Application.Services.Payment
             await _orderRepository.SaveChangesAsync();
         }
 
-        #endregion
-
-        #region Statistics
 
         public async Task<Dictionary<string, int>> GetPaymentCountByProviderAsync(DateTime fromDate, DateTime toDate)
         {
             return await _paymentRepository.GetPaymentCountByProviderAsync(fromDate, toDate);
         }
 
-        #endregion
 
-        #region Mappers
-
-        private PaymentTransactionDto MapToPaymentDto(PaymentTransaction payment)
-        {
-            return new PaymentTransactionDto
-            {
-                Id = payment.Id,
-                OrderId = payment.OrderId,
-                OrderNumber = payment.Order?.OrderNumber ?? string.Empty,
-                Provider = payment.Provider,
-                TransactionCode = payment.TransactionCode,
-                PaymentMethod = payment.PaymentMethod,
-                Amount = payment.Amount,
-                Status = payment.Status,
-                CreatedAt = payment.CreatedAt,
-                PaidAt = payment.PaidAt
-            };
-        }
+        // Mapping delegated to PaymentMapper for better separation of concerns
 
         private string GenerateTransactionCode()
         {
@@ -256,7 +226,5 @@ namespace BookStore.Application.Services.Payment
             var random = new Random().Next(1000, 9999);
             return $"PAY-{timestamp}-{random}";
         }
-
-        #endregion
     }
 }

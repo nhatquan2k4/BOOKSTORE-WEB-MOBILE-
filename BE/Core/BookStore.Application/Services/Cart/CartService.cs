@@ -44,7 +44,7 @@ namespace BookStore.Application.Services.Cart
         public async Task<CartDto> GetOrCreateCartAsync(Guid userId)
         {
             var cart = await _cartRepository.GetOrCreateCartAsync(userId);
-            return MapToCartDto(cart);
+            return cart.ToDto();
         }
 
         #endregion
@@ -183,43 +183,6 @@ namespace BookStore.Application.Services.Cart
 
         #endregion
 
-        #region Mappers
-
-        private CartDto MapToCartDto(Domain.Entities.Cart.Cart cart)
-        {
-            return new CartDto
-            {
-                Id = cart.Id,
-                UserId = cart.UserId,
-                IsActive = cart.IsActive,
-                CreatedAt = cart.CreatedAt,
-                Items = cart.Items.Select(MapToCartItemDto).ToList()
-            };
-        }
-
-        private CartItemDto MapToCartItemDto(CartItem item)
-        {
-            return new CartItemDto
-            {
-                Id = item.Id,
-                CartId = item.CartId,
-                BookId = item.BookId,
-                BookTitle = item.Book?.Title ?? string.Empty,
-                BookISBN = item.Book?.ISBN?.Value ?? string.Empty,
-                BookImageUrl = item.Book?.Images?.FirstOrDefault()?.ImageUrl,
-                BookPrice = item.UnitPrice,
-                Quantity = item.Quantity,
-                AddedAt = item.AddedAt,
-                UpdatedAt = item.UpdatedAt,
-                AuthorNames = item.Book?.BookAuthors != null
-                    ? string.Join(", ", item.Book.BookAuthors.Select(ba => ba.Author?.Name ?? string.Empty))
-                    : null,
-                PublisherName = item.Book?.Publisher?.Name,
-                IsAvailable = item.Book?.IsAvailable ?? false,
-                StockQuantity = item.Book?.StockItem?.QuantityOnHand ?? 0
-            };
-        }
-
-        #endregion
+        // Mapping delegated to CartMapper for better separation of concerns
     }
 }
