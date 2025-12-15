@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -19,7 +19,7 @@ export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   const prevIndex = useRef(state.index);
 
   // Hàm chạy animation cho tab cụ thể
-  const animateTab = (index: number, isActive: boolean) => {
+  const animateTab = useCallback((index: number, isActive: boolean) => {
     const { translateY, scale, opacity } = animatedValues[index];
 
     // Reset animation về 0 trước khi chạy lại (để lần nhấn sau vẫn có hiệu ứng)
@@ -44,7 +44,7 @@ export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         useNativeDriver: false,
       }),
     ]).start();
-  };
+  }, [animatedValues]);
 
 
 // Theo dõi tab thay đổi
@@ -68,7 +68,7 @@ export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarPro
 
       prevIndex.current = current;
     }
-  }, [state.index]);
+  }, [state.index, animateTab, glowPosition]);
 
 
   return (

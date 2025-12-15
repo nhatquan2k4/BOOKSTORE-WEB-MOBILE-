@@ -418,7 +418,7 @@ export default function PromotionsPage() {
                     <Badge variant={typeBadge.variant}>
                       {typeBadge.label}
                     </Badge>
-                    <Badge variant={statusBadge.variant}>
+                    <Badge variant={statusBadge.variant as any}>
                       {statusBadge.label}
                     </Badge>
                   </div>

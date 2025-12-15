@@ -1,34 +1,38 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { authApi } from "@/lib/api/identity/auth";
-import { User, LoginRequest, RegisterRequest } from '@/types/user';
+import { authService } from '@/services';
+import { UserInfo, LoginRequest, RegisterRequest } from '@/types/models/user';
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is already logged in
-    const token = localStorage.getItem('access_token');
-    if (token) {
+    if (authService.isAuthenticated()) {
       loadUser();
     } else {
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUser = async () => {
     try {
       setIsLoading(true);
-      const userData = await authApi.me();
-      setUser(userData);
-      setError(null);
+      const userData = authService.getCurrentUser();
+      if (userData) {
+        setUser(userData);
+        setError(null);
+      } else {
+        authService.clearSession();
+        setUser(null);
+      }
     } catch (err) {
       console.error('Failed to load user:', err);
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      authService.clearSession();
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -39,16 +43,13 @@ export function useAuth() {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await authApi.login(credentials);
+      const userInfo = await authService.login(credentials);
       
-      // Save tokens
-      localStorage.setItem('access_token', response.accessToken);
-      localStorage.setItem('refresh_token', response.refreshToken);
+      // authService.login already saves tokens and user info
+      // Just update the state
+      setUser(userInfo);
       
-      // Load user data
-      await loadUser();
-      
-      return response;
+      return userInfo;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Đăng nhập thất bại';
       setError(errorMessage);
@@ -62,16 +63,13 @@ export function useAuth() {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await authApi.register(data);
+      const userInfo = await authService.register(data);
       
-      // Save tokens
-      localStorage.setItem('access_token', response.accessToken);
-      localStorage.setItem('refresh_token', response.refreshToken);
+      // authService.register already saves tokens and user info
+      // Just update the state
+      setUser(userInfo);
       
-      // Load user data
-      await loadUser();
-      
-      return response;
+      return userInfo;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Đăng ký thất bại';
       setError(errorMessage);
@@ -84,14 +82,14 @@ export function useAuth() {
   const logout = async () => {
     try {
       setIsLoading(true);
-      await authApi.logout();
+      await authService.logout();
+      // authService.logout already clears session
+      setUser(null);
     } catch (err) {
       console.error('Logout error:', err);
-    } finally {
-      // Clear tokens and user data
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      // Even if API call fails, clear local state
       setUser(null);
+    } finally {
       setIsLoading(false);
     }
   };

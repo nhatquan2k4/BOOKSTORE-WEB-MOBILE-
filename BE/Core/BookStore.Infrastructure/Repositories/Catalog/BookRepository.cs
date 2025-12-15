@@ -11,11 +11,28 @@ namespace BookStore.Infrastructure.Repository.Catalog
         {
         }
 
+        // Override GetAllAsync to include related entities
+        // NOTE: Removed Reviews Include to avoid schema issues
+        public override async Task<IEnumerable<Book>> GetAllAsync()
+        {
+            return await _dbSet
+                .Include(b => b.Publisher)
+                .Include(b => b.BookFormat)
+                .Include(b => b.BookAuthors)
+                    .ThenInclude(ba => ba.Author)
+                .Include(b => b.BookCategories)
+                    .ThenInclude(bc => bc.Category)
+                .Include(b => b.Prices)
+                .Include(b => b.StockItem)
+                .ToListAsync();
+        }
+
         public async Task<Book?> GetByISBNAsync(string isbn)
         {
             return await _dbSet
                 .FirstOrDefaultAsync(b => b.ISBN.Value == isbn);
         }
+
 
         public async Task<Book?> GetDetailByIdAsync(Guid id)
         {
@@ -30,7 +47,8 @@ namespace BookStore.Infrastructure.Repository.Catalog
                 .Include(b => b.Files)
                 .Include(b => b.Metadata)
                 .Include(b => b.Prices)
-                .Include(b => b.Reviews)
+                // Tạm bỏ Include Reviews để tránh lỗi cột không hợp lệ
+                // .Include(b => b.Reviews)
                 .FirstOrDefaultAsync(b => b.Id == id);
         }
 

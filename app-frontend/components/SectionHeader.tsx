@@ -13,7 +13,7 @@ export function SectionHeader({ title, onViewAll }: SectionHeaderProps) {
       <Text style={styles.title}>{title}</Text>
       {onViewAll && (
         <TouchableOpacity style={styles.viewAllButton} onPress={onViewAll}>
-          <Text style={styles.viewAllText}>View All</Text>
+          <Text style={styles.viewAllText}>Tất cả</Text>
           <Ionicons name="chevron-forward" size={16} color="#999" />
         </TouchableOpacity>
       )}

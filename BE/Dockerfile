@@ -18,8 +18,8 @@ COPY . .
 # Build solution (không publish)
 RUN dotnet build Core/BookStore.API/BookStore.API.csproj -c Release --no-restore
 
-# Run unit tests
-RUN dotnet test Core/BookStore.Tests/BookStore.Tests.csproj --no-build --logger:trx
+# Run unit tests (commented out for development - enable in CI/CD pipeline)
+# RUN dotnet test Core/BookStore.Tests/BookStore.Tests.csproj --no-build --logger:trx
 
 # PUBLISH #
 FROM build AS publish

@@ -3,14 +3,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, use, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { 
-  ShoppingCart, BookOpen, Heart, Bookmark, Share2, 
-  AlertTriangle, Check, Package, Users, Award, Shield 
-} from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Button, Badge, Alert } from "@/components/ui";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { bookService } from "@/services";
+import type { BookDetailDto, BookDto } from "@/types/dtos";
 
 // ============================================================================
 // TYPES
@@ -29,11 +28,23 @@ type Review = {
   id: string;
   author: string;
   text: string;
-  rating: number; 
+  rating: number;
   likes: number;
   dislikes: number;
   userVote: "up" | "down" | null;
   createdAt: string;
+};
+
+type CarouselBook = {
+  id: string;
+  title: string;
+  author: string;
+  price: number;
+  originalPrice: number;
+  cover: string;
+  rating: number;
+  reviews: number;
+  hot?: boolean;
 };
 
 // ============================================================================
@@ -71,47 +82,339 @@ Nghe xong lý do cô cự tuyệt, luật sư Ôn bình thản: "Nếu em không
 };
 
 // Mock suggested books (Có thể bạn thích)
-const MOCK_SUGGESTED_BOOKS = [
-  { id: "s1", title: "Tôi thấy hoa vàng trên cỏ xanh", cover: "/image/anh.png" },
-  { id: "s2", title: "Tháng năm rực rỡ", cover: "/image/anh.png" },
-  { id: "s3", title: "Người lái đò sông Đà", cover: "/image/anh.png" },
-  { id: "s4", title: "Dế mèn phiêu lưu ký", cover: "/image/anh.png" },
-  { id: "s5", title: "Tuổi thơ dữ dội", cover: "/image/anh.png" },
-  { id: "s6", title: "Số đỏ", cover: "/image/anh.png" },
-  { id: "s7", title: "Chí Phèo", cover: "/image/anh.png" },
-  { id: "s8", title: "Lão Hạc", cover: "/image/anh.png" },
-  { id: "s9", title: "Bố Già", cover: "/image/anh.png" },
-  { id: "s10", title: "Tuổi trẻ đáng giá bao nhiêu", cover: "/image/anh.png" },
-  { id: "s11", title: "Đắc nhân tâm", cover: "/image/anh.png" },
-  { id: "s12", title: "Nhà giả kim", cover: "/image/anh.png" },
+const MOCK_SUGGESTED_BOOKS: CarouselBook[] = [
+  {
+    id: "s1",
+    title: "Tôi thấy hoa vàng trên cỏ xanh",
+    author: "Nguyễn Nhật Ánh",
+    price: 95000,
+    originalPrice: 120000,
+    cover: "/image/anh.png",
+    rating: 4.8,
+    reviews: 2345,
+    hot: true,
+  },
+  {
+    id: "s2",
+    title: "Tháng năm rực rỡ",
+    author: "Nhiều tác giả",
+    price: 85000,
+    originalPrice: 100000,
+    cover: "/image/anh.png",
+    rating: 4.6,
+    reviews: 986,
+  },
+  {
+    id: "s3",
+    title: "Người lái đò sông Đà",
+    author: "Nguyễn Tuân",
+    price: 78000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+    rating: 4.5,
+    reviews: 623,
+  },
+  {
+    id: "s4",
+    title: "Dế mèn phiêu lưu ký",
+    author: "Tô Hoài",
+    price: 69000,
+    originalPrice: 89000,
+    cover: "/image/anh.png",
+    rating: 4.7,
+    reviews: 1543,
+  },
+  {
+    id: "s5",
+    title: "Tuổi thơ dữ dội",
+    author: "Phùng Quán",
+    price: 88000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+    rating: 4.6,
+    reviews: 1123,
+  },
+  {
+    id: "s6",
+    title: "Số đỏ",
+    author: "Vũ Trọng Phụng",
+    price: 72000,
+    originalPrice: 90000,
+    cover: "/image/anh.png",
+    rating: 4.4,
+    reviews: 987,
+  },
+  {
+    id: "s7",
+    title: "Chí Phèo",
+    author: "Nam Cao",
+    price: 55000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+    rating: 4.5,
+    reviews: 1456,
+  },
+  {
+    id: "s8",
+    title: "Lão Hạc",
+    author: "Nam Cao",
+    price: 52000,
+    originalPrice: 65000,
+    cover: "/image/anh.png",
+    rating: 4.6,
+    reviews: 1344,
+  },
+  {
+    id: "s9",
+    title: "Bố Già",
+    author: "Mario Puzo",
+    price: 120000,
+    originalPrice: 150000,
+    cover: "/image/anh.png",
+    rating: 4.9,
+    reviews: 3456,
+    hot: true,
+  },
+  {
+    id: "s10",
+    title: "Tuổi trẻ đáng giá bao nhiêu",
+    author: "Rosie Nguyễn",
+    price: 90000,
+    originalPrice: 110000,
+    cover: "/image/anh.png",
+    rating: 4.7,
+    reviews: 2890,
+  },
+  {
+    id: "s11",
+    title: "Đắc nhân tâm",
+    author: "Dale Carnegie",
+    price: 95000,
+    originalPrice: 120000,
+    cover: "/image/anh.png",
+    rating: 4.8,
+    reviews: 4321,
+  },
+  {
+    id: "s12",
+    title: "Nhà giả kim",
+    author: "Paulo Coelho",
+    price: 98000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+    rating: 4.7,
+    reviews: 3210,
+  },
 ];
 
 // Mock popular books (Sách được đọc nhiều nhất)
-const MOCK_POPULAR_BOOKS = [
-  { id: "p1", title: "Bố Già", cover: "/image/anh.png" },
-  { id: "p2", title: "Tuổi trẻ đáng giá bao nhiêu", cover: "/image/anh.png" },
-  { id: "p3", title: "Đắc nhân tâm", cover: "/image/anh.png" },
-  { id: "p4", title: "Nhà giả kim", cover: "/image/anh.png" },
-  { id: "p5", title: "Càng kỷ luật càng tự do", cover: "/image/anh.png" },
-  { id: "p6", title: "Nghĩ giàu làm giàu", cover: "/image/anh.png" },
-  { id: "p7", title: "7 thói quen hiệu quả", cover: "/image/anh.png" },
-  { id: "p8", title: "Quẳng gánh lo đi mà vui sống", cover: "/image/anh.png" },
+const MOCK_POPULAR_BOOKS: CarouselBook[] = [
+  {
+    id: "p1",
+    title: "Bố Già",
+    author: "Mario Puzo",
+    price: 120000,
+    originalPrice: 150000,
+    cover: "/image/anh.png",
+    rating: 4.9,
+    reviews: 5678,
+    hot: true,
+  },
+  {
+    id: "p2",
+    title: "Tuổi trẻ đáng giá bao nhiêu",
+    author: "Rosie Nguyễn",
+    price: 90000,
+    originalPrice: 110000,
+    cover: "/image/anh.png",
+    rating: 4.7,
+    reviews: 2890,
+  },
+  {
+    id: "p3",
+    title: "Đắc nhân tâm",
+    author: "Dale Carnegie",
+    price: 95000,
+    originalPrice: 120000,
+    cover: "/image/anh.png",
+    rating: 4.8,
+    reviews: 4321,
+  },
+  {
+    id: "p4",
+    title: "Nhà giả kim",
+    author: "Paulo Coelho",
+    price: 98000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+    rating: 4.7,
+    reviews: 3210,
+  },
+  {
+    id: "p5",
+    title: "Càng kỷ luật càng tự do",
+    author: "Jocko Willink",
+    price: 110000,
+    originalPrice: 135000,
+    cover: "/image/anh.png",
+    rating: 4.6,
+    reviews: 876,
+  },
+  {
+    id: "p6",
+    title: "Nghĩ giàu làm giàu",
+    author: "Napoleon Hill",
+    price: 125000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+    rating: 4.5,
+    reviews: 2300,
+  },
+  {
+    id: "p7",
+    title: "7 thói quen hiệu quả",
+    author: "Stephen Covey",
+    price: 140000,
+    originalPrice: 180000,
+    cover: "/image/anh.png",
+    rating: 4.8,
+    reviews: 1987,
+  },
+  {
+    id: "p8",
+    title: "Quẳng gánh lo đi mà vui sống",
+    author: "Dale Carnegie",
+    price: 88000,
+    originalPrice: 105000,
+    cover: "/image/anh.png",
+    rating: 4.6,
+    reviews: 1543,
+  },
 ];
 
 // Mock related books (Cùng tác giả)
-const MOCK_RELATED_BOOKS = [
-  { id: "r1", title: "Tôi thấy hoa vàng trên cỏ xanh", cover: "/image/anh.png" },
-  { id: "r2", title: "Tháng năm rực rỡ", cover: "/image/anh.png" },
-  { id: "r3", title: "Người lái đò sông Đà", cover: "/image/anh.png" },
-  { id: "r4", title: "Dế mèn phiêu lưu ký", cover: "/image/anh.png" },
-  { id: "r5", title: "Tuổi thơ dữ dội", cover: "/image/anh.png" },
-  { id: "r6", title: "Số đỏ", cover: "/image/anh.png" },
-  { id: "r7", title: "Chí Phèo", cover: "/image/anh.png" },
-  { id: "r8", title: "Lão Hạc", cover: "/image/anh.png" },
-  { id: "r9", title: "Bố Già", cover: "/image/anh.png" },
-  { id: "r10", title: "Tuổi trẻ đáng giá bao", cover: "/image/anh.png" },
-  { id: "r11", title: "Đắc nhân tâm", cover: "/image/anh.png" },
-  { id: "r12", title: "Nhà giả kim", cover: "/image/anh.png" },
+const MOCK_RELATED_BOOKS: CarouselBook[] = [
+  {
+    id: "r1",
+    title: "Tôi thấy hoa vàng trên cỏ xanh",
+    author: "Nguyễn Nhật Ánh",
+    price: 95000,
+    originalPrice: 120000,
+    cover: "/image/anh.png",
+    rating: 4.8,
+    reviews: 2345,
+  },
+  {
+    id: "r2",
+    title: "Tháng năm rực rỡ",
+    author: "Nhiều tác giả",
+    price: 85000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+    rating: 4.5,
+    reviews: 980,
+  },
+  {
+    id: "r3",
+    title: "Người lái đò sông Đà",
+    author: "Nguyễn Tuân",
+    price: 78000,
+    originalPrice: 93000,
+    cover: "/image/anh.png",
+    rating: 4.4,
+    reviews: 650,
+  },
+  {
+    id: "r4",
+    title: "Dế mèn phiêu lưu ký",
+    author: "Tô Hoài",
+    price: 69000,
+    originalPrice: 89000,
+    cover: "/image/anh.png",
+    rating: 4.7,
+    reviews: 1500,
+  },
+  {
+    id: "r5",
+    title: "Tuổi thơ dữ dội",
+    author: "Phùng Quán",
+    price: 88000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+    rating: 4.6,
+    reviews: 1100,
+  },
+  {
+    id: "r6",
+    title: "Số đỏ",
+    author: "Vũ Trọng Phụng",
+    price: 72000,
+    originalPrice: 90000,
+    cover: "/image/anh.png",
+    rating: 4.4,
+    reviews: 980,
+  },
+  {
+    id: "r7",
+    title: "Chí Phèo",
+    author: "Nam Cao",
+    price: 55000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+    rating: 4.5,
+    reviews: 1450,
+  },
+  {
+    id: "r8",
+    title: "Lão Hạc",
+    author: "Nam Cao",
+    price: 52000,
+    originalPrice: 65000,
+    cover: "/image/anh.png",
+    rating: 4.6,
+    reviews: 1340,
+  },
+  {
+    id: "r9",
+    title: "Bố Già",
+    author: "Mario Puzo",
+    price: 120000,
+    originalPrice: 150000,
+    cover: "/image/anh.png",
+    rating: 4.9,
+    reviews: 3456,
+    hot: true,
+  },
+  {
+    id: "r10",
+    title: "Tuổi trẻ đáng giá bao nhiêu",
+    author: "Rosie Nguyễn",
+    price: 90000,
+    originalPrice: 110000,
+    cover: "/image/anh.png",
+    rating: 4.7,
+    reviews: 2890,
+  },
+  {
+    id: "r11",
+    title: "Đắc nhân tâm",
+    author: "Dale Carnegie",
+    price: 95000,
+    originalPrice: 120000,
+    cover: "/image/anh.png",
+    rating: 4.8,
+    reviews: 4321,
+  },
+  {
+    id: "r12",
+    title: "Nhà giả kim",
+    author: "Paulo Coelho",
+    price: 98000,
+    originalPrice: 0,
+    cover: "/image/anh.png",
+    rating: 4.7,
+    reviews: 3210,
+  },
 ];
 
 // Mock initial reviews data
@@ -213,8 +516,8 @@ const MOCK_INITIAL_COMMENTS: CommentItem[] = [
 ];
 
 // ============================================================================
-
-//Các hàm tiện ích
+// Các hàm tiện ích chung
+// ============================================================================
 function timeAgo(iso: string) {
   const rtf = new Intl.RelativeTimeFormat("vi", { numeric: "auto" });
   const diff = Date.now() - new Date(iso).getTime();
@@ -232,6 +535,15 @@ function timeAgo(iso: string) {
   }
   return rtf.format(0, "second");
 }
+
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(amount);
+
+const calculateDiscountPercent = (original: number, price: number) =>
+  Math.round(((original - price) / original) * 100);
 
 // Component đệ quy để render comments và replies
 function CommentTree({
@@ -255,7 +567,7 @@ function CommentTree({
   const isMaxDepth = depth >= maxDepth;
 
   return (
-    <div className={`${depth > 0 ? "mt-3 border-l-2 border-gray-300 pl-3" : ""}`}>
+    <div className={depth > 0 ? "mt-3 border-l-2 border-gray-300 pl-3" : ""}>
       <div className="rounded-lg border border-gray-200 p-3">
         <div className="mb-1 flex items-center justify-between text-sm">
           <span className="font-medium">{comment.author}</span>
@@ -306,7 +618,10 @@ function CommentTree({
       {comment.replies && comment.replies.length > 0 && (
         <div className="space-y-3">
           {comment.replies
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            )
             .map((reply) => (
               <CommentTree
                 key={reply.id}
@@ -325,12 +640,96 @@ function CommentTree({
   );
 }
 
-export default function BookDetailPage({ params }: { params: Promise<Params> }) {
-  const { id } = use(params);
+// Card dùng cho 3 carousel phía dưới – style giống Home
+function CarouselBookCard({ book }: { book: CarouselBook }) {
+  const hasDiscount =
+    book.originalPrice > 0 && book.originalPrice > book.price;
+
+  return (
+    <Link
+      href={`/books/${book.id}`}
+      className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
+                 border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
+    >
+      {/* Ảnh sách full khung */}
+      <div className="relative w-full aspect-[4/5]">
+        <Image
+          src={book.cover}
+          alt={book.title}
+          fill
+          sizes="260px"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+
+        {/* Badge level + mới 2024 giống mẫu (tùy chọn) */}
+        {book.hot && (
+          <div className="absolute top-2 left-2 flex items-center gap-1">
+            <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-600 text-white shadow">
+              Advanced
+            </Badge>
+          </div>
+        )}
+
+        <div className="absolute top-2 right-2">
+          <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow">
+            MỚI 2024
+          </Badge>
+        </div>
+      </div>
+
+      {/* Nội dung */}
+      <div className="p-3 flex flex-col gap-1 flex-1">
+        <h3 className="font-semibold text-sm line-clamp-2">{book.title}</h3>
+        <p className="text-xs text-gray-600">{book.author}</p>
+
+        {/* Rating */}
+        <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
+          <span className="text-yellow-400">★</span>
+          <span className="font-semibold">{book.rating.toFixed(1)}</span>
+          <span className="text-gray-400">
+            ({book.reviews.toLocaleString()})
+          </span>
+        </div>
+
+        {/* Giá: Giá giảm - Giá gốc - % giảm */}
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
+          <p className="text-red-600 font-bold text-sm">
+            {formatCurrency(book.price)}
+          </p>
+          {hasDiscount && (
+            <>
+              <p className="text-xs text-gray-400 line-through">
+                {formatCurrency(book.originalPrice)}
+              </p>
+              <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                -{calculateDiscountPercent(book.originalPrice, book.price)}%
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// ============================================================================
+
+export default function BookDetailPage() {
+  const params = useParams();
+  const id = params?.id as string;
   const router = useRouter();
+  
+  // -------- API States --------
+  const [book, setBook] = useState<BookDetailDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [suggestedBooks, setSuggestedBooks] = useState<CarouselBook[]>([]);
+  const [popularBooks, setPopularBooks] = useState<CarouselBook[]>([]);
+  const [relatedBooks, setRelatedBooks] = useState<CarouselBook[]>([]);
 
   // -------- UI States --------
-  const [activeTab, setActiveTab] = useState<"desc" | "review" | "comments">("desc");
+  const [activeTab, setActiveTab] = useState<"desc" | "review" | "comments">(
+    "desc"
+  );
   const [descExpanded, setDescExpanded] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -418,23 +817,77 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
     el.scrollBy({ left: dir === "left" ? -step : step, behavior: "smooth" });
   }
 
-  // ============================================================================
-  // DATA - Thay thế bằng API calls khi nối backend
-  // ============================================================================
-  
-  //Replace with API call - GET /api/books/:id
-  const book = MOCK_BOOK;
-  
-  //Replace with API call - GET /api/books/suggested
-  const suggestedBooks = MOCK_SUGGESTED_BOOKS;
-  
-  //Replace with API call - GET /api/books/popular
-  const popularBooks = MOCK_POPULAR_BOOKS;
-  
-  //Replace with API call - GET /api/books/by-author/:authorId
-  const relatedBooks = MOCK_RELATED_BOOKS;
-  
-  //Replace with API call - GET /api/reviews/:bookId
+  // =====================================================================
+  // Transform function for BookDto to CarouselBook
+  // =====================================================================
+  const transformBookDto = (dto: BookDto): CarouselBook => ({
+    id: dto.id,
+    title: dto.title,
+    author: dto.authorNames?.[0] || "Tác giả không xác định",
+    price: dto.discountPrice || dto.currentPrice || 0,
+    originalPrice: dto.currentPrice || 0,
+    cover: "/image/anh.png",
+    rating: dto.averageRating || 4.5,
+    reviews: dto.totalReviews || 0,
+    hot: dto.discountPrice ? true : false,
+  });
+
+  // =====================================================================
+  // Fetch data from API
+  // =====================================================================
+  useEffect(() => {
+    const fetchBookDetail = async () => {
+      try {
+        setLoading(true);
+        const bookData = await bookService.getBookById(id);
+        setBook(bookData);
+        
+        // Fetch suggested books (newest)
+        const newest = await bookService.getNewestBooks(8);
+        const suggested = newest.map(transformBookDto);
+        setSuggestedBooks(suggested);
+        
+        // Fetch popular books (most viewed)
+        const mostViewed = await bookService.getMostViewedBooks(8);
+        const popular = mostViewed.map(transformBookDto);
+        setPopularBooks(popular);
+        
+        // Fetch related books (same category if available)
+        if (bookData.categories && bookData.categories.length > 0) {
+          const byCat = await bookService.getBooksByCategory(bookData.categories[0].id, 12);
+          const related = byCat.map(transformBookDto);
+          setRelatedBooks(related);
+        }
+      } catch (error) {
+        console.error("Error fetching book detail:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (id) fetchBookDetail();
+  }, [id]);
+
+  // Transform BookDetailDto to display format
+  const displayBook = book ? {
+    id: book.id,
+    title: book.title,
+    author: book.authors?.[0]?.name || "Tác giả không xác định",
+    category: book.categories?.[0]?.name || "Chưa phân loại",
+    publisher: book.publisher?.name || "NXB",
+    price: book.metadata?.find(m => m.key === "currentPrice")?.value ? parseInt(book.metadata.find(m => m.key === "currentPrice")!.value) : 100000,
+    originalPrice: book.metadata?.find(m => m.key === "originalPrice")?.value ? parseInt(book.metadata.find(m => m.key === "originalPrice")!.value) : 150000,
+    rating: 4.5,
+    reviewCount: 0,
+    stock: book.metadata?.find(m => m.key === "stockQuantity")?.value ? parseInt(book.metadata.find(m => m.key === "stockQuantity")!.value) : 12,
+    year: book.publicationYear,
+    weight: 500,
+    size: `${book.pageCount} trang`,
+    language: book.language,
+    cover: book.images?.[0]?.imageUrl || "/image/anh.png",
+    description: book.description || "",
+  } : null;
+
   const [reviews, setReviews] = useState<Review[]>(MOCK_INITIAL_REVIEWS);
 
   function handleVote(reviewId: string, vote: "up" | "down") {
@@ -467,22 +920,31 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
     );
   }
 
-  // TODO: Replace with API call - GET /api/comments/:bookId
-  const [comments, setComments] = useState<CommentItem[]>(MOCK_INITIAL_COMMENTS);
-
+  // Comments
+  const [comments, setComments] =
+    useState<CommentItem[]>(MOCK_INITIAL_COMMENTS);
   const [visibleCommentCount, setVisibleCommentCount] = useState(3);
   const [newComment, setNewComment] = useState("");
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyOpen, setReplyOpen] = useState<Record<string, boolean>>({});
 
   function totalComments(list: CommentItem[]): number {
-    return list.reduce((sum, c) => sum + 1 + totalComments(c.replies ?? []), 0);
+    return list.reduce(
+      (sum, c) => sum + 1 + totalComments(c.replies ?? []),
+      0
+    );
   }
 
   function addNewComment() {
     if (!newComment.trim()) return;
     setComments((prev) => [
-      { id: crypto.randomUUID(), author: "Bạn đọc", content: newComment.trim(), createdAt: new Date().toISOString(), replies: [] },
+      {
+        id: crypto.randomUUID(),
+        author: "Bạn đọc",
+        content: newComment.trim(),
+        createdAt: new Date().toISOString(),
+        replies: [],
+      },
       ...prev,
     ]);
     setNewComment("");
@@ -521,13 +983,13 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
     setReplyOpen((prev) => ({ ...prev, [parentId]: false }));
   }
 
-  // danh sách theo thời gian mới → cũ
   const sortedComments = [...comments].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   const visibleComments = sortedComments.slice(0, visibleCommentCount);
   const canLoadMore = visibleCommentCount < sortedComments.length;
   const commentCountLabel = totalComments(comments);
+
   const totalReviews = reviews.length;
   const [newReview, setNewReview] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(5); // Mặc định 5 sao
@@ -547,29 +1009,31 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
       createdAt: new Date().toISOString(),
     };
 
-    // Cập nhật danh sách reviews
     const updatedReviews = [newItem, ...reviews];
     setReviews(updatedReviews);
 
-    // Tính lại rating trung bình của sách
-    const totalRating = updatedReviews.reduce((sum, rv) => sum + rv.rating, 0);
+    const totalRating = updatedReviews.reduce(
+      (sum, rv) => sum + rv.rating,
+      0
+    );
     const newAverageRating = totalRating / updatedReviews.length;
-    
-    // Cập nhật book rating (làm tròn 1 chữ số thập phân)
-    book.rating = Math.round(newAverageRating * 10) / 10;
-    book.reviewCount = updatedReviews.length;
 
-    // Reset form
+    // TODO: When API is available, send the new review to backend
+    // For now, reviews are only stored in local state
+    console.log('New review added. Average rating:', newAverageRating);
+
     setNewReview("");
-    setNewReviewRating(5); // Reset về 5 sao
+    setNewReviewRating(5);
   }
 
   // Mô tả: rút gọn + xem thêm
   const DESC_LIMIT = 300;
-  const isLongDesc = book.description.length > DESC_LIMIT;
-  const shortDesc = isLongDesc ? book.description.substring(0, DESC_LIMIT) + "..." : book.description;
+  const isLongDesc = (displayBook?.description?.length || 0) > DESC_LIMIT;
+  const shortDesc = isLongDesc
+    ? (displayBook?.description || "").substring(0, DESC_LIMIT) + "..."
+    : (displayBook?.description || "");
 
-// Rating stars (có nửa sao) 
+  // Rating stars (có nửa sao)
   const Star = ({ filled = false }: { filled?: boolean }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -605,8 +1069,14 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
           <rect x="0" y="0" width="12" height="24" />
         </clipPath>
       </defs>
-      <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" clipPath="url(#half)" />
-      <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" fill="none" />
+      <polygon
+        points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"
+        clipPath="url(#half)"
+      />
+      <polygon
+        points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"
+        fill="none"
+      />
     </svg>
   );
 
@@ -627,785 +1097,1044 @@ export default function BookDetailPage({ params }: { params: Promise<Params> }) 
 
   // -------- Mua ngay --------
   function handleBuyNow() {
-    // Chuyển hướng đến trang QR payment
+    if (!book || !displayBook) return;
     const orderId = `ORD${Date.now()}`;
     const queryParams = new URLSearchParams({
-      type: 'buy',
+      type: "buy",
       bookId: String(id),
-      bookTitle: book.title,
-      bookCover: book.cover,
+      bookTitle: displayBook.title,
+      bookCover: displayBook.cover,
       orderId: orderId,
-      price: String(book.price),
-      amount: String(book.price),
+      price: String(displayBook.price),
+      amount: String(displayBook.price),
     });
     router.push(`/payment/qr?${queryParams.toString()}`);
   }
 
   // -------- Share Facebook --------
   function handleShareToFacebook() {
+    if (!displayBook) return;
     const url =
       typeof window !== "undefined"
         ? window.location.href
         : `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/books/${id}`;
-    const fbShare = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    const fbShare = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+      url
+    )}`;
     if (typeof navigator !== "undefined" && (navigator as any).share) {
       (navigator as any)
-        .share({ title: "Chia sẻ sách", text: book.title, url })
-        .catch(() => window.open(fbShare, "_blank", "noopener,noreferrer"));
+        .share({ title: "Chia sẻ sách", text: displayBook.title, url })
+        .catch(() =>
+          window.open(fbShare, "_blank", "noopener,noreferrer")
+        );
     } else {
       window.open(fbShare, "_blank", "noopener,noreferrer");
     }
   }
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
+  // Loading state
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-6 py-10">
+          <div className="animate-pulse space-y-8">
+            <div className="h-8 w-64 rounded bg-gray-200"></div>
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+              <div className="h-96 rounded-xl bg-gray-200"></div>
+              <div className="space-y-4">
+                <div className="h-8 w-3/4 rounded bg-gray-200"></div>
+                <div className="h-6 w-1/2 rounded bg-gray-200"></div>
+                <div className="h-6 w-2/3 rounded bg-gray-200"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // If no book data loaded, show error state
+  if (!book || !displayBook) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-6 py-10">
+          <div className="rounded-2xl bg-white p-8 text-center shadow-md">
+            <p className="text-lg text-gray-600">Không tìm thấy thông tin sách</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const hasMainDiscount =
+    displayBook.originalPrice > 0 && displayBook.originalPrice > displayBook.price;
+  const mainDiscountPercent = hasMainDiscount
+    ? calculateDiscountPercent(displayBook.originalPrice, displayBook.price)
+    : 0;
 
   return (
     <main className="min-h-screen bg-gray-50">
-    <div className="container mx-auto px-6 py-10 text-gray-900">
-      {/* Breadcrumb */}
-      <nav className="mb-4 text-sm text-gray-600">
-        <Link href="/" className="hover:text-blue-600">Trang chủ</Link>{" "}/{" "}
-        <Link href="/books" className="hover:text-blue-600">Sách</Link>{" "}
-        / <span className="font-medium text-gray-800">{book.title}</span>
-      </nav>
+      <Breadcrumb items={[
+        { label: 'Sách', href: '/books' },
+        { label: displayBook.title }
+      ]} />
+      <div className="container mx-auto px-6 py-10 text-gray-900">
 
-      {/* Nội dung chính */}
-      <div className="grid grid-cols-1 gap-8 rounded-2xl bg-white p-6 shadow-md lg:grid-cols-2">
-        <div className="flex justify-center">
-          <Image src={book.cover} alt={book.title} width={400} height={600} className="rounded-xl object-cover" />
-        </div>
-
-        <div className="space-y-4">
-          <h1 className="text-3xl font-semibold">{book.title}</h1>
-
-          {/* Rating + tổng lượt đánh giá */}
-          <div className="flex items-center gap-2">
-            <RatingStars rating={book.rating} />
-            <span className="text-sm text-slate-500">
-              {book.rating.toFixed(1)} / 5 • {totalReviews.toLocaleString("vi-VN")} đánh giá
-            </span>
+        {/* Nội dung chính */}
+        <div className="grid grid-cols-1 gap-8 rounded-2xl bg-white p-6 shadow-md lg:grid-cols-2">
+          <div className="flex justify-center">
+            <Image
+              src={displayBook.cover}
+              alt={displayBook.title}
+              width={400}
+              height={600}
+              className="rounded-xl object-cover"
+            />
           </div>
 
-          <p className="text-sm text-slate-500">Tác giả: {book.author}</p>
-          <p className="text-sm text-slate-500">Nhà xuất bản: {book.publisher}</p>
+          <div className="space-y-4">
+            <h1 className="text-3xl font-semibold">{displayBook.title}</h1>
 
-          {/* Giá + % giảm + tình trạng */}
-          <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
-            <p className="text-2xl font-bold text-red-600">{formatCurrency(book.price)}</p>
-            <p className="text-sm text-gray-400 line-through">{formatCurrency(book.originalPrice)}</p>
-            <Badge variant="danger" size="sm">
-              -{Math.max(0, Math.round((1 - book.price / book.originalPrice) * 100))}%
-            </Badge>
-            {book.stock > 0 ? (
-              <Badge variant={book.stock < 5 ? "warning" : "success"} size="sm">
-                Còn {book.stock} cuốn
-              </Badge>
-            ) : (
-              <Badge variant="danger" size="sm">
-                Hết hàng
-              </Badge>
-            )}
-          </div>
-
-          {/* Low stock warning */}
-          {book.stock > 0 && book.stock < 5 && (
-            <Alert variant="warning">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <span>Chỉ còn {book.stock} cuốn! Đặt hàng ngay để không bỏ lỡ</span>
-              </div>
-            </Alert>
-          )}
-
-          {/* Hàng nút hành động */}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <Button 
-              variant="danger" 
-              className="shadow-sm"
-              onClick={handleBuyNow}
-              disabled={book.stock === 0}
-            >
-              Mua ngay
-            </Button>
-
-            <Button 
-              variant="primary" 
-              className="shadow-sm"
-              disabled={book.stock === 0}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                   fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                   className="lucide lucide-shopping-cart">
-                <circle cx="8" cy="21" r="1" />
-                <circle cx="19" cy="21" r="1" />
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-              </svg>
-              <span>Thêm vào giỏ hàng</span>
-            </Button>
-
-            <Link href={`/rent/${id}`}>
-              <Button className="shadow-sm bg-amber-500 hover:bg-amber-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                     fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                     className="lucide lucide-book-open">
-                  <path d="M12 7v14" />
-                  <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
-                </svg>
-                <span>Thuê e-book</span>
-              </Button>
-            </Link>
-
-            {/* Icon-only */}
-            <Button onClick={() => setIsLiked((prev) => !prev)} variant="ghost" size="sm" aria-label="Yêu thích" title="Yêu thích">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-                   fill={isLiked ? "red" : "none"} stroke={isLiked ? "red" : "currentColor"}
-                   strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-heart">
-                <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
-              </svg>
-            </Button>
-
-            <Button onClick={() => setIsSaved((prev) => !prev)} variant="ghost" size="sm" aria-label="Lưu sách" title="Lưu sách">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-                   fill={isSaved ? "gold" : "none"} stroke={isSaved ? "gold" : "currentColor"}
-                   strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bookmark">
-                <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-              </svg>
-            </Button>
-
-            <Button onClick={handleShareToFacebook} variant="ghost" size="sm" aria-label="Chia sẻ Facebook" title="Chia sẻ Facebook">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-                   fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                   className="lucide lucide-share-2">
-                <circle cx="18" cy="5" r="3" />
-                <circle cx="6" cy="12" r="3" />
-                <circle cx="18" cy="19" r="3" />
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-              </svg>
-            </Button>
-          </div>
-
-          {/* Free shipping info */}
-          {book.price >= 200000 && (
-            <Alert variant="success">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Miễn phí vận chuyển cho đơn hàng này</span>
-              </div>
-            </Alert>
-          )}
-
-          {/* Thông tin chi tiết */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Thông tin chi tiết sách</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3 text-sm">
-                <li className="flex justify-between">
-                  <strong className="text-gray-600">Mã sách:</strong>
-                  <span>{book.id}</span>
-                </li>
-                <li className="flex justify-between">
-                  <strong className="text-gray-600">Tác giả:</strong>
-                  <span>{book.author}</span>
-                </li>
-                <li className="flex justify-between">
-                  <strong className="text-gray-600">Thể loại:</strong>
-                  <Badge variant="info" size="sm">{book.category}</Badge>
-                </li>
-                <li className="flex justify-between">
-                  <strong className="text-gray-600">Nhà cung cấp:</strong>
-                  <span>BookStore</span>
-                </li>
-                <li className="flex justify-between">
-                  <strong className="text-gray-600">Ngôn ngữ:</strong>
-                  <span>{book.language}</span>
-                </li>
-                <li className="flex justify-between">
-                  <strong className="text-gray-600">Nhà xuất bản:</strong>
-                  <span>{book.publisher}</span>
-                </li>
-                <li className="flex justify-between">
-                  <strong className="text-gray-600">Năm xuất bản:</strong>
-                  <span>{book.year}</span>
-                </li>
-                <li className="flex justify-between">
-                  <strong className="text-gray-600">Tình trạng:</strong>
-                  {book.stock > 0 ? (
-                    <Badge variant="success" size="sm">Còn hàng</Badge>
-                  ) : (
-                    <Badge variant="danger" size="sm">Hết hàng</Badge>
-                  )}
-                </li>
-                <li className="flex justify-between">
-                  <strong className="text-gray-600">Trọng lượng:</strong>
-                  <span>{book.weight}g</span>
-                </li>
-                <li className="flex justify-between">
-                  <strong className="text-gray-600">Kích thước:</strong>
-                  <span>{book.size}</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Tabs: Mô tả / Đánh giá / Bình luận */}
-      <div className="mt-10">
-        <div className="mb-4 flex border-b border-gray-200">
-          <Button
-            onClick={() => setActiveTab("desc")}
-            variant="ghost"
-            className={`border-b-2 rounded-none ${activeTab === "desc" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-600 hover:text-gray-800"}`}
-          >
-            Mô tả sản phẩm
-          </Button>
-          <Button
-            onClick={() => setActiveTab("review")}
-            variant="ghost"
-            className={`border-b-2 rounded-none ${activeTab === "review" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-600 hover:text-gray-800"}`}
-          >
-            Đánh giá & nhận xét ({totalReviews})
-          </Button>
-          <Button
-            onClick={() => setActiveTab("comments")}
-            variant="ghost"
-            className={`border-b-2 rounded-none ${activeTab === "comments" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-600 hover:text-gray-800"}`}
-          >
-            Bình luận ({commentCountLabel})
-          </Button>
-        </div>
-
-        {/* MÔ TẢ */}
-        {activeTab === "desc" && (
-          <div className="relative rounded-xl bg-white p-6 shadow-md">
-            <p className="whitespace-pre-line text-sm leading-relaxed text-gray-700">
-              {descExpanded ? book.description : shortDesc}
-            </p>
-            {isLongDesc && (
-              <Button
-                onClick={() => setDescExpanded((v) => !v)}
-                variant="ghost"
-                size="sm"
-                className="mt-3 text-blue-600 hover:underline p-0 h-auto"
-                aria-expanded={descExpanded}
-              >
-                {descExpanded ? "Thu gọn" : "Xem thêm"}
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* ĐÁNH GIÁ (chỉ hiển thị khi tab review đang chọn) */}
-        {activeTab === "review" && (
-          <div className="space-y-6 rounded-xl bg-white p-6 shadow-md">
-            {/* Thống kê đánh giá */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              {/* Điểm trung bình */}
-              <div className="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-6">
-                <div className="text-5xl font-bold text-blue-600">{book.rating.toFixed(1)}</div>
-                <div className="mt-2 flex items-center gap-1">
-                  <RatingStars rating={book.rating} />
-                </div>
-                <p className="mt-2 text-sm text-gray-600">{totalReviews} đánh giá</p>
-              </div>
-
-              {/* Phân bố đánh giá */}
-              <div className="col-span-2 space-y-2">
-                {[5, 4, 3, 2, 1].map((star) => {
-                  const count = reviews.filter((r) => r.rating === star).length;
-                  const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
-                  return (
-                    <div key={star} className="flex items-center gap-3">
-                      <span className="flex w-12 items-center gap-1 text-sm font-medium">
-                        {star} <span className="text-yellow-400">★</span>
-                      </span>
-                      <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
-                        <div
-                          className="h-full bg-yellow-400 transition-all"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                      <span className="w-12 text-right text-sm text-gray-600">{count}</span>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Rating + tổng lượt đánh giá */}
+            <div className="flex items-center gap-2">
+              <RatingStars rating={displayBook.rating} />
+              <span className="text-sm text-slate-500">
+                {displayBook.rating.toFixed(1)} / 5 •{" "}
+                {totalReviews.toLocaleString("vi-VN")} đánh giá
+              </span>
             </div>
 
-            {/* Form thêm đánh giá */}
-            <div className="border-t pt-6">
-              <h3 className="mb-4 text-lg font-semibold">Viết đánh giá của bạn</h3>
-              
-              {/* Chọn số sao */}
-              <div className="mb-3 flex items-center gap-2">
-                <span className="text-sm font-medium">Đánh giá của bạn:</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setNewReviewRating(star)}
-                      className="transition hover:scale-110"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill={star <= newReviewRating ? "currentColor" : "none"}
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className={star <= newReviewRating ? "text-yellow-400" : "text-gray-300"}
-                      >
-                        <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" />
-                      </svg>
-                    </button>
-                  ))}
-                  <span className="ml-2 text-sm text-gray-600">({newReviewRating} sao)</span>
+            <p className="text-sm text-slate-500">Tác giả: {displayBook.author}</p>
+            <p className="text-sm text-slate-500">
+              Nhà xuất bản: {displayBook.publisher}
+            </p>
+
+            {/* Giá + % giảm + tình trạng */}
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+              <p className="text-2xl font-bold text-red-600">
+                {formatCurrency(displayBook.price)}
+              </p>
+
+              {hasMainDiscount && (
+                <>
+                  <p className="text-sm text-gray-400 line-through">
+                    {formatCurrency(displayBook.originalPrice)}
+                  </p>
+                  <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-xs font-semibold px-2 py-0.5">
+                    -{mainDiscountPercent}%
+                  </span>
+                </>
+              )}
+
+              {displayBook.stock > 0 ? (
+                <Badge
+                  variant={displayBook.stock < 5 ? "warning" : "success"}
+                  size="sm"
+                >
+                  Còn {displayBook.stock} cuốn
+                </Badge>
+              ) : (
+                <Badge variant="danger" size="sm">
+                  Hết hàng
+                </Badge>
+              )}
+            </div>
+
+            {/* Low stock warning */}
+            {displayBook.stock > 0 && displayBook.stock < 5 && (
+              <Alert variant="warning">
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <span>
+                    Chỉ còn {displayBook.stock} cuốn! Đặt hàng ngay để không bỏ lỡ
+                  </span>
+                </div>
+              </Alert>
+            )}
+
+            {/* Hàng nút hành động */}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Button
+                variant="danger"
+                className="shadow-sm"
+                onClick={handleBuyNow}
+                disabled={displayBook.stock === 0}
+              >
+                Mua ngay
+              </Button>
+
+              <Button
+                variant="primary"
+                className="shadow-sm"
+                disabled={displayBook.stock === 0}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-shopping-cart"
+                >
+                  <circle cx="8" cy="21" r="1" />
+                  <circle cx="19" cy="21" r="1" />
+                  <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+                </svg>
+                <span>Thêm vào giỏ hàng</span>
+              </Button>
+
+              <Link href={`/rent/${id}`}>
+                <Button className="bg-amber-500 shadow-sm hover:bg-amber-600">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-book-open"
+                  >
+                    <path d="M12 7v14" />
+                    <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                  </svg>
+                  <span>Thuê e-book</span>
+                </Button>
+              </Link>
+
+              <Button
+                onClick={() => setIsLiked((prev) => !prev)}
+                variant="ghost"
+                size="sm"
+                aria-label="Yêu thích"
+                title="Yêu thích"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill={isLiked ? "red" : "none"}
+                  stroke={isLiked ? "red" : "currentColor"}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-heart"
+                >
+                  <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
+                </svg>
+              </Button>
+
+              <Button
+                onClick={() => setIsSaved((prev) => !prev)}
+                variant="ghost"
+                size="sm"
+                aria-label="Lưu sách"
+                title="Lưu sách"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill={isSaved ? "gold" : "none"}
+                  stroke={isSaved ? "gold" : "currentColor"}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-bookmark"
+                >
+                  <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+                </svg>
+              </Button>
+
+              <Button
+                onClick={handleShareToFacebook}
+                variant="ghost"
+                size="sm"
+                aria-label="Chia sẻ Facebook"
+                title="Chia sẻ Facebook"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-share-2"
+                >
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+              </Button>
+            </div>
+
+            {/* Free shipping info */}
+            {displayBook.price >= 500000 && (
+              <Alert variant="success">
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  <span>Miễn phí vận chuyển cho đơn hàng này</span>
+                </div>
+              </Alert>
+            )}
+
+            {/* Thông tin chi tiết */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Thông tin chi tiết sách</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 text-sm">
+                  <li className="flex justify-between">
+                    <strong className="text-gray-600">Mã sách:</strong>
+                    <span>{displayBook.id}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <strong className="text-gray-600">Tác giả:</strong>
+                    <span>{displayBook.author}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <strong className="text-gray-600">Thể loại:</strong>
+                    <Badge variant="info" size="sm">
+                      {displayBook.category}
+                    </Badge>
+                  </li>
+                  <li className="flex justify-between">
+                    <strong className="text-gray-600">Nhà cung cấp:</strong>
+                    <span>BookStore</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <strong className="text-gray-600">Ngôn ngữ:</strong>
+                    <span>{displayBook.language}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <strong className="text-gray-600">Nhà xuất bản:</strong>
+                    <span>{displayBook.publisher}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <strong className="text-gray-600">Năm xuất bản:</strong>
+                    <span>{displayBook.year}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <strong className="text-gray-600">Tình trạng:</strong>
+                    {displayBook.stock > 0 ? (
+                      <Badge variant="success" size="sm">
+                        Còn hàng
+                      </Badge>
+                    ) : (
+                      <Badge variant="danger" size="sm">
+                        Hết hàng
+                      </Badge>
+                    )}
+                  </li>
+                  <li className="flex justify-between">
+                    <strong className="text-gray-600">Trọng lượng:</strong>
+                    <span>{displayBook.weight}g</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <strong className="text-gray-600">Kích thước:</strong>
+                    <span>{displayBook.size}</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Tabs: Mô tả / Đánh giá / Bình luận */}
+        <div className="mt-10">
+          <div className="mb-4 flex border-b border-gray-200">
+            <Button
+              onClick={() => setActiveTab("desc")}
+              variant="ghost"
+              className={`border-b-2 rounded-none ${
+                activeTab === "desc"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              Mô tả sản phẩm
+            </Button>
+            <Button
+              onClick={() => setActiveTab("review")}
+              variant="ghost"
+              className={`border-b-2 rounded-none ${
+                activeTab === "review"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              Đánh giá & nhận xét ({totalReviews})
+            </Button>
+            <Button
+              onClick={() => setActiveTab("comments")}
+              variant="ghost"
+              className={`border-b-2 rounded-none ${
+                activeTab === "comments"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              Bình luận ({commentCountLabel})
+            </Button>
+          </div>
+
+          {/* MÔ TẢ */}
+          {activeTab === "desc" && (
+            <div className="relative rounded-xl bg-white p-6 shadow-md">
+              <p className="whitespace-pre-line text-sm leading-relaxed text-gray-700">
+                {descExpanded ? displayBook.description : shortDesc}
+              </p>
+              {isLongDesc && (
+                <Button
+                  onClick={() => setDescExpanded((v) => !v)}
+                  variant="ghost"
+                  size="sm"
+                  className="mt-3 h-auto p-0 text-blue-600 hover:underline"
+                  aria-expanded={descExpanded}
+                >
+                  {descExpanded ? "Thu gọn" : "Xem thêm"}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* ĐÁNH GIÁ */}
+          {activeTab === "review" && (
+            <div className="space-y-6 rounded-xl bg-white p-6 shadow-md">
+              {/* Thống kê đánh giá */}
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                {/* Điểm trung bình */}
+                <div className="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-6">
+                  <div className="text-5xl font-bold text-blue-600">
+                    {displayBook.rating.toFixed(1)}
+                  </div>
+                  <div className="mt-2 flex items-center gap-1">
+                    <RatingStars rating={displayBook.rating} />
+                  </div>
+                  <p className="mt-2 text-sm text-gray-600">
+                    {totalReviews} đánh giá
+                  </p>
+                </div>
+
+                {/* Phân bố đánh giá */}
+                <div className="col-span-2 space-y-2">
+                  {[5, 4, 3, 2, 1].map((star) => {
+                    const count = reviews.filter(
+                      (r) => r.rating === star
+                    ).length;
+                    const percentage =
+                      totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                    return (
+                      <div key={star} className="flex items-center gap-3">
+                        <span className="flex w-12 items-center gap-1 text-sm font-medium">
+                          {star} <span className="text-yellow-400">★</span>
+                        </span>
+                        <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
+                          <div
+                            className="h-full bg-yellow-400 transition-all"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <span className="w-12 text-right text-sm text-gray-600">
+                          {count}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
+              {/* Form thêm đánh giá */}
+              <div className="border-t pt-6">
+                <h3 className="mb-4 text-lg font-semibold">
+                  Viết đánh giá của bạn
+                </h3>
+
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="text-sm font-medium">
+                    Đánh giá của bạn:
+                  </span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setNewReviewRating(star)}
+                        className="transition hover:scale-110"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill={
+                            star <= newReviewRating ? "currentColor" : "none"
+                          }
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          className={
+                            star <= newReviewRating
+                              ? "text-yellow-400"
+                              : "text-gray-300"
+                          }
+                        >
+                          <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" />
+                        </svg>
+                      </button>
+                    ))}
+                    <span className="ml-2 text-sm text-gray-600">
+                      ({newReviewRating} sao)
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <textarea
+                    value={newReview}
+                    onChange={(e) => setNewReview(e.target.value)}
+                    placeholder="Chia sẻ trải nghiệm của bạn về cuốn sách..."
+                    className="min-h-[84px] flex-1 rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none ring-blue-100 focus:ring-4"
+                  />
+                  <Button
+                    onClick={addNewReview}
+                    variant="primary"
+                    size="sm"
+                    className="shrink-0"
+                  >
+                    Gửi đánh giá
+                  </Button>
+                </div>
+              </div>
+
+              {/* Danh sách đánh giá */}
+              <div className="space-y-4 border-t pt-6">
+                <h3 className="text-lg font-semibold">Tất cả đánh giá</h3>
+                <div className="space-y-3">
+                  {reviews.map((rv) => (
+                    <div
+                      key={rv.id}
+                      className="rounded-lg border border-gray-200 p-4"
+                    >
+                      <div className="mb-2 flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="mb-1 flex items-center gap-2">
+                            <p className="font-medium">{rv.author}</p>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-sm text-gray-500">
+                              {timeAgo(rv.createdAt)}
+                            </span>
+                          </div>
+
+                          {/* Stars */}
+                          <div className="mb-2 flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <svg
+                                  key={star}
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill={
+                                    star <= rv.rating
+                                      ? "currentColor"
+                                      : "none"
+                                  }
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  className={
+                                    star <= rv.rating
+                                      ? "text-yellow-400"
+                                      : "text-gray-300"
+                                  }
+                                >
+                                  <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" />
+                                </svg>
+                              ))}
+                            </div>
+                            <Badge
+                              variant={
+                                rv.rating >= 4
+                                  ? "success"
+                                  : rv.rating >= 3
+                                  ? "warning"
+                                  : "danger"
+                              }
+                              size="sm"
+                            >
+                              {rv.rating} sao
+                            </Badge>
+                          </div>
+
+                          <p className="text-sm text-gray-700">{rv.text}</p>
+                        </div>
+                      </div>
+
+                      {/* Like / Dislike */}
+                      <div className="mt-3 flex items-center gap-2 border-t pt-3">
+                        <button
+                          onClick={() => handleVote(rv.id, "up")}
+                          aria-label="Hữu ích"
+                          aria-pressed={rv.userVote === "up"}
+                          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition ${
+                            rv.userVote === "up"
+                              ? "bg-green-50 text-green-600 ring-1 ring-green-200"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill={
+                              rv.userVote === "up" ? "currentColor" : "none"
+                            }
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="lucide lucide-thumbs-up"
+                          >
+                            <path d="M7 10v12" />
+                            <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
+                          </svg>
+                          <span>{rv.likes}</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleVote(rv.id, "down")}
+                          aria-label="Không hữu ích"
+                          aria-pressed={rv.userVote === "down"}
+                          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition ${
+                            rv.userVote === "down"
+                              ? "bg-red-50 text-red-600 ring-1 ring-red-200"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill={
+                              rv.userVote === "down" ? "currentColor" : "none"
+                            }
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="lucide lucide-thumbs-down"
+                          >
+                            <path d="M17 14V2" />
+                            <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l-2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" />
+                          </svg>
+                          <span>{rv.dislikes}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* BÌNH LUẬN */}
+          {activeTab === "comments" && (
+            <div className="rounded-xl bg-white p-6 shadow-md">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-xl font-semibold">
+                  Bình luận ({commentCountLabel})
+                </h3>
+              </div>
+
+              {/* Form thêm bình luận mới */}
+              <div className="mb-6 flex items-start gap-3">
                 <textarea
-                  value={newReview}
-                  onChange={(e) => setNewReview(e.target.value)}
-                  placeholder="Chia sẻ trải nghiệm của bạn về cuốn sách..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Chia sẻ cảm nhận của bạn về cuốn sách..."
                   className="min-h-[84px] flex-1 rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none ring-blue-100 focus:ring-4"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && e.ctrlKey) {
+                      e.preventDefault();
+                      addNewComment();
+                    }
+                  }}
                 />
                 <Button
-                  onClick={addNewReview}
+                  onClick={addNewComment}
                   variant="primary"
                   size="sm"
                   className="shrink-0"
                 >
-                  Gửi đánh giá
+                  Gửi
                 </Button>
               </div>
-            </div>
 
-            {/* Danh sách đánh giá */}
-            <div className="space-y-4 border-t pt-6">
-              <h3 className="text-lg font-semibold">Tất cả đánh giá</h3>
-              <div className="space-y-3">
-                {reviews.map((rv) => (
-                <div key={rv.id} className="rounded-lg border border-gray-200 p-4">
-                <div className="mb-2 flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="mb-1 flex items-center gap-2">
-                      <p className="font-medium">{rv.author}</p>
-                      <span className="text-gray-400">•</span>
-                      <span className="text-sm text-gray-500">{timeAgo(rv.createdAt)}</span>
-                    </div>
-                    
-                    {/* Hiển thị số sao đánh giá */}
-                    <div className="mb-2 flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <svg
-                            key={star}
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill={star <= rv.rating ? "currentColor" : "none"}
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            className={star <= rv.rating ? "text-yellow-400" : "text-gray-300"}
-                          >
-                            <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" />
-                          </svg>
-                        ))}
-                      </div>
-                      <Badge 
-                        variant={
-                          rv.rating >= 4 ? "success" : 
-                          rv.rating >= 3 ? "warning" : 
-                          "danger"
-                        } 
-                        size="sm"
-                      >
-                        {rv.rating} sao
-                      </Badge>
-                    </div>
-                    
-                    <p className="text-sm text-gray-700">{rv.text}</p>
-                  </div>
-                </div>
-
-                {/* Like / Dislike */}
-                <div className="mt-3 flex items-center gap-2 border-t pt-3">
-                  <button
-                    onClick={() => handleVote(rv.id, "up")}
-                    aria-label="Hữu ích"
-                    aria-pressed={rv.userVote === "up"}
-                    className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition ${
-                      rv.userVote === "up"
-                        ? "bg-green-50 text-green-600 ring-1 ring-green-200"
-                        : "text-gray-600 hover:bg-gray-100"
-                    }`}
-                  >
-                    {/* icon like */}
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                        fill={rv.userVote === "up" ? "currentColor" : "none"} stroke="currentColor"
-                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-thumbs-up">
-                      <path d="M7 10v12" />
-                      <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
-                    </svg>
-                    <span>{rv.likes}</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleVote(rv.id, "down")}
-                    aria-label="Không hữu ích"
-                    aria-pressed={rv.userVote === "down"}
-                    className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition ${
-                      rv.userVote === "down"
-                        ? "bg-red-50 text-red-600 ring-1 ring-red-200"
-                        : "text-gray-600 hover:bg-gray-100"
-                    }`}
-                  >
-                    {/* icon dislike */}
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                        fill={rv.userVote === "down" ? "currentColor" : "none"} stroke="currentColor"
-                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-thumbs-down">
-                      <path d="M17 14V2" />
-                      <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l-2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" />
-                    </svg>
-                    <span>{rv.dislikes}</span>
-                  </button>
-                </div>
+              {/* Danh sách bình luận */}
+              <div className="space-y-4">
+                {visibleComments.map((c) => (
+                  <CommentTree
+                    key={c.id}
+                    comment={c}
+                    depth={0}
+                    replyOpen={replyOpen}
+                    replyDrafts={replyDrafts}
+                    toggleReply={toggleReply}
+                    updateReplyDraft={updateReplyDraft}
+                    addReply={addReply}
+                  />
+                ))}
               </div>
-            ))}
-              </div>
+
+              {/* Xem thêm */}
+              {canLoadMore && (
+                <div className="mt-4 flex justify-center">
+                  <Button
+                    onClick={() =>
+                      setVisibleCommentCount((n) =>
+                        Math.min(n + 3, sortedComments.length)
+                      )
+                    }
+                    variant="outline"
+                    size="sm"
+                  >
+                    Xem thêm bình luận
+                  </Button>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-
-        {/* BÌNH LUẬN */}
-        {activeTab === "comments" && (
-          <div className="rounded-xl bg-white p-6 shadow-md">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-xl font-semibold">Bình luận ({commentCountLabel})</h3>
-            </div>
-
-            {/* Form thêm bình luận mới */}
-            <div className="mb-6 flex items-start gap-3">
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Chia sẻ cảm nhận của bạn về cuốn sách..."
-                className="min-h-[84px] flex-1 rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none ring-blue-100 focus:ring-4"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && e.ctrlKey) {
-                    e.preventDefault();
-                    addNewComment();
-                  }
-                }}
-              />
-              <Button
-                onClick={addNewComment}
-                variant="primary"
-                size="sm"
-                className="shrink-0"
+        {/* Có thể bạn thích */}
+        <div className="mt-10">
+          <div className="mb-4 flex items-center justify-between px-1">
+            <h2 className="text-2xl font-semibold tracking-wide text-gray-800">
+              Có thể bạn thích
+            </h2>
+            <Link
+              href="/books?filter=suggested"
+              className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
+            >
+              <span>Xem tất cả</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                Gửi
-              </Button>
-            </div>
-
-            {/* Danh sách bình luận với component đệ quy */}
-            <div className="space-y-4">
-              {visibleComments.map((c) => (
-                <CommentTree
-                  key={c.id}
-                  comment={c}
-                  depth={0}
-                  replyOpen={replyOpen}
-                  replyDrafts={replyDrafts}
-                  toggleReply={toggleReply}
-                  updateReplyDraft={updateReplyDraft}
-                  addReply={addReply}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
                 />
+              </svg>
+            </Link>
+          </div>
+
+          <div className="relative">
+            {/* Nút trái */}
+            <Button
+              type="button"
+              onClick={() => scrollByStepLike("left")}
+              disabled={!canPrevLike}
+              variant="secondary"
+              size="sm"
+              className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
+              aria-label="Xem trước"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </Button>
+
+            {/* Dải sách */}
+            <div
+              ref={likeRef}
+              onScroll={updateArrowsLike}
+              className="flex gap-5 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
+                        [-ms-overflow-style:none] [scrollbar-width:none]
+                        [&::-webkit-scrollbar]:hidden"
+              style={{ overflowX: "auto" }}
+            >
+              {suggestedBooks.map((b) => (
+                <CarouselBookCard key={b.id} book={b} />
               ))}
             </div>
 
-            {/* Xem thêm */}
-            {canLoadMore && (
-              <div className="mt-4 flex justify-center">
-                <Button
-                  onClick={() => setVisibleCommentCount((n) => Math.min(n + 3, sortedComments.length))}
-                  variant="outline"
-                  size="sm"
-                >
-                  Xem thêm bình luận
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Có thể bạn thích */}
-      <div className="mt-10">
-        <div className="mb-4 flex items-center justify-between px-1">
-          <h2 className="text-2xl font-semibold tracking-wide text-gray-800">
-            Có thể bạn thích
-          </h2>
-          <Link
-            href="/books?filter=suggested"
-            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
-          >
-            <span>Xem tất cả</span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        </div>
-
-        <div className="relative">
-          {/* Nút trái */}
-          <Button
-            type="button"
-            onClick={() => scrollByStepLike("left")}
-            disabled={!canPrevLike}
-            variant="secondary"
-            size="sm"
-            className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
-            aria-label="Xem trước"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m15 18-6-6 6-6"/>
-            </svg>
-          </Button>
-
-          {/* Dải sách */}
-          <div
-            ref={likeRef}
-            onScroll={updateArrowsLike}
-            className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
-                      [-ms-overflow-style:none] [scrollbar-width:none] 
-                      [&::-webkit-scrollbar]:hidden"
-            style={{ overflowX: "auto" }}
-          >
-            {suggestedBooks.map((b) => (
-              <Link
-                key={b.id}
-                href={`/books/${b.id}`}
-                className="flex h-[260px] w-[150px] min-w-[150px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
+            {/* Nút phải */}
+            <Button
+              type="button"
+              onClick={() => scrollByStepLike("right")}
+              disabled={!canNextLike}
+              variant="secondary"
+              size="sm"
+              className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
+              aria-label="Xem tiếp"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <div className="relative h-[180px] w-full overflow-hidden rounded-lg mb-2">
-                  <Image
-                    src={b.cover}
-                    alt={b.title}
-                    fill
-                    sizes="150px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <p className="line-clamp-2 text-sm font-semibold leading-tight text-center">{b.title}</p>
-              </Link>
-            ))}
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </Button>
+
+            <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
           </div>
-
-          {/* Nút phải */}
-          <Button
-            type="button"
-            onClick={() => scrollByStepLike("right")}
-            disabled={!canNextLike}
-            variant="secondary"
-            size="sm"
-            className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
-            aria-label="Xem tiếp"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m9 18 6-6-6-6"/>
-            </svg>
-          </Button>
-
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
-        </div>
-      </div>
-
-      {/* Sách được đọc nhiều nhất */}
-      <div className="mt-10">
-        <div className="mb-4 flex items-center justify-between px-1">
-          <h2 className="text-2xl font-semibold tracking-wide text-gray-800">
-            Sách được đọc nhiều nhất
-          </h2>
-          <Link
-            href="/books?filter=popular"
-            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
-          >
-            <span>Xem tất cả</span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
         </div>
 
-        <div className="relative">
-          {/* Nút trái */}
-          <Button
-            type="button"
-            onClick={() => scrollByStepPopular("left")}
-            disabled={!canPrevPopular}
-            variant="secondary"
-            size="sm"
-            className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
-            aria-label="Xem trước"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m15 18-6-6 6-6"/>
-            </svg>
-          </Button>
-
-          {/* Dải sách */}
-          <div
-            ref={popularRef}
-            onScroll={updateArrowsPopular}
-            className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
-                      [-ms-overflow-style:none] [scrollbar-width:none] 
-                      [&::-webkit-scrollbar]:hidden"
-            style={{ overflowX: "auto" }}
-          >
-            {popularBooks.map((b) => (
-              <Link
-                key={b.id}
-                href={`/books/${b.id}`}
-                className="flex h-[260px] w-[150px] min-w-[150px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
+        {/* Sách được đọc nhiều nhất */}
+        <div className="mt-10">
+          <div className="mb-4 flex items-center justify-between px-1">
+            <h2 className="text-2xl font-semibold tracking-wide text-gray-800">
+              Sách được đọc nhiều nhất
+            </h2>
+            <Link
+              href="/books?filter=popular"
+              className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
+            >
+              <span>Xem tất cả</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                <div className="relative h-[180px] w-full overflow-hidden rounded-lg mb-2">
-                  <Image
-                    src={b.cover}
-                    alt={b.title}
-                    fill
-                    sizes="150px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <p className="line-clamp-2 text-sm font-semibold leading-tight text-center">{b.title}</p>
-              </Link>
-            ))}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </Link>
           </div>
 
-          {/* Nút phải */}
-          <Button
-            type="button"
-            onClick={() => scrollByStepPopular("right")}
-            disabled={!canNextPopular}
-            variant="secondary"
-            size="sm"
-            className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
-            aria-label="Xem tiếp"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m9 18 6-6-6-6"/>
-            </svg>
-          </Button>
-
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
-        </div>
-      </div>
-      
-      
-      {/* Cùng tác giả */}
-      <div className="mt-10">
-        <div className="mb-4 flex items-center justify-between px-1">
-          <h2 className="text-2xl font-semibold tracking-wide text-gray-800">
-            Cùng tác giả
-          </h2>
-          <Link
-            href="/books?filter=related"
-            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
-          >
-            <span>Xem tất cả</span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        </div>
-
-        <div className="relative">
-          {/* Nút trái */}
-          <Button
-            type="button"
-            onClick={() => scrollByStepAuthor("left")}
-            disabled={!canPrevAuthor}
-            variant="secondary"
-            size="sm"
-            className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
-            aria-label="Xem trước"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m15 18-6-6 6-6"/>
-            </svg>
-          </Button>
-
-          {/* Dải sách */}
-          <div
-            ref={authorRef}
-            onScroll={updateArrowsAuthor}
-            className="flex gap-4 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
-                      [-ms-overflow-style:none] [scrollbar-width:none] 
-                      [&::-webkit-scrollbar]:hidden"
-            style={{ overflowX: "auto" }}
-          >
-            {relatedBooks.map((b) => (
-              <Link
-                key={b.id}
-                href={`/books/${b.id}`}
-                className="flex h-[260px] w-[150px] min-w-[150px] flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
+          <div className="relative">
+            {/* Nút trái */}
+            <Button
+              type="button"
+              onClick={() => scrollByStepPopular("left")}
+              disabled={!canPrevPopular}
+              variant="secondary"
+              size="sm"
+              className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
+              aria-label="Xem trước"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <div className="relative h-[180px] w-full overflow-hidden rounded-lg mb-2">
-                  <Image
-                    src={b.cover}
-                    alt={b.title}
-                    fill
-                    sizes="150px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <p className="line-clamp-2 text-sm font-semibold leading-tight text-center">{b.title}</p>
-              </Link>
-            ))}
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </Button>
+
+            {/* Dải sách */}
+            <div
+              ref={popularRef}
+              onScroll={updateArrowsPopular}
+              className="flex gap-5 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
+                        [-ms-overflow-style:none] [scrollbar-width:none]
+                        [&::-webkit-scrollbar]:hidden"
+              style={{ overflowX: "auto" }}
+            >
+              {popularBooks.map((b) => (
+                <CarouselBookCard key={b.id} book={b} />
+              ))}
+            </div>
+
+            {/* Nút phải */}
+            <Button
+              type="button"
+              onClick={() => scrollByStepPopular("right")}
+              disabled={!canNextPopular}
+              variant="secondary"
+              size="sm"
+              className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
+              aria-label="Xem tiếp"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </Button>
+
+            <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
+          </div>
+        </div>
+
+        {/* Cùng tác giả */}
+        <div className="mt-10">
+          <div className="mb-4 flex items-center justify-between px-1">
+            <h2 className="text-2xl font-semibold tracking-wide text-gray-800">
+              Cùng tác giả
+            </h2>
+            <Link
+              href="/books?filter=related"
+              className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
+            >
+              <span>Xem tất cả</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </Link>
           </div>
 
-          {/* Nút phải */}
-          <Button
-            type="button"
-            onClick={() => scrollByStepAuthor("right")}
-            disabled={!canNextAuthor}
-            variant="secondary"
-            size="sm"
-            className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
-            aria-label="Xem tiếp"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m9 18 6-6-6-6"/>
-            </svg>
-          </Button>
+          <div className="relative">
+            {/* Nút trái */}
+            <Button
+              type="button"
+              onClick={() => scrollByStepAuthor("left")}
+              disabled={!canPrevAuthor}
+              variant="secondary"
+              size="sm"
+              className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
+              aria-label="Xem trước"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </Button>
 
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
+            {/* Dải sách */}
+            <div
+              ref={authorRef}
+              onScroll={updateArrowsAuthor}
+              className="flex gap-5 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth
+                        [-ms-overflow-style:none] [scrollbar-width:none]
+                        [&::-webkit-scrollbar]:hidden"
+              style={{ overflowX: "auto" }}
+            >
+              {relatedBooks.map((b) => (
+                <CarouselBookCard key={b.id} book={b} />
+              ))}
+            </div>
+
+            {/* Nút phải */}
+            <Button
+              type="button"
+              onClick={() => scrollByStepAuthor("right")}
+              disabled={!canNextAuthor}
+              variant="secondary"
+              size="sm"
+              className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
+              aria-label="Xem tiếp"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </Button>
+
+            <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
+          </div>
         </div>
       </div>
-    </div>
     </main>
   );
 }

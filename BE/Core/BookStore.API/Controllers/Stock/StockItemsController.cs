@@ -100,7 +100,34 @@ namespace BookStore.API.Controllers
         }
 
         /// <summary>
-        /// Reserve stock for an order (Admin only)
+        /// Check stock availability before order
+        /// </summary>
+        [HttpGet("check-availability")]
+        public async Task<ActionResult<object>> CheckStockAvailability(
+            [FromQuery] Guid bookId,
+            [FromQuery] Guid warehouseId,
+            [FromQuery] int quantity)
+        {
+            var stock = await _stockItemService.GetStockByBookAndWarehouseAsync(bookId, warehouseId);
+            if (stock == null)
+                return NotFound(new { available = false, message = "Stock not found" });
+
+            var available = stock.QuantityOnHand - stock.ReservedQuantity;
+            var canFulfill = available >= quantity;
+
+            return Ok(new
+            {
+                available = canFulfill,
+                quantityOnHand = stock.QuantityOnHand,
+                reservedQuantity = stock.ReservedQuantity,
+                availableQuantity = available,
+                requestedQuantity = quantity,
+                message = canFulfill ? "Stock available" : $"Insufficient stock. Available: {available}"
+            });
+        }
+
+        /// <summary>
+        /// Reserve stock for an order (Should be called when order is created)
         /// </summary>
         [HttpPost("reserve")]
         // [Authorize(Roles = "Admin")]
@@ -108,8 +135,22 @@ namespace BookStore.API.Controllers
         {
             try
             {
+                // Validate stock availability first
+                var stock = await _stockItemService.GetStockByBookAndWarehouseAsync(dto.BookId, dto.WarehouseId);
+                if (stock == null)
+                    return NotFound(new { message = "Stock not found" });
+
+                var available = stock.QuantityOnHand - stock.ReservedQuantity;
+                if (available < dto.Quantity)
+                    return BadRequest(new { message = $"Insufficient stock. Available: {available}, Requested: {dto.Quantity}" });
+
                 await _stockItemService.ReserveStockAsync(dto);
-                return Ok(new { message = "Stock reserved successfully" });
+                return Ok(new 
+                { 
+                    message = "Stock reserved successfully",
+                    reservedQuantity = dto.Quantity,
+                    orderId = dto.OrderId
+                });
             }
             catch (Exception ex)
             {
@@ -118,7 +159,7 @@ namespace BookStore.API.Controllers
         }
 
         /// <summary>
-        /// Release reserved stock (Admin only)
+        /// Release reserved stock (Call when order is cancelled before payment)
         /// </summary>
         [HttpPost("release")]
         // [Authorize(Roles = "Admin")]
@@ -129,8 +170,15 @@ namespace BookStore.API.Controllers
         {
             try
             {
+                var stock = await _stockItemService.GetStockByBookAndWarehouseAsync(bookId, warehouseId);
+                if (stock == null)
+                    return NotFound(new { message = "Stock not found" });
+
+                if (stock.ReservedQuantity < quantity)
+                    return BadRequest(new { message = $"Insufficient reserved quantity. Reserved: {stock.ReservedQuantity}, Requested: {quantity}" });
+
                 await _stockItemService.ReleaseReservedStockAsync(bookId, warehouseId, quantity);
-                return Ok(new { message = "Reserved stock released successfully" });
+                return Ok(new { message = "Reserved stock released successfully", releasedQuantity = quantity });
             }
             catch (Exception ex)
             {
@@ -139,7 +187,7 @@ namespace BookStore.API.Controllers
         }
 
         /// <summary>
-        /// Confirm sale (Admin only)
+        /// Confirm sale from reserved stock (Call when order is paid/confirmed)
         /// </summary>
         [HttpPost("confirm-sale")]
         // [Authorize(Roles = "Admin")]
@@ -150,8 +198,55 @@ namespace BookStore.API.Controllers
         {
             try
             {
+                var stock = await _stockItemService.GetStockByBookAndWarehouseAsync(bookId, warehouseId);
+                if (stock == null)
+                    return NotFound(new { message = "Stock not found" });
+
+                if (stock.ReservedQuantity < quantity)
+                    return BadRequest(new { message = $"Insufficient reserved quantity. Reserved: {stock.ReservedQuantity}, Requested: {quantity}" });
+
                 await _stockItemService.ConfirmSaleAsync(bookId, warehouseId, quantity);
-                return Ok(new { message = "Sale confirmed successfully" });
+                
+                return Ok(new 
+                { 
+                    message = "Sale confirmed successfully",
+                    soldQuantity = quantity,
+                    remainingStock = stock.QuantityOnHand - quantity,
+                    remainingReserved = stock.ReservedQuantity - quantity
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Return stock (for refunds/cancellations after sale)
+        /// </summary>
+        [HttpPost("return")]
+        // [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ReturnStock(
+            [FromQuery] Guid bookId,
+            [FromQuery] Guid warehouseId,
+            [FromQuery] int quantity,
+            [FromQuery] string? reason)
+        {
+            try
+            {
+                var stock = await _stockItemService.GetStockByBookAndWarehouseAsync(bookId, warehouseId);
+                if (stock == null)
+                    return NotFound(new { message = "Stock not found" });
+
+                // Use Update API with increase operation
+                await _stockItemService.UpdateStockQuantityAsync(bookId, warehouseId, new UpdateStockQuantityDto
+                {
+                    Operation = "increase",
+                    Quantity = quantity,
+                    Reason = reason ?? "Stock return/refund"
+                });
+
+                return Ok(new { message = "Stock returned successfully", returnedQuantity = quantity });
             }
             catch (Exception ex)
             {

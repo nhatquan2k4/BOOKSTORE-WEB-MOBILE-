@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 type Book = {
   id: string;
@@ -23,266 +25,56 @@ type Book = {
 
 type SortOption = "featured" | "rating" | "price-asc" | "price-desc" | "name";
 
-const MOCK_BOOKS: Book[] = [
-  {
-    id: "1",
-    title: "Atomic Habits - Thói Quen Nguyên Tử",
-    author: "James Clear",
-    category: "Kỹ năng sống",
-    price: 195000,
-    originalPrice: 250000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 3456,
-    stock: 120,
-    featuredReason: "Bán chạy nhất 2024",
-    highlight: "Best Seller",
-  },
-  {
-    id: "2",
-    title: "Sapiens: Lược Sử Loài Người",
-    author: "Yuval Noah Harari",
-    category: "Khoa học",
-    price: 280000,
-    originalPrice: 350000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 4521,
-    stock: 95,
-    featuredReason: "Được đề xuất bởi Bill Gates",
-    highlight: "Đề xuất",
-  },
-  {
-    id: "3",
-    title: "Đắc Nhân Tâm",
-    author: "Dale Carnegie",
-    category: "Kỹ năng sống",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 5678,
-    stock: 230,
-    featuredReason: "Kinh điển về giao tiếp",
-    highlight: "Kinh điển",
-  },
-  {
-    id: "4",
-    title: "Clean Code",
-    author: "Robert C. Martin",
-    category: "Lập trình",
-    price: 350000,
-    originalPrice: 450000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 2134,
-    stock: 45,
-    featuredReason: "Must-read cho lập trình viên",
-    highlight: "Essential",
-  },
-  {
-    id: "5",
-    title: "Nhà Giả Kim",
-    author: "Paulo Coelho",
-    category: "Văn học",
-    price: 85000,
-    originalPrice: 110000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 4321,
-    stock: 180,
-    featuredReason: "Văn học hiện đại xuất sắc",
-    highlight: "Được yêu thích",
-  },
-  {
-    id: "6",
-    title: "Tư Duy Nhanh Và Chậm",
-    author: "Daniel Kahneman",
-    category: "Tâm lý học",
-    price: 245000,
-    originalPrice: 310000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2876,
-    stock: 60,
-    featuredReason: "Tác giả đạt Nobel",
-    highlight: "Giải Nobel",
-  },
-  {
-    id: "7",
-    title: "Homo Deus: Lược Sử Tương Lai",
-    author: "Yuval Noah Harari",
-    category: "Khoa học",
-    price: 295000,
-    originalPrice: 370000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 3987,
-    stock: 75,
-    featuredReason: "Tầm nhìn về tương lai nhân loại",
-    highlight: "Tương lai",
-  },
-  {
-    id: "8",
-    title: "Nghĩ Giàu Làm Giàu",
-    author: "Napoleon Hill",
-    category: "Kinh doanh",
-    price: 115000,
-    originalPrice: 145000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1987,
-    stock: 110,
-    featuredReason: "Bí quyết thành công từ Carnegie",
-    highlight: "Thành công",
-  },
-  {
-    id: "9",
-    title: "Deep Work",
-    author: "Cal Newport",
-    category: "Kỹ năng sống",
-    price: 175000,
-    originalPrice: 220000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2456,
-    stock: 85,
-    featuredReason: "Làm việc hiệu quả trong thời đại số",
-    highlight: "Hiệu suất",
-  },
-  {
-    id: "10",
-    title: "Design Patterns",
-    author: "Gang of Four",
-    category: "Lập trình",
-    price: 420000,
-    originalPrice: 500000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 1856,
-    stock: 35,
-    featuredReason: "“Kinh thánh” về kiến trúc phần mềm",
-    highlight: "Bible",
-  },
-  {
-    id: "11",
-    title: "Psychology of Money",
-    author: "Morgan Housel",
-    category: "Kinh tế",
-    price: 195000,
-    originalPrice: 245000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 3234,
-    stock: 90,
-    featuredReason: "Sách tài chính nổi bật",
-    highlight: "Tài chính",
-  },
-  {
-    id: "12",
-    title: "Mắt Biếc",
-    author: "Nguyễn Nhật Ánh",
-    category: "Văn học",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 4567,
-    stock: 150,
-    featuredReason: "Văn học Việt Nam được yêu thích",
-    highlight: "Việt Nam",
-  },
-  {
-    id: "13",
-    title: "The Lean Startup",
-    author: "Eric Ries",
-    category: "Kinh doanh",
-    price: 185000,
-    originalPrice: 230000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1876,
-    stock: 55,
-    featuredReason: "Khởi nghiệp thời đại mới",
-    highlight: "Startup",
-  },
-  {
-    id: "14",
-    title: "Chiến Tranh Tiền Tệ",
-    author: "Song Hongbing",
-    category: "Kinh tế",
-    price: 165000,
-    originalPrice: 210000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 2345,
-    stock: 45,
-    featuredReason: "Hiểu hệ thống tài chính toàn cầu",
-    highlight: "Toàn cầu",
-  },
-  {
-    id: "15",
-    title: "7 Thói Quen Hiệu Quả",
-    author: "Stephen Covey",
-    category: "Kỹ năng sống",
-    price: 125000,
-    originalPrice: 160000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 3456,
-    stock: 95,
-    featuredReason: "Sách lãnh đạo kinh điển",
-    highlight: "Lãnh đạo",
-  },
-  {
-    id: "16",
-    title: "Càng Bình Tĩnh Càng Hạnh Phúc",
-    author: "Megumi",
-    category: "Tâm lý học",
-    price: 98000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 2987,
-    stock: 180,
-    featuredReason: "Sống an nhiên trong thời hiện đại",
-    highlight: "An nhiên",
-  },
-  {
-    id: "17",
-    title: "Đừng Bao Giờ Đi Ăn Một Mình",
-    author: "Keith Ferrazzi",
-    category: "Kỹ năng sống",
-    price: 155000,
-    originalPrice: 195000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 1654,
-    stock: 70,
-    featuredReason: "Nghệ thuật networking",
-    highlight: "Networking",
-  },
-  {
-    id: "18",
-    title: "Cây Cam Ngọt Của Tôi",
-    author: "José Mauro de Vasconcelos",
-    category: "Văn học",
-    price: 135000,
-    originalPrice: 170000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 3876,
-    stock: 120,
-    featuredReason: "Câu chuyện cảm động",
-    highlight: "Cảm động",
-  },
-];
-
 export default function FeaturedBooksPage() {
   const [sortBy, setSortBy] = useState<SortOption>("featured");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 18;
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 20;
 
-  const sortedBooks = [...MOCK_BOOKS].sort((a, b) => {
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await bookService.getBooks({
+          pageNumber: currentPage || 1,
+          pageSize: 20,
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
+            id: book.id.toString(),
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            category: book.categoryNames?.[0] || "Chưa phân loại",
+            price: book.discountPrice || book.currentPrice || 0,
+            originalPrice: book.currentPrice,
+            cover: "/image/anh.png",
+            rating: book.averageRating || 4.5,
+            reviewCount: book.totalReviews || 0,
+            stock: 100,
+            featuredReason: "Sách nổi bật",
+            highlight: book.discountPrice ? "Giảm giá" : undefined,
+          }));
+          setBooks(transformedBooks);
+          setTotalItems(response.totalCount || 0);
+        } else {
+          setBooks([]);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setBooks([]);
+        setTotalItems(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, [currentPage]);
+
+  const sortedBooks = [...books].sort((a, b) => {
     switch (sortBy) {
       case "featured":
         return b.reviewCount - a.reviewCount;
@@ -321,7 +113,7 @@ export default function FeaturedBooksPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4 py-8">
         {/* breadcrumb */}
         <nav className="mb-6 text-sm text-gray-600">
@@ -367,7 +159,7 @@ export default function FeaturedBooksPage() {
             </h1>
           </div>
           <p className="text-gray-700 text-lg font-medium">
-            {MOCK_BOOKS.length} đầu sách được chọn lọc kỹ càng - Những tác phẩm xuất sắc nhất
+            {totalItems} đầu sách được chọn lọc kỹ càng - Những tác phẩm xuất sắc nhất
           </p>
         </div>
 
@@ -404,20 +196,32 @@ export default function FeaturedBooksPage() {
         </div>
 
         {/* Grid books */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
-          {paginatedBooks.map((book, index) => (
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                <div className="aspect-[2/3] bg-gray-200 rounded-lg mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {paginatedBooks.map((book, index) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="group bg-white rounded-xl p-3 shadow-md hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-orange-200"
+              className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
             >
-              <div className="relative h-[220px] w-full overflow-hidden rounded-lg mb-3">
+              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                 <Image
                   src={book.cover}
                   alt={book.title}
                   fill
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                  className="object-cover group-hover:scale-110 transition-transform duration-300"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
 
                 {index < 3 && (
@@ -465,23 +269,6 @@ export default function FeaturedBooksPage() {
                   </p>
                 </div>
 
-                {/* Giá + giá gốc + % giảm (màu đỏ) */}
-                <div className="flex items-center gap-2 pt-1">
-                  <p className="text-orange-600 font-bold text-sm">
-                    {formatPrice(book.price)}
-                  </p>
-                  {book.originalPrice && (
-                    <div className="flex items-center gap-1">
-                      <p className="text-xs text-gray-400 line-through">
-                        {formatPrice(book.originalPrice)}
-                      </p>
-                      <span className="text-xs font-bold text-red-500">
-                        -{calculateDiscount(book.originalPrice, book.price)}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-
                 <div className="flex items-center gap-1 pt-1">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -500,10 +287,28 @@ export default function FeaturedBooksPage() {
                     ({book.reviewCount})
                   </span>
                 </div>
+
+                {/* Giá + giá gốc + % giảm */}
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <p className="text-orange-600 font-bold text-sm">
+                    {formatPrice(book.price)}
+                  </p>
+                  {book.originalPrice && (
+                    <>
+                      <p className="text-xs text-gray-400 line-through">
+                        {formatPrice(book.originalPrice)}
+                      </p>
+                      <Badge variant="danger" className="text-xs font-bold">
+                        -{calculateDiscount(book.originalPrice, book.price)}%
+                      </Badge>
+                    </>
+                  )}
+                </div>
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (

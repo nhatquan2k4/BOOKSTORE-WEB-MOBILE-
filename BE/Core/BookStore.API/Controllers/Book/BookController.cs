@@ -53,7 +53,7 @@ namespace BookStore.API.Controllers.Book
         /// <param name="id">ID của sách</param>
         /// <returns>BookDetailDto</returns>
         [HttpGet("{id:guid}")]
-        [Authorize(Roles = "Admin")]
+        // Remove [Authorize] here - everyone should view book details
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<BookDetailDto>> GetById(Guid id)
@@ -132,10 +132,11 @@ namespace BookStore.API.Controllers.Book
         /// <returns>Danh sách BookDto</returns>
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IEnumerable<BookDto>>> Search([FromQuery] string searchTerm, [FromQuery] int top = 20)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
-                return BadRequest(new { message = "T? kh�a t�m ki?m kh�ng du?c d? tr?ng" });
+                return BadRequest(new { message = "Từ khóa tìm kiếm không được để trống" });
 
             var books = await _bookService.SearchAsync(searchTerm, top);
             return Ok(books);
@@ -147,6 +148,7 @@ namespace BookStore.API.Controllers.Book
         /// <param name="dto">Thông tin sách</param>
         /// <returns>BookDetailDto được tạo</returns>
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(BookDetailDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -187,7 +189,6 @@ namespace BookStore.API.Controllers.Book
                     new { message = "Có lỗi xảy ra khi tạo sách", details = ex.Message });
             }
         }
-
         /// <summary>
         /// Cập nhật sách
         /// </summary>
@@ -195,13 +196,14 @@ namespace BookStore.API.Controllers.Book
         /// <param name="dto">Thông tin cập nhật</param>
         /// <returns>BookDetailDto được cập nhật</returns>
         [HttpPut("{id:guid}")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<BookDetailDto>> Update(Guid id, [FromBody] UpdateBookDto dto)
         {
             if (id != dto.Id)
-                return BadRequest(new { message = "ID trong URL kh�ng kh?p v?i ID trong body" });
+                return BadRequest(new { message = "ID trong URL không khớp với ID trong body" });
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -222,7 +224,7 @@ namespace BookStore.API.Controllers.Book
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "C� l?i x?y ra khi c?p nh?t s�ch", details = ex.Message });
+                    new { message = "Có lỗi xảy ra khi cập nhật sách", details = ex.Message });
             }
         }
 
@@ -276,6 +278,46 @@ namespace BookStore.API.Controllers.Book
 
             var exists = await _bookService.IsISBNExistsAsync(isbn, excludeBookId);
             return Ok(new { exists, isbn });
+        }
+
+        /// <summary>
+        /// Lấy gợi ý sách thông minh dựa trên giỏ hàng và hành vi người dùng
+        /// </summary>
+        /// <param name="excludeBookIds">Danh sách ID sách cần loại trừ (thường là sách đã có trong giỏ)</param>
+        /// <param name="categoryIds">Danh sách ID danh mục quan tâm (từ sách trong giỏ)</param>
+        /// <param name="limit">Số lượng gợi ý tối đa (mặc định: 8)</param>
+        /// <returns>Danh sách BookDto được gợi ý</returns>
+        [HttpGet("recommendations")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<IEnumerable<BookDto>>> GetRecommendations(
+            [FromQuery] string? excludeBookIds = null,
+            [FromQuery] string? categoryIds = null,
+            [FromQuery] int limit = 8)
+        {
+            try
+            {
+                var excludeIds = string.IsNullOrWhiteSpace(excludeBookIds)
+                    ? new List<Guid>()
+                    : excludeBookIds.Split(',')
+                        .Select(id => Guid.TryParse(id.Trim(), out var guid) ? guid : Guid.Empty)
+                        .Where(id => id != Guid.Empty)
+                        .ToList();
+
+                var catIds = string.IsNullOrWhiteSpace(categoryIds)
+                    ? new List<Guid>()
+                    : categoryIds.Split(',')
+                        .Select(id => Guid.TryParse(id.Trim(), out var guid) ? guid : Guid.Empty)
+                        .Where(id => id != Guid.Empty)
+                        .ToList();
+
+                var recommendations = await _bookService.GetRecommendationsAsync(excludeIds, catIds, limit);
+                return Ok(recommendations);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi lấy gợi ý sách", details = ex.Message });
+            }
         }
     }
 }

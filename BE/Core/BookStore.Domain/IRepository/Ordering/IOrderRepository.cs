@@ -33,5 +33,10 @@ namespace BookStore.Domain.IRepository.Ordering
         
         // Lấy order đã thanh toán nhưng chưa hoàn thành (cho tracking)
         Task<IEnumerable<Order>> GetPendingCompletionOrdersAsync();
+
+        // Analytics methods
+        Task<IEnumerable<Order>> GetCompletedOrdersByDateRangeAsync(DateTime from, DateTime to);
+        Task<Dictionary<Guid, int>> GetTopSellingBooksAsync(DateTime from, DateTime to, int top = 10);
+        Task<Dictionary<string, int>> GetOrderCountsByStatusAsync(DateTime from, DateTime to);
     }
 }

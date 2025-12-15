@@ -242,7 +242,7 @@ export default function AddressesPage() {
                     <div className="flex gap-2">
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         className="text-gray-600 hover:text-blue-600"
                         onClick={() => openEditForm(addr)}
                       >
@@ -261,7 +261,7 @@ export default function AddressesPage() {
                       </Button>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={() => deleteAddress(addr.id)}
                         className="text-gray-600 hover:text-red-600"
                       >
@@ -351,7 +351,7 @@ export default function AddressesPage() {
                 </CardTitle>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={() => {
                     setShowForm(false);
                     setEditingAddress(null);

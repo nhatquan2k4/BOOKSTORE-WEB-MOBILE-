@@ -60,7 +60,7 @@ namespace BookStore.Infrastructure.Data.Configurations.Common
             builder.HasOne(r => r.User)
                 .WithMany(u => u.Reviews)
                 .HasForeignKey(r => r.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             // 🔗 1-n: Book → Reviews
             builder.HasOne(r => r.Book)

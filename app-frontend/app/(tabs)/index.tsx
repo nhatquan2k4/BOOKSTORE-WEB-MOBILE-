@@ -6,7 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  Dimensions,
   Image,
   ScrollView,
   StatusBar,
@@ -17,8 +16,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const { width } = Dimensions.get('window');
 
 // Dữ liệu mẫu cho categories
 const categories = [
@@ -188,7 +185,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#6e6e6eeb',
+    backgroundColor: '#f0ede4',
   },
   headerBannerContainer: {
     position: 'relative',
@@ -258,14 +255,14 @@ const styles = StyleSheet.create({
   },
   contentArea: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#f0ede4',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingTop: 20,
     marginTop: 0,
   },
   whiteContentArea: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#f0ede4',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingTop: 20,
@@ -286,6 +283,7 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 25,
+    backgroundColor: 'transparent',
   },
   booksScroll: {
     paddingHorizontal: 20,
@@ -297,6 +295,7 @@ const styles = StyleSheet.create({
   },
   categoriesScroll: {
     paddingHorizontal: 20,
+    backgroundColor: '#f0ede4',
     gap: 15,
   },
 

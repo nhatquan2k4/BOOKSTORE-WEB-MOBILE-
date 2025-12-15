@@ -7,11 +7,11 @@ namespace BookStore.Infrastructure.Data.Seeders
     {
         public static async Task SeedAsync(AppDbContext context)
         {
-            // Kiểm tra xem đã có dữ liệu chưa
-            if (await context.Roles.AnyAsync() || await context.Permissions.AnyAsync())
-            {
-                return; // Đã có dữ liệu, không cần seed
-            }
+            // Kiểm tra nếu đã có permissions thì bỏ qua
+            if (await context.Permissions.AnyAsync())
+                return;
+
+            // Roles đã được seed bởi RoleSeeder, không cần tạo lại ở đây
 
             // ===== ĐỊNH NGHĨA CÁC PERMISSIONS =====
             var permissions = new List<Permission>
@@ -113,37 +113,45 @@ namespace BookStore.Infrastructure.Data.Seeders
                 // System Permissions
                 new Permission { Id = Guid.NewGuid(), Name = "System.ViewLogs", Description = "Xem logs hệ thống" },
                 new Permission { Id = Guid.NewGuid(), Name = "System.ManageSettings", Description = "Quản lý cài đặt hệ thống" },
-                new Permission { Id = Guid.NewGuid(), Name = "System.ManageNotifications", Description = "Quản lý thông báo" }
+                new Permission { Id = Guid.NewGuid(), Name = "System.ManageNotifications", Description = "Quản lý thông báo" },
+                
+                // Publisher Management Permissions
+                new Permission { Id = Guid.NewGuid(), Name = "Publisher.View", Description = "Xem nhà xuất bản" },
+                new Permission { Id = Guid.NewGuid(), Name = "Publisher.Create", Description = "Tạo nhà xuất bản mới" },
+                new Permission { Id = Guid.NewGuid(), Name = "Publisher.Update", Description = "Cập nhật nhà xuất bản" },
+                new Permission { Id = Guid.NewGuid(), Name = "Publisher.Delete", Description = "Xóa nhà xuất bản" },
+                
+                // Warehouse Management Permissions
+                new Permission { Id = Guid.NewGuid(), Name = "Warehouse.View", Description = "Xem kho" },
+                new Permission { Id = Guid.NewGuid(), Name = "Warehouse.Create", Description = "Tạo kho mới" },
+                new Permission { Id = Guid.NewGuid(), Name = "Warehouse.Update", Description = "Cập nhật kho" },
+                new Permission { Id = Guid.NewGuid(), Name = "Warehouse.Delete", Description = "Xóa kho" },
+                
+                // Coupon Management Permissions
+                new Permission { Id = Guid.NewGuid(), Name = "Coupon.View", Description = "Xem mã giảm giá" },
+                new Permission { Id = Guid.NewGuid(), Name = "Coupon.Create", Description = "Tạo mã giảm giá" },
+                new Permission { Id = Guid.NewGuid(), Name = "Coupon.Update", Description = "Cập nhật mã giảm giá" },
+                new Permission { Id = Guid.NewGuid(), Name = "Coupon.Delete", Description = "Xóa mã giảm giá" },
+                
+                // Notification Permissions
+                new Permission { Id = Guid.NewGuid(), Name = "Notification.View", Description = "Xem thông báo" },
+                new Permission { Id = Guid.NewGuid(), Name = "Notification.Create", Description = "Tạo thông báo" },
+                new Permission { Id = Guid.NewGuid(), Name = "Notification.Send", Description = "Gửi thông báo" },
+                new Permission { Id = Guid.NewGuid(), Name = "Notification.Delete", Description = "Xóa thông báo" }
             };
 
             await context.Permissions.AddRangeAsync(permissions);
             await context.SaveChangesAsync();
 
-            // ===== ĐỊNH NGHĨA CÁC ROLES =====
-            var adminRole = new Role
-            {
-                Id = Guid.NewGuid(),
-                Name = "Admin",
-                Description = "Quản trị viên có toàn quyền trong hệ thống"
-            };
+            // Lấy các roles đã được seed từ RoleSeeder
+            var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "Admin");
+            var userRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "User");
+            var shipperRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "Shipper");
 
-            var userRole = new Role
+            if (adminRole == null || userRole == null || shipperRole == null)
             {
-                Id = Guid.NewGuid(),
-                Name = "User",
-                Description = "Người dùng thông thường có thể mua sách, đánh giá và quản lý tài khoản cá nhân"
-            };
-
-            var shipperRole = new Role
-            {
-                Id = Guid.NewGuid(),
-                Name = "Shipper",
-                Description = "Nhân viên giao hàng có thể xem và cập nhật trạng thái đơn hàng giao cho mình"
-            };
-
-            var roles = new List<Role> { adminRole, userRole, shipperRole };
-            await context.Roles.AddRangeAsync(roles);
-            await context.SaveChangesAsync();
+                throw new InvalidOperationException("Required roles not found. Please ensure RoleSeeder runs before RolePermissionSeeder.");
+            }
 
             // ===== GÁN QUYỀN CHO CÁC ROLES =====
             var rolePermissions = new List<RolePermission>();
@@ -165,8 +173,10 @@ namespace BookStore.Infrastructure.Data.Seeders
                 "Book.View",
                 "Category.View",
                 "Author.View",
+                "Publisher.View",
                 "Price.View",
                 "Discount.View",
+                "Coupon.View",
                 
                 // Quản lý tài khoản
                 "User.View",
@@ -198,7 +208,10 @@ namespace BookStore.Infrastructure.Data.Seeders
                 "Rental.View",
                 "Rental.Create",
                 "Rental.Return",
-                "Rental.Extend"
+                "Rental.Extend",
+                
+                // Thông báo
+                "Notification.View"
             };
 
             foreach (var permissionName in userPermissionNames)
@@ -252,7 +265,7 @@ namespace BookStore.Infrastructure.Data.Seeders
             await context.RolePermissions.AddRangeAsync(rolePermissions);
             await context.SaveChangesAsync();
 
-            Console.WriteLine($"Seeded {permissions.Count} permissions, {roles.Count} roles, and {rolePermissions.Count} role-permission mappings.");
+            Console.WriteLine($"Seeded {permissions.Count} permissions and {rolePermissions.Count} role-permission mappings.");
         }
     }
 }

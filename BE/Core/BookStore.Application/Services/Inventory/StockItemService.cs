@@ -106,17 +106,21 @@ namespace BookStore.Application.Services.Inventory
                 "Invalid operation. Use: increase, decrease, or set");
 
             int quantityChange = 0;
-            InventoryTransactionType transactionType;
+            InventoryTransactionType transactionType = InventoryTransactionType.Adjustment;
 
             switch (dto.Operation.ToLower())
             {
                 case "increase":
                     // Use AdjustQuantity for manual increases (doesn't affect SoldQuantity)
                     stock!.AdjustQuantity(dto.Quantity);
+                    quantityChange = dto.Quantity;
+                    transactionType = InventoryTransactionType.Adjustment;
                     break;
                 case "decrease":
                     // Use AdjustQuantity for manual decreases (doesn't affect SoldQuantity)
                     stock!.AdjustQuantity(-dto.Quantity);
+                    quantityChange = -dto.Quantity;
+                    transactionType = InventoryTransactionType.Adjustment;
                     break;
                 case "set":
                     // Set to specific value using AdjustQuantity
@@ -125,6 +129,8 @@ namespace BookStore.Application.Services.Inventory
                     if (difference != 0)
                     {
                         stock.AdjustQuantity(difference);
+                        quantityChange = difference;
+                        transactionType = InventoryTransactionType.Adjustment;
                     }
                     break;
                 default:
@@ -186,7 +192,15 @@ namespace BookStore.Application.Services.Inventory
 
         public async Task<bool> ConfirmSaleAsync(Guid bookId, Guid warehouseId, int quantity)
         {
-            await _stockItemRepository.ConfirmSaleAsync(bookId, warehouseId, quantity);
+            var stock = await _stockItemRepository.GetStockByBookAndWarehouseAsync(bookId, warehouseId);
+            Guard.Against(stock == null, "Stock item not found");
+            
+            Guard.Against(stock!.ReservedQuantity < quantity, 
+                $"Insufficient reserved quantity. Reserved: {stock.ReservedQuantity}, Requested: {quantity}");
+
+            // Use ConfirmSale method instead of Decrease
+            stock.ConfirmSale(quantity);
+            await _stockItemRepository.SaveChangesAsync();
 
             // Log transaction for confirmed sale
             await _transactionRepository.CreateTransactionAsync(
@@ -195,7 +209,7 @@ namespace BookStore.Application.Services.Inventory
                 InventoryTransactionType.Outbound,
                 -quantity, // Actual outbound
                 null,
-                $"Confirmed sale of {quantity} items"
+                $"Confirmed sale of {quantity} items (from reserved stock)"
             );
 
             return true;

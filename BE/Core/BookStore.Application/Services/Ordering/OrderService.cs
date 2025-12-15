@@ -57,20 +57,20 @@ namespace BookStore.Application.Services.Ordering
                 orders = allOrders.Skip(skip).Take(pageSize);
             }
 
-            var orderDtos = orders.Select(MapToOrderDto).ToList();
+            var orderDtos = orders.Select(o => o.ToDto()).ToList();
             return (orderDtos, totalCount);
         }
 
         public async Task<OrderDto?> GetOrderByIdAsync(Guid orderId)
         {
             var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
-            return order == null ? null : MapToOrderDto(order);
+            return order?.ToDto();
         }
 
         public async Task<OrderDto?> GetOrderByOrderNumberAsync(string orderNumber)
         {
             var order = await _orderRepository.GetByOrderNumberAsync(orderNumber);
-            return order == null ? null : MapToOrderDto(order);
+            return order?.ToDto();
         }
 
         public async Task<(List<OrderDto> Items, int TotalCount)> GetOrdersByUserIdAsync(Guid userId, string? status = null, int pageNumber = 1, int pageSize = 10)
@@ -79,7 +79,7 @@ namespace BookStore.Application.Services.Ordering
             var orders = await _orderRepository.GetOrdersByUserIdAsync(userId, status, skip, pageSize);
             var totalCount = await _orderRepository.CountOrdersByUserIdAsync(userId, status);
 
-            var orderDtos = orders.Select(MapToOrderDto).ToList();
+            var orderDtos = orders.Select(o => o.ToDto()).ToList();
             return (orderDtos, totalCount);
         }
 
@@ -148,7 +148,7 @@ namespace BookStore.Application.Services.Ordering
 
             _logger.LogInformation($"Order created: {order.OrderNumber} for user {dto.UserId}");
 
-            return MapToOrderDto(order);
+            return order.ToDto();
         }
 
         public async Task<OrderDto> CreateOrderFromCartAsync(Guid userId, CreateOrderAddressDto address, Guid? couponId = null)
@@ -193,7 +193,7 @@ namespace BookStore.Application.Services.Ordering
             await _orderRepository.SaveChangesAsync();
 
             var order = await _orderRepository.GetOrderWithDetailsAsync(dto.OrderId);
-            return MapToOrderDto(order!);
+            return order!.ToDto();
         }
 
         public async Task<OrderDto> CancelOrderAsync(CancelOrderDto dto)
@@ -206,7 +206,7 @@ namespace BookStore.Application.Services.Ordering
             await _orderRepository.SaveChangesAsync();
 
             var updatedOrder = await _orderRepository.GetOrderWithDetailsAsync(dto.OrderId);
-            return MapToOrderDto(updatedOrder!);
+            return updatedOrder!.ToDto();
         }
 
         public async Task<OrderDto> ConfirmOrderPaymentAsync(Guid orderId)
@@ -215,7 +215,7 @@ namespace BookStore.Application.Services.Ordering
             await _orderRepository.SaveChangesAsync();
 
             var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
-            return MapToOrderDto(order!);
+            return order!.ToDto();
         }
 
         public async Task<OrderDto> ShipOrderAsync(Guid orderId, string? note = null)
@@ -228,7 +228,7 @@ namespace BookStore.Application.Services.Ordering
             await _orderRepository.SaveChangesAsync();
 
             var updatedOrder = await _orderRepository.GetOrderWithDetailsAsync(orderId);
-            return MapToOrderDto(updatedOrder!);
+            return updatedOrder!.ToDto();
         }
 
         public async Task<OrderDto> CompleteOrderAsync(Guid orderId, string? note = null)
@@ -241,7 +241,7 @@ namespace BookStore.Application.Services.Ordering
             await _orderRepository.SaveChangesAsync();
 
             var updatedOrder = await _orderRepository.GetOrderWithDetailsAsync(orderId);
-            return MapToOrderDto(updatedOrder!);
+            return updatedOrder!.ToDto();
         }
 
         #endregion
@@ -289,78 +289,7 @@ namespace BookStore.Application.Services.Ordering
 
         #endregion
 
-        #region Mappers
-
-        private OrderDto MapToOrderDto(Order order)
-        {
-            return new OrderDto
-            {
-                Id = order.Id,
-                UserId = order.UserId,
-                UserName = order.User?.Profiles?.FullName ?? string.Empty,
-                UserEmail = order.User?.Email ?? string.Empty,
-                Status = order.Status,
-                OrderNumber = order.OrderNumber,
-                TotalAmount = order.TotalAmount,
-                DiscountAmount = order.DiscountAmount,
-                FinalAmount = order.FinalAmount,
-                CreatedAt = order.CreatedAt,
-                PaidAt = order.PaidAt,
-                CompletedAt = order.CompletedAt,
-                CancelledAt = order.CancelledAt,
-                Items = order.Items.Select(MapToOrderItemDto).ToList(),
-                Address = MapToOrderAddressDto(order.Address),
-                PaymentTransaction = order.PaymentTransaction != null ? MapToPaymentTransactionDto(order.PaymentTransaction) : null,
-                CouponCode = order.Coupon?.Code
-            };
-        }
-
-        private OrderItemDto MapToOrderItemDto(OrderItem item)
-        {
-            return new OrderItemDto
-            {
-                Id = item.Id,
-                OrderId = item.OrderId,
-                BookId = item.BookId,
-                BookTitle = item.Book?.Title ?? string.Empty,
-                BookISBN = item.Book?.ISBN?.Value ?? string.Empty,
-                BookImageUrl = item.Book?.Images?.FirstOrDefault()?.ImageUrl,
-                Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice,
-                Subtotal = item.Subtotal
-            };
-        }
-
-        private OrderAddressDto MapToOrderAddressDto(OrderAddress address)
-        {
-            return new OrderAddressDto
-            {
-                Id = address.Id,
-                RecipientName = address.RecipientName,
-                PhoneNumber = address.PhoneNumber,
-                Province = address.Province,
-                District = address.District,
-                Ward = address.Ward,
-                Street = address.Street,
-                Note = address.Note
-            };
-        }
-
-        private PaymentTransactionDto MapToPaymentTransactionDto(PaymentTransaction payment)
-        {
-            return new PaymentTransactionDto
-            {
-                Id = payment.Id,
-                OrderId = payment.OrderId,
-                Provider = payment.Provider,
-                TransactionCode = payment.TransactionCode,
-                PaymentMethod = payment.PaymentMethod,
-                Amount = payment.Amount,
-                Status = payment.Status,
-                CreatedAt = payment.CreatedAt,
-                PaidAt = payment.PaidAt
-            };
-        }
+        #region Helpers
 
         private string GenerateOrderNumber()
         {
@@ -371,6 +300,8 @@ namespace BookStore.Application.Services.Ordering
         }
 
         #endregion
+
+        // Mapping delegated to OrderMapper for better separation of concerns
 
         #region Order Status History
 

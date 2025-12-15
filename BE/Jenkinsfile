@@ -2,74 +2,94 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY_URL = "localhost:5000"
-        IMAGE_NAME   = "bookstore-backend"
-        IMAGE_TAG    = "LASTEST"
+
+        SERVER_IP    = '192.168.0.102'
+        
+        REMOTE_USER  = 'jenkins' 
+        
+        SSH_CRED_ID  = 'windows-ssh-creds'
+        
+        REGISTRY_ID  = 'docker-registry'
+
+        // --- CẤU HÌNH DOCKER ---
+        REGISTRY_URL = '192.168.0.102:5000'
+        IMAGE_NAME   = 'bookstore-backend'
+        IMAGE_TAG    = "v${BUILD_NUMBER}"
+        
+        COMPOSE_PATH = 'D:\\BOOKSTORE-WEB-MOBILE-\\BE\\docker'
     }
 
     stages {
-
         stage('Checkout') {
-            steps { checkout scm }
+            steps {
+                checkout scm
+            }
         }
 
         stage('Docker Build') {
             steps {
-                sh '''
-                    cd BE
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                '''
+                dir('BE') {
+                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                }
             }
         }
 
         stage('Push to Registry') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'docker-registry',
-                    usernameVariable: 'REG_USER',
-                    passwordVariable: 'REG_PASS'
-                )]) {
-
-                    sh '''
+                withCredentials([usernamePassword(credentialsId: REGISTRY_ID, usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS')]) {
+                    sh """
                         docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-
                         echo "${REG_PASS}" | docker login ${REGISTRY_URL} -u "${REG_USER}" --password-stdin
-
                         docker push ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                    '''
+                    """
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to Windows via SSH') {
             steps {
-                sh '''
+                sshagent(credentials: [SSH_CRED_ID]) {
+                    script {
+                        echo "--- Bắt đầu Deploy sang ${SERVER_IP} ---"
+                        
+                        // Lấy user/pass registry để login trên máy Windows
+                        withCredentials([usernamePassword(credentialsId: REGISTRY_ID, usernameVariable: 'D_USER', passwordVariable: 'D_PASS')]) {
+                            
+                            // 1. Login Docker trên Windows
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"echo ${D_PASS} | docker login ${REGISTRY_URL} -u ${D_USER} --password-stdin\""
 
-                    # Chạy docker-compose cho SQL + MinIO
-                    docker compose -f BE/docker/docker-compose.yml up -d
+                            // 2. Stop & Remove container cũ (Dùng try-catch PowerShell để không lỗi nếu chưa có container)
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"try { docker stop ${IMAGE_NAME}; docker rm ${IMAGE_NAME} } catch {}; echo 'Cleaned old container'\""
 
-                    # Dừng container backend cũ
-                    docker stop bookstore-backend || true
-                    docker rm   bookstore-backend || true
+                            // 3. Khởi động Infrastructure (DB, MinIO) bằng Docker Compose
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"cd ${COMPOSE_PATH}; docker compose up -d\""
 
-                    # Pull backend version mới
-                    docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
+                            // 4. Pull Image mới nhất
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""
 
-                    # Chạy backend
-                    docker run -d \
-                        --name bookstore-backend \
-                        --network docker_bookstore-network \
-                        -e ASPNETCORE_ENVIRONMENT=Development \
-                        -e ConnectionStrings__UsersDb="Server=bookstore-sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True" \
-                        -e MinIO__Endpoint=bookstore-minio:9000 \
-                        -e MinIO__AccessKey=minioadmin \
-                        -e MinIO__SecretKey=minioadmin123 \
-                        -e MinIO__BucketName=bookstore-images \
-                        -e MinIO__UseSSL=false \
-                        -p 3030:8080 \
-                        ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-                '''
+                            // 5. Tìm tên Network (PowerShell syntax)
+                            def findNetworkCmd = "docker network ls --format '{{.Name}}' | Where-Object { \\\$_ -like '*bookstore*' } | Select-Object -First 1"
+                            def networkName = sh(script: "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"${findNetworkCmd}\"", returnStdout: true).trim()
+                            
+                            echo "Found Network: '${networkName}'"
+                            if (networkName == "") {
+                                error "Không tìm thấy Docker Network nào có tên chứa 'bookstore'. Hãy kiểm tra lại docker-compose!"
+                            }
+
+                            // 6. Chạy Container mới
+                            sh """ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} "docker run -d --name ${IMAGE_NAME} --network ${networkName} -e ASPNETCORE_ENVIRONMENT=Development -e 'ConnectionStrings__UsersDb=Server=bookstore-sqlserver;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;TrustServerCertificate=True' -e MinIO__Endpoint=minio:9000 -e MinIO__AccessKey=minioadmin -e MinIO__SecretKey=minioadmin123 -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""""
+                            
+                            // 7. Sleep và restart Nginx
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"Start-Sleep -Seconds 5; docker restart bookstore-nginx; docker ps --filter name=${IMAGE_NAME}\""
+                        }
+                    }
+                }
             }
         }
+    }
+    
+    post {
+        success { echo "Deploy Success!" }
+        failure { echo "Deploy Failed!" }
     }
 }
