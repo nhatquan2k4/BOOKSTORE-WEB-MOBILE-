@@ -168,9 +168,5 @@ namespace BookStore.Application.Services.Cart
 
             _logger.LogInformation($"Cleaned up stale cart items older than {daysThreshold} days");
         }
-
-        #endregion
-
-        // Mapping delegated to CartMapper for better separation of concerns
     }
 }
