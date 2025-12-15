@@ -182,7 +182,7 @@ namespace BookStore.Infrastructure.Data.Seeders
                     PhoneNumber = "0945678901",
                     DateOfBirth = new DateTime(1993, 3, 25),
                     Gender = "Nam",
-                    AvatarUrl = "/images/avatars/shipper1.jpg"
+                    AvatarUrl = "/images/avatars/shipper1.jpg",
                 },
                 new UserProfile
                 {
@@ -192,7 +192,7 @@ namespace BookStore.Infrastructure.Data.Seeders
                     PhoneNumber = "0956789012",
                     DateOfBirth = new DateTime(1996, 7, 30),
                     Gender = "Nữ",
-                    AvatarUrl = "/images/avatars/shipper2.jpg"
+                    AvatarUrl = "/images/avatars/shipper2.jpg",
                 }
             };
 
