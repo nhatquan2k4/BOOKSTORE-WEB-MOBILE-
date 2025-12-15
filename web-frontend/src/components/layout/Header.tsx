@@ -10,10 +10,10 @@ import {
   NotificationDropdown,
   useNotifications,
 } from "@/components/ui";
-import { useCartStore } from "@/store/cartStore";
 import { useAuth } from "@/contexts";
-import { bookService } from "@/services";
-import type { BookDto } from "@/types/dtos";
+import { bookService, cartService, authorService, categoryService } from "@/services";
+import type { BookDto, AuthorDto, CategoryDto } from "@/types/dtos";
+import { matchVietnameseText } from "@/lib/utils/text";
 
 export function Header() {
   const router = useRouter();
@@ -24,6 +24,8 @@ export function Header() {
   
   // Search results state
   const [searchResults, setSearchResults] = useState<BookDto[]>([]);
+  const [authorResults, setAuthorResults] = useState<AuthorDto[]>([]);
+  const [categoryResults, setCategoryResults] = useState<CategoryDto[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -31,9 +33,36 @@ export function Header() {
   // Get auth state from context
   const { user: currentUser, isLoggedIn, logout } = useAuth();
 
-  // Get cart count from store
-  const cartItems = useCartStore((state) => state.cartItems);
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  // Get cart count from API
+  const [cartCount, setCartCount] = useState(0);
+
+  // Fetch cart count from API
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      if (isLoggedIn) {
+        try {
+          const count = await cartService.getCartItemCount();
+          setCartCount(count);
+        } catch (error) {
+          console.error("Failed to fetch cart count:", error);
+          setCartCount(0);
+        }
+      } else {
+        setCartCount(0);
+      }
+    };
+
+    fetchCartCount();
+    
+    // Poll cart count every 30 seconds when logged in
+    const interval = setInterval(() => {
+      if (isLoggedIn) {
+        fetchCartCount();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isLoggedIn]);
 
   // Get notifications
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } =
@@ -41,31 +70,59 @@ export function Header() {
 
   // Debounced search effect
   useEffect(() => {
-    const searchBooks = async () => {
+    const searchAll = async () => {
       if (searchQuery.trim().length < 2) {
         setSearchResults([]);
+        setAuthorResults([]);
+        setCategoryResults([]);
         setShowSearchResults(false);
         return;
       }
 
       setSearchLoading(true);
       try {
-        const result = await bookService.getBooks({
-          searchTerm: searchQuery.trim(),
-          pageSize: 8,
-          pageNumber: 1,
-        });
-        setSearchResults(result.items || []);
+        const searchTerm = searchQuery.trim();
+        
+        // Gọi song song cả 3 API
+        const [booksResult, authorsResult, categoriesResult] = await Promise.all([
+          bookService.getBooks({
+            searchTerm: searchTerm,
+            pageSize: 6,
+            pageNumber: 1,
+          }),
+          authorService.getAuthors(1, 10, searchTerm), // Lấy nhiều hơn để filter client-side
+          categoryService.getCategories(1, 100), // Lấy hết để filter client-side với Vietnamese matching
+        ]);
+
+        // Set books từ API (backend đã xử lý search)
+        setSearchResults(booksResult.items || []);
+        
+        // Filter authors với Vietnamese text matching
+        // Backend có thể chưa hỗ trợ tìm không dấu, nên filter thêm ở client
+        const filteredAuthors = (authorsResult.items || []).filter((author) =>
+          matchVietnameseText(author.name, searchTerm)
+        ).slice(0, 4);
+        setAuthorResults(filteredAuthors);
+        
+        // Filter categories với Vietnamese text matching
+        const filteredCategories = (categoriesResult.items || []).filter((cat) =>
+          matchVietnameseText(cat.name, searchTerm) ||
+          (cat.description && matchVietnameseText(cat.description, searchTerm))
+        ).slice(0, 4);
+        setCategoryResults(filteredCategories);
+        
         setShowSearchResults(true);
       } catch (error) {
         console.error("Search error:", error);
         setSearchResults([]);
+        setAuthorResults([]);
+        setCategoryResults([]);
       } finally {
         setSearchLoading(false);
       }
     };
 
-    const debounceTimer = setTimeout(searchBooks, 300);
+    const debounceTimer = setTimeout(searchAll, 300);
     return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
 
@@ -92,6 +149,18 @@ export function Header() {
 
   const handleBookClick = (bookId: string) => {
     router.push(`/books/${bookId}`);
+    setSearchQuery("");
+    setShowSearchResults(false);
+  };
+
+  const handleAuthorClick = (authorId: string) => {
+    router.push(`/books?authorId=${authorId}`);
+    setSearchQuery("");
+    setShowSearchResults(false);
+  };
+
+  const handleCategoryClick = (categoryId: string) => {
+    router.push(`/books?categoryId=${categoryId}`);
     setSearchQuery("");
     setShowSearchResults(false);
   };
@@ -211,7 +280,9 @@ export function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => {
-                    if (searchResults.length > 0) setShowSearchResults(true);
+                    if (searchResults.length > 0 || authorResults.length > 0 || categoryResults.length > 0) {
+                      setShowSearchResults(true);
+                    }
                   }}
                   placeholder="Tìm kiếm sách, tác giả, thể loại, ..."
                   className="w-full pl-12 pr-24 py-3 border-2 border-gray-200 rounded-full focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-gray-700 placeholder:text-gray-400"
@@ -237,69 +308,140 @@ export function Header() {
 
             {/* Search Results Dropdown */}
             {showSearchResults && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50 max-h-[500px] overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50 max-h-[600px] overflow-y-auto">
                 {searchLoading ? (
                   <div className="p-4 text-center text-gray-500">
                     <div className="inline-block w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                     <p className="mt-2">Đang tìm kiếm...</p>
                   </div>
-                ) : searchResults.length > 0 ? (
-                  <>
-                    {searchResults.map((book) => (
-                      <button
-                        key={book.id}
-                        onClick={() => handleBookClick(book.id)}
-                        className="w-full flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-0"
-                      >
-                        <div className="relative w-16 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
-                          <Image
-                            src="/image/anh.png"
-                            alt={book.title}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-gray-900 line-clamp-2 mb-1">
-                            {book.title}
-                          </h4>
-                          <p className="text-sm text-gray-500 mb-2">
-                            {book.authorNames?.join(", ") || "Chưa cập nhật"}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            {book.discountPrice ? (
-                              <>
-                                <span className="font-bold text-red-600">
-                                  {(book.discountPrice || 0).toLocaleString("vi-VN")}₫
-                                </span>
-                                <span className="text-sm text-gray-400 line-through">
-                                  {(book.currentPrice || 0).toLocaleString("vi-VN")}₫
-                                </span>
-                              </>
-                            ) : (
-                              <span className="font-bold text-gray-900">
-                                {(book.currentPrice || 0).toLocaleString("vi-VN")}₫
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                    <button
-                      onClick={handleSearch}
-                      className="w-full p-4 text-center text-blue-600 hover:bg-blue-50 font-medium transition-colors"
-                    >
-                      Xem tất cả kết quả →
-                    </button>
-                  </>
                 ) : (
-                  <div className="p-8 text-center text-gray-500">
-                    <svg className="w-16 h-16 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p className="font-medium">Không tìm thấy kết quả</p>
-                    <p className="text-sm mt-1">Thử tìm kiếm với từ khóa khác</p>
-                  </div>
+                  <>
+                    {/* Authors Section */}
+                    {authorResults.length > 0 && (
+                      <div className="border-b border-gray-100">
+                        <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+                          Tác giả
+                        </div>
+                        {authorResults.map((author) => (
+                          <button
+                            key={author.id}
+                            onClick={() => handleAuthorClick(author.id)}
+                            className="w-full flex items-center gap-3 p-3 hover:bg-blue-50 transition-colors text-left"
+                          >
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900">{author.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {author.bookCount} {author.bookCount === 1 ? 'sách' : 'sách'}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Categories Section */}
+                    {categoryResults.length > 0 && (
+                      <div className="border-b border-gray-100">
+                        <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+                          Thể loại
+                        </div>
+                        {categoryResults.map((category) => (
+                          <button
+                            key={category.id}
+                            onClick={() => handleCategoryClick(category.id)}
+                            className="w-full flex items-center gap-3 p-3 hover:bg-green-50 transition-colors text-left"
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                              <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900">{category.name}</p>
+                              {category.description && (
+                                <p className="text-xs text-gray-500 line-clamp-1">{category.description}</p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Books Section */}
+                    {searchResults.length > 0 && (
+                      <>
+                        <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+                          Sách
+                        </div>
+                        {searchResults.map((book) => (
+                          <button
+                            key={book.id}
+                            onClick={() => handleBookClick(book.id)}
+                            className="w-full flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-0"
+                          >
+                            <div className="relative w-16 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                              <Image
+                                src="/image/anh.png"
+                                alt={book.title}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-900 line-clamp-2 mb-1">
+                                {book.title}
+                              </h4>
+                              <p className="text-sm text-gray-500 mb-2">
+                                {book.authorNames?.join(", ") || "Chưa cập nhật"}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                {book.discountPrice ? (
+                                  <>
+                                    <span className="font-bold text-red-600">
+                                      {(book.discountPrice || 0).toLocaleString("vi-VN")}₫
+                                    </span>
+                                    <span className="text-sm text-gray-400 line-through">
+                                      {(book.currentPrice || 0).toLocaleString("vi-VN")}₫
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="font-bold text-gray-900">
+                                    {(book.currentPrice || 0).toLocaleString("vi-VN")}₫
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+                    {/* No results */}
+                    {searchResults.length === 0 && authorResults.length === 0 && categoryResults.length === 0 && (
+                      <div className="p-8 text-center text-gray-500">
+                        <svg className="w-16 h-16 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="font-medium">Không tìm thấy kết quả</p>
+                        <p className="text-sm mt-1">Hãy thử tìm kiếm với từ khóa khác</p>
+                      </div>
+                    )}
+
+                    {/* View all results button */}
+                    {(searchResults.length > 0 || authorResults.length > 0 || categoryResults.length > 0) && (
+                      <button
+                        onClick={handleSearch}
+                        className="w-full p-4 text-center text-blue-600 hover:bg-blue-50 font-medium transition-colors border-t border-gray-100"
+                      >
+                        Xem tất cả kết quả
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}

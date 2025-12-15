@@ -341,42 +341,39 @@ export default function RentDetailPage() {
               {/* Tabs */}
               <div className="border-b border-gray-200 mb-6">
                 <div className="flex gap-8">
-                  <Button
+                  <button
                     onClick={() => setActiveTab('description')}
-                    variant={activeTab === 'description' ? 'primary' : 'outline'}
-                    size="md"
-                    className={`pb-4 border-b-2 ${
-                      activeTab === 'description'
-                        ? 'border-blue-600'
-                        : 'border-transparent'
+                    className={`relative py-4 text-sm font-medium transition-colors ${
+                      activeTab === 'description' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     Mô tả
-                  </Button>
-                  <Button
+                    {activeTab === 'description' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                    )}
+                  </button>
+                  <button
                     onClick={() => setActiveTab('details')}
-                    variant={activeTab === 'details' ? 'primary' : 'outline'}
-                    size="md"
-                    className={`pb-4 border-b-2 ${
-                      activeTab === 'details'
-                        ? 'border-blue-600'
-                        : 'border-transparent'
+                    className={`relative py-4 text-sm font-medium transition-colors ${
+                      activeTab === 'details' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     Chi tiết
-                  </Button>
-                  <Button
+                    {activeTab === 'details' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                    )}
+                  </button>
+                  <button
                     onClick={() => setActiveTab('reviews')}
-                    variant={activeTab === 'reviews' ? 'primary' : 'outline'}
-                    size="md"
-                    className={`pb-4 border-b-2 ${
-                      activeTab === 'reviews'
-                        ? 'border-blue-600'
-                        : 'border-transparent'
+                    className={`relative py-4 text-sm font-medium transition-colors ${
+                      activeTab === 'reviews' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     Đánh giá ({bookData.reviews})
-                  </Button>
+                    {activeTab === 'reviews' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                    )}
+                  </button>
                 </div>
               </div>
 

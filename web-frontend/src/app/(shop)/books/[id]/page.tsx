@@ -722,6 +722,7 @@ export default function BookDetailPage() {
   // -------- API States --------
   const [book, setBook] = useState<BookDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [suggestedBooks, setSuggestedBooks] = useState<CarouselBook[]>([]);
   const [popularBooks, setPopularBooks] = useState<CarouselBook[]>([]);
   const [relatedBooks, setRelatedBooks] = useState<CarouselBook[]>([]);
@@ -839,27 +840,33 @@ export default function BookDetailPage() {
     const fetchBookDetail = async () => {
       try {
         setLoading(true);
+        console.log("Fetching book with ID:", id);
         const bookData = await bookService.getBookById(id);
+        console.log("Book data received:", bookData);
         setBook(bookData);
         
         // Fetch suggested books (newest)
         const newest = await bookService.getNewestBooks(8);
+        console.log("Suggested books:", newest);
         const suggested = newest.map(transformBookDto);
         setSuggestedBooks(suggested);
         
         // Fetch popular books (most viewed)
         const mostViewed = await bookService.getMostViewedBooks(8);
+        console.log("Popular books:", mostViewed);
         const popular = mostViewed.map(transformBookDto);
         setPopularBooks(popular);
         
         // Fetch related books (same category if available)
         if (bookData.categories && bookData.categories.length > 0) {
           const byCat = await bookService.getBooksByCategory(bookData.categories[0].id, 12);
+          console.log("Related books:", byCat);
           const related = byCat.map(transformBookDto);
           setRelatedBooks(related);
         }
       } catch (error) {
         console.error("Error fetching book detail:", error);
+        setError("Không tìm thấy thông tin sách. Vui lòng thử lại sau.");
       } finally {
         setLoading(false);
       }
@@ -887,6 +894,8 @@ export default function BookDetailPage() {
     cover: book.images?.[0]?.imageUrl || "/image/anh.png",
     description: book.description || "",
   } : null;
+
+  console.log("Display book:", displayBook);
 
   const [reviews, setReviews] = useState<Review[]>(MOCK_INITIAL_REVIEWS);
 
@@ -1159,7 +1168,14 @@ export default function BookDetailPage() {
       <main className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-6 py-10">
           <div className="rounded-2xl bg-white p-8 text-center shadow-md">
-            <p className="text-lg text-gray-600">Không tìm thấy thông tin sách</p>
+            <p className="text-lg text-gray-600">
+              {error || "Không tìm thấy thông tin sách"}
+            </p>
+            {error && (
+              <p className="mt-2 text-sm text-gray-500">
+                Vui lòng kiểm tra console để xem chi tiết lỗi
+              </p>
+            )}
           </div>
         </div>
       </main>

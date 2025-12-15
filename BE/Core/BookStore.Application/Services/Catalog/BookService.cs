@@ -389,6 +389,8 @@ namespace BookStore.Application.Services.Catalog
                         .Where(b => !recommendations.Contains(b))
                         .OrderByDescending(b => b.StockItem?.QuantityOnHand ?? 0)
                         .ThenByDescending(b => b.PublicationYear)
+                        .OrderByDescending(b => b.StockItem?.QuantityOnHand ?? 0) 
+                        .ThenByDescending(b => b.PublicationYear)
                         .Take(remainingSlots)
                         .ToList();
 

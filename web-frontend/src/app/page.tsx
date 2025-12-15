@@ -5,276 +5,8 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge, Button } from "@/components/ui";
-import { Card, CardContent } from "@/components/ui/Card";
 import { bookService, categoryService } from "@/services";
 import type { BookDto, CategoryDto } from "@/types/dtos";
-
-// Fallback data nếu API lỗi
-const featuredBooks = [
-  {
-    id: 1,
-    title: "Clean Code",
-    author: "Robert C. Martin",
-    price: 350000,
-    originalPrice: 450000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 1234,
-    hot: true,
-  },
-  {
-    id: 2,
-    title: "Design Patterns",
-    author: "Gang of Four",
-    price: 280000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 856,
-    hot: true,
-  },
-  {
-    id: 3,
-    title: "The Pragmatic Programmer",
-    author: "Andrew Hunt",
-    price: 320000,
-    originalPrice: 400000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 645,
-    hot: false,
-  },
-  {
-    id: 4,
-    title: "Refactoring",
-    author: "Martin Fowler",
-    price: 290000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 432,
-    hot: false,
-  },
-  {
-    id: 5,
-    title: "Introduction to Algorithms",
-    author: "Thomas H. Cormen",
-    price: 450000,
-    originalPrice: 550000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 1567,
-    hot: true,
-  },
-  {
-    id: 6,
-    title: "You Don't Know JS",
-    author: "Kyle Simpson",
-    price: 180000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviews: 892,
-    hot: false,
-  },
-];
-
-const categories = [
-  {
-    id: 1,
-    name: "Lập trình",
-    count: 1234,
-    color: "from-blue-500 to-cyan-500",
-    image: "/image/lap_trinh.jpg",
-    href: "/programming",
-  },
-  {
-    id: 2,
-    name: "Kinh doanh",
-    count: 856,
-    color: "from-purple-500 to-pink-500",
-    image: "/image/kinh_doanh.jpg",
-    href: "/business",
-  },
-  {
-    id: 3,
-    name: "Thiết kế",
-    count: 645,
-    color: "from-orange-500 to-red-500",
-    image: "/image/thiet_ke.jpg",
-    href: "/design",
-  },
-  {
-    id: 4,
-    name: "Khoa học",
-    count: 432,
-    color: "from-green-500 to-teal-500",
-    image: "/image/khoa_hoc.png",
-    href: "/courses",
-  },
-  {
-    id: 5,
-    name: "Văn học",
-    count: 1567,
-    color: "from-indigo-500 to-purple-500",
-    image: "/image/van_hoc.jpg",
-    href: "/literature",
-  },
-  {
-    id: 6,
-    name: "Kỹ năng sống",
-    count: 892,
-    color: "from-pink-500 to-rose-500",
-    image: "/image/ky_nang_song.jpg",
-    href: "/life-skills",
-  },
-  {
-    id: 7,
-    name: "Thiếu nhi",
-    count: 543,
-    color: "from-yellow-500 to-orange-500",
-    image: "/image/thieu_nhi.jpg",
-    href: "/children",
-  },
-  {
-    id: 8,
-    name: "Ngoại ngữ",
-    count: 721,
-    color: "from-cyan-500 to-blue-500",
-    image: "/image/ngoai_ngu.jpg",
-    href: "/foreign-languages",
-  },
-];
-
-const popularBooks = [
-  {
-    id: "p1",
-    title: "Bố Già",
-    author: "Mario Puzo",
-    price: 120000,
-    originalPrice: 150000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 2345,
-  },
-  {
-    id: "p2",
-    title: "Tuổi trẻ đáng giá bao nhiêu",
-    author: "Rosie Nguyễn",
-    price: 85000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 1876,
-  },
-  {
-    id: "p3",
-    title: "Đắc nhân tâm",
-    author: "Dale Carnegie",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 5432,
-  },
-  {
-    id: "p4",
-    title: "Nhà giả kim",
-    author: "Paulo Coelho",
-    price: 78000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 3210,
-  },
-  {
-    id: "p5",
-    title: "Càng kỷ luật càng tự do",
-    author: "Jocko Willink",
-    price: 110000,
-    originalPrice: 135000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 987,
-  },
-  {
-    id: "p6",
-    title: "Nghĩ giàu làm giàu",
-    author: "Napoleon Hill",
-    price: 125000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 1654,
-  },
-  {
-    id: "p7",
-    title: "7 thói quen hiệu quả",
-    author: "Stephen Covey",
-    price: 140000,
-    originalPrice: 180000,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p8",
-    title: "Quẳng gánh lo đi mà vui sống",
-    author: "Dale Carnegie",
-    price: 88000,
-    originalPrice: 105000,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p9",
-    title: "Sapiens: Lược sử loài người",
-    author: "Yuval Noah Harari",
-    price: 195000,
-    originalPrice: 250000,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p10",
-    title: "Homo Deus",
-    author: "Yuval Noah Harari",
-    price: 185000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p11",
-    title: "Atomic Habits",
-    author: "James Clear",
-    price: 160000,
-    originalPrice: 195000,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p12",
-    title: "Deep Work",
-    author: "Cal Newport",
-    price: 145000,
-    originalPrice: 175000,
-    cover: "/image/anh.png",
-  },
-];
-
-const benefits = [
-  {
-    title: "Miễn phí vận chuyển",
-    description: "Cho đơn hàng từ 500.000₫",
-  },
-  {
-    title: "Thanh toán an toàn",
-    description: "Bảo mật thông tin 100%",
-  },
-  {
-    title: "Đọc eBook",
-    description: "Mọi lúc, mọi nơi",
-  },
-  {
-    title: "Ưu đãi hấp dẫn",
-    description: "Giảm giá lên đến 50%",
-  },
-];
 
 // Helper format tiền
 const formatVnd = (price: number) =>
@@ -324,12 +56,17 @@ export default function HomePage() {
           categoryService.getCategories(1, 8),
         ]);
 
-        setFeaturedBooksData(featuredRes || []);
-        setPopularBooksData(popularRes || []);
-        setCategoriesData(categoriesRes.items || []);
+        console.log("Featured books response:", featuredRes);
+        console.log("Popular books response:", popularRes);
+        console.log("Categories response:", categoriesRes);
+
+        setFeaturedBooksData(Array.isArray(featuredRes) ? featuredRes : []);
+        setPopularBooksData(Array.isArray(popularRes) ? popularRes : []);
+        setCategoriesData(categoriesRes?.items || []);
+        
+        console.log("State updated - Featured:", featuredRes?.length, "Popular:", popularRes?.length, "Categories:", categoriesRes?.items?.length);
       } catch (error) {
         console.error("Error fetching home page data:", error);
-        // Keep using fallback data on error
       } finally {
         setLoading(false);
       }
@@ -338,10 +75,10 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  // Use API data if available, otherwise use fallback
-  const displayFeaturedBooks = featuredBooksData.length > 0 ? featuredBooksData : featuredBooks;
-  const displayPopularBooks = popularBooksData.length > 0 ? popularBooksData : popularBooks;
-  const displayCategories = categoriesData.length > 0 ? categoriesData : categories;
+  // Use API data only
+  const displayFeaturedBooks = featuredBooksData;
+  const displayPopularBooks = popularBooksData;
+  const displayCategories = categoriesData;
 
   const updateArrowsFeatured = () => {
     if (!featuredRef.current) return;
@@ -553,7 +290,7 @@ export default function HomePage() {
               Array.from({ length: 8 }).map((_, idx) => (
                 <div key={idx} className="h-48 rounded-lg bg-gray-200 animate-pulse"></div>
               ))
-            ) : displayCategories.length > 0 ? (
+            ) : (
               displayCategories.slice(0, 8).map((cat) => {
                 // Map category to href
                 const categoryHrefMap: Record<string, string> = {
@@ -664,56 +401,6 @@ export default function HomePage() {
                   </Link>
                 );
               })
-            ) : (
-              // Fallback to original categories if API fails
-              categories.slice(0, 8).map((cat) => (
-                <Link key={cat.id} href={cat.href}>
-                  <div className="relative h-48 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 group">
-                    <div className="absolute inset-0">
-                      <Image
-                        src={cat.image}
-                        alt={cat.name}
-                        fill
-                        sizes="(max-width: 768px) 50vw, 25vw"
-                        className="object-cover blur-[1px] group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-20`}
-                      ></div>
-                      <div className="absolute inset-0 bg-black/5"></div>
-                    </div>
-                    <div className="relative z-10 p-6 h-full flex flex-col justify-between">
-                      <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center shadow-lg">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-white drop-shadow-md"
-                        >
-                          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-xl mb-2 text-white drop-shadow-lg">
-                          {cat.name}
-                        </h3>
-                        <Badge
-                          variant="default"
-                          className="text-xs bg-white/95 text-gray-900 border-white/60 shadow-md"
-                        >
-                          {cat.count} sách
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))
             )}
           </div>
         </div>
@@ -791,18 +478,18 @@ export default function HomePage() {
                     </div>
                   </div>
                 ))
+              ) : displayFeaturedBooks.length === 0 ? (
+                <div className="w-full text-center py-8 text-gray-500">
+                  Không có sách nổi bật.
+                </div>
               ) : (
                 displayFeaturedBooks.map((book) => {
-                  // Type guard: check if book is from API (has currentPrice) or mock (has price)
-                  const isApiBook = 'currentPrice' in book;
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const bookAny = book as any;
-                  const bookOriginalPrice = isApiBook && bookAny.discountPrice ? bookAny.currentPrice : (isApiBook ? 0 : bookAny.originalPrice);
-                  const bookDiscountPrice = isApiBook ? (bookAny.discountPrice || bookAny.currentPrice) : bookAny.price;
-                  const bookCover = isApiBook && bookAny.images && bookAny.images.length > 0 ? bookAny.images[0].imageUrl : (isApiBook ? "/image/anh.png" : bookAny.cover);
-                  const bookAuthor = isApiBook && bookAny.authorNames && bookAny.authorNames.length > 0 ? bookAny.authorNames.join(", ") : (isApiBook ? "Chưa cập nhật" : bookAny.author);
-                  const bookRating = isApiBook ? (bookAny.averageRating || 0) : bookAny.rating;
-                  const bookReviews = isApiBook ? (bookAny.totalReviews || 0) : bookAny.reviews;
+                  const bookOriginalPrice = book.discountPrice ? book.currentPrice ?? 0 : 0;
+                  const bookDiscountPrice = book.discountPrice ?? book.currentPrice ?? 0;
+                  const bookCover = "/image/anh.png"; // BookDto doesn't have images
+                  const bookAuthor = book.authorNames && book.authorNames.length > 0 ? book.authorNames.join(", ") : "Chưa cập nhật";
+                  const bookRating = book.averageRating ?? 0;
+                  const bookReviews = book.totalReviews ?? 0;
 
                   return (
                     <Link
@@ -822,7 +509,7 @@ export default function HomePage() {
                         />
 
                         {/* Badge level + mới 2024 giống mẫu */}
-                        {(isApiBook ? bookAny.isAvailable : bookAny.hot) && (
+                        {book.isAvailable && (
                           <div className="absolute top-2 left-2 flex items-center gap-1">
                             <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-600 text-white shadow">
                               Advanced
@@ -983,18 +670,18 @@ export default function HomePage() {
                     </div>
                   </div>
                 ))
+              ) : displayPopularBooks.length === 0 ? (
+                <div className="w-full text-center py-8 text-gray-500">
+                  Không có sách phổ biến.
+                </div>
               ) : (
                 displayPopularBooks.map((book) => {
-                  // Type guard: check if book is from API (has currentPrice) or mock (has price)
-                  const isApiBook = 'currentPrice' in book;
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const bookAny = book as any;
-                  const bookOriginalPrice = isApiBook && bookAny.discountPrice ? bookAny.currentPrice : (isApiBook ? 0 : (bookAny.originalPrice || 0));
-                  const bookDiscountPrice = isApiBook ? (bookAny.discountPrice || bookAny.currentPrice) : bookAny.price;
-                  const bookCover = isApiBook && bookAny.images && bookAny.images.length > 0 ? bookAny.images[0].imageUrl : (isApiBook ? "/image/anh.png" : bookAny.cover);
-                  const bookAuthor = isApiBook && bookAny.authorNames && bookAny.authorNames.length > 0 ? bookAny.authorNames.join(", ") : (isApiBook ? "Chưa cập nhật" : bookAny.author);
-                  const bookRating = isApiBook ? (bookAny.averageRating || 0) : (bookAny.rating || 0);
-                  const bookReviews = isApiBook ? (bookAny.totalReviews || 0) : (bookAny.reviews || 0);
+                  const bookOriginalPrice = book.discountPrice ? book.currentPrice ?? 0 : 0;
+                  const bookDiscountPrice = book.discountPrice ?? book.currentPrice ?? 0;
+                  const bookCover = "/image/anh.png"; // BookDto doesn't have images
+                  const bookAuthor = book.authorNames && book.authorNames.length > 0 ? book.authorNames.join(", ") : "Chưa cập nhật";
+                  const bookRating = book.averageRating ?? 0;
+                  const bookReviews = book.totalReviews ?? 0;
 
                   return (
                     <Link
@@ -1243,97 +930,6 @@ export default function HomePage() {
               Dùng thử ngay - Miễn phí 7 ngày
             </Button>
           </Link>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Tại sao chọn chúng tôi?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((benefit, idx) => (
-              <Card key={idx} hover className="text-center">
-                <CardContent className="p-6">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-3xl">
-                    {idx === 0 && (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
-                        <path d="M15 18H9" />
-                        <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
-                        <circle cx="17" cy="18" r="2" />
-                        <circle cx="7" cy="18" r="2" />
-                      </svg>
-                    )}
-                    {idx === 1 && (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect width="20" height="16" x="2" y="4" rx="2" />
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                      </svg>
-                    )}
-                    {idx === 2 && (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
-                        <path d="M8 7h8" />
-                        <path d="M8 11h8" />
-                      </svg>
-                    )}
-                    {idx === 3 && (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
-                        <path d="m15 9-6 6" />
-                        <path d="M9 9h.01" />
-                        <path d="M15 15h.01" />
-                      </svg>
-                    )}
-                  </div>
-                  <h3 className="font-bold text-lg mb-2">{benefit.title}</h3>
-                  <p className="text-gray-600 text-sm">{benefit.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </div>
       </section>
     </div>

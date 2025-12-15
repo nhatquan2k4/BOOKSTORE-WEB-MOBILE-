@@ -76,7 +76,13 @@ services:
     networks:
       - bookstore-network
     restart: unless-stopped
-  # BookStore API
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
   bookstore-api:
     build:
       context: ../
@@ -95,12 +101,12 @@ services:
       - MinIO__PublicEndpoint=http://localhost:9000
       - MinIO__AccessKey=minioadmin
       - MinIO__SecretKey=minioadmin123
-      - MinIO__BucketName=bookstore-images
+      - MinIO__BucketName=book-images
       - MinIO__UseSSL=false
       - EmailSettings__SmtpHost=smtp.gmail.com
       - EmailSettings__SmtpPort=587
       - EmailSettings__SmtpUsername=quangtraan20004@gmail.com
-      - EmailSettings__SmtpPassword=xnuo kvlu berx kklm
+      - EmailSettings__SmtpPassword=Quang
       - EmailSettings__FromEmail=quangtraan20004@gmail.com
       - EmailSettings__FromName=BookStore
       - EmailSettings__EnableSsl=true
@@ -131,7 +137,6 @@ volumes:
   sqlserver_data:
   minio_data:
   nginx_logs:
-
 
 networks:
   bookstore-network:

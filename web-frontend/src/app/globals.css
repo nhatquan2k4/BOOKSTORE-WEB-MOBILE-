@@ -21,8 +21,17 @@
 }
 
 @layer base {
+  * {
+    @apply box-border;
+  }
+
+  html {
+    @apply overflow-x-hidden;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans overflow-x-hidden;
+    min-width: 320px;
   }
 }
 
