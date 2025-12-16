@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge } from '@/components/ui';
+import { orderService } from '@/services';
+import type { OrderDto } from '@/types/dtos';
 
 interface DigitalOrder {
   id: string;
@@ -149,11 +151,30 @@ const statusConfig: Record<
 export default function DigitalOrdersPage() {
   const router = useRouter();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [orders, setOrders] = useState<OrderDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredOrders =
-    selectedStatus === 'all'
-      ? mockDigitalOrders
-      : mockDigitalOrders.filter((order) => order.status === selectedStatus);
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const params = selectedStatus !== 'all' ? { status: selectedStatus } : {};
+        const response = await orderService.getMyOrders({ ...params, pageSize: 50 });
+        setOrders(response.items || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching orders:', err);
+        setError('Không thể tải danh sách đơn hàng');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [selectedStatus]);
+
+  const filteredOrders = orders;
 
   const handleDownload = (orderId: string, format: string) => {
     alert(`Downloading ${format} for order ${orderId}...`);
@@ -162,6 +183,39 @@ export default function DigitalOrdersPage() {
   const handleReadOnline = (orderId: string) => {
     router.push(`/reader/${orderId}`);
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-10">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="animate-pulse space-y-4">
+            <div className="h-12 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-10">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-700 font-medium">{error}</p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="mt-4"
+            >
+              Thử lại
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-10">
@@ -195,16 +249,18 @@ export default function DigitalOrdersPage() {
               <CardHeader className="bg-purple-50 border-b border-gray-200 flex justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-3">
-                    {order.id}
+                    {order.orderNumber}
                     <Badge
-                      className={`flex items-center gap-1 border ${statusConfig[order.status].color}`}
+                      className={`flex items-center gap-1 border ${
+                        statusConfig[order.status.toLowerCase() as DigitalOrder['status']]?.color || 'bg-gray-100'
+                      }`}
                     >
-                      {statusConfig[order.status].icon}
-                      {statusConfig[order.status].label}
+                      {statusConfig[order.status.toLowerCase() as DigitalOrder['status']]?.icon}
+                      {statusConfig[order.status.toLowerCase() as DigitalOrder['status']]?.label || order.status}
                     </Badge>
                   </CardTitle>
                   <p className="text-sm text-gray-500 mt-1">
-                    Mua ngày: {new Date(order.date).toLocaleDateString('vi-VN')}
+                    Mua ngày: {new Date(order.createdAt).toLocaleDateString('vi-VN')}
                   </p>
                 </div>
                 <Button
@@ -237,8 +293,8 @@ export default function DigitalOrdersPage() {
                     {/* Cover */}
                     <div className="relative w-20 h-28 rounded overflow-hidden flex-shrink-0">
                       <Image
-                        src={item.cover}
-                        alt={item.title}
+                        src={item.bookImageUrl || '/images/book-placeholder.png'}
+                        alt={item.bookTitle}
                         fill
                         className="object-cover"
                       />
@@ -267,9 +323,9 @@ export default function DigitalOrdersPage() {
                     {/* Book Info */}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-gray-900 text-lg line-clamp-1 mb-1">
-                        {item.title}
+                        {item.bookTitle}
                       </h4>
-                      <p className="text-sm text-gray-600 mb-2">{item.author}</p>
+                      <p className="text-sm text-gray-600 mb-2">ISBN: {item.bookISBN}</p>
 
                       <div className="flex flex-wrap gap-3 text-xs text-gray-600 mb-3">
                         <span className="flex items-center gap-1">
@@ -285,24 +341,7 @@ export default function DigitalOrdersPage() {
                           >
                             <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
                           </svg>
-                          {item.pages} trang
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <ellipse cx="12" cy="5" rx="9" ry="3" />
-                            <path d="M3 5V19A9 3 0 0 0 21 19V5" />
-                            <path d="M3 12A9 3 0 0 0 21 12" />
-                          </svg>
-                          {item.fileSize}
+                          Số lượng: {item.quantity}
                         </span>
                         <span className="flex items-center gap-1">
                           <svg
@@ -318,45 +357,39 @@ export default function DigitalOrdersPage() {
                             <path d="M7 8h10" />
                             <path d="M7 12h4" />
                           </svg>
-                          {item.format.map((f) => (
-                            <span
-                              key={f}
-                              className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded"
-                            >
-                              {f}
-                            </span>
-                          ))}
+                          <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                            E-Book
+                          </span>
                         </span>
                       </div>
 
                       {/* Actions */}
-                      {order.status === 'completed' && (
-                        <div className="flex gap-2 flex-wrap">
-                          <Button
-                            onClick={() => handleReadOnline(order.id)}
-                            className="bg-purple-600 hover:bg-purple-700 flex items-center gap-1"
-                            size="sm"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              strokeWidth={2}
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M12 7v14" />
-                              <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
-                            </svg>
-                            Đọc ngay
-                          </Button>
-                          {item.format.map((format) => (
+                      <div className="flex gap-2 flex-wrap">
+                        {order.status.toLowerCase() === 'completed' && (
+                          <>
                             <Button
-                              key={format}
+                              onClick={() => handleReadOnline(order.id)}
+                              className="bg-purple-600 hover:bg-purple-700 flex items-center gap-1"
+                              size="sm"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M12 7v14" />
+                                <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                              </svg>
+                              Đọc ngay
+                            </Button>
+                            <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDownload(order.id, format)}
+                              onClick={() => handleDownload(order.id, 'PDF')}
                               className="flex items-center gap-1 border-purple-200 text-purple-700 hover:bg-purple-50"
                             >
                               <svg
@@ -372,17 +405,42 @@ export default function DigitalOrdersPage() {
                                 <path d="m9 12 3 3 3-3" />
                                 <path d="M12 3v12" />
                               </svg>
-                              Tải {format}
+                              Tải xuống
                             </Button>
-                          ))}
-                        </div>
-                      )}
+                          </>
+                        )}
+                        {order.status.toLowerCase() === 'processing' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-red-200 text-red-600 hover:bg-red-50"
+                            onClick={async () => {
+                              if (confirm('Bạn có chắc muốn hủy đơn hàng này?')) {
+                                try {
+                                  await orderService.cancelOrder(order.id);
+                                  alert('Đã hủy đơn hàng thành công');
+                                  const response = await orderService.getMyOrders({ 
+                                    status: selectedStatus === 'all' ? undefined : selectedStatus,
+                                    pageSize: 50 
+                                  });
+                                  setOrders(response.items || []);
+                                } catch (err) {
+                                  alert('Không thể hủy đơn hàng: ' + (err as Error).message);
+                                }
+                              }
+                            }}
+                          >
+                            Hủy đơn
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Price */}
                     <div className="text-right">
+                      <p className="text-sm text-gray-600">Đơn giá: {item.unitPrice.toLocaleString('vi-VN')}đ</p>
                       <p className="font-bold text-purple-600 text-xl">
-                        {item.price.toLocaleString('vi-VN')}đ
+                        {item.subtotal.toLocaleString('vi-VN')}đ
                       </p>
                     </div>
                   </div>

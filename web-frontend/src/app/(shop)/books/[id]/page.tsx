@@ -47,376 +47,6 @@ type CarouselBook = {
   hot?: boolean;
 };
 
-// ============================================================================
-// MOCK DATA - XÓA TOÀN BỘ SECTION NÀY KHI NỐI API THẬT
-// ============================================================================
-
-// Mock book detail data
-const MOCK_BOOK = {
-  id: 1232132312,
-  title: "101 cách cua đổ đại lão hàng xóm",
-  author: "Đồng Vu",
-  category: "Tiểu thuyết",
-  publisher: "NXB Lao Động",
-  price: 100000,
-  originalPrice: 150000,
-  rating: 4.3,
-  reviewCount: 128,
-  stock: 12,
-  year: 2021,
-  weight: 500,
-  size: "30 x 15 x 3 cm",
-  language: "Tiếng Việt",
-  cover: "/image/anh.png",
-  description: `Tống Thiên Thị luôn cảm thấy hàng xóm mới tới là người không dễ sống chung, bởi hắn không chỉ lạnh lùng mà lời nói ra cũng chẳng dễ lọt tai. Mãi cho đến một ngày cô bị hàng xóm chặn trên hành lang.
-
-Đôi mắt của luật sư Ôn sáng quắc: "Trăm nhân ắt có quả, tôi chính là quả của em."
-
-Tống Thiên Thị nhìn người đàn ông ăn mặc chỉnh tề trước mặt, đột nhiên thay đổi quan điểm về anh.
-
-...
-
-Cô cho rằng cô có thể yêu đương với luật sư nhưng kết hôn thì không thể, bởi về sau cãi nhau thì chắc chắn cô không thể thắng hắn, hơn nữa, có khi lúc ly hôn đối phương không cần thuê luật sư cũng có thể tiễn cô ra khỏi nhà ngay lập tức.
-
-Nghe xong lý do cô cự tuyệt, luật sư Ôn bình thản: "Nếu em không thích thân phận luật sư thì tôi có thể đổi thành thân phận chồng em."`,
-};
-
-// Mock suggested books (Có thể bạn thích)
-const MOCK_SUGGESTED_BOOKS: CarouselBook[] = [
-  {
-    id: "s1",
-    title: "Tôi thấy hoa vàng trên cỏ xanh",
-    author: "Nguyễn Nhật Ánh",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 2345,
-    hot: true,
-  },
-  {
-    id: "s2",
-    title: "Tháng năm rực rỡ",
-    author: "Nhiều tác giả",
-    price: 85000,
-    originalPrice: 100000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 986,
-  },
-  {
-    id: "s3",
-    title: "Người lái đò sông Đà",
-    author: "Nguyễn Tuân",
-    price: 78000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviews: 623,
-  },
-  {
-    id: "s4",
-    title: "Dế mèn phiêu lưu ký",
-    author: "Tô Hoài",
-    price: 69000,
-    originalPrice: 89000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 1543,
-  },
-  {
-    id: "s5",
-    title: "Tuổi thơ dữ dội",
-    author: "Phùng Quán",
-    price: 88000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 1123,
-  },
-  {
-    id: "s6",
-    title: "Số đỏ",
-    author: "Vũ Trọng Phụng",
-    price: 72000,
-    originalPrice: 90000,
-    cover: "/image/anh.png",
-    rating: 4.4,
-    reviews: 987,
-  },
-  {
-    id: "s7",
-    title: "Chí Phèo",
-    author: "Nam Cao",
-    price: 55000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviews: 1456,
-  },
-  {
-    id: "s8",
-    title: "Lão Hạc",
-    author: "Nam Cao",
-    price: 52000,
-    originalPrice: 65000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 1344,
-  },
-  {
-    id: "s9",
-    title: "Bố Già",
-    author: "Mario Puzo",
-    price: 120000,
-    originalPrice: 150000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 3456,
-    hot: true,
-  },
-  {
-    id: "s10",
-    title: "Tuổi trẻ đáng giá bao nhiêu",
-    author: "Rosie Nguyễn",
-    price: 90000,
-    originalPrice: 110000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 2890,
-  },
-  {
-    id: "s11",
-    title: "Đắc nhân tâm",
-    author: "Dale Carnegie",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 4321,
-  },
-  {
-    id: "s12",
-    title: "Nhà giả kim",
-    author: "Paulo Coelho",
-    price: 98000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 3210,
-  },
-];
-
-// Mock popular books (Sách được đọc nhiều nhất)
-const MOCK_POPULAR_BOOKS: CarouselBook[] = [
-  {
-    id: "p1",
-    title: "Bố Già",
-    author: "Mario Puzo",
-    price: 120000,
-    originalPrice: 150000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 5678,
-    hot: true,
-  },
-  {
-    id: "p2",
-    title: "Tuổi trẻ đáng giá bao nhiêu",
-    author: "Rosie Nguyễn",
-    price: 90000,
-    originalPrice: 110000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 2890,
-  },
-  {
-    id: "p3",
-    title: "Đắc nhân tâm",
-    author: "Dale Carnegie",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 4321,
-  },
-  {
-    id: "p4",
-    title: "Nhà giả kim",
-    author: "Paulo Coelho",
-    price: 98000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 3210,
-  },
-  {
-    id: "p5",
-    title: "Càng kỷ luật càng tự do",
-    author: "Jocko Willink",
-    price: 110000,
-    originalPrice: 135000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 876,
-  },
-  {
-    id: "p6",
-    title: "Nghĩ giàu làm giàu",
-    author: "Napoleon Hill",
-    price: 125000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviews: 2300,
-  },
-  {
-    id: "p7",
-    title: "7 thói quen hiệu quả",
-    author: "Stephen Covey",
-    price: 140000,
-    originalPrice: 180000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 1987,
-  },
-  {
-    id: "p8",
-    title: "Quẳng gánh lo đi mà vui sống",
-    author: "Dale Carnegie",
-    price: 88000,
-    originalPrice: 105000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 1543,
-  },
-];
-
-// Mock related books (Cùng tác giả)
-const MOCK_RELATED_BOOKS: CarouselBook[] = [
-  {
-    id: "r1",
-    title: "Tôi thấy hoa vàng trên cỏ xanh",
-    author: "Nguyễn Nhật Ánh",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 2345,
-  },
-  {
-    id: "r2",
-    title: "Tháng năm rực rỡ",
-    author: "Nhiều tác giả",
-    price: 85000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviews: 980,
-  },
-  {
-    id: "r3",
-    title: "Người lái đò sông Đà",
-    author: "Nguyễn Tuân",
-    price: 78000,
-    originalPrice: 93000,
-    cover: "/image/anh.png",
-    rating: 4.4,
-    reviews: 650,
-  },
-  {
-    id: "r4",
-    title: "Dế mèn phiêu lưu ký",
-    author: "Tô Hoài",
-    price: 69000,
-    originalPrice: 89000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 1500,
-  },
-  {
-    id: "r5",
-    title: "Tuổi thơ dữ dội",
-    author: "Phùng Quán",
-    price: 88000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 1100,
-  },
-  {
-    id: "r6",
-    title: "Số đỏ",
-    author: "Vũ Trọng Phụng",
-    price: 72000,
-    originalPrice: 90000,
-    cover: "/image/anh.png",
-    rating: 4.4,
-    reviews: 980,
-  },
-  {
-    id: "r7",
-    title: "Chí Phèo",
-    author: "Nam Cao",
-    price: 55000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviews: 1450,
-  },
-  {
-    id: "r8",
-    title: "Lão Hạc",
-    author: "Nam Cao",
-    price: 52000,
-    originalPrice: 65000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 1340,
-  },
-  {
-    id: "r9",
-    title: "Bố Già",
-    author: "Mario Puzo",
-    price: 120000,
-    originalPrice: 150000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 3456,
-    hot: true,
-  },
-  {
-    id: "r10",
-    title: "Tuổi trẻ đáng giá bao nhiêu",
-    author: "Rosie Nguyễn",
-    price: 90000,
-    originalPrice: 110000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 2890,
-  },
-  {
-    id: "r11",
-    title: "Đắc nhân tâm",
-    author: "Dale Carnegie",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 4321,
-  },
-  {
-    id: "r12",
-    title: "Nhà giả kim",
-    author: "Paulo Coelho",
-    price: 98000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 3210,
-  },
-];
-
 // Mock initial reviews data
 const MOCK_INITIAL_REVIEWS: Review[] = [
   {
@@ -875,25 +505,51 @@ export default function BookDetailPage() {
     if (id) fetchBookDetail();
   }, [id]);
 
+  // Helper function to get metadata value
+  const getMetadataValue = (key: string, defaultValue: any = null) => {
+    const metadataItem = book?.metadata?.find(m => m.key.toLowerCase() === key.toLowerCase());
+    return metadataItem?.value || defaultValue;
+  };
+
   // Transform BookDetailDto to display format
-  const displayBook = book ? {
-    id: book.id,
-    title: book.title,
-    author: book.authors?.[0]?.name || "Tác giả không xác định",
-    category: book.categories?.[0]?.name || "Chưa phân loại",
-    publisher: book.publisher?.name || "NXB",
-    price: book.metadata?.find(m => m.key === "currentPrice")?.value ? parseInt(book.metadata.find(m => m.key === "currentPrice")!.value) : 100000,
-    originalPrice: book.metadata?.find(m => m.key === "originalPrice")?.value ? parseInt(book.metadata.find(m => m.key === "originalPrice")!.value) : 150000,
-    rating: 4.5,
-    reviewCount: 0,
-    stock: book.metadata?.find(m => m.key === "stockQuantity")?.value ? parseInt(book.metadata.find(m => m.key === "stockQuantity")!.value) : 12,
-    year: book.publicationYear,
-    weight: 500,
-    size: `${book.pageCount} trang`,
-    language: book.language,
-    cover: book.images?.[0]?.imageUrl || "/image/anh.png",
-    description: book.description || "",
-  } : null;
+  const displayBook = book ? (() => {
+    // Get price information from metadata
+    const currentPriceStr = getMetadataValue("currentPrice") || getMetadataValue("price");
+    const originalPriceStr = getMetadataValue("originalPrice");
+    const discountPriceStr = getMetadataValue("discountPrice");
+    
+    // Parse prices
+    const currentPrice = currentPriceStr ? parseInt(currentPriceStr) : 0;
+    const originalPrice = originalPriceStr ? parseInt(originalPriceStr) : 0;
+    const discountPrice = discountPriceStr ? parseInt(discountPriceStr) : 0;
+    
+    // Determine final prices to display
+    // If there's a discount price, use it as the current price
+    const finalPrice = discountPrice > 0 ? discountPrice : (currentPrice > 0 ? currentPrice : 100000);
+    // If original price exists and is higher, use it; otherwise use current price as original
+    const finalOriginalPrice = originalPrice > finalPrice ? originalPrice : (discountPrice > 0 && currentPrice > discountPrice ? currentPrice : finalPrice);
+    
+    return {
+      id: book.id,
+      title: book.title,
+      author: book.authors && book.authors.length > 0 ? book.authors.map(a => a.name).join(", ") : "Tác giả không xác định",
+      category: book.categories && book.categories.length > 0 ? book.categories.map(c => c.name).join(", ") : "Chưa phân loại",
+      publisher: book.publisher?.name || "NXB",
+      price: finalPrice,
+      originalPrice: finalOriginalPrice,
+      rating: parseFloat(getMetadataValue("averageRating", "4.5")),
+      reviewCount: parseInt(getMetadataValue("totalReviews", "0")),
+      stock: parseInt(getMetadataValue("stockQuantity") || getMetadataValue("stock", "12")),
+      year: book.publicationYear || new Date().getFullYear(),
+      weight: parseInt(getMetadataValue("weight", "500")),
+      size: `${book.pageCount || 0} trang`,
+      language: book.language || "Tiếng Việt",
+      cover: book.images && book.images.length > 0 ? book.images[0].imageUrl : "/image/anh.png",
+      description: book.description || "Chưa có mô tả",
+      isbn: book.isbn || "",
+      edition: book.edition || "",
+    };
+  })() : null;
 
   console.log("Display book:", displayBook);
 

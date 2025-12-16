@@ -11,19 +11,19 @@ import {
   Badge,
 } from '@/components/ui';
 
-interface Ticket {
-  id: string;
-  subject: string;
+interface FAQItem {
+  id: number;
+  question: string;
+  answer: string;
   category: string;
-  status: 'open' | 'in-progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high';
-  createdDate: string;
-  lastUpdate: string;
-  messages: {
-    sender: 'user' | 'support';
-    message: string;
-    time: string;
-  }[];
+}
+
+interface ContactMethod {
+  id: number;
+  name: string;
+  value: string;
+  icon: React.ReactNode;
+  description: string;
 }
 
 const mockTickets: Ticket[] = [

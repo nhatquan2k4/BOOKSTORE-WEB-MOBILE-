@@ -1,7 +1,7 @@
 // Transaction Histories Page - Using shared UI components
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardHeader,
@@ -13,6 +13,8 @@ import {
   EmptyState,
   Pagination,
 } from '@/components/ui';
+import { orderService } from '@/services/order.service';
+import { OrderDto } from '@/types/dtos';
 
 interface Transaction {
   id: string;
@@ -23,45 +25,6 @@ interface Transaction {
   status: 'completed' | 'pending' | 'failed';
   orderId?: string;
 }
-
-const mockTransactions: Transaction[] = [
-  {
-    id: 'TXN-2024-001',
-    date: '2024-11-08T14:30:00',
-    type: 'order',
-    description: 'Thanh toán đơn hàng ORD-2024-003',
-    amount: -450000,
-    status: 'completed',
-    orderId: 'ORD-2024-003',
-  },
-  {
-    id: 'TXN-2024-002',
-    date: '2024-11-07T10:15:00',
-    type: 'order',
-    description: 'Thanh toán đơn hàng ORD-2024-002',
-    amount: -320000,
-    status: 'completed',
-    orderId: 'ORD-2024-002',
-  },
-  {
-    id: 'TXN-2024-003',
-    date: '2024-11-06T16:20:00',
-    type: 'refund',
-    description: 'Hoàn tiền đơn hàng ORD-2024-001',
-    amount: 280000,
-    status: 'completed',
-    orderId: 'ORD-2024-001',
-  },
-  {
-    id: 'TXN-2024-004',
-    date: '2024-11-04T09:30:00',
-    type: 'order',
-    description: 'Thanh toán đơn hàng ORD-2024-004',
-    amount: -550000,
-    status: 'pending',
-    orderId: 'ORD-2024-004',
-  },
-];
 
 const typeConfig = {
   order: {
@@ -116,15 +79,48 @@ const statusConfig = {
 };
 
 export default function TransactionHistoriesPage() {
-  const [selectedType, setSelectedType] = useState<'all' | 'order' | 'refund'>(
-    'all'
-  );
+  const [selectedType, setSelectedType] = useState<'all' | 'order' | 'refund'>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load transactions from API (using orders as transactions)
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await orderService.getMyOrders(1, 100);
+        
+        // Map OrderDto to Transaction
+        const txns: Transaction[] = result.items.map((order: OrderDto) => ({
+          id: order.id,
+          date: order.createdAt,
+          type: order.status === 'Cancelled' || order.status === 'Refunded' ? 'refund' : 'order',
+          description: `Đơn hàng ${order.id}`,
+          amount: order.status === 'Cancelled' || order.status === 'Refunded' ? order.totalPrice : -order.totalPrice,
+          status: order.status === 'Delivered' || order.status === 'Completed' ? 'completed' : 
+                 order.status === 'Cancelled' || order.status === 'Refunded' ? 'failed' : 'pending',
+          orderId: order.id,
+        }));
+        
+        setTransactions(txns);
+      } catch (err) {
+        console.error('Error fetching transactions:', err);
+        setError('Không thể tải lịch sử giao dịch. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, []);
 
   const filteredTransactions =
     selectedType === 'all'
-      ? mockTransactions
-      : mockTransactions.filter((txn) => txn.type === selectedType);
+      ? transactions
+      : transactions.filter((txn) => txn.type === selectedType);
 
   return (
     <div className="min-h-screen bg-gray-50 py-10">
@@ -138,6 +134,24 @@ export default function TransactionHistoriesPage() {
             Theo dõi các giao dịch mua hàng và hoàn tiền
           </p>
         </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
+
+        {/* Content */}
+        {!loading && !error && (
+          <>
 
         {/* Filters */}
         <Card>
@@ -261,7 +275,7 @@ export default function TransactionHistoriesPage() {
             <CardContent className="py-5">
               <p className="text-sm text-gray-600 mb-2">Tổng chi</p>
               <p className="text-2xl font-bold text-red-600">
-                {mockTransactions
+                {transactions
                   .filter((t) => t.type === 'order' && t.amount < 0 && t.status === 'completed')
                   .reduce((sum, t) => sum + Math.abs(t.amount), 0)
                   .toLocaleString('vi-VN')}
@@ -273,7 +287,7 @@ export default function TransactionHistoriesPage() {
             <CardContent className="py-5">
               <p className="text-sm text-gray-600 mb-2">Tổng hoàn về ngân hàng</p>
               <p className="text-2xl font-bold text-green-600">
-                {mockTransactions
+                {transactions
                   .filter((t) => t.type === 'refund' && t.amount > 0 && t.status === 'completed')
                   .reduce((sum, t) => sum + t.amount, 0)
                   .toLocaleString('vi-VN')}
@@ -287,22 +301,13 @@ export default function TransactionHistoriesPage() {
                 Giao dịch thành công
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {mockTransactions.filter((t) => t.status === 'completed').length}
+                {transactions.filter((t) => t.status === 'completed').length}
               </p>
             </CardContent>
           </Card>
         </div>
-
-        {/* Pagination */}
-        <Card>
-          <CardContent className="py-4">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={3}
-              onPageChange={setCurrentPage}
-            />
-          </CardContent>
-        </Card>
+          </>
+        )}
       </div>
     </div>
   );

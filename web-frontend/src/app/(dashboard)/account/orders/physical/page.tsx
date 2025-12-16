@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -11,6 +11,8 @@ import {
   Button,
   Badge,
 } from '@/components/ui';
+import { orderService } from '@/services';
+import type { OrderDto } from '@/types/dtos';
 
 interface PhysicalOrder {
   id: string;
@@ -248,11 +250,71 @@ export default function PhysicalOrdersPage() {
   const router = useRouter();
   const [selectedStatus, setSelectedStatus] =
     useState<'all' | PhysicalOrder['status']>('all');
+  const [orders, setOrders] = useState<OrderDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredOrders =
-    selectedStatus === 'all'
-      ? mockPhysicalOrders
-      : mockPhysicalOrders.filter((order) => order.status === selectedStatus);
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const params = selectedStatus !== 'all' ? { status: selectedStatus } : {};
+        const response = await orderService.getMyOrders({ ...params, pageSize: 50 });
+        setOrders(response.items || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching orders:', err);
+        setError('Không thể tải danh sách đơn hàng');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [selectedStatus]);
+
+  const filteredOrders = orders;
+
+  const getStatusCount = (status: string) => 
+    orders.filter(o => o.status.toLowerCase() === status.toLowerCase()).length;
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-10">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="animate-pulse space-y-4">
+            <div className="h-12 bg-gray-200 rounded w-1/3"></div>
+            <div className="grid grid-cols-5 gap-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-10">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-700 font-medium">{error}</p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="mt-4"
+            >
+              Thử lại
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-10">
@@ -292,7 +354,7 @@ export default function PhysicalOrdersPage() {
           <Card>
             <CardContent className="py-4 text-center">
               <p className="text-2xl font-bold text-gray-900">
-                {mockPhysicalOrders.length}
+                {orders.length}
               </p>
               <p className="text-sm text-gray-600 mt-1">Tổng đơn</p>
             </CardContent>
@@ -301,10 +363,7 @@ export default function PhysicalOrdersPage() {
           <Card className="bg-yellow-50 border-yellow-200">
             <CardContent className="py-4 text-center">
               <p className="text-2xl font-bold text-yellow-700">
-                {
-                  mockPhysicalOrders.filter((o) => o.status === 'pending')
-                    .length
-                }
+                {getStatusCount('pending')}
               </p>
               <p className="text-sm text-gray-600 mt-1">Chờ xác nhận</p>
             </CardContent>
@@ -313,10 +372,7 @@ export default function PhysicalOrdersPage() {
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="py-4 text-center">
               <p className="text-2xl font-bold text-blue-700">
-                {
-                  mockPhysicalOrders.filter((o) => o.status === 'processing')
-                    .length
-                }
+                {getStatusCount('processing')}
               </p>
               <p className="text-sm text-gray-600 mt-1">Đang xử lý</p>
             </CardContent>
@@ -325,10 +381,7 @@ export default function PhysicalOrdersPage() {
           <Card className="bg-purple-50 border-purple-200">
             <CardContent className="py-4 text-center">
               <p className="text-2xl font-bold text-purple-700">
-                {
-                  mockPhysicalOrders.filter((o) => o.status === 'shipping')
-                    .length
-                }
+                {getStatusCount('shipping')}
               </p>
               <p className="text-sm text-gray-600 mt-1">Đang giao</p>
             </CardContent>
@@ -337,10 +390,7 @@ export default function PhysicalOrdersPage() {
           <Card className="bg-green-50 border-green-200">
             <CardContent className="py-4 text-center">
               <p className="text-2xl font-bold text-green-700">
-                {
-                  mockPhysicalOrders.filter((o) => o.status === 'delivered')
-                    .length
-                }
+                {getStatusCount('delivered')}
               </p>
               <p className="text-sm text-gray-600 mt-1">Đã giao</p>
             </CardContent>
@@ -354,12 +404,10 @@ export default function PhysicalOrdersPage() {
               size="sm"
               onClick={() => setSelectedStatus('all')}
             >
-              Tất cả ({mockPhysicalOrders.length})
+              Tất cả ({orders.length})
             </Button>
             {Object.entries(statusConfig).map(([key, config]) => {
-              const count = mockPhysicalOrders.filter(
-                (o) => o.status === key
-              ).length;
+              const count = getStatusCount(key);
               return (
                 <Button
                     key={key}
@@ -388,13 +436,15 @@ export default function PhysicalOrdersPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <CardTitle>{order.id}</CardTitle>
+                      <CardTitle>{order.orderNumber}</CardTitle>
                       <Badge
                         variant="default"
-                        className={`flex items-center gap-1 border ${statusConfig[order.status].color}`}
+                        className={`flex items-center gap-1 border ${
+                          statusConfig[order.status.toLowerCase() as PhysicalOrder['status']]?.color || 'bg-gray-100'
+                        }`}
                       >
-                        {statusConfig[order.status].icon}
-                        {statusConfig[order.status].label}
+                        {statusConfig[order.status.toLowerCase() as PhysicalOrder['status']]?.icon}
+                        {statusConfig[order.status.toLowerCase() as PhysicalOrder['status']]?.label || order.status}
                       </Badge>
                     </div>
                     <div className="text-sm text-gray-600 space-y-1">
@@ -416,38 +466,9 @@ export default function PhysicalOrdersPage() {
                         </svg>
                         <span>
                           Đặt ngày:{' '}
-                          {new Date(order.date).toLocaleDateString('vi-VN')}
+                          {new Date(order.createdAt).toLocaleDateString('vi-VN')}
                         </span>
                       </div>
-
-                 
-                      {order.estimatedDelivery && (
-                        <div className="flex items-center gap-2">
-                          <svg
-                            className="w-4 h-4"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M14 19V7a2 2 0 0 0-2-2H9" />
-                            <path d="M15 19H9" />
-                            <path d="M19 19h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62L18.3 9.38a1 1 0 0 0-.78-.38H14" />
-                            <path d="M2 13v5a1 1 0 0 0 1 1h2" />
-                            <path d="M4 3 2.15 5.15a.495.495 0 0 0 .35.86h2.15a.47.47 0 0 1 .35.86L3 9.02" />
-                            <circle cx="17" cy="19" r="2" />
-                            <circle cx="7" cy="19" r="2" />
-                          </svg>
-                          <span>
-                            Dự kiến:{' '}
-                            {new Date(
-                              order.estimatedDelivery
-                            ).toLocaleDateString('vi-VN')}
-                          </span>
-                        </div>
-                      )}
 
                       <div className="flex items-center gap-2">
                         <svg
@@ -464,36 +485,24 @@ export default function PhysicalOrdersPage() {
                           <path d="M8.714 14h-3.71a1 1 0 0 0-.948.683l-2.004 6A1 1 0 0 0 3 22h18a1 1 0 0 0 .948-1.316l-2-6a1 1 0 0 0-.949-.684h-3.712" />
                         </svg>
                         <span className="line-clamp-1">
-                          {order.shippingAddress}
+                          {order.address.recipientName} - {order.address.street}, {order.address.ward}, {order.address.district}, {order.address.province}
                         </span>
                       </div>
 
-                      {order.trackingNumber && (
-                        <div className="flex items-center gap-2">
-                          <svg
-                            className="w-4 h-4"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <rect
-                              width="14"
-                              height="14"
-                              x="8"
-                              y="8"
-                              rx="2"
-                              ry="2"
-                            />
-                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                          </svg>
-                          <span className="font-mono">
-                            {order.trackingNumber}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className="w-4 h-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
+                        <span>{order.address.phoneNumber}</span>
+                      </div>
                     </div>
                   </div>
                   <Button
@@ -527,8 +536,8 @@ export default function PhysicalOrdersPage() {
                     >
                       <div className="relative w-16 h-20 rounded overflow-hidden flex-shrink-0 shadow-sm">
                         <Image
-                          src={item.cover}
-                          alt={item.title}
+                          src={item.bookImageUrl || '/images/book-placeholder.png'}
+                          alt={item.bookTitle}
                           fill
                           sizes="64px"
                           className="object-cover"
@@ -536,10 +545,10 @@ export default function PhysicalOrdersPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-gray-900 line-clamp-1">
-                          {item.title}
+                          {item.bookTitle}
                         </h4>
                         <p className="text-sm text-gray-600 mt-1">
-                          {item.author}
+                          ISBN: {item.bookISBN}
                         </p>
                         <p className="text-sm text-gray-500 mt-1">
                           Số lượng: x{item.quantity}
@@ -547,7 +556,10 @@ export default function PhysicalOrdersPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-gray-900">
-                          {item.price.toLocaleString('vi-VN')}đ
+                          {item.unitPrice.toLocaleString('vi-VN')}đ
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Tổng: {item.subtotal.toLocaleString('vi-VN')}đ
                         </p>
                       </div>
                     </div>
@@ -556,16 +568,34 @@ export default function PhysicalOrdersPage() {
 
                 {/* Footer actions giống eBook kiểu tách theo trạng thái */}
                 <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between gap-4">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-sm text-gray-600">
-                      Tổng thanh toán:
-                    </span>
-                    <span className="font-bold text-blue-600 text-xl">
-                      {order.total.toLocaleString('vi-VN')}đ
-                    </span>
+                  <div className="flex flex-col gap-1">
+                    {order.discountAmount > 0 && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span>Giảm giá:</span>
+                        <span className="text-green-600 font-medium">
+                          -{order.discountAmount.toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
+                    )}
+                    {order.shippingFee > 0 && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span>Phí ship:</span>
+                        <span className="font-medium">
+                          {order.shippingFee.toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm text-gray-600">
+                        Tổng thanh toán:
+                      </span>
+                      <span className="font-bold text-blue-600 text-xl">
+                        {order.finalAmount.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
                   </div>
                   <div className="flex gap-2 flex-wrap justify-end">
-                    {order.status === 'delivered' && (
+                    {order.status.toLowerCase() === 'delivered' && (
                       <>
                         <Button variant="outline" size="sm">
                           Mua lại
@@ -576,18 +606,34 @@ export default function PhysicalOrdersPage() {
                       </>
                     )}
 
-                    {(order.status === 'pending' ||
-                      order.status === 'processing') && (
+                    {(order.status.toLowerCase() === 'pending' ||
+                      order.status.toLowerCase() === 'processing') && (
                       <Button
                         variant="outline"
                         size="sm"
                         className="border-red-200 text-red-600 hover:bg-red-50"
+                        onClick={async () => {
+                          if (confirm('Bạn có chắc muốn hủy đơn hàng này?')) {
+                            try {
+                              await orderService.cancelOrder(order.id);
+                              alert('Đã hủy đơn hàng thành công');
+                              // Refresh orders
+                              const response = await orderService.getMyOrders({ 
+                                status: selectedStatus === 'all' ? undefined : selectedStatus,
+                                pageSize: 50 
+                              });
+                              setOrders(response.items || []);
+                            } catch (err) {
+                              alert('Không thể hủy đơn hàng: ' + (err as Error).message);
+                            }
+                          }
+                        }}
                       >
                         Hủy đơn
                       </Button>
                     )}
 
-                    {order.status === 'shipping' && (
+                    {order.status.toLowerCase() === 'shipping' && (
                       <Button
                         variant="primary"
                         size="sm"

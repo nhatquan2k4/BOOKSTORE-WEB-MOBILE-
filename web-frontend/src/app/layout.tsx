@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+// import { Header } from "@/components/layout/Header"; // Có thể bỏ nếu đã dùng trong LayoutWrapper
+// import { Footer } from "@/components/layout/Footer"; // Có thể bỏ nếu đã dùng trong LayoutWrapper
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
 
@@ -19,12 +19,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Bookstore - Cửa hàng sách trực tuyến",
   description: "Mua sắm sách online với giá tốt nhất",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({
@@ -33,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
+    <html lang="vi" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning

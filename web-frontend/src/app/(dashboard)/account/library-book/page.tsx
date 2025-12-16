@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -9,6 +9,8 @@ import {
   Button,
   Badge,
 } from '@/components/ui';
+import { rentalService } from '@/services/rental.service';
+import { BookRentalDto } from '@/types/dtos';
 
 type BookFormat = 'ebook' | 'physical';
 type ReadingStatus = 'reading' | 'completed' | 'not-started' | 'want-to-read';
@@ -32,146 +34,6 @@ interface LibraryBook {
   estimatedTimeLeft?: string;
   notes?: string;
 }
-
-const initialLibrary: LibraryBook[] = [
-  {
-    id: 'LIB-001',
-    title: 'Clean Code',
-    author: 'Robert C. Martin',
-    cover: '/image/anh.png',
-    format: 'ebook',
-    status: 'reading',
-    progress: 65,
-    currentPage: 260,
-    totalPages: 400,
-    rating: 5,
-    purchasedAt: '2024-10-15T10:00:00',
-    startDate: '2024-10-15',
-    lastRead: '2024-11-06',
-    genre: 'Lập trình',
-    estimatedTimeLeft: '3 giờ',
-    notes: 'Chương về functions rất hay!',
-    downloadLinks: ['PDF', 'EPUB'],
-  },
-  {
-    id: 'LIB-002',
-    title: 'Đắc nhân tâm',
-    author: 'Dale Carnegie',
-    cover: '/image/anh.png',
-    format: 'ebook',
-    status: 'completed',
-    progress: 100,
-    currentPage: 320,
-    totalPages: 320,
-    rating: 5,
-    purchasedAt: '2024-09-01T10:00:00',
-    startDate: '2024-09-01',
-    lastRead: '2024-10-20',
-    genre: 'Kỹ năng sống',
-    notes: 'Sách rất hay, đã đọc xong!',
-    downloadLinks: ['PDF', 'EPUB'],
-  },
-  {
-    id: 'LIB-003',
-    title: 'The Pragmatic Programmer',
-    author: 'Andrew Hunt',
-    cover: '/image/anh.png',
-    format: 'ebook',
-    status: 'want-to-read',
-    progress: 0,
-    currentPage: 0,
-    totalPages: 352,
-    purchasedAt: '2024-10-01T10:00:00',
-    genre: 'Lập trình',
-    notes: 'Muốn đọc sau khi hoàn thành Clean Code',
-    downloadLinks: ['PDF'],
-  },
-  {
-    id: 'LIB-004',
-    title: 'Design Patterns',
-    author: 'Gang of Four',
-    cover: '/image/anh.png',
-    format: 'ebook',
-    status: 'reading',
-    progress: 45,
-    currentPage: 180,
-    totalPages: 400,
-    rating: 4,
-    purchasedAt: '2024-10-01T10:00:00',
-    startDate: '2024-10-01',
-    lastRead: '2024-11-05',
-    genre: 'Lập trình',
-    estimatedTimeLeft: '5 giờ',
-    notes: 'Các pattern rất hữu ích',
-    downloadLinks: ['EPUB'],
-  },
-  {
-    id: 'LIB-005',
-    title: 'Tuổi trẻ đáng giá bao nhiêu',
-    author: 'Rosie Nguyễn',
-    cover: '/image/anh.png',
-    format: 'physical',
-    status: 'completed',
-    progress: 100,
-    currentPage: 280,
-    totalPages: 280,
-    rating: 4,
-    purchasedAt: '2024-08-15T10:00:00',
-    startDate: '2024-08-15',
-    lastRead: '2024-09-10',
-    genre: 'Kỹ năng sống',
-    notes: 'Truyền động lực rất tốt',
-  },
-  {
-    id: 'LIB-006',
-    title: 'Refactoring',
-    author: 'Martin Fowler',
-    cover: '/image/anh.png',
-    format: 'ebook',
-    status: 'want-to-read',
-    progress: 0,
-    currentPage: 0,
-    totalPages: 448,
-    purchasedAt: '2024-09-11T10:00:00',
-    genre: 'Lập trình',
-    downloadLinks: ['PDF'],
-  },
-  {
-    id: 'LIB-007',
-    title: 'Introduction to Algorithms',
-    author: 'Thomas H. Cormen',
-    cover: '/image/anh.png',
-    format: 'physical',
-    status: 'reading',
-    progress: 30,
-    currentPage: 360,
-    totalPages: 1200,
-    rating: 5,
-    purchasedAt: '2024-09-15T10:00:00',
-    startDate: '2024-09-15',
-    lastRead: '2024-11-04',
-    genre: 'Lập trình',
-    estimatedTimeLeft: '20 giờ',
-    notes: 'Sách khó nhưng rất chi tiết',
-  },
-  {
-    id: 'LIB-008',
-    title: 'Nhà giả kim',
-    author: 'Paulo Coelho',
-    cover: '/image/anh.png',
-    format: 'physical',
-    status: 'completed',
-    progress: 100,
-    currentPage: 208,
-    totalPages: 208,
-    rating: 5,
-    purchasedAt: '2024-07-20T10:00:00',
-    startDate: '2024-07-20',
-    lastRead: '2024-08-05',
-    genre: 'Văn học',
-    notes: 'Câu chuyện ý nghĩa về hành trình tìm kiếm ước mơ',
-  },
-];
 
 const statusConfig: Record<
   ReadingStatus,
@@ -254,7 +116,58 @@ export default function LibraryPage() {
   const [sortBy, setSortBy] = useState<'lastRead' | 'progress' | 'title'>('lastRead');
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [formatFilter, setFormatFilter] = useState<'all' | 'ebook' | 'physical'>('all');
-  const [library, setLibrary] = useState<LibraryBook[]>(initialLibrary);
+  const [library, setLibrary] = useState<LibraryBook[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load rentals from API
+  useEffect(() => {
+    const fetchMyLibrary = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await rentalService.getMyRentals(undefined, 1, 100);
+        
+        // Map BookRentalDto to LibraryBook
+        const books: LibraryBook[] = result.items.map((rental: BookRentalDto) => {
+          const progress = rental.isReturned ? 100 : 
+                          rental.isExpired ? 0 : 
+                          Math.floor(Math.random() * 80); // TODO: Get actual progress from API
+          
+          let status: ReadingStatus;
+          if (rental.isReturned) status = 'completed';
+          else if (rental.canRead && progress > 0) status = 'reading';
+          else status = 'not-started';
+          
+          return {
+            id: rental.id,
+            title: rental.bookTitle,
+            author: 'Unknown', // TODO: Get from book details
+            cover: rental.bookCoverImage || '/image/anh.png',
+            format: 'ebook',
+            status,
+            progress,
+            currentPage: 0,
+            totalPages: 300, // TODO: Get from book details
+            purchasedAt: rental.startDate,
+            startDate: rental.startDate,
+            lastRead: rental.endDate,
+            genre: 'Chung', // TODO: Get from book details
+            downloadLinks: rental.canRead ? ['PDF', 'EPUB'] : undefined,
+          };
+        });
+        
+        setLibrary(books);
+      } catch (err) {
+        console.error('Error fetching library:', err);
+        setError('Không thể tải thư viện sách. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMyLibrary();
+  }, []);
 
   // Get unique genres
   const genres = useMemo(() => {
@@ -347,6 +260,24 @@ export default function LibraryPage() {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
+        
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
+
+        {/* Content */}
+        {!loading && !error && (
+          <>
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-sm p-2 mb-6 inline-flex gap-2">
           <Button
@@ -740,6 +671,8 @@ export default function LibraryPage() {
               </div>
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

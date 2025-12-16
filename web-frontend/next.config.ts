@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/image/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'salt.tikicdn.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };

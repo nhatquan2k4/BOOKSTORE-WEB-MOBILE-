@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardHeader,
@@ -9,68 +9,57 @@ import {
   Button,
   Badge,
 } from '@/components/ui';
-
-interface Address {
-  id: number;
-  name: string;
-  phone: string;
-  address: string;
-  ward: string;
-  district: string;
-  city: string;
-  isDefault: boolean;
-}
-
-const mockAddresses: Address[] = [
-  {
-    id: 1,
-    name: 'Nguyễn Văn A',
-    phone: '0901234567',
-    address: '123 Đường Nguyễn Huệ',
-    ward: 'Phường Bến Nghé',
-    district: 'Quận 1',
-    city: 'TP. Hồ Chí Minh',
-    isDefault: true,
-  },
-  {
-    id: 2,
-    name: 'Nguyễn Văn A',
-    phone: '0901234567',
-    address: '456 Đường Lê Lợi',
-    ward: 'Phường Bến Thành',
-    district: 'Quận 1',
-    city: 'TP. Hồ Chí Minh',
-    isDefault: false,
-  },
-];
+import { addressService } from '@/services/user.service';
+import { UserAddressDto, CreateUserAddressDto } from '@/types/dtos';
 
 export default function AddressesPage() {
-  const [addresses, setAddresses] = useState<Address[]>(mockAddresses);
+  const [addresses, setAddresses] = useState<UserAddressDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // dùng 1 modal cho cả thêm mới và chỉnh sửa
   const [showForm, setShowForm] = useState(false);
 
   // nếu khác null nghĩa là đang sửa
-  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [editingAddress, setEditingAddress] = useState<UserAddressDto | null>(null);
 
   // state form
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    address: '',
-    city: '',
+    recipientName: '',
+    phoneNumber: '',
+    streetAddress: '',
+    province: '',
     district: '',
     ward: '',
     isDefault: false,
   });
 
+  // Load addresses from API
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
+
+  const fetchAddresses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await addressService.getMyAddresses();
+      setAddresses(data);
+    } catch (err) {
+      console.error('Error fetching addresses:', err);
+      setError('Không thể tải danh sách địa chỉ. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openAddForm = () => {
     setEditingAddress(null);
     setFormData({
-      name: '',
-      phone: '',
-      address: '',
-      city: '',
+      recipientName: '',
+      phoneNumber: '',
+      streetAddress: '',
+      province: '',
       district: '',
       ward: '',
       isDefault: false,
@@ -78,13 +67,13 @@ export default function AddressesPage() {
     setShowForm(true);
   };
 
-  const openEditForm = (addr: Address) => {
+  const openEditForm = (addr: UserAddressDto) => {
     setEditingAddress(addr);
     setFormData({
-      name: addr.name,
-      phone: addr.phone,
-      address: addr.address,
-      city: addr.city,
+      recipientName: addr.recipientName,
+      phoneNumber: addr.phoneNumber,
+      streetAddress: addr.streetAddress,
+      province: addr.province,
       district: addr.district,
       ward: addr.ward,
       isDefault: addr.isDefault,
@@ -92,81 +81,47 @@ export default function AddressesPage() {
     setShowForm(true);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // đang sửa
-    if (editingAddress) {
-      setAddresses((prev) => {
-        let next = prev.map((addr) =>
-          addr.id === editingAddress.id
-            ? {
-                ...addr,
-                name: formData.name,
-                phone: formData.phone,
-                address: formData.address,
-                city: formData.city,
-                district: formData.district,
-                ward: formData.ward,
-                isDefault: formData.isDefault,
-              }
-            : addr
-        );
-
-        // nếu đang tick mặc định thì bỏ mặc định ở cái khác
-        if (formData.isDefault) {
-          next = next.map((addr) => ({
-            ...addr,
-            isDefault: addr.id === editingAddress.id,
-          }));
-        }
-
-        return next;
-      });
-    } else {
-      // thêm mới
-      const newId =
-        addresses.length > 0
-          ? Math.max(...addresses.map((a) => a.id)) + 1
-          : 1;
-
-      let next = [
-        ...addresses,
-        {
-          id: newId,
-          name: formData.name,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          district: formData.district,
-          ward: formData.ward,
-          isDefault: formData.isDefault,
-        },
-      ];
-
-      // nếu cái mới là mặc định thì bỏ mặc định ở cái khác
-      if (formData.isDefault) {
-        next = next.map((addr) => ({
-          ...addr,
-          isDefault: addr.id === newId,
-        }));
+    try {
+      // đang sửa
+      if (editingAddress) {
+        await addressService.updateAddress(editingAddress.id, formData);
+      } else {
+        // thêm mới
+        await addressService.createAddress(formData as CreateUserAddressDto);
       }
-
-      setAddresses(next);
+      
+      // Reload addresses
+      await fetchAddresses();
+      setShowForm(false);
+    } catch (err) {
+      console.error('Error saving address:', err);
+      alert('Không thể lưu địa chỉ. Vui lòng thử lại.');
     }
-
-    setShowForm(false);
-    setEditingAddress(null);
   };
 
-  const setAsDefault = (id: number) => {
-    setAddresses((prev) =>
-      prev.map((addr) => ({ ...addr, isDefault: addr.id === id }))
-    );
+  const handleDelete = async (id: string) => {
+    if (!confirm('Bạn có chắc muốn xóa địa chỉ này?')) return;
+
+    try {
+      await addressService.deleteAddress(id);
+      await fetchAddresses();
+    } catch (err) {
+      console.error('Error deleting address:', err);
+      alert('Không thể xóa địa chỉ. Vui lòng thử lại.');
+    }
   };
 
-  const deleteAddress = (id: number) => {
-    setAddresses((prev) => prev.filter((addr) => addr.id !== id));
+  const handleSetDefault = async (id: string) => {
+    try {
+      await addressService.setDefaultAddress(id);
+      await fetchAddresses();
+    } catch (err) {
+      console.error('Error setting default address:', err);
+      alert('Không thể đặt địa chỉ mặc định. Vui lòng thử lại.');
+    }
   };
 
   return (
@@ -196,7 +151,15 @@ export default function AddressesPage() {
         </div>
 
         {/* Addresses List */}
-        {addresses.length > 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800">{error}</p>
+          </div>
+        ) : addresses.length > 0 ? (
           <div className="space-y-4">
             {addresses.map((addr) => (
               <Card
@@ -209,10 +172,10 @@ export default function AddressesPage() {
                       {/* Name & Phone */}
                       <div className="flex items-center gap-3 mb-3 flex-wrap">
                         <h3 className="font-semibold text-gray-900">
-                          {addr.name}
+                          {addr.recipientName}
                         </h3>
                         <span className="text-gray-400">•</span>
-                        <span className="text-gray-700">{addr.phone}</span>
+                        <span className="text-gray-700">{addr.phoneNumber}</span>
                         {addr.isDefault && (
                           <Badge className="bg-blue-100 text-blue-700 border-blue-200 flex items-center gap-1">
                             <svg
@@ -232,9 +195,9 @@ export default function AddressesPage() {
                       </div>
 
                       {/* Address */}
-                      <p className="text-gray-700 mb-1">{addr.address}</p>
+                      <p className="text-gray-700 mb-1">{addr.streetAddress}</p>
                       <p className="text-gray-500 text-sm">
-                        {addr.ward}, {addr.district}, {addr.city}
+                        {addr.ward}, {addr.district}, {addr.province}
                       </p>
                     </div>
 
@@ -262,7 +225,7 @@ export default function AddressesPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => deleteAddress(addr.id)}
+                        onClick={() => handleDelete(addr.id)}
                         className="text-gray-600 hover:text-red-600"
                       >
                         <svg
@@ -290,7 +253,7 @@ export default function AddressesPage() {
                       <Button
                         variant="ghost"
                         className="px-0 text-blue-600 hover:text-blue-700"
-                        onClick={() => setAsDefault(addr.id)}
+                        onClick={() => handleSetDefault(addr.id)}
                       >
                         <svg
                           className="w-4 h-4 mr-1"
@@ -380,9 +343,9 @@ export default function AddressesPage() {
                       </label>
                       <input
                         type="text"
-                        value={formData.name}
+                        value={formData.recipientName}
                         onChange={(e) =>
-                          setFormData((p) => ({ ...p, name: e.target.value }))
+                          setFormData((p) => ({ ...p, recipientName: e.target.value }))
                         }
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Nguyễn Văn A"
@@ -395,9 +358,9 @@ export default function AddressesPage() {
                       </label>
                       <input
                         type="tel"
-                        value={formData.phone}
+                        value={formData.phoneNumber}
                         onChange={(e) =>
-                          setFormData((p) => ({ ...p, phone: e.target.value }))
+                          setFormData((p) => ({ ...p, phoneNumber: e.target.value }))
                         }
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="0901234567"
@@ -412,9 +375,9 @@ export default function AddressesPage() {
                     </label>
                     <input
                       type="text"
-                      value={formData.address}
+                      value={formData.streetAddress}
                       onChange={(e) =>
-                        setFormData((p) => ({ ...p, address: e.target.value }))
+                        setFormData((p) => ({ ...p, streetAddress: e.target.value }))
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Số nhà, tên đường"
@@ -428,9 +391,9 @@ export default function AddressesPage() {
                         Tỉnh/Thành phố *
                       </label>
                       <select
-                        value={formData.city}
+                        value={formData.province}
                         onChange={(e) =>
-                          setFormData((p) => ({ ...p, city: e.target.value }))
+                          setFormData((p) => ({ ...p, province: e.target.value }))
                         }
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
