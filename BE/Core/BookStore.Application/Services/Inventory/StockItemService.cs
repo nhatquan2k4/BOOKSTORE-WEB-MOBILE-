@@ -4,6 +4,7 @@ using BookStore.Application.Mappers.Inventory;
 using BookStore.Domain.Entities.Pricing_Inventory;
 using BookStore.Domain.Entities.Pricing___Inventory;
 using BookStore.Domain.IRepository.Inventory;
+using BookStore.Domain.IRepository.Catalog;
 using BookStore.Shared.Exceptions;
 using BookStore.Shared.Utilities;
 
@@ -13,13 +14,19 @@ namespace BookStore.Application.Services.Inventory
     {
         private readonly IStockItemRepository _stockItemRepository;
         private readonly IInventoryTransactionRepository _transactionRepository;
+        private readonly IBookRepository _bookRepository;
+        private readonly IWarehouseRepository _warehouseRepository;
 
         public StockItemService(
             IStockItemRepository stockItemRepository,
-            IInventoryTransactionRepository transactionRepository)
+            IInventoryTransactionRepository transactionRepository,
+            IBookRepository bookRepository,
+            IWarehouseRepository warehouseRepository)
         {
             _stockItemRepository = stockItemRepository;
             _transactionRepository = transactionRepository;
+            _bookRepository = bookRepository;
+            _warehouseRepository = warehouseRepository;
         }
 
         public async Task<StockItemDto?> GetStockByBookAndWarehouseAsync(Guid bookId, Guid warehouseId)
@@ -54,6 +61,14 @@ namespace BookStore.Application.Services.Inventory
 
         public async Task<StockItemDto> CreateStockItemAsync(CreateStockItemDto dto)
         {
+            // Validate Book exists
+            var book = await _bookRepository.GetByIdAsync(dto.BookId);
+            Guard.Against(book == null, $"Book with ID {dto.BookId} does not exist");
+
+            // Validate Warehouse exists
+            var warehouse = await _warehouseRepository.GetByIdAsync(dto.WarehouseId);
+            Guard.Against(warehouse == null, $"Warehouse with ID {dto.WarehouseId} does not exist");
+
             // Check if stock item already exists
             var existing = await _stockItemRepository.GetStockByBookAndWarehouseAsync(dto.BookId, dto.WarehouseId);
             if (existing != null)

@@ -62,8 +62,8 @@ namespace BookStore.Application.Mappers.Catalog.Book
                     .OrderByDescending(p => p.EffectiveFrom)
                     .FirstOrDefault()?.Amount,
 
-                // Stock Quantity
-                StockQuantity = book.StockItem?.QuantityOnHand ?? 0,
+                // Stock Quantity (sum across all warehouses)
+                StockQuantity = book.StockItems?.Sum(s => s.QuantityOnHand) ?? 0,
 
                 // Reviews (TODO: Calculate from Reviews when schema is fixed)
                 AverageRating = null,

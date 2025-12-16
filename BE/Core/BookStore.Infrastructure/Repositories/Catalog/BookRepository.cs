@@ -23,7 +23,7 @@ namespace BookStore.Infrastructure.Repository.Catalog
                 .Include(b => b.BookCategories)
                     .ThenInclude(bc => bc.Category)
                 .Include(b => b.Prices)
-                .Include(b => b.StockItem)
+                .Include(b => b.StockItems)
                 .ToListAsync();
         }
 

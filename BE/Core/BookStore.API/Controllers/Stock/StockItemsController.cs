@@ -78,8 +78,15 @@ namespace BookStore.API.Controllers
         // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<StockItemDto>> CreateStockItem([FromBody] CreateStockItemDto dto)
         {
-            var stock = await _stockItemService.CreateStockItemAsync(dto);
-            return Ok(stock);
+            try
+            {
+                var stock = await _stockItemService.CreateStockItemAsync(dto);
+                return Ok(stock);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message, details = ex.InnerException?.Message, stackTrace = ex.StackTrace });
+            }
         }
 
         /// <summary>

@@ -387,9 +387,7 @@ namespace BookStore.Application.Services.Catalog
                 {
                     var popularBooks = availableBooks
                         .Where(b => !recommendations.Contains(b))
-                        .OrderByDescending(b => b.StockItem?.QuantityOnHand ?? 0)
-                        .ThenByDescending(b => b.PublicationYear)
-                        .OrderByDescending(b => b.StockItem?.QuantityOnHand ?? 0) 
+                        .OrderByDescending(b => b.StockItems?.Sum(s => s.QuantityOnHand) ?? 0)
                         .ThenByDescending(b => b.PublicationYear)
                         .Take(remainingSlots)
                         .ToList();
