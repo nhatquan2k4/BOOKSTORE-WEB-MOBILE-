@@ -104,7 +104,9 @@ export default function NotificationsPage() {
         const notifResponse = await notificationService.getMyNotifications(1, 50);
 
         // Transform API data to component format
-        const transformedNotifications: Notification[] = notifResponse.items.map((item) => ({
+        // Safely handle undefined or null items
+        const items = notifResponse?.items || [];
+        const transformedNotifications: Notification[] = items.map((item) => ({
           id: item.id,
           type: (item.type || 'system') as NotificationType,
           title: item.title,

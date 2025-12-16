@@ -201,7 +201,9 @@ export function useNotifications() {
         const response = await notificationService.getMyNotifications(1, 20);
         
         // Transform API data to component format
-        const transformedNotifications: NotificationItem[] = response.items.map((item) => ({
+        // Safely handle undefined or null items
+        const items = response?.items || [];
+        const transformedNotifications: NotificationItem[] = items.map((item) => ({
           id: item.id,
           title: item.title,
           message: item.message,

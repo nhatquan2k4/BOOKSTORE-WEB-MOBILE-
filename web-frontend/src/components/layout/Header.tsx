@@ -61,7 +61,16 @@ export function Header() {
       }
     }, 30000);
 
-    return () => clearInterval(interval);
+    // Listen for custom cart update events
+    const handleCartUpdate = () => {
+      fetchCartCount();
+    };
+    window.addEventListener('cartUpdated', handleCartUpdate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+    };
   }, [isLoggedIn]);
 
   // Get notifications

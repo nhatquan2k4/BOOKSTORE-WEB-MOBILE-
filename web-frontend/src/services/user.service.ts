@@ -2,7 +2,7 @@ import axiosInstance, { handleApiError, PagedResult } from '@/lib/axios';
 import { UserDto, UserSummaryDto, UserProfileDto, UserAddressDto, CreateUserAddressDto, UpdateUserAddressDto } from '@/types/dtos';
 
 const USER_BASE_URL = '/api/users';
-const PROFILE_BASE_URL = '/api/userprofile';
+const PROFILE_BASE_URL = '/api/UserProfile';
 
 export const userService = {
   /**

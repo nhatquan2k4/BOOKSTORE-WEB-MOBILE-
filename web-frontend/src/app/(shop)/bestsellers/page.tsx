@@ -62,7 +62,7 @@ export default function BestsellersPage() {
             author: book.authorNames?.[0] || "Tác giả không xác định",
             category: book.categoryNames?.[0] || "Chưa phân loại",
             cover: "/image/anh.png",
-            rating: book.averageRating || 4.5,
+            rating: book.averageRating || 0,
             reviewCount: book.totalReviews || 0,
             price: book.discountPrice || book.currentPrice || 0,
             originalPrice:
@@ -134,8 +134,10 @@ export default function BestsellersPage() {
       currency: "VND",
     }).format(price);
 
-  const calculateDiscount = (original: number, current: number) =>
-    Math.round(((original - current) / original) * 100);
+  const calculateDiscount = (original: number, current: number) => {
+    if (original <= 0 || current <= 0 || current >= original) return 0;
+    return Math.round(((original - current) / original) * 100);
+  };
 
   const getRankBadgeClass = (rank: number) => {
     if (rank === 1)

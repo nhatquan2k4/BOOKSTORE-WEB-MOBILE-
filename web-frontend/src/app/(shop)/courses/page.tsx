@@ -291,7 +291,7 @@ export default function CourseBooksPage() {
             price: book.discountPrice || book.currentPrice || 0,
             originalPrice: book.currentPrice,
             cover: "/image/anh.png",
-            rating: book.averageRating || 4.5,
+            rating: book.averageRating || 0,
             reviewCount: book.totalReviews || 0,
             stock: book.stockQuantity || 0,
           }));
@@ -354,6 +354,7 @@ export default function CourseBooksPage() {
   };
 
   const calculateDiscount = (original: number, current: number) => {
+    if (original <= 0 || current <= 0 || current >= original) return 0;
     return Math.round(((original - current) / original) * 100);
   };
 
@@ -506,20 +507,26 @@ export default function CourseBooksPage() {
                   </div>
                 )}
 
-                <div className="flex items-center gap-1 pt-1">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="text-yellow-400"
-                  >
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  <span className="text-xs font-bold text-gray-700">{book.rating}</span>
-                  <span className="text-xs text-gray-500">({book.reviewCount})</span>
-                </div>
+                {book.rating > 0 && book.reviewCount > 0 ? (
+                  <div className="flex items-center gap-1 pt-1">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="text-yellow-400"
+                    >
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                    <span className="text-xs font-bold text-gray-700">{book.rating.toFixed(1)}</span>
+                    <span className="text-xs text-gray-500">({book.reviewCount})</span>
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-400 pt-1">
+                    Đang cập nhật
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2 pt-1 flex-wrap">
                   <p className="text-red-600 font-bold text-sm">{formatPrice(book.price)}</p>

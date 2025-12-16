@@ -56,7 +56,7 @@ export default function TrendingBooksPage() {
             price: book.discountPrice || book.currentPrice || 0,
             originalPrice: book.currentPrice,
             cover: "/image/anh.png",
-            rating: book.averageRating || 4.5,
+            rating: book.averageRating || 0,
             reviews: book.totalReviews || 0,
             trendScore: 90,
             trendChange: "stable",
@@ -118,6 +118,7 @@ export default function TrendingBooksPage() {
 
   // Calculate discount
   const calculateDiscount = (original: number, current: number) => {
+    if (original <= 0 || current <= 0 || current >= original) return 0;
     return Math.round(((original - current) / original) * 100);
   };
 
@@ -217,20 +218,26 @@ export default function TrendingBooksPage() {
 
               {/* Rating */}
               <div className="flex items-center gap-1 mb-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="text-yellow-400"
-                >
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                <span className="text-xs text-gray-600">{book.rating}</span>
-                <span className="text-xs text-gray-400">
-                  ({book.reviews})
-                </span>
+                {book.rating > 0 && book.reviews > 0 ? (
+                  <>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="text-yellow-400"
+                    >
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                    <span className="text-xs text-gray-600">{book.rating}</span>
+                    <span className="text-xs text-gray-400">
+                      ({book.reviews})
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-xs text-gray-400">Đang cập nhật</span>
+                )}
               </div>
 
               {/* Price */}

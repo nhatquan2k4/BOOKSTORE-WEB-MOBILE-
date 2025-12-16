@@ -418,6 +418,80 @@ namespace BookStore.Application.Services.Catalog
             }
         }
 
+        public async Task<List<BookDto>> GetBestSellingBooksAsync(int top = 10)
+        {
+            try
+            {
+                var allBooks = await _bookRepository.GetAllAsync();
+                
+                // Use AverageRating and TotalReviews as proxy for popularity
+                // Books with higher ratings and more reviews are likely best sellers
+                var bestSelling = allBooks
+                    .Where(b => b.IsAvailable)
+                    .OrderByDescending(b => b.TotalReviews)
+                    .ThenByDescending(b => b.AverageRating)
+                    .ThenBy(b => b.Id)
+                    .Take(top)
+                    .ToList();
+
+                return bestSelling.Select(b => b.ToDto()).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting best-selling books: {ex.Message}");
+                return new List<BookDto>();
+            }
+        }
+
+        public async Task<List<BookDto>> GetNewestBooksAsync(int top = 10)
+        {
+            try
+            {
+                var allBooks = await _bookRepository.GetAllAsync();
+                
+                // Use Id (GUID) as proxy for creation order - newer records typically have "higher" GUIDs
+                // Or use PublicationYear for actual newest published books
+                var newest = allBooks
+                    .Where(b => b.IsAvailable)
+                    .OrderByDescending(b => b.PublicationYear)
+                    .ThenByDescending(b => b.Id)
+                    .Take(top)
+                    .ToList();
+
+                return newest.Select(b => b.ToDto()).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting newest books: {ex.Message}");
+                return new List<BookDto>();
+            }
+        }
+
+        public async Task<List<BookDto>> GetMostViewedBooksAsync(int top = 10)
+        {
+            try
+            {
+                var allBooks = await _bookRepository.GetAllAsync();
+                
+                // Use TotalReviews as proxy for views - books with more reviews were likely viewed more
+                // Combined with AverageRating for quality filter
+                var mostViewed = allBooks
+                    .Where(b => b.IsAvailable)
+                    .OrderByDescending(b => b.TotalReviews)
+                    .ThenByDescending(b => b.AverageRating)
+                    .ThenBy(b => b.Id)
+                    .Take(top)
+                    .ToList();
+
+                return mostViewed.Select(b => b.ToDto()).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting most-viewed books: {ex.Message}");
+                return new List<BookDto>();
+            }
+        }
+
         #region Base GenericService overrides (not used - AddAsync/UpdateAsync handle everything)
 
         protected override BookDto MapToDto(Book entity) => entity.ToDto();

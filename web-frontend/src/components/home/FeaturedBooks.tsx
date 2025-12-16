@@ -45,9 +45,9 @@ export function FeaturedBooks({ limit = 6 }: FeaturedBooksProps) {
       currency: 'VND',
     }).format(price);
 
-  // Helper tính %
+  // Helper tính % giảm giá
   const calculateDiscount = (original: number | undefined, current: number | undefined) => {
-    if (!original || !current || original <= current) return 0;
+    if (!original || !current || current <= 0 || original <= 0 || current >= original) return 0;
     return Math.round(((original - current) / original) * 100);
   };
 

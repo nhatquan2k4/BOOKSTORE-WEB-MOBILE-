@@ -64,6 +64,7 @@ namespace BookStore.Infrastructure.Data
         public DbSet<BookFormat> BookFormats { get; set; } = null!;
         public DbSet<BookImage> BookImages { get; set; } = null!;
         public DbSet<BookMetadata> BookMetadata { get; set; } = null!;
+        public DbSet<Wishlist> Wishlists { get; set; } = null!;
         #endregion
 
         #region Pricing & Inventory

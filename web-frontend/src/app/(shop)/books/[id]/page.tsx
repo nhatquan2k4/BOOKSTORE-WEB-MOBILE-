@@ -8,8 +8,9 @@ import { useRouter, useParams } from "next/navigation";
 import { Button, Badge, Alert } from "@/components/ui";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { bookService } from "@/services";
+import { bookService, cartService, wishlistService } from "@/services";
 import type { BookDetailDto, BookDto } from "@/types/dtos";
+import { useAuth } from "@/contexts";
 
 // ============================================================================
 // TYPES
@@ -172,8 +173,10 @@ const formatCurrency = (amount: number) =>
     currency: "VND",
   }).format(amount);
 
-const calculateDiscountPercent = (original: number, price: number) =>
-  Math.round(((original - price) / original) * 100);
+const calculateDiscountPercent = (original: number, price: number) => {
+  if (original <= 0 || price <= 0 || price >= original) return 0;
+  return Math.round(((original - price) / original) * 100);
+};
 
 // Component đệ quy để render comments và replies
 function CommentTree({
@@ -313,13 +316,17 @@ function CarouselBookCard({ book }: { book: CarouselBook }) {
         <p className="text-xs text-gray-600">{book.author}</p>
 
         {/* Rating */}
-        <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
-          <span className="text-yellow-400">★</span>
-          <span className="font-semibold">{book.rating.toFixed(1)}</span>
-          <span className="text-gray-400">
-            ({book.reviews.toLocaleString()})
-          </span>
-        </div>
+        {book.rating > 0 && book.reviews > 0 ? (
+          <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
+            <span className="text-yellow-400">★</span>
+            <span className="font-semibold">{book.rating.toFixed(1)}</span>
+            <span className="text-gray-400">
+              ({book.reviews.toLocaleString()})
+            </span>
+          </div>
+        ) : (
+          <div className="mt-2 text-[11px] text-gray-400">Đang cập nhật</div>
+        )}
 
         {/* Giá: Giá giảm - Giá gốc - % giảm */}
         <div className="mt-2 flex items-center gap-2 flex-wrap">
@@ -364,6 +371,12 @@ export default function BookDetailPage() {
   const [descExpanded, setDescExpanded] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
+  const [cartMessage, setCartMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  // Get auth state
+  const { isLoggedIn } = useAuth();
 
   // Refs và states cho "Có thể bạn thích"
   const likeRef = useRef<HTMLDivElement>(null);
@@ -458,7 +471,7 @@ export default function BookDetailPage() {
     price: dto.discountPrice || dto.currentPrice || 0,
     originalPrice: dto.currentPrice || 0,
     cover: "/image/anh.png",
-    rating: dto.averageRating || 4.5,
+    rating: dto.averageRating || 0,
     reviews: dto.totalReviews || 0,
     hot: dto.discountPrice ? true : false,
   });
@@ -474,6 +487,10 @@ export default function BookDetailPage() {
         const bookData = await bookService.getBookById(id);
         console.log("Book data received:", bookData);
         setBook(bookData);
+        
+        // Check if book is in wishlist (async call)
+        const inWishlist = await wishlistService.isInWishlist(id);
+        setIsLiked(inWishlist);
         
         // Fetch suggested books (newest)
         const newest = await bookService.getNewestBooks(8);
@@ -760,6 +777,79 @@ export default function BookDetailPage() {
     );
   }
 
+  // -------- Thêm/Xóa khỏi yêu thích --------
+  async function handleToggleWishlist() {
+    try {
+      setIsTogglingWishlist(true);
+      const isNowInWishlist = await wishlistService.toggleWishlist(id);
+      setIsLiked(isNowInWishlist);
+      
+      // Hiển thông báo
+      setCartMessage({
+        type: 'success',
+        text: isNowInWishlist ? 'Đã thêm vào danh sách yêu thích!' : 'Đã xóa khỏi danh sách yêu thích!'
+      });
+      
+      setTimeout(() => {
+        setCartMessage(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to toggle wishlist:', error);
+      setCartMessage({ 
+        type: 'error', 
+        text: 'Không thể cập nhật danh sách yêu thích' 
+      });
+    } finally {
+      setIsTogglingWishlist(false);
+    }
+  }
+
+  // -------- Thêm vào giỏ hàng --------
+  async function handleAddToCart() {
+    if (!isLoggedIn) {
+      setCartMessage({ type: 'error', text: 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng' });
+      setTimeout(() => {
+        router.push('/auth/login?redirect=/books/' + id);
+      }, 1500);
+      return;
+    }
+
+    if (!book || !displayBook) return;
+
+    try {
+      setIsAddingToCart(true);
+      setCartMessage(null);
+      
+      await cartService.addToCart({
+        bookId: id,
+        quantity: 1,
+      });
+
+      setCartMessage({ type: 'success', text: 'Đã thêm sách vào giỏ hàng!' });
+      
+      // Tự động ẩn thông báo sau 3 giây
+      setTimeout(() => {
+        setCartMessage(null);
+      }, 3000);
+
+      // Trigger refresh cart count in header by dispatching a custom event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('cartUpdated'));
+      }
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      setCartMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Không thể thêm sản phẩm vào giỏ hàng. Vui lòng thử lại!' 
+      });
+      setTimeout(() => {
+        setCartMessage(null);
+      }, 3000);
+    } finally {
+      setIsAddingToCart(false);
+    }
+  }
+
   // -------- Mua ngay --------
   function handleBuyNow() {
     if (!book || !displayBook) return;
@@ -851,6 +941,18 @@ export default function BookDetailPage() {
         { label: displayBook.title }
       ]} />
       <div className="container mx-auto px-6 py-10 text-gray-900">
+
+        {/* Thông báo thêm vào giỏ hàng */}
+        {cartMessage && (
+          <div className="mb-4">
+            <Alert 
+              variant={cartMessage.type === 'success' ? 'success' : 'danger'}
+              onClose={() => setCartMessage(null)}
+            >
+              {cartMessage.text}
+            </Alert>
+          </div>
+        )}
 
         {/* Nội dung chính */}
         <div className="grid grid-cols-1 gap-8 rounded-2xl bg-white p-6 shadow-md lg:grid-cols-2">
@@ -950,25 +1052,38 @@ export default function BookDetailPage() {
               <Button
                 variant="primary"
                 className="shadow-sm"
-                disabled={displayBook.stock === 0}
+                onClick={handleAddToCart}
+                disabled={displayBook.stock === 0 || isAddingToCart}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="lucide lucide-shopping-cart"
-                >
-                  <circle cx="8" cy="21" r="1" />
-                  <circle cx="19" cy="21" r="1" />
-                  <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-                </svg>
-                <span>Thêm vào giỏ hàng</span>
+                {isAddingToCart ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Đang thêm...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-shopping-cart"
+                    >
+                      <circle cx="8" cy="21" r="1" />
+                      <circle cx="19" cy="21" r="1" />
+                      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+                    </svg>
+                    <span>Thêm vào giỏ hàng</span>
+                  </>
+                )}
               </Button>
 
               <Link href={`/rent/${id}`}>
@@ -993,26 +1108,34 @@ export default function BookDetailPage() {
               </Link>
 
               <Button
-                onClick={() => setIsLiked((prev) => !prev)}
+                onClick={handleToggleWishlist}
                 variant="ghost"
                 size="sm"
-                aria-label="Yêu thích"
-                title="Yêu thích"
+                disabled={isTogglingWishlist}
+                aria-label={isLiked ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"}
+                title={isLiked ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill={isLiked ? "red" : "none"}
-                  stroke={isLiked ? "red" : "currentColor"}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="lucide lucide-heart"
-                >
-                  <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
-                </svg>
+                {isTogglingWishlist ? (
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill={isLiked ? "red" : "none"}
+                    stroke={isLiked ? "red" : "currentColor"}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-heart transition-all"
+                  >
+                    <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
+                  </svg>
+                )}
               </Button>
 
               <Button

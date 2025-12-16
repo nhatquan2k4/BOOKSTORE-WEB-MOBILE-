@@ -34,6 +34,7 @@ namespace BookStore.API.Controllers.Identity
 
         /// Lấy thông tin profile của user hiện tại
 
+        [HttpGet]
         [HttpGet("profile")]
         public async Task<IActionResult> GetMyProfile()
         {
@@ -71,6 +72,7 @@ namespace BookStore.API.Controllers.Identity
 
         /// Cập nhật thông tin profile của user hiện tại
 
+        [HttpPut]
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateUserProfileDto dto)
         {

@@ -13,6 +13,7 @@ export * from './publisher.service';
 export * from './user.service';
 export * from './notification.service';
 export * from './rental.service';
+export * from './wishlist.service';
 
 // Admin services
 export * from './admin-dashboard.service';

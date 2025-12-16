@@ -62,6 +62,7 @@ export default function NewArrivalsPage() {
 
   // Calculate discount
   const calculateDiscount = (original: number, current: number) => {
+    if (original <= 0 || current <= 0 || current >= original) return 0;
     return Math.round(((original - current) / original) * 100);
   };
 
@@ -193,24 +194,28 @@ export default function NewArrivalsPage() {
                   <p className="text-xs text-gray-600 mb-1">{book.author}</p>
 
                   {/* Rating */}
-                  <div className="flex items-center gap-1 mb-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="text-yellow-400"
-                    >
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
-                    <span className="text-xs text-gray-600">
-                      {book.rating?.toFixed(1) || "0.0"}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      ({book.reviewCount || 0})
-                    </span>
-                  </div>
+                  {book.rating && book.rating > 0 && book.reviewCount && book.reviewCount > 0 ? (
+                    <div className="flex items-center gap-1 mb-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="text-yellow-400"
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                      <span className="text-xs text-gray-600">
+                        {book.rating.toFixed(1)}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        ({book.reviewCount})
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-400 mb-2">Đang cập nhật</div>
+                  )}
 
                   {/* Price */}
                   <div className="flex flex-wrap items-center gap-2">

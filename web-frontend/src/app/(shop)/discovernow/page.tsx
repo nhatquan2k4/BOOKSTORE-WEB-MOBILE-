@@ -85,7 +85,7 @@ export default function DiscoverNowPage() {
             author: book.authorNames?.[0] || "Tác giả không xác định",
             price: book.discountPrice || book.currentPrice || 0,
             originalPrice: book.currentPrice,
-            rating: book.averageRating || 4.5,
+            rating: book.averageRating || 0,
             image: "/image/anh.png",
             hot: book.discountPrice ? true : false,
           }));
@@ -112,7 +112,7 @@ export default function DiscoverNowPage() {
             title: book.title,
             author: book.authorNames?.[0] || "Tác giả không xác định",
             price: book.discountPrice || book.currentPrice || 0,
-            rating: book.averageRating || 4.5,
+            rating: book.averageRating || 0,
             image: "/image/anh.png",
           }));
           setNewArrivals(transformed);

@@ -17,14 +17,31 @@ namespace BookStore.API.Controllers.Category
         }
 
         /// <summary>
-        /// Lấy danh sách tất cả danh mục
+        /// Lấy danh sách tất cả danh mục (hỗ trợ phân trang)
         /// </summary>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<CategoryDto>>> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
         {
-            var categories = await _categoryService.GetAllAsync();
-            return Ok(categories);
+            var allCategories = await _categoryService.GetAllAsync();
+            
+            // Validate pagination parameters
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 50;
+            
+            var totalCount = allCategories.Count();
+            var items = allCategories
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+            
+            return Ok(new
+            {
+                items,
+                pageNumber,
+                pageSize,
+                totalCount
+            });
         }
 
 

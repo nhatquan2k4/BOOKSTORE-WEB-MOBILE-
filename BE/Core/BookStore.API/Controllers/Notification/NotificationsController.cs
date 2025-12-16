@@ -28,32 +28,29 @@ namespace BookStore.API.Controllers.Notification
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetMyNotifications(
-            [FromQuery] int page = 1,
+            [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20,
             [FromQuery] bool? isRead = null)
         {
             try
             {
                 var userId = GetCurrentUserId();
-                if (page < 1) page = 1;
+                if (pageNumber < 1) pageNumber = 1;
                 if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
                 var (notifications, totalCount) = await _notificationService.GetUserNotificationsAsync(
-                    userId, page, pageSize, isRead);
+                    userId, pageNumber, pageSize, isRead);
 
                 return Ok(new
                 {
                     Success = true,
                     Data = new
                     {
-                        Notifications = notifications,
-                        Pagination = new
-                        {
-                            Page = page,
-                            PageSize = pageSize,
-                            TotalCount = totalCount,
-                            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
-                        }
+                        Items = notifications,  // Frontend expects "items" field
+                        PageNumber = pageNumber,
+                        PageSize = pageSize,
+                        TotalCount = totalCount,
+                        TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
                     }
                 });
             }

@@ -177,6 +177,10 @@ builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepo
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 
+// Wishlist Repository & Service
+builder.Services.AddScoped<BookStore.Domain.IRepository.Catalog.IWishlistRepository, BookStore.Infrastructure.Repositories.Catalog.WishlistRepository>();
+builder.Services.AddScoped<BookStore.Application.IService.Catalog.IWishlistService, BookStore.Application.Services.Catalog.WishlistService>();
+
 // Shipping Repositories
 builder.Services.AddScoped<BookStore.Domain.IRepository.Shipping.IShipperRepository, BookStore.Infrastructure.Repositories.Shipping.ShipperRepository>();
 builder.Services.AddScoped<BookStore.Domain.IRepository.Shipping.IShipmentRepository, BookStore.Infrastructure.Repositories.Shipping.ShipmentRepository>();

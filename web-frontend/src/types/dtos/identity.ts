@@ -20,15 +20,22 @@ export interface LoginResponseDto {
   refreshToken: string;
   accessTokenExpiresAt: string;
   refreshTokenExpiresAt: string;
-  userInfo: UserInfoDto;
+  user: UserInfoDto; // Backend returns "User" not "userInfo"
+  // Support both casing for compatibility
+  AccessToken?: string;
+  RefreshToken?: string;
+  AccessTokenExpiresAt?: string;
+  RefreshTokenExpiresAt?: string;
+  User?: UserInfoDto;
 }
 
 export interface UserInfoDto {
   id: string;
   email: string;
-  fullName: string;
-  avatarUrl?: string;
+  userName: string; // Backend returns UserName (matches .NET backend)
+  isActive: boolean;
   roles: string[];
+  permissions: string[];
 }
 
 export interface RefreshTokenDto {
