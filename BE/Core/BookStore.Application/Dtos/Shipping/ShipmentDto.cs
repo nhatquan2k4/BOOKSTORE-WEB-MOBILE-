@@ -57,7 +57,7 @@ namespace BookStore.Application.Dtos.Shipping
         public string? Notes { get; set; }
         public string? ProofImageUrl { get; set; } // URL ảnh chứng minh giao hàng
     }
-
+    
     // DTO thêm điểm route
     public class CreateRoutePointDto
     {
