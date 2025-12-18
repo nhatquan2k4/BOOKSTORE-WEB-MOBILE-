@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
+import { resolveBookPrice } from "@/lib/price";
 
 type Book = {
   id: string;
@@ -56,20 +57,23 @@ export default function LanguageBooksPage() {
         });
         
         if (response.items && response.items.length > 0) {
-          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
-            id: book.id,
-            title: book.title,
-            author: book.authorNames?.[0] || "Tác giả không xác định",
-            subcategory: "all",
-            price: book.discountPrice || book.currentPrice || 0,
-            originalPrice: book.currentPrice,
-            cover: "/image/anh.png",
-            rating: book.averageRating || 0,
-            reviewCount: book.totalReviews || 0,
-            stock: book.stockQuantity || 0,
-            level: "B1",
-            hasAudio: false,
-          }));
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => {
+            const priceInfo = resolveBookPrice(book);
+            return {
+              id: book.id,
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              subcategory: "all",
+              price: priceInfo.finalPrice,
+              originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
+              cover: book.coverImage || "/image/anh.png",
+              rating: book.averageRating || 0,
+              reviewCount: book.totalReviews || 0,
+              stock: book.stockQuantity || 0,
+              level: "B1",
+              hasAudio: false,
+            };
+          });
           setBooks(transformedBooks);
           setTotalItems(response.totalCount || 0);
         } else {

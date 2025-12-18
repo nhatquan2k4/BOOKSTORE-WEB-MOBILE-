@@ -11,6 +11,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { bookService, cartService, wishlistService } from "@/services";
 import type { BookDetailDto, BookDto } from "@/types/dtos";
 import { useAuth } from "@/contexts";
+import { resolveBookPrice, formatPrice } from "@/lib/price";
 
 // ============================================================================
 // TYPES
@@ -464,17 +465,20 @@ export default function BookDetailPage() {
   // =====================================================================
   // Transform function for BookDto to CarouselBook
   // =====================================================================
-  const transformBookDto = (dto: BookDto): CarouselBook => ({
-    id: dto.id,
-    title: dto.title,
-    author: dto.authorNames?.[0] || "Tác giả không xác định",
-    price: dto.discountPrice || dto.currentPrice || 0,
-    originalPrice: dto.currentPrice || 0,
-    cover: "/image/anh.png",
-    rating: dto.averageRating || 0,
-    reviews: dto.totalReviews || 0,
-    hot: dto.discountPrice ? true : false,
-  });
+  const transformBookDto = (dto: BookDto): CarouselBook => {
+    const priceInfo = resolveBookPrice(dto);
+    return {
+      id: dto.id,
+      title: dto.title,
+      author: dto.authorNames?.[0] || "Tác giả không xác định",
+      price: priceInfo.finalPrice,
+      originalPrice: priceInfo.originalPrice,
+      cover: dto.coverImage || "/image/anh.png",
+      rating: dto.averageRating || 0,
+      reviews: dto.totalReviews || 0,
+      hot: priceInfo.hasDiscount,
+    };
+  };
 
   // =====================================================================
   // Fetch data from API
@@ -488,9 +492,11 @@ export default function BookDetailPage() {
         console.log("Book data received:", bookData);
         setBook(bookData);
         
-        // Check if book is in wishlist (async call)
-        const inWishlist = await wishlistService.isInWishlist(id);
-        setIsLiked(inWishlist);
+        // TEMPORARILY DISABLED: Wishlist check (backend API not ready)
+        // TODO: Re-enable once backend wishlist endpoints are confirmed working
+        // const inWishlist = await wishlistService.isInWishlist(id);
+        // setIsLiked(inWishlist);
+        setIsLiked(false); // Default to not liked until backend is ready
         
         // Fetch suggested books (newest)
         const newest = await bookService.getNewestBooks(8);
@@ -530,21 +536,19 @@ export default function BookDetailPage() {
 
   // Transform BookDetailDto to display format
   const displayBook = book ? (() => {
-    // Get price information from metadata
-    const currentPriceStr = getMetadataValue("currentPrice") || getMetadataValue("price");
-    const originalPriceStr = getMetadataValue("originalPrice");
-    const discountPriceStr = getMetadataValue("discountPrice");
+    // DEBUG: Log the raw book data to see if backend is returning price fields
+    console.log('Raw book data from API:', {
+      id: book.id,
+      title: book.title,
+      currentPrice: book.currentPrice,
+      discountPrice: book.discountPrice,
+      stockQuantity: book.stockQuantity,
+      averageRating: book.averageRating,
+      totalReviews: book.totalReviews
+    });
     
-    // Parse prices
-    const currentPrice = currentPriceStr ? parseInt(currentPriceStr) : 0;
-    const originalPrice = originalPriceStr ? parseInt(originalPriceStr) : 0;
-    const discountPrice = discountPriceStr ? parseInt(discountPriceStr) : 0;
-    
-    // Determine final prices to display
-    // If there's a discount price, use it as the current price
-    const finalPrice = discountPrice > 0 ? discountPrice : (currentPrice > 0 ? currentPrice : 100000);
-    // If original price exists and is higher, use it; otherwise use current price as original
-    const finalOriginalPrice = originalPrice > finalPrice ? originalPrice : (discountPrice > 0 && currentPrice > discountPrice ? currentPrice : finalPrice);
+    // Use centralized price resolver - SINGLE SOURCE OF TRUTH
+    const priceInfo = resolveBookPrice(book);
     
     return {
       id: book.id,
@@ -552,16 +556,18 @@ export default function BookDetailPage() {
       author: book.authors && book.authors.length > 0 ? book.authors.map(a => a.name).join(", ") : "Tác giả không xác định",
       category: book.categories && book.categories.length > 0 ? book.categories.map(c => c.name).join(", ") : "Chưa phân loại",
       publisher: book.publisher?.name || "NXB",
-      price: finalPrice,
-      originalPrice: finalOriginalPrice,
-      rating: parseFloat(getMetadataValue("averageRating", "4.5")),
-      reviewCount: parseInt(getMetadataValue("totalReviews", "0")),
-      stock: parseInt(getMetadataValue("stockQuantity") || getMetadataValue("stock", "12")),
+      price: priceInfo.finalPrice,
+      originalPrice: priceInfo.originalPrice,
+      rating: book.averageRating || 0,
+      reviewCount: book.totalReviews || 0,
+      stock: book.stockQuantity || 0,
       year: book.publicationYear || new Date().getFullYear(),
       weight: parseInt(getMetadataValue("weight", "500")),
       size: `${book.pageCount || 0} trang`,
       language: book.language || "Tiếng Việt",
-      cover: book.images && book.images.length > 0 ? book.images[0].imageUrl : "/image/anh.png",
+      cover: (book.images && book.images.length > 0 ? book.images.find(img => img.isCover)?.imageUrl : null) || 
+             (book.images && book.images.length > 0 ? book.images[0].imageUrl : null) || 
+             "/image/anh.png",
       description: book.description || "Chưa có mô tả",
       isbn: book.isbn || "",
       edition: book.edition || "",

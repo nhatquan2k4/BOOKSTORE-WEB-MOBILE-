@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
+import { resolveBookPrice } from "@/lib/price";
 
 // ============================================================================
 // TYPES
@@ -60,21 +61,22 @@ export default function LifeSkillsPage() {
         
         if (response.items && response.items.length > 0) {
           // Transform API data to match component Book type
-          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
-            id: book.id,
-            title: book.title,
-            author: book.authorNames?.[0] || "Tác giả không xác định",
-            cover: "/image/anh.png", // Default cover since BookDto doesn't have images array
-            rating: book.averageRating || 0,
-            reviewCount: book.totalReviews || 0,
-            price: book.discountPrice || book.currentPrice || 0,
-            originalPrice: book.currentPrice && book.discountPrice && book.discountPrice < book.currentPrice 
-              ? book.currentPrice 
-              : undefined,
-            description: book.title, // Use title as description since BookDto doesn't have description
-            isBestseller: (book.totalReviews || 0) > 1000,
-            subCategory: "all", // Map to appropriate subcategory if available
-          }));
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => {
+            const priceInfo = resolveBookPrice(book);
+            return {
+              id: book.id,
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              cover: book.coverImage || "/image/anh.png",
+              rating: book.averageRating || 0,
+              reviewCount: book.totalReviews || 0,
+              price: priceInfo.finalPrice,
+              originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
+                description: book.title, // Use title as description since BookDto doesn't have description
+              isBestseller: (book.totalReviews || 0) > 1000,
+              subCategory: "all", // Map to appropriate subcategory if available
+            };
+          });
           
           setBooks(transformedBooks);
           setTotalItems(response.totalCount || 0);

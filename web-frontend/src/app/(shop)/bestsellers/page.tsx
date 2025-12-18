@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
+import { resolveBookPrice } from "@/lib/price";
 
 // ============================================================================
 // TYPES
@@ -56,24 +57,24 @@ export default function BestsellersPage() {
 
         if (response.items && response.items.length > 0) {
           // Transform API data to match component Book type
-          const transformedBooks: Book[] = response.items.map((book: BookDto, index: number) => ({
-            id: book.id,
-            title: book.title,
-            author: book.authorNames?.[0] || "Tác giả không xác định",
-            category: book.categoryNames?.[0] || "Chưa phân loại",
-            cover: "/image/anh.png",
-            rating: book.averageRating || 0,
-            reviewCount: book.totalReviews || 0,
-            price: book.discountPrice || book.currentPrice || 0,
-            originalPrice:
-              book.currentPrice && book.discountPrice && book.discountPrice < book.currentPrice
-                ? book.currentPrice
-                : undefined,
-            // Note: These fields should come from backend bestseller API
-            rank: (currentPage - 1) * itemsPerPage + index + 1,
-            soldCount: book.totalReviews * 2 || 0, // Temporary approximation
-            lastSoldDate: new Date(), // Temporary placeholder
-          }));
+          const transformedBooks: Book[] = response.items.map((book: BookDto, index: number) => {
+            const priceInfo = resolveBookPrice(book);
+            return {
+              id: book.id,
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              category: book.categoryNames?.[0] || "Chưa phân loại",
+              cover: book.coverImage || "/image/anh.png",
+              rating: book.averageRating || 0,
+              reviewCount: book.totalReviews || 0,
+              price: priceInfo.finalPrice,
+              originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
+                // Note: These fields should come from backend bestseller API
+              rank: (currentPage - 1) * itemsPerPage + index + 1,
+              soldCount: book.totalReviews * 2 || 0, // Temporary approximation
+              lastSoldDate: new Date(), // Temporary placeholder
+            };
+          });
           setBooks(transformedBooks);
           setTotalItems(response.totalCount);
         } else {

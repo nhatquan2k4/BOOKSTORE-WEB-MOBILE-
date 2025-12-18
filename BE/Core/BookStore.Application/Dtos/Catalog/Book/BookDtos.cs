@@ -43,5 +43,8 @@ namespace BookStore.Application.Dtos.Catalog.Book
         // Review summary
         public double? AverageRating { get; set; }
         public int TotalReviews { get; set; }
+
+        // Cover Image URL
+        public string? CoverImage { get; set; }
     }
 }

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
+import { resolveBookPrice } from "@/lib/price";
 
 type Book = {
   id: string;
@@ -49,20 +50,23 @@ export default function MostReadBooksPage() {
         });
         
         if (response.items && response.items.length > 0) {
-          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
-            id: book.id.toString(),
-            title: book.title,
-            author: book.authorNames?.[0] || "Tác giả không xác định",
-            category: book.categoryNames?.[0] || "Chưa phân loại",
-            price: book.discountPrice || book.currentPrice || 0,
-            originalPrice: book.currentPrice,
-            cover: "/image/anh.png",
-            rating: book.averageRating || 0,
-            reviewCount: book.totalReviews || 0,
-            readCount: Math.floor(Math.random() * 100000) + 10000,
-            stock: 100,
-            trend: "stable" as "up" | "down" | "stable",
-          }));
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => {
+            const priceInfo = resolveBookPrice(book);
+            return {
+              id: book.id.toString(),
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              category: book.categoryNames?.[0] || "Chưa phân loại",
+              price: priceInfo.finalPrice,
+              originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
+              cover: book.coverImage || "/image/anh.png",
+              rating: book.averageRating || 0,
+              reviewCount: book.totalReviews || 0,
+              readCount: Math.floor(Math.random() * 100000) + 10000,
+              stock: 100,
+              trend: "stable" as "up" | "down" | "stable",
+            };
+          });
           setBooks(transformedBooks);
           setTotalItems(response.totalCount || 0);
         } else {

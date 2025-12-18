@@ -113,7 +113,7 @@ export default function RentPage() {
               id: book.id,
               title: book.title,
               author: book.authorNames?.[0] || "Tác giả không xác định",
-              cover: "/image/anh.png",
+              cover: book.coverImage || "/image/anh.png",
               category: book.categoryNames?.[0] || "Chưa phân loại",
               rating: book.averageRating || 0,
               reviews: book.totalReviews || 0,

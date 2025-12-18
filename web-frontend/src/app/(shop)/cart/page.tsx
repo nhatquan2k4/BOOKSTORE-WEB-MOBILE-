@@ -10,6 +10,7 @@ import { cartService } from "@/services/cart.service";
 import { CartItemDto } from "@/types/dtos/cart";
 import { couponService, CouponDto } from "@/services/coupon.service";
 import { bookService } from "@/services/book.service";
+import { resolveBookPrice, formatPrice } from "@/lib/price";
 
 type CartItem = {
   id: string;
@@ -56,20 +57,44 @@ export default function CartPage() {
         const cartData = await cartService.getMyCart();
         
         if (cartData && cartData.items) {
-          // Transform API data to component format
-          const transformedItems: CartItem[] = cartData.items.map((item: CartItemDto) => ({
-            id: item.id,
-            bookId: item.bookId,
-            title: item.bookTitle,
-            author: item.authorNames || "Chưa rõ tác giả",
-            cover: item.bookImageUrl || "/image/anh.png",
-            price: item.bookPrice,
-            originalPrice: undefined, // API không có originalPrice
-            quantity: item.quantity,
-            stock: item.stockQuantity,
-            selected: true, // Mặc định chọn tất cả
-          }));
-          setCartItems(transformedItems);
+          // CRITICAL: Fetch fresh book details to get real-time prices
+          const itemsWithPrices = await Promise.all(
+            cartData.items.map(async (item: CartItemDto) => {
+              try {
+                const bookDetails = await bookService.getBookById(item.bookId);
+                const priceInfo = resolveBookPrice(bookDetails);
+                
+                return {
+                  id: item.id,
+                  bookId: item.bookId,
+                  title: item.bookTitle,
+                  author: item.authorNames || "Chưa rõ tác giả",
+                  cover: item.bookImageUrl || "/image/anh.png",
+                  price: priceInfo.finalPrice, // Real-time price from API
+                  originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
+                  quantity: item.quantity,
+                  stock: item.stockQuantity,
+                  selected: true,
+                };
+              } catch (error) {
+                console.error(`Failed to fetch book details for ${item.bookId}:`, error);
+                // Fallback to cached price if book fetch fails
+                return {
+                  id: item.id,
+                  bookId: item.bookId,
+                  title: item.bookTitle,
+                  author: item.authorNames || "Chưa rõ tác giả",
+                  cover: item.bookImageUrl || "/image/anh.png",
+                  price: item.bookPrice,
+                  originalPrice: undefined,
+                  quantity: item.quantity,
+                  stock: item.stockQuantity,
+                  selected: true,
+                };
+              }
+            })
+          );
+          setCartItems(itemsWithPrices);
         } else {
           setCartItems([]);
         }
@@ -134,7 +159,7 @@ export default function CartPage() {
           id: book.id,
           title: book.title,
           author: book.authorNames?.[0] || "Chưa rõ tác giả",
-          cover: "/image/anh.png", // BookDto doesn't include images, use placeholder
+          cover: book.coverImage || "/image/anh.png",
           price: book.currentPrice || 0,
         }));
 

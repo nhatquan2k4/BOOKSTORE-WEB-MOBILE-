@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { bookService } from '@/services';
 import type { BookDto } from '@/types/dtos';
 import { Badge } from '@/components/ui';
+import { resolveBookPrice, formatPrice } from '@/lib/price';
 
 interface FeaturedBooksProps {
   limit?: number;
@@ -38,19 +39,6 @@ export function FeaturedBooks({ limit = 6 }: FeaturedBooksProps) {
     fetchBooks();
   }, [limit]);
 
-  // Helper format tiền
-  const formatVnd = (price: number) =>
-    new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
-
-  // Helper tính % giảm giá
-  const calculateDiscount = (original: number | undefined, current: number | undefined) => {
-    if (!original || !current || current <= 0 || original <= 0 || current >= original) return 0;
-    return Math.round(((original - current) / original) * 100);
-  };
-
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -76,7 +64,7 @@ export function FeaturedBooks({ limit = 6 }: FeaturedBooksProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {books.map((book) => {
-        const discount = calculateDiscount(book.currentPrice, book.discountPrice);
+        const priceInfo = resolveBookPrice(book);
 
         return (
           <Link
@@ -86,7 +74,7 @@ export function FeaturedBooks({ limit = 6 }: FeaturedBooksProps) {
           >
             <div className="relative h-80">
               <Image
-                src="/image/anh.png" // Default image since API doesn't have imageUrl in BookDto
+                src={book.coverImage || "/image/anh.png"}
                 alt={book.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -95,9 +83,9 @@ export function FeaturedBooks({ limit = 6 }: FeaturedBooksProps) {
               
               {/* Badges */}
               <div className="absolute top-3 left-3 flex flex-col gap-2">
-                {discount > 0 && (
+                {priceInfo.hasDiscount && priceInfo.discountPercent && (
                   <Badge variant="danger" className="font-semibold">
-                    -{discount}%
+                    -{priceInfo.discountPercent}%
                   </Badge>
                 )}
                 {book.isAvailable && book.stockQuantity && book.stockQuantity < 10 && (
@@ -173,11 +161,11 @@ export function FeaturedBooks({ limit = 6 }: FeaturedBooksProps) {
               {/* Price */}
               <div className="flex items-center gap-2">
                 <span className="text-xl font-bold text-blue-600">
-                  {formatVnd(book.discountPrice || book.currentPrice || 0)}
+                  {formatPrice(priceInfo.finalPrice)}
                 </span>
-                {book.discountPrice && book.currentPrice && book.discountPrice < book.currentPrice && (
+                {priceInfo.hasDiscount && priceInfo.originalPrice && (
                   <span className="text-sm text-gray-400 line-through">
-                    {formatVnd(book.currentPrice)}
+                    {formatPrice(priceInfo.originalPrice)}
                   </span>
                 )}
               </div>

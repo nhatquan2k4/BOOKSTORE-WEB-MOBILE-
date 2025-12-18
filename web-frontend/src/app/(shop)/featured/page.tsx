@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
+import { resolveBookPrice } from "@/lib/price";
 
 type Book = {
   id: string;
@@ -43,20 +44,23 @@ export default function FeaturedBooksPage() {
         });
         
         if (response.items && response.items.length > 0) {
-          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
-            id: book.id.toString(),
-            title: book.title,
-            author: book.authorNames?.[0] || "Tác giả không xác định",
-            category: book.categoryNames?.[0] || "Chưa phân loại",
-            price: book.discountPrice || book.currentPrice || 0,
-            originalPrice: book.currentPrice,
-            cover: "/image/anh.png",
-            rating: book.averageRating || 0,
-            reviewCount: book.totalReviews || 0,
-            stock: 100,
-            featuredReason: "Sách nổi bật",
-            highlight: book.discountPrice ? "Giảm giá" : undefined,
-          }));
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => {
+            const priceInfo = resolveBookPrice(book);
+            return {
+              id: book.id.toString(),
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              category: book.categoryNames?.[0] || "Chưa phân loại",
+              price: priceInfo.finalPrice,
+              originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
+              cover: book.coverImage || "/image/anh.png",
+              rating: book.averageRating || 0,
+              reviewCount: book.totalReviews || 0,
+              stock: 100,
+              featuredReason: "Sách nổi bật",
+              highlight: priceInfo.hasDiscount ? "Giảm giá" : undefined,
+            };
+          });
           setBooks(transformedBooks);
           setTotalItems(response.totalCount || 0);
         } else {

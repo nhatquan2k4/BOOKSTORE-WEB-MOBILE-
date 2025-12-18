@@ -7,6 +7,7 @@ import Image from "next/image";
 import { Badge, Button } from "@/components/ui";
 import { bookService, categoryService } from "@/services";
 import type { BookDto, CategoryDto } from "@/types/dtos";
+import { resolveBookPrice, formatPrice } from "@/lib/price";
 
 // Helper format tiền
 const formatVnd = (price: number) =>
@@ -466,9 +467,8 @@ export default function HomePage() {
                 </div>
               ) : (
                 displayFeaturedBooks.map((book) => {
-                  const bookOriginalPrice = book.currentPrice ?? 0;
-                  const bookDiscountPrice = book.discountPrice ?? book.currentPrice ?? 0;
-                  const bookCover = "/image/anh.png"; // BookDto doesn't have images
+                  const priceInfo = resolveBookPrice(book);
+                  const bookCover = book.coverImage || "/image/anh.png";
                   const bookAuthor = book.authorNames && book.authorNames.length > 0 ? book.authorNames.join(", ") : "Chưa cập nhật";
                   const bookRating = book.averageRating ?? 0;
                   const bookReviews = book.totalReviews ?? 0;
@@ -529,15 +529,15 @@ export default function HomePage() {
                         {/* Giá: Giá giảm - Giá gốc - % giảm */}
                         <div className="mt-2 flex items-center gap-2 flex-wrap">
                           <p className="text-red-600 font-bold text-sm">
-                            {formatVnd(bookDiscountPrice)}
+                            {formatPrice(priceInfo.finalPrice)}
                           </p>
-                          {bookOriginalPrice > 0 && bookDiscountPrice < bookOriginalPrice && (
+                          {priceInfo.hasDiscount && (
                             <>
                               <p className="text-xs text-gray-400 line-through">
-                                {formatVnd(bookOriginalPrice)}
+                                {formatPrice(priceInfo.originalPrice)}
                               </p>
                               <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
-                                -{calculateDiscount(bookOriginalPrice, bookDiscountPrice)}%
+                                -{priceInfo.discountPercent}%
                               </span>
                             </>
                           )}
@@ -658,9 +658,8 @@ export default function HomePage() {
                 </div>
               ) : (
                 displayPopularBooks.map((book) => {
-                  const bookOriginalPrice = book.currentPrice ?? 0;
-                  const bookDiscountPrice = book.discountPrice ?? book.currentPrice ?? 0;
-                  const bookCover = "/image/anh.png"; // BookDto doesn't have images
+                  const priceInfo = resolveBookPrice(book);
+                  const bookCover = book.coverImage || "/image/anh.png";
                   const bookAuthor = book.authorNames && book.authorNames.length > 0 ? book.authorNames.join(", ") : "Chưa cập nhật";
                   const bookRating = book.averageRating ?? 0;
                   const bookReviews = book.totalReviews ?? 0;
@@ -712,15 +711,15 @@ export default function HomePage() {
                         {/* Giá: Giá giảm - Giá gốc - % giảm */}
                         <div className="mt-2 flex items-center gap-2 flex-wrap">
                           <p className="text-red-600 font-bold text-sm">
-                            {formatVnd(bookDiscountPrice)}
+                            {formatPrice(priceInfo.finalPrice)}
                           </p>
-                          {bookOriginalPrice > 0 && bookDiscountPrice < bookOriginalPrice && (
+                          {priceInfo.hasDiscount && (
                             <>
                               <p className="text-xs text-gray-400 line-through">
-                                {formatVnd(bookOriginalPrice)}
+                                {formatPrice(priceInfo.originalPrice)}
                               </p>
                               <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
-                                -{calculateDiscount(bookOriginalPrice, bookDiscountPrice)}%
+                                -{priceInfo.discountPercent}%
                               </span>
                             </>
                           )}

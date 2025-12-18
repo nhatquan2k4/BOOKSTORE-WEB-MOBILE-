@@ -17,6 +17,7 @@ import {
 } from '@/components/ui';
 import { wishlistService, bookService, cartService } from '@/services';
 import type { BookDto } from '@/types/dtos';
+import { resolveBookPrice, formatPrice } from '@/lib/price';
 
 interface WishlistBook extends BookDto {
   addedDate?: string;
@@ -177,12 +178,8 @@ export default function WishlistPage() {
             {/* Book List */}
             <div className="grid gap-4">
               {wishlistBooks.map((book) => {
-                const price = book.discountPrice || book.currentPrice || 0;
-                const originalPrice = book.currentPrice || 0;
-                const hasDiscount = book.discountPrice && book.discountPrice < originalPrice;
-                const discount = hasDiscount 
-                  ? Math.round(((originalPrice - price) / originalPrice) * 100)
-                  : 0;
+                // Use centralized price resolver - NEVER CACHE PRICES
+                const priceInfo = resolveBookPrice(book);
 
                 return (
                   <Card key={book.id}>
@@ -225,15 +222,15 @@ export default function WishlistPage() {
                           {/* Price */}
                           <div className="flex items-center gap-2 mt-2">
                             <span className="text-lg font-bold text-red-600">
-                              {formatPrice(price)}
+                              {formatPrice(priceInfo.finalPrice)}
                             </span>
-                            {hasDiscount && (
+                            {priceInfo.hasDiscount && (
                               <>
                                 <span className="text-sm text-gray-400 line-through">
-                                  {formatPrice(originalPrice)}
+                                  {formatPrice(priceInfo.originalPrice)}
                                 </span>
                                 <Badge variant="danger" className="text-xs">
-                                  -{discount}%
+                                  -{priceInfo.discountPercent}%
                                 </Badge>
                               </>
                             )}

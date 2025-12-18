@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts";
 import { bookService, cartService, authorService, categoryService } from "@/services";
 import type { BookDto, AuthorDto, CategoryDto } from "@/types/dtos";
 import { matchVietnameseText } from "@/lib/utils/text";
+import { resolveBookPrice, formatPrice } from "@/lib/price";
 
 export function Header() {
   const router = useRouter();
@@ -395,7 +396,7 @@ export function Header() {
                           >
                             <div className="relative w-16 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
                               <Image
-                                src="/image/anh.png"
+                                src={book.coverImage || "/image/anh.png"}
                                 alt={book.title}
                                 fill
                                 className="object-cover"
@@ -409,20 +410,21 @@ export function Header() {
                                 {book.authorNames?.join(", ") || "Chưa cập nhật"}
                               </p>
                               <div className="flex items-center gap-2">
-                                {book.discountPrice ? (
-                                  <>
-                                    <span className="font-bold text-red-600">
-                                      {(book.discountPrice || 0).toLocaleString("vi-VN")}₫
-                                    </span>
-                                    <span className="text-sm text-gray-400 line-through">
-                                      {(book.currentPrice || 0).toLocaleString("vi-VN")}₫
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="font-bold text-gray-900">
-                                    {(book.currentPrice || 0).toLocaleString("vi-VN")}₫
-                                  </span>
-                                )}
+                                {(() => {
+                                  const priceInfo = resolveBookPrice(book);
+                                  return (
+                                    <>
+                                      <span className={`font-bold ${priceInfo.hasDiscount ? 'text-red-600' : 'text-gray-900'}`}>
+                                        {formatPrice(priceInfo.finalPrice)}
+                                      </span>
+                                      {priceInfo.hasDiscount && priceInfo.originalPrice && (
+                                        <span className="text-sm text-gray-400 line-through">
+                                          {formatPrice(priceInfo.originalPrice)}
+                                        </span>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </button>
@@ -964,7 +966,7 @@ export function Header() {
                       >
                         <div className="relative w-12 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
                           <Image
-                            src="/image/anh.png"
+                            src={book.coverImage || "/image/anh.png"}
                             alt={book.title}
                             fill
                             className="object-cover"

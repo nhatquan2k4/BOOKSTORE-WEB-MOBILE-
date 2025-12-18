@@ -23,9 +23,22 @@ class WishlistService {
   private baseUrl = '/wishlist';
 
   /**
+   * Check if user is authenticated
+   */
+  private isAuthenticated(): boolean {
+    if (typeof window === 'undefined') return false;
+    const token = localStorage.getItem('accessToken');
+    return !!token;
+  }
+
+  /**
    * Lấy danh sách wishlist của user hiện tại
    */
   async getWishlist(): Promise<WishlistItem[]> {
+    if (!this.isAuthenticated()) {
+      return [];
+    }
+
     try {
       const response = await axiosInstance.get<WishlistItem[]>(this.baseUrl);
       return response.data;
@@ -39,6 +52,14 @@ class WishlistService {
    * Thêm sách vào wishlist
    */
   async addToWishlist(bookId: string, userId?: string): Promise<boolean> {
+    if (!this.isAuthenticated()) {
+      // Redirect to login or show login modal
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      }
+      return false;
+    }
+
     try {
       await axiosInstance.post(`${this.baseUrl}/${bookId}`);
       
@@ -58,6 +79,10 @@ class WishlistService {
    * Xóa sách khỏi wishlist
    */
   async removeFromWishlist(bookId: string): Promise<boolean> {
+    if (!this.isAuthenticated()) {
+      return false;
+    }
+
     try {
       await axiosInstance.delete(`${this.baseUrl}/${bookId}`);
       
@@ -77,6 +102,14 @@ class WishlistService {
    * Toggle wishlist (thêm nếu chưa có, xóa nếu đã có)
    */
   async toggleWishlist(bookId: string, userId?: string): Promise<boolean> {
+    if (!this.isAuthenticated()) {
+      // Redirect to login
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      }
+      return false;
+    }
+
     try {
       const isInWishlist = await this.isInWishlist(bookId);
       
@@ -97,9 +130,14 @@ class WishlistService {
    * Kiểm tra sách có trong wishlist không
    */
   async isInWishlist(bookId: string): Promise<boolean> {
+    if (!this.isAuthenticated()) {
+      return false;
+    }
+
     try {
-      const response = await axiosInstance.get<{ exists: boolean }>(`${this.baseUrl}/${bookId}/exists`);
-      return response.data.exists;
+      const response = await axiosInstance.get<{ exists: boolean } | { Exists: boolean }>(`${this.baseUrl}/${bookId}/exists`);
+      // Backend returns uppercase 'Exists', but accept both formats
+      return (response.data as any).exists || (response.data as any).Exists || false;
     } catch (error) {
       console.error('Error checking wishlist:', error);
       return false;
@@ -110,9 +148,14 @@ class WishlistService {
    * Lấy số lượng sách trong wishlist
    */
   async getWishlistCount(): Promise<number> {
+    if (!this.isAuthenticated()) {
+      return 0;
+    }
+
     try {
-      const response = await axiosInstance.get<{ count: number }>(`${this.baseUrl}/count`);
-      return response.data.count;
+      const response = await axiosInstance.get<{ count: number } | { Count: number }>(`${this.baseUrl}/count`);
+      // Backend returns uppercase 'Count', but accept both formats
+      return (response.data as any).count || (response.data as any).Count || 0;
     } catch (error) {
       console.error('Error getting wishlist count:', error);
       return 0;
@@ -123,6 +166,10 @@ class WishlistService {
    * Xóa toàn bộ wishlist
    */
   async clearWishlist(): Promise<void> {
+    if (!this.isAuthenticated()) {
+      return;
+    }
+
     try {
       await axiosInstance.delete(`${this.baseUrl}/clear`);
       
@@ -139,6 +186,10 @@ class WishlistService {
    * Lấy danh sách bookId trong wishlist
    */
   async getWishlistBookIds(): Promise<string[]> {
+    if (!this.isAuthenticated()) {
+      return [];
+    }
+
     try {
       const response = await axiosInstance.get<WishlistSummary>(`${this.baseUrl}/summary`);
       return response.data.bookIds;

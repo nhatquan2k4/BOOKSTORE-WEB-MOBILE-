@@ -355,7 +355,7 @@ export default function AllBooksPage() {
             {displayBooks.map((book: Book) => {
               const currentPrice = book.salePrice || book.price;
               const originalPrice = book.salePrice ? book.price : book.originalPrice;
-              const imageUrl = book.imageUrl || book.cover || '/image/anh.png';
+              const imageUrl = book.coverImage || '/image/anh.png';
               
               return (
                 <Link
