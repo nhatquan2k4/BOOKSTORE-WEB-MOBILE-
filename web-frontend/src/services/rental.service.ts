@@ -1,19 +1,24 @@
-import axiosInstance, { handleApiError, PagedResult } from '@/lib/axios';
-import { BookRentalDto, RentalPlanDto, EbookAccessDto } from '@/types/dtos';
+import axiosInstance, { handleApiError } from '@/lib/axios';
+import { 
+  CreateBookRentalDto, 
+  RenewBookRentalDto,
+  BookRentalDto 
+} from '@/types/dtos';
 
-const RENTAL_BASE_URL = '/api/bookrentals';
-const RENTAL_PLAN_BASE_URL = '/api/rentalplans';
-const EBOOK_BASE_URL = '/api/ebooks';
+// Route chính xác từ Controller: [Route("api/rental/rentals")]
+const BASE_URL = '/api/rental/rentals';
 
 export const rentalService = {
   /**
-   * Lấy danh sách rental của user hiện tại
+   * Thuê sách (có thanh toán)
+   * POST: api/rental/rentals/rent
    */
-  async getMyRentals(status?: string, pageNumber: number = 1, pageSize: number = 20): Promise<PagedResult<BookRentalDto>> {
+  async rentBook(data: CreateBookRentalDto) {
     try {
-      const response = await axiosInstance.get<PagedResult<BookRentalDto>>(`${RENTAL_BASE_URL}/my-rentals`, {
-        params: { status, pageNumber, pageSize },
-      });
+      const response = await axiosInstance.post(
+        `${BASE_URL}/rent`, 
+        data
+      );
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -21,11 +26,15 @@ export const rentalService = {
   },
 
   /**
-   * Lấy chi tiết rental
+   * [TESTING ONLY] Thuê sách giả lập (không thanh toán)
+   * POST: api/rental/rentals/rent-mock
    */
-  async getRentalById(id: string): Promise<BookRentalDto> {
+  async rentBookMock(bookId: string, rentalPlanId: string) {
     try {
-      const response = await axiosInstance.get<BookRentalDto>(`${RENTAL_BASE_URL}/${id}`);
+      const response = await axiosInstance.post(
+        `${BASE_URL}/rent-mock`,
+        { bookId, rentalPlanId }
+      );
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -33,14 +42,16 @@ export const rentalService = {
   },
 
   /**
-   * Thuê sách
+   * Lấy danh sách sách đang thuê của tôi
+   * GET: api/rental/rentals/my
    */
-  async rentBook(bookId: string, rentalPlanId: string): Promise<BookRentalDto> {
+  async getMyRentals(includeExpired = false) {
     try {
-      const response = await axiosInstance.post<BookRentalDto>(RENTAL_BASE_URL, {
-        bookId,
-        rentalPlanId,
-      });
+      // Backend trả về List<BookRentalDto> trực tiếp
+      const response = await axiosInstance.get<BookRentalDto[]>(
+        `${BASE_URL}/my`, 
+        { params: { includeExpired } }
+      );
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -48,13 +59,14 @@ export const rentalService = {
   },
 
   /**
-   * Gia hạn thuê sách
+   * Lấy chi tiết lượt thuê
+   * GET: api/rental/rentals/{id}
    */
-  async renewRental(rentalId: string, rentalPlanId: string): Promise<BookRentalDto> {
+  async getRentalById(id: string) {
     try {
-      const response = await axiosInstance.post<BookRentalDto>(`${RENTAL_BASE_URL}/${rentalId}/renew`, {
-        rentalPlanId,
-      });
+      const response = await axiosInstance.get<BookRentalDto>(
+        `${BASE_URL}/${id}`
+      );
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -62,22 +74,15 @@ export const rentalService = {
   },
 
   /**
-   * Trả sách
+   * Gia hạn sách
+   * POST: api/rental/rentals/{id}/renew
    */
-  async returnBook(rentalId: string): Promise<void> {
+  async renewRental(id: string, data: RenewBookRentalDto) {
     try {
-      await axiosInstance.post(`${RENTAL_BASE_URL}/${rentalId}/return`);
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Kiểm tra quyền truy cập ebook
-   */
-  async checkEbookAccess(bookId: string): Promise<EbookAccessDto> {
-    try {
-      const response = await axiosInstance.get<EbookAccessDto>(`${EBOOK_BASE_URL}/check-access/${bookId}`);
+      const response = await axiosInstance.post(
+        `${BASE_URL}/${id}/renew`, 
+        data
+      );
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -85,25 +90,14 @@ export const rentalService = {
   },
 
   /**
-   * Đọc ebook (lấy URL hoặc nội dung)
+   * Trả sách sớm
+   * POST: api/rental/rentals/{id}/return
    */
-  async readEbook(bookId: string): Promise<{ url: string }> {
+  async returnBook(id: string) {
     try {
-      const response = await axiosInstance.get<{ url: string }>(`${EBOOK_BASE_URL}/read/${bookId}`);
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-};
-
-export const rentalPlanService = {
-  /**
-   * Lấy danh sách gói thuê
-   */
-  async getRentalPlans(): Promise<RentalPlanDto[]> {
-    try {
-      const response = await axiosInstance.get<RentalPlanDto[]>(RENTAL_PLAN_BASE_URL);
+      const response = await axiosInstance.post(
+        `${BASE_URL}/${id}/return`
+      );
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -111,14 +105,33 @@ export const rentalPlanService = {
   },
 
   /**
-   * Lấy chi tiết gói thuê
+   * Kiểm tra quyền đọc sách
+   * GET: api/rental/rentals/{bookId}/check-access
    */
-  async getRentalPlanById(id: string): Promise<RentalPlanDto> {
+  async checkBookAccess(bookId: string) {
     try {
-      const response = await axiosInstance.get<RentalPlanDto>(`${RENTAL_PLAN_BASE_URL}/${id}`);
+      const response = await axiosInstance.get<{ hasAccess: boolean, message?: string }>(
+        `${BASE_URL}/${bookId}/check-access`
+      );
+      return response.data;
+    } catch (error) {
+      // Nếu lỗi 403/404 coi như không có quyền
+      return { hasAccess: false };
+    }
+  },
+
+  /**
+   * Lấy link đọc sách (Pre-signed URL)
+   * GET: api/rental/rentals/{bookId}/access-link
+   */
+  async getAccessLink(bookId: string) {
+    try {
+      const response = await axiosInstance.get<{ url: string }>(
+        `${BASE_URL}/${bookId}/access-link`
+      );
       return response.data;
     } catch (error) {
       return handleApiError(error);
     }
-  },
+  }
 };

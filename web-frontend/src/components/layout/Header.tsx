@@ -659,7 +659,7 @@ export function Header() {
                         </Link>
 
                         <Link
-                          href="/account/readbooks"
+                          href="/account/library-book"
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                           onClick={() => setShowUserMenu(false)}
                         >

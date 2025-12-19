@@ -1,34 +1,41 @@
 import axiosInstance, { handleApiError } from '@/lib/axios';
-import { CartDto, CartItemDto, CreateCartDto, UpdateCartDto } from '@/types/dtos';
+// Import DTO từ types chung của dự án
+// Lưu ý: Đảm bảo file dtos.ts có các interface tương ứng
+import { CartDto } from '@/types/dtos';
 
+// Route chuẩn từ Controller: [Route("api/[controller]")] -> /api/cart
 const CART_BASE_URL = '/api/cart';
 
+// DTOs định nghĩa cục bộ hoặc import từ types/dtos
 export interface AddToCartDto {
-  userId?: string;
   bookId: string;
   quantity: number;
+}
+
+export interface UpdateCartItemDto {
+  bookId: string; // Backend yêu cầu BookId, không phải CartItemId
+  quantity: number;
+}
+
+export interface RemoveFromCartDto {
+  bookId: string; // Backend yêu cầu BookId
 }
 
 export const cartService = {
   /**
    * Lấy giỏ hàng của người dùng hiện tại
+   * URL: GET /api/cart
    */
   async getMyCart(): Promise<CartDto | null> {
     try {
-      const response = await axiosInstance.get<{ cart: CartDto | null }>(CART_BASE_URL);
-      return response.data.cart;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Lấy giỏ hàng theo ID
-   */
-  async getCartById(id: string): Promise<CartDto> {
-    try {
-      const response = await axiosInstance.get<CartDto>(`${CART_BASE_URL}/${id}`);
-      return response.data;
+      // Backend trả về trực tiếp object CartDto hoặc { Message, Cart: null }
+      const response = await axiosInstance.get<CartDto | { Cart: CartDto | null }>(CART_BASE_URL);
+      
+      // Xử lý trường hợp trả về { Cart: ... }
+      if ('Cart' in response.data) {
+          return (response.data as any).Cart;
+      }
+      return response.data as CartDto;
     } catch (error) {
       return handleApiError(error);
     }
@@ -36,30 +43,22 @@ export const cartService = {
 
   /**
    * Lấy số lượng items trong giỏ hàng
+   * URL: GET /api/cart/count
    */
   async getCartItemCount(): Promise<number> {
     try {
       const response = await axiosInstance.get<{ itemCount: number }>(`${CART_BASE_URL}/count`);
-      return response.data.itemCount;
+      // Backend trả về { ItemCount: ... } (PascalCase) hoặc { itemCount: ... }
+      return (response.data as any).ItemCount ?? response.data.itemCount ?? 0;
     } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Lấy tổng tiền trong giỏ hàng
-   */
-  async getCartTotal(): Promise<number> {
-    try {
-      const response = await axiosInstance.get<{ totalAmount: number }>(`${CART_BASE_URL}/total`);
-      return response.data.totalAmount;
-    } catch (error) {
-      return handleApiError(error);
+      return 0; // Trả về 0 thay vì throw lỗi để UI không bị crash
     }
   },
 
   /**
    * Thêm sách vào giỏ hàng
+   * URL: POST /api/cart/add
+   * Body: { bookId, quantity }
    */
   async addToCart(dto: AddToCartDto): Promise<CartDto> {
     try {
@@ -72,11 +71,13 @@ export const cartService = {
 
   /**
    * Cập nhật số lượng item trong giỏ hàng
+   * URL: PUT /api/cart/update-quantity
+   * Body: { bookId, quantity } (LƯU Ý: Dùng BookId, không dùng CartItemId)
    */
-  async updateCartItemQuantity(cartItemId: string, quantity: number): Promise<CartDto> {
+  async updateCartItemQuantity(bookId: string, quantity: number): Promise<CartDto> {
     try {
       const response = await axiosInstance.put<CartDto>(`${CART_BASE_URL}/update-quantity`, {
-        cartItemId,
+        bookId, // Backend cần BookId để tìm item
         quantity,
       });
       return response.data;
@@ -87,10 +88,16 @@ export const cartService = {
 
   /**
    * Xóa item khỏi giỏ hàng
+   * URL: DELETE /api/cart/remove
+   * Body: { bookId } (LƯU Ý: Axios delete cần config data body)
    */
-  async removeCartItem(cartItemId: string): Promise<CartDto> {
+  async removeCartItem(bookId: string): Promise<CartDto> {
     try {
-      const response = await axiosInstance.delete<CartDto>(`${CART_BASE_URL}/remove/${cartItemId}`);
+      // Backend dùng [HttpDelete("remove")] với [FromBody] RemoveFromCartDto
+      // Axios delete cú pháp: delete(url, { data: body })
+      const response = await axiosInstance.delete<CartDto>(`${CART_BASE_URL}/remove`, {
+        data: { bookId } 
+      });
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -99,6 +106,7 @@ export const cartService = {
 
   /**
    * Xóa toàn bộ giỏ hàng
+   * URL: DELETE /api/cart/clear
    */
   async clearCart(): Promise<void> {
     try {
@@ -109,14 +117,19 @@ export const cartService = {
   },
 
   /**
-   * Đồng bộ giỏ hàng từ local storage (khi đăng nhập)
+   * Validate giỏ hàng trước khi thanh toán
+   * URL: GET /api/cart/validate-checkout
    */
-  async syncCart(items: { bookId: string; quantity: number }[]): Promise<CartDto> {
+  async validateCheckout(): Promise<{ isValid: boolean; message: string }> {
     try {
-      const response = await axiosInstance.post<CartDto>(`${CART_BASE_URL}/sync`, { items });
-      return response.data;
+      const response = await axiosInstance.get<{ isValid: boolean; message: string }>(`${CART_BASE_URL}/validate-checkout`);
+      // Backend trả về PascalCase { IsValid, Message }
+      return {
+          isValid: (response.data as any).IsValid ?? response.data.isValid,
+          message: (response.data as any).Message ?? response.data.message
+      };
     } catch (error) {
-      return handleApiError(error);
+      return { isValid: false, message: "Lỗi kiểm tra giỏ hàng" };
     }
-  },
+  }
 };

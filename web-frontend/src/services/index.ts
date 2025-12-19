@@ -7,6 +7,7 @@ export * from './cart.service';
 export * from './order.service';
 export * from './checkout.service';
 export * from './review.service';
+export * from './comment.service';
 export * from './category.service';
 export * from './author.service';
 export * from './publisher.service';

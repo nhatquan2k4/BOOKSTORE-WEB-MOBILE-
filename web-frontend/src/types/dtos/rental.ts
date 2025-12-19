@@ -1,43 +1,28 @@
-// Rental DTOs
+// Thêm vào cuối file src/types/dtos.ts
+
+export interface CreateBookRentalDto {
+  bookId: string;
+  rentalPlanId: string;
+  paymentTransactionCode?: string;
+}
+
+export interface RenewBookRentalDto {
+  rentalPlanId: string;
+  paymentTransactionCode?: string;
+}
+
+// Giả định BookRentalDto trả về từ Backend
 export interface BookRentalDto {
   id: string;
   userId: string;
-  userEmail: string;
   bookId: string;
   bookTitle: string;
-  bookISBN?: string;
-  bookCoverImage?: string;
+  bookCover?: string;
   rentalPlanId: string;
-  rentalPlanName: string;
-  durationDays: number;
-  price: number;
+  planName: string;
   startDate: string;
   endDate: string;
-  isReturned: boolean;
-  isRenewed: boolean;
-  status: string;
-  daysRemaining: number;
-  isExpired: boolean;
-  canRead: boolean;
-}
-
-export interface RentalPlanDto {
-  id: string;
-  name: string;
-  durationDays: number;
-  price: number;
-  description?: string;
-}
-
-export interface CreateBookRentalDto {
-  userId: string;
-  bookId: string;
-  rentalPlanId: string;
-}
-
-export interface EbookAccessDto {
-  bookId: string;
-  userId: string;
-  hasAccess: boolean;
-  expiresAt?: string;
+  status: string; // 'Active', 'Expired', 'Returned', etc.
+  returnedDate?: string;
+  isOverdue: boolean;
 }

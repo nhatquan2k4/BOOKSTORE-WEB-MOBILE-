@@ -1,103 +1,41 @@
-import axiosInstance, { handleApiError, PagedResult } from '@/lib/axios';
-import {
-  ReviewDto,
+import axiosInstance, { handleApiError } from '@/lib/axios';
+import { 
+  ReviewDto, 
   ReviewListDto,
+  ReviewStatisticsDto, 
   CreateReviewDto,
   UpdateReviewDto,
-  QuickRatingDto,
-  ReviewStatisticsDto,
+  PagedResult
 } from '@/types/dtos';
-
-const REVIEW_BASE_URL = '/api/reviews';
-
-export interface GetReviewsParams {
-  pageNumber?: number;
-  pageSize?: number;
-  bookId?: string;
-  userId?: string;
-  rating?: number;
-  status?: string;
-}
 
 export const reviewService = {
   /**
-   * Lấy danh sách review với phân trang
+   * Lấy danh sách review của sách
+   * URL: GET /api/books/{bookId}/reviews
    */
-  async getReviews(params: GetReviewsParams = {}): Promise<PagedResult<ReviewListDto>> {
+  async getBookReviews(bookId: string, page = 1, pageSize = 10, sortBy?: string) {
     try {
-      const response = await axiosInstance.get<PagedResult<ReviewListDto>>(REVIEW_BASE_URL, {
-        params: {
-          pageNumber: params.pageNumber || 1,
-          pageSize: params.pageSize || 10,
-          ...params,
-        },
-      });
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Lấy reviews của một sách
-   */
-  async getReviewsByBook(bookId: string, params: GetReviewsParams = {}): Promise<PagedResult<ReviewListDto>> {
-    try {
-      const response = await axiosInstance.get<PagedResult<ReviewListDto>>(
-        `${REVIEW_BASE_URL}/book/${bookId}`,
-        {
-          params: {
-            pageNumber: params.pageNumber || 1,
-            pageSize: params.pageSize || 10,
-            ...params,
-          },
-        }
+      const response = await axiosInstance.get<{ success: boolean, data: PagedResult<ReviewListDto> }>(
+        `/api/books/${bookId}/reviews`, 
+        { params: { page, pageSize, sortBy } }
       );
-      return response.data;
+      // Backend trả về: { success: true, data: { reviews: [], pagination: {} } }
+      return response.data.data;
     } catch (error) {
       return handleApiError(error);
     }
   },
 
   /**
-   * Lấy reviews của người dùng hiện tại
+   * Lấy thống kê review
+   * URL: GET /api/books/{bookId}/reviews/statistics
    */
-  async getMyReviews(params: GetReviewsParams = {}): Promise<PagedResult<ReviewDto>> {
+  async getBookReviewStatistics(bookId: string) {
     try {
-      const response = await axiosInstance.get<PagedResult<ReviewDto>>(`${REVIEW_BASE_URL}/my-reviews`, {
-        params: {
-          pageNumber: params.pageNumber || 1,
-          pageSize: params.pageSize || 10,
-          ...params,
-        },
-      });
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Lấy thống kê review của sách
-   */
-  async getReviewStatistics(bookId: string): Promise<ReviewStatisticsDto> {
-    try {
-      const response = await axiosInstance.get<ReviewStatisticsDto>(
-        `${REVIEW_BASE_URL}/book/${bookId}/statistics`
+      const response = await axiosInstance.get<{ success: boolean, data: ReviewStatisticsDto }>(
+        `/api/books/${bookId}/reviews/statistics`
       );
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Lấy chi tiết review
-   */
-  async getReviewById(id: string): Promise<ReviewDto> {
-    try {
-      const response = await axiosInstance.get<ReviewDto>(`${REVIEW_BASE_URL}/${id}`);
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return handleApiError(error);
     }
@@ -105,62 +43,64 @@ export const reviewService = {
 
   /**
    * Tạo review mới
+   * URL: POST /api/books/{bookId}/reviews
    */
-  async createReview(bookId: string, dto: CreateReviewDto): Promise<ReviewDto> {
+  async createReview(bookId: string, data: CreateReviewDto) {
     try {
-      const response = await axiosInstance.post<ReviewDto>(`${REVIEW_BASE_URL}/book/${bookId}`, dto);
-      return response.data;
+      const response = await axiosInstance.post<{ success: boolean, data: ReviewDto }>(
+        `/api/books/${bookId}/reviews`, 
+        data
+      );
+      return response.data.data;
     } catch (error) {
       return handleApiError(error);
     }
   },
 
   /**
-   * Đánh giá nhanh (chỉ rating, không có content)
+   * Lấy review của chính user hiện tại (để hiển thị nút sửa/xóa)
+   * URL: GET /api/books/{bookId}/reviews/my-review
    */
-  async quickRating(bookId: string, dto: QuickRatingDto): Promise<ReviewDto> {
+  async getMyReview(bookId: string) {
     try {
-      const response = await axiosInstance.post<ReviewDto>(`${REVIEW_BASE_URL}/book/${bookId}/quick-rating`, dto);
-      return response.data;
+      const response = await axiosInstance.get<{ success: boolean, data: ReviewDto }>(
+        `/api/books/${bookId}/reviews/my-review`
+      );
+      return response.data.data;
+    } catch (error) {
+      // Nếu chưa review (404), trả về null thay vì throw lỗi
+      return null;
+    }
+  },
+
+  /**
+   * Cập nhật review của chính user
+   * URL: PUT /api/books/{bookId}/reviews/my-review
+   */
+  async updateMyReview(bookId: string, data: UpdateReviewDto) {
+    try {
+      const response = await axiosInstance.put<{ success: boolean, data: ReviewDto }>(
+        `/api/books/${bookId}/reviews/my-review`,
+        data
+      );
+      return response.data.data;
     } catch (error) {
       return handleApiError(error);
     }
   },
 
   /**
-   * Cập nhật review
+   * Xóa review của chính user
+   * URL: DELETE /api/books/{bookId}/reviews/my-review
    */
-  async updateReview(id: string, dto: UpdateReviewDto): Promise<ReviewDto> {
+  async deleteMyReview(bookId: string) {
     try {
-      const response = await axiosInstance.put<ReviewDto>(`${REVIEW_BASE_URL}/${id}`, dto);
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Xóa review
-   */
-  async deleteReview(id: string): Promise<void> {
-    try {
-      await axiosInstance.delete(`${REVIEW_BASE_URL}/${id}`);
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Kiểm tra user có thể review sách này không
-   */
-  async canReview(bookId: string): Promise<{ canReview: boolean; reason?: string }> {
-    try {
-      const response = await axiosInstance.get<{ canReview: boolean; reason?: string }>(
-        `${REVIEW_BASE_URL}/book/${bookId}/can-review`
+      const response = await axiosInstance.delete(
+        `/api/books/${bookId}/reviews/my-review`
       );
       return response.data;
     } catch (error) {
       return handleApiError(error);
     }
-  },
+  }
 };
