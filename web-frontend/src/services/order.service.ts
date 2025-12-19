@@ -1,32 +1,38 @@
-import axiosInstance, { handleApiError, PagedResult } from '@/lib/axios';
-import {
-  OrderDto,
-  CreateOrderDto,
-  OrderItemDto,
-  OrderStatusLogDto,
-} from '@/types/dtos';
+import axiosInstance, { handleApiError } from '@/lib/axios';
+import { OrderDto } from '@/types/dtos';
 
-const ORDER_BASE_URL = '/api/orders';
-
-export interface GetOrdersParams {
-  pageNumber?: number;
-  pageSize?: number;
-  status?: string;
-}
+// Route chuẩn dựa trên OrdersController bạn đã gửi
+const BASE_URL = '/api/orders'; 
 
 export const orderService = {
   /**
-   * Lấy tất cả đơn hàng (Admin only)
+   * Lấy danh sách đơn hàng của tôi
+   * URL: GET /api/orders/my-orders
    */
-  async getAllOrders(params: GetOrdersParams = {}): Promise<PagedResult<OrderDto>> {
+  async getMyOrders(params: { status?: string; pageNumber?: number; pageSize?: number; type?: string }) {
     try {
-      const response = await axiosInstance.get<PagedResult<OrderDto>>(ORDER_BASE_URL, {
-        params: {
-          pageNumber: params.pageNumber || 1,
-          pageSize: params.pageSize || 10,
-          ...params,
-        },
-      });
+      // Logic xử lý param: Nếu status là 'all' hoặc rỗng thì xóa đi để Backend lấy tất cả
+      const queryParams: any = {
+        pageNumber: params.pageNumber || 1,
+        pageSize: params.pageSize || 10,
+      };
+
+      if (params.status && params.status !== 'all') {
+        queryParams.status = params.status;
+      }
+      
+      // Nếu sau này backend hỗ trợ lọc type (Physical/Digital) thì dùng dòng này
+      if (params.type) {
+        queryParams.type = params.type;
+      }
+
+      const response = await axiosInstance.get<{ 
+        items: OrderDto[], 
+        totalCount: number, 
+        pageNumber: number, 
+        totalPages: number 
+      }>(`${BASE_URL}/my-orders`, { params: queryParams });
+      
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -34,86 +40,11 @@ export const orderService = {
   },
 
   /**
-   * Lấy chi tiết đơn hàng theo ID
+   * Lấy chi tiết đơn hàng
    */
-  async getOrderById(id: string): Promise<OrderDto> {
+  async getOrderById(id: string) {
     try {
-      const response = await axiosInstance.get<OrderDto>(`${ORDER_BASE_URL}/${id}`);
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Lấy đơn hàng theo mã đơn hàng
-   */
-  async getOrderByOrderNumber(orderNumber: string): Promise<OrderDto> {
-    try {
-      const response = await axiosInstance.get<OrderDto>(`${ORDER_BASE_URL}/order-number/${orderNumber}`);
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Lấy danh sách đơn hàng của người dùng hiện tại
-   */
-  async getMyOrders(params: GetOrdersParams = {}): Promise<PagedResult<OrderDto>> {
-    try {
-      const response = await axiosInstance.get<PagedResult<OrderDto>>(`${ORDER_BASE_URL}/my-orders`, {
-        params: {
-          pageNumber: params.pageNumber || 1,
-          pageSize: params.pageSize || 10,
-          ...params,
-        },
-      });
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Lấy danh sách đơn hàng của một user (Admin only)
-   */
-  async getOrdersByUserId(userId: string, params: GetOrdersParams = {}): Promise<PagedResult<OrderDto>> {
-    try {
-      const response = await axiosInstance.get<PagedResult<OrderDto>>(`${ORDER_BASE_URL}/user/${userId}`, {
-        params: {
-          pageNumber: params.pageNumber || 1,
-          pageSize: params.pageSize || 10,
-          ...params,
-        },
-      });
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Tạo đơn hàng mới
-   */
-  async createOrder(dto: CreateOrderDto): Promise<OrderDto> {
-    try {
-      const response = await axiosInstance.post<OrderDto>(ORDER_BASE_URL, dto);
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Cập nhật trạng thái đơn hàng (Admin only)
-   */
-  async updateOrderStatus(id: string, status: string, note?: string): Promise<OrderDto> {
-    try {
-      const response = await axiosInstance.put<OrderDto>(`${ORDER_BASE_URL}/${id}/status`, {
-        status,
-        note,
-      });
+      const response = await axiosInstance.get<OrderDto>(`${BASE_URL}/${id}`);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -123,40 +54,12 @@ export const orderService = {
   /**
    * Hủy đơn hàng
    */
-  async cancelOrder(id: string, reason?: string): Promise<OrderDto> {
+  async cancelOrder(id: string, reason: string = "") {
     try {
-      const response = await axiosInstance.post<OrderDto>(`${ORDER_BASE_URL}/${id}/cancel`, {
-        reason,
-      });
+      const response = await axiosInstance.put(`${BASE_URL}/${id}/cancel`, { reason });
       return response.data;
     } catch (error) {
       return handleApiError(error);
     }
-  },
-
-  /**
-   * Lấy lịch sử trạng thái đơn hàng
-   */
-  async getOrderStatusHistory(orderId: string): Promise<OrderStatusLogDto[]> {
-    try {
-      const response = await axiosInstance.get<OrderStatusLogDto[]>(
-        `${ORDER_BASE_URL}/${orderId}/status-history`
-      );
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Xác nhận đã nhận hàng
-   */
-  async confirmReceived(orderId: string): Promise<OrderDto> {
-    try {
-      const response = await axiosInstance.post<OrderDto>(`${ORDER_BASE_URL}/${orderId}/confirm-received`);
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
+  }
 };

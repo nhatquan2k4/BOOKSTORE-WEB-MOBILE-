@@ -1,77 +1,37 @@
 import axiosInstance, { handleApiError } from '@/lib/axios';
-import { NotificationDto, CreateNotificationDto, NotificationListDto, UnreadCountDto } from '@/types/dtos';
 
-const NOTIFICATION_BASE_URL = '/api/notifications';
+const BASE_URL = '/api/notifications';
 
 export const notificationService = {
-  /**
-   * Lấy danh sách thông báo của user hiện tại
-   */
-  async getMyNotifications(pageNumber: number = 1, pageSize: number = 20): Promise<{ items: NotificationListDto[]; totalCount: number }> {
+  async getMyNotifications(page = 1, pageSize = 10) {
     try {
-      const response = await axiosInstance.get<{ items: NotificationListDto[]; totalCount: number }>(
-        NOTIFICATION_BASE_URL,
-        { params: { pageNumber, pageSize } }
-      );
+      // Backend Route: [HttpGet("my")] -> /api/notifications/my
+      const response = await axiosInstance.get(`${BASE_URL}/my`, {
+        params: { page, pageSize }
+      });
       return response.data;
     } catch (error) {
-      return handleApiError(error);
+      // Trả về dữ liệu rỗng thay vì ném lỗi để không làm crash trang web
+      console.error("Lỗi lấy thông báo:", error);
+      return { items: [], totalCount: 0, unreadCount: 0 }; 
     }
   },
 
-  /**
-   * Lấy số lượng thông báo chưa đọc
-   */
-  async getUnreadCount(): Promise<number> {
+  async markAsRead(id: string) {
     try {
-      const response = await axiosInstance.get<UnreadCountDto>(`${NOTIFICATION_BASE_URL}/unread-count`);
-      return response.data.unreadCount;
+      await axiosInstance.put(`${BASE_URL}/${id}/read`);
+      return true;
     } catch (error) {
-      return handleApiError(error);
+      return false;
     }
   },
 
-  /**
-   * Đánh dấu đã đọc một thông báo
-   */
-  async markAsRead(id: string): Promise<void> {
+  async markAllAsRead() {
     try {
-      await axiosInstance.put(`${NOTIFICATION_BASE_URL}/${id}/read`);
+      await axiosInstance.put(`${BASE_URL}/read-all`);
+      return true;
     } catch (error) {
-      return handleApiError(error);
+      return false;
     }
-  },
-
-  /**
-   * Đánh dấu tất cả đã đọc
-   */
-  async markAllAsRead(): Promise<void> {
-    try {
-      await axiosInstance.put(`${NOTIFICATION_BASE_URL}/read-all`);
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Xóa thông báo
-   */
-  async deleteNotification(id: string): Promise<void> {
-    try {
-      await axiosInstance.delete(`${NOTIFICATION_BASE_URL}/${id}`);
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Xóa tất cả thông báo đã đọc
-   */
-  async deleteAllRead(): Promise<void> {
-    try {
-      await axiosInstance.delete(`${NOTIFICATION_BASE_URL}/read`);
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
+  }
 };
