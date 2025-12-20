@@ -1,8 +1,7 @@
 import axiosInstance, { handleApiError } from '@/lib/axios';
-import { OrderDto } from '@/types/dtos';
+import { OrderDto, CreateRentalOrderDto, OrderResponseDto } from '@/types/dtos';
 
-// Route chuẩn dựa trên OrdersController bạn đã gửi
-const BASE_URL = '/api/orders'; 
+const BASE_URL = '/api/orders';
 
 export const orderService = {
   /**
@@ -11,7 +10,6 @@ export const orderService = {
    */
   async getMyOrders(params: { status?: string; pageNumber?: number; pageSize?: number; type?: string }) {
     try {
-      // Logic xử lý param: Nếu status là 'all' hoặc rỗng thì xóa đi để Backend lấy tất cả
       const queryParams: any = {
         pageNumber: params.pageNumber || 1,
         pageSize: params.pageSize || 10,
@@ -21,7 +19,6 @@ export const orderService = {
         queryParams.status = params.status;
       }
       
-      // Nếu sau này backend hỗ trợ lọc type (Physical/Digital) thì dùng dòng này
       if (params.type) {
         queryParams.type = params.type;
       }
@@ -57,6 +54,20 @@ export const orderService = {
   async cancelOrder(id: string, reason: string = "") {
     try {
       const response = await axiosInstance.put(`${BASE_URL}/${id}/cancel`, { reason });
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * --- MỚI: Tạo đơn thuê sách ---
+   * Gọi API Backend để tính giá và tạo đơn an toàn
+   * POST /api/orders/rental
+   */
+  async createRentalOrder(data: CreateRentalOrderDto): Promise<OrderResponseDto> {
+    try {
+      const response = await axiosInstance.post<OrderResponseDto>(`${BASE_URL}/rental`, data);
       return response.data;
     } catch (error) {
       return handleApiError(error);

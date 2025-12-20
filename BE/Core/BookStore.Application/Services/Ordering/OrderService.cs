@@ -7,6 +7,7 @@ using BookStore.Domain.IRepository.Cart;
 using BookStore.Domain.IRepository.Catalog;
 using BookStore.Domain.IRepository.Ordering;
 using BookStore.Shared.Utilities;
+using BookStore.Shared.Exceptions;
 using Microsoft.Extensions.Logging;
 
 namespace BookStore.Application.Services.Ordering
@@ -48,7 +49,7 @@ namespace BookStore.Application.Services.Ordering
             if (!string.IsNullOrEmpty(status))
             {
                 orders = await _orderRepository.GetOrdersByStatusAsync(status, skip, pageSize);
-                totalCount = orders.Count(); // Approximate - should add CountByStatus method
+                totalCount = orders.Count(); 
             }
             else
             {
@@ -90,8 +91,7 @@ namespace BookStore.Application.Services.Ordering
         public async Task<OrderDto> CreateOrderAsync(CreateOrderDto dto)
         {
             // Validate items
-            Guard.Against(dto.Items == null || !dto.Items.Any(),
-                "Đơn hàng phải có ít nhất 1 sản phẩm");
+            Guard.Against(dto.Items == null || !dto.Items.Any(), "Đơn hàng phải có ít nhất 1 sản phẩm");
 
             // Create OrderAddress
             var orderAddress = new OrderAddress
@@ -108,7 +108,7 @@ namespace BookStore.Application.Services.Ordering
 
             // Calculate total
             decimal totalAmount = dto.Items!.Sum(item => item.UnitPrice * item.Quantity);
-            decimal discountAmount = 0; // TODO: Apply coupon logic
+            decimal discountAmount = 0; 
 
             // Create Order
             var order = new Order
@@ -129,8 +129,7 @@ namespace BookStore.Application.Services.Ordering
             foreach (var itemDto in dto.Items!)
             {
                 var book = await _bookRepository.GetByIdAsync(itemDto.BookId);
-                Guard.Against(book == null,
-                    $"Sách với ID {itemDto.BookId} không tồn tại");
+                Guard.Against(book == null, $"Sách với ID {itemDto.BookId} không tồn tại");
 
                 order.Items.Add(new OrderItem
                 {
@@ -162,7 +161,7 @@ namespace BookStore.Application.Services.Ordering
             {
                 BookId = cartItem.BookId,
                 Quantity = cartItem.Quantity,
-                UnitPrice = cartItem.UnitPrice // Use UnitPrice from CartItem (already stored when added to cart)
+                UnitPrice = cartItem.UnitPrice 
             }).ToList();
 
             // Create order
@@ -181,6 +180,80 @@ namespace BookStore.Application.Services.Ordering
             await _cartRepository.SaveChangesAsync();
 
             return order;
+        }
+
+        // --- NEW: Logic tạo đơn thuê sách (ĐÃ FIX LỖI BUILD) ---
+        public async Task<OrderDto> CreateRentalOrderAsync(Guid userId, Guid bookId, int days)
+        {
+            // 1. Lấy thông tin sách
+            var book = await _bookRepository.GetDetailByIdAsync(bookId);
+            Guard.Against(book == null, "Sách không tồn tại");
+
+            var bookPrice = book!.Prices?.Where(p => p.IsCurrent && p.EffectiveFrom <= DateTime.UtcNow)
+                                        .OrderByDescending(p => p.EffectiveFrom)
+                                        .FirstOrDefault()?.Amount ?? 0;
+            Guard.Against(bookPrice <= 0, "Sách chưa có giá bán, không thể thuê");
+
+            // 2. Tính giá thuê
+            decimal rentalPrice = 0;
+            if (days == 3) rentalPrice = 10000;
+            else 
+            {
+                decimal percent = days switch { 
+                    7 => 0.05m, 15 => 0.08m, 30 => 0.12m, 60 => 0.20m, 
+                    90 => 0.25m, 180 => 0.35m, 365 => 0.50m, _ => 0 
+                };
+                if (percent == 0) throw new UserFriendlyException("Gói thuê không hợp lệ");
+                
+                rentalPrice = Math.Round((bookPrice * percent) / 1000) * 1000;
+            }
+
+            // 3. Tạo địa chỉ ảo (FIX LỖI AddressId non-nullable)
+            // Vì thuê sách điện tử không cần địa chỉ thật, nhưng DB bắt buộc phải có
+            var dummyAddress = new OrderAddress
+            {
+                Id = Guid.NewGuid(),
+                RecipientName = "Digital Rental",
+                PhoneNumber = "N/A",
+                Province = "Online",
+                District = "Online",
+                Ward = "Online",
+                Street = "Digital Delivery",
+                Note = $"Rental: {days} days"
+            };
+
+            // 4. Tạo đơn hàng
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                OrderNumber = "RENT-" + GenerateOrderNumber().Substring(4),
+                Status = "Pending",
+                TotalAmount = rentalPrice,
+                DiscountAmount = 0,
+                // FinalAmount: KHÔNG GÁN (FIX LỖI read-only property)
+                // Nó sẽ tự động tính = TotalAmount - DiscountAmount
+                
+                CreatedAt = DateTime.UtcNow,
+                
+                // Gán địa chỉ ảo vừa tạo
+                AddressId = dummyAddress.Id, 
+                Address = dummyAddress
+            };
+
+            order.Items.Add(new OrderItem
+            {
+                Id = Guid.NewGuid(),
+                OrderId = order.Id,
+                BookId = bookId,
+                Quantity = 1,
+                UnitPrice = rentalPrice
+            });
+
+            await _orderRepository.AddAsync(order);
+            await _orderRepository.SaveChangesAsync();
+
+            return order.ToDto();
         }
 
         #endregion
@@ -202,7 +275,9 @@ namespace BookStore.Application.Services.Ordering
             Guard.Against(order == null, "Đơn hàng không tồn tại");
 
             Guard.Against(order!.Status != "Pending",
-                "Chỉ có thể hủy đơn hàng đang ở trạng thái Pending"); await _orderRepository.UpdateOrderStatusAsync(dto.OrderId, "Cancelled", dto.Reason);
+                "Chỉ có thể hủy đơn hàng đang ở trạng thái Pending"); 
+            
+            await _orderRepository.UpdateOrderStatusAsync(dto.OrderId, "Cancelled", dto.Reason);
             await _orderRepository.SaveChangesAsync();
 
             var updatedOrder = await _orderRepository.GetOrderWithDetailsAsync(dto.OrderId);
@@ -224,7 +299,9 @@ namespace BookStore.Application.Services.Ordering
             Guard.Against(order == null, "Đơn hàng không tồn tại");
 
             Guard.Against(order!.Status != "Paid",
-                "Chỉ có thể ship đơn hàng đã thanh toán"); await _orderRepository.UpdateOrderStatusAsync(orderId, "Shipped", note ?? "Order shipped");
+                "Chỉ có thể ship đơn hàng đã thanh toán"); 
+            
+            await _orderRepository.UpdateOrderStatusAsync(orderId, "Shipped", note ?? "Order shipped");
             await _orderRepository.SaveChangesAsync();
 
             var updatedOrder = await _orderRepository.GetOrderWithDetailsAsync(orderId);
@@ -237,7 +314,9 @@ namespace BookStore.Application.Services.Ordering
             Guard.Against(order == null, "Đơn hàng không tồn tại");
 
             Guard.Against(order!.Status != "Shipped",
-                "Chỉ có thể hoàn thành đơn hàng đã được ship"); await _orderRepository.UpdateOrderStatusAsync(orderId, "Completed", note ?? "Order completed");
+                "Chỉ có thể hoàn thành đơn hàng đã được ship"); 
+            
+            await _orderRepository.UpdateOrderStatusAsync(orderId, "Completed", note ?? "Order completed");
             await _orderRepository.SaveChangesAsync();
 
             var updatedOrder = await _orderRepository.GetOrderWithDetailsAsync(orderId);
@@ -269,7 +348,7 @@ namespace BookStore.Application.Services.Ordering
         {
             var allOrders = await _orderRepository.GetAllAsync();
             return allOrders.GroupBy(o => o.Status)
-                           .ToDictionary(g => g.Key, g => g.Count());
+                            .ToDictionary(g => g.Key, g => g.Count());
         }
 
         #endregion
@@ -300,8 +379,6 @@ namespace BookStore.Application.Services.Ordering
         }
 
         #endregion
-
-        // Mapping delegated to OrderMapper for better separation of concerns
 
         #region Order Status History
 

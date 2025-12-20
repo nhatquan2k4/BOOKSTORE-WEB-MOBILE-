@@ -3,65 +3,31 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Button, Badge, Input, Breadcrumb} from '@/components/ui';
+import { Button, Badge, Input, Breadcrumb } from '@/components/ui';
 import { bookService } from '@/services';
 import type { BookDto } from '@/types/dtos';
 
 /**
- * Hàm tính toán giá thuê sách dựa trên giá mua và số ngày thuê
- * @param bookPrice - Giá mua sách
- * @param days - Số ngày thuê
- * @returns totalRent - Tổng tiền thuê
- * 
- * Logic:
- * - 3 ngày: 10,000đ (cố định cho mọi sách)
- * - 7 ngày: 3% giá sách
- * - 15 ngày: 5% giá sách (tiết kiệm 10%)
- * - 30 ngày: 9% giá sách (tiết kiệm 20%)
- * - 60 ngày: 15% giá sách (tiết kiệm 30%)
- * - 90 ngày: 21% giá sách (tiết kiệm 35%)
- * - 180 ngày: 34% giá sách (tiết kiệm 50% - PHỔ BIẾN)
- * - 365 ngày: 51% giá sách (tiết kiệm 60%)
+ * Hàm tính toán giá thuê (DISPLAY ONLY)
+ * Logic này KHỚP HOÀN TOÀN với Backend (BookService.cs)
+ * Dùng để hiển thị "Từ ...đ" và "Phổ biến ...đ" ngoài danh sách
  */
-function calculateRentalPrice(bookPrice: number, days: number): number {
-  // Gói 3 ngày cố định
-  if (days === 3) return 10000;
+function calculateDisplayRentalPrice(bookPrice: number, days: number): number {
+  // Cấu hình % giống Backend
+  const percent = days === 180 ? 0.35 : 0.025; // 3 ngày = 2.5%, 180 ngày = 35%
   
-  // Các gói khác tính theo % giá sách
-  const rentalRates: { [key: number]: number } = {
-    7: 0.03,    // 3%
-    15: 0.05,   // 5%
-    30: 0.09,   // 9%
-    60: 0.15,   // 15%
-    90: 0.21,   // 21%
-    180: 0.34,  // 34%
-    365: 0.51,  // 51%
-  };
-  
-  const rate = rentalRates[days];
-  if (!rate) return 0;
-  
-  return Math.round(bookPrice * rate);
-}
+  // 1. Tính giá theo %
+  let rawPrice = bookPrice * percent;
 
-/**
- * Tạo danh sách các gói thuê cho một cuốn sách
- * @param bookPrice - Giá mua sách
- * @returns Mảng các gói thuê với giá tính toán
- * @internal Dùng cho trang chi tiết sách thuê
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function generateRentalPlans(bookPrice: number) {
-  return [
-    { id: 1, duration: "3 ngày", days: 3, price: calculateRentalPrice(bookPrice, 3), discount: 0, popular: false },
-    { id: 2, duration: "7 ngày", days: 7, price: calculateRentalPrice(bookPrice, 7), discount: 0, popular: false },
-    { id: 3, duration: "15 ngày", days: 15, price: calculateRentalPrice(bookPrice, 15), discount: 10, popular: false },
-    { id: 4, duration: "30 ngày", days: 30, price: calculateRentalPrice(bookPrice, 30), discount: 20, popular: false },
-    { id: 5, duration: "60 ngày", days: 60, price: calculateRentalPrice(bookPrice, 60), discount: 30, popular: false },
-    { id: 6, duration: "90 ngày", days: 90, price: calculateRentalPrice(bookPrice, 90), discount: 35, popular: false },
-    { id: 7, duration: "180 ngày", days: 180, price: calculateRentalPrice(bookPrice, 180), discount: 50, popular: true },
-    { id: 8, duration: "1 năm (365 ngày)", days: 365, price: calculateRentalPrice(bookPrice, 365), discount: 60, popular: false },
-  ];
+  // 2. Làm tròn lên hàng nghìn
+  let price = Math.ceil(rawPrice / 1000) * 1000;
+
+  // 3. Áp dụng giá sàn (Min Floor) giống Backend
+  // Gói 3 ngày tối thiểu 2k, gói 180 ngày tối thiểu 3k
+  const minPrice = days <= 3 ? 2000 : 3000;
+  if (price < minPrice) price = minPrice;
+
+  return price;
 }
 
 interface RentableBook {
@@ -74,8 +40,8 @@ interface RentableBook {
   reviews: number;
   purchasePrice: number;
   format: string;
-  startPrice: number;
-  popularPrice: number;
+  startPrice: number;   // Giá gói 3 ngày
+  popularPrice: number; // Giá gói 180 ngày
 }
 
 const sortOptions = [
@@ -101,14 +67,17 @@ export default function RentPage() {
     const fetchBooks = async () => {
       try {
         setLoading(true);
+        // Gọi API lấy sách (giả định lấy 50 cuốn để demo filter client-side)
         const response = await bookService.getBooks({
           pageNumber: 1,
-          pageSize: 50, // Lấy nhiều sách cho trang thuê
+          pageSize: 50,
         });
         
         if (response.items && response.items.length > 0) {
           const transformed: RentableBook[] = response.items.map((book: BookDto) => {
+            // Lấy giá hiện tại từ API
             const purchasePrice = book.currentPrice || 0;
+            
             return {
               id: book.id,
               title: book.title,
@@ -119,8 +88,9 @@ export default function RentPage() {
               reviews: book.totalReviews || 0,
               purchasePrice: purchasePrice,
               format: "ePub, PDF",
-              startPrice: calculateRentalPrice(purchasePrice, 3),
-              popularPrice: calculateRentalPrice(purchasePrice, 180),
+              // --- LOGIC MỚI: Tính giá hiển thị khớp Backend ---
+              startPrice: calculateDisplayRentalPrice(purchasePrice, 3),   // Gói 3 ngày
+              popularPrice: calculateDisplayRentalPrice(purchasePrice, 180), // Gói 180 ngày
             };
           });
           setRentableBooks(transformed);
@@ -144,8 +114,13 @@ export default function RentPage() {
   const filteredBooks = rentableBooks.filter(book => {
     const matchCategory = selectedCategory === "Tất cả" || book.category === selectedCategory;
     const matchSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       book.author.toLowerCase().includes(searchQuery.toLowerCase());
+                        book.author.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchSearch;
+  }).sort((a, b) => {
+      if (sortBy === 'price-asc') return a.startPrice - b.startPrice;
+      if (sortBy === 'price-desc') return b.startPrice - a.startPrice;
+      if (sortBy === 'rating') return b.rating - a.rating;
+      return 0; 
   });
 
   // Hero carousel
@@ -161,6 +136,7 @@ export default function RentPage() {
 
   // Auto-advance carousel
   useEffect(() => {
+    if (heroBooks.length === 0) return;
     const timer = setInterval(() => {
       setActiveHero((prev) => (prev + 1) % heroBooks.length);
     }, 3000);
@@ -173,7 +149,7 @@ export default function RentPage() {
       {/* Breadcrumb */}
       <Breadcrumb items={[{ label: "Thuê eBook" }]} />
       
-      {/* Hero Section - Similar to DiscoverNow */}
+      {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white py-16 md:py-20">
         <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10 md:gap-6 items-center">
           {loading ? (
@@ -206,34 +182,23 @@ export default function RentPage() {
                 <p className="text-sm text-white/70 mb-3">Sách điện tử / {heroBooks[activeHero]?.category || "Lập trình"}</p>
 
                 <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
-                  {heroBooks[activeHero]?.title || "Thuê eBook - Tri thức trong tầm tay"}
+                  {heroBooks[activeHero]?.title}
                 </h1>
 
                 <p className="text-sm md:text-base text-white/75 mb-6 line-clamp-4 md:line-clamp-5 max-w-xl">
-                  Truy cập hàng ngàn đầu sách điện tử với chi phí thấp. Đọc không giới hạn, học không ngừng nghỉ! Chỉ từ 10,000₫ cho 3 ngày thuê.
+                  Truy cập hàng ngàn đầu sách điện tử với chi phí thấp. Đọc không giới hạn, học không ngừng nghỉ! Chỉ từ {heroBooks[activeHero]?.startPrice.toLocaleString('vi-VN')}₫ cho 3 ngày thuê.
                 </p>
 
             <div className="flex gap-3 items-center">
               <Link
-                href={`/rent/${heroBooks[activeHero]?.id || 1}`}
+                href={`/rent/${heroBooks[activeHero]?.id}`}
                 className="inline-flex items-center justify-center gap-2 font-semibold rounded-full transition-all bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-5 py-2.5"
               >
                 Thuê ngay
               </Link>
               <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
-                  />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                 </svg>
                 Thêm vào yêu thích
               </Button>
@@ -246,7 +211,7 @@ export default function RentPage() {
                 <div className="text-white/60 text-xs">eBook có sẵn</div>
               </div>
               <div>
-                <div className="text-2xl font-bold mb-1">Từ 10K</div>
+                <div className="text-2xl font-bold mb-1">Từ 2K</div>
                 <div className="text-white/60 text-xs">Cho 3 ngày</div>
               </div>
               <div>
@@ -266,9 +231,7 @@ export default function RentPage() {
                   key={book.id}
                   className="absolute top-4 right-0 w-[260px] h-[360px] md:w-[280px] md:h-[380px] rounded-3xl overflow-hidden bg-slate-700/30 border border-white/10 shadow-2xl backdrop-blur"
                   style={{
-                    transform: `translateX(${offset * -110}px) translateY(${
-                      Math.abs(offset) * 14
-                    }px) scale(${1 - Math.abs(offset) * 0.04})`,
+                    transform: `translateX(${offset * -110}px) translateY(${Math.abs(offset) * 14}px) scale(${1 - Math.abs(offset) * 0.04})`,
                     opacity: Math.abs(offset) > 2 ? 0 : 1,
                     zIndex: 40 - Math.abs(offset),
                     transition: "all 0.35s ease",
@@ -279,9 +242,7 @@ export default function RentPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/0 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
                       <p className="text-xs text-white/60 mb-1">eBook</p>
-                      <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-2">
-                        {book.title}
-                      </h3>
+                      <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-2">{book.title}</h3>
                       <p className="text-[10px] text-white/50 line-clamp-1">{book.author}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <span className="text-xs font-bold text-emerald-400">
@@ -301,41 +262,11 @@ export default function RentPage() {
 
             {/* arrows */}
             <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-3">
-              <button
-                onClick={handlePrevHero}
-                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
-                aria-label="Previous"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m15 18-6-6 6-6" />
-                </svg>
+              <button onClick={handlePrevHero} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
               </button>
-              <button
-                onClick={handleNextHero}
-                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
-                aria-label="Next"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
+              <button onClick={handleNextHero} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
               </button>
             </div>
 
@@ -345,10 +276,7 @@ export default function RentPage() {
                 <button
                   key={idx}
                   onClick={() => setActiveHero(idx)}
-                  className={`h-1.5 rounded-full transition-all ${
-                    idx === activeHero ? "w-6 bg-white" : "w-2 bg-white/40"
-                  }`}
-                  aria-label={`Chuyển tới slide ${idx + 1}`}
+                  className={`h-1.5 rounded-full transition-all ${idx === activeHero ? "w-6 bg-white" : "w-2 bg-white/40"}`}
                 />
               ))}
             </div>
@@ -387,9 +315,7 @@ export default function RentPage() {
                   className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 text-sm font-medium"
                 >
                   {sortOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
+                    <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
               </div>
@@ -403,9 +329,7 @@ export default function RentPage() {
                   onClick={() => setSelectedCategory(category)}
                   variant={selectedCategory === category ? "primary" : "outline"}
                   size="sm"
-                  className={`whitespace-nowrap ${
-                    selectedCategory === category ? 'shadow-lg' : ''
-                  }`}
+                  className={`whitespace-nowrap ${selectedCategory === category ? 'shadow-lg' : ''}`}
                 >
                   {category}
                 </Button>

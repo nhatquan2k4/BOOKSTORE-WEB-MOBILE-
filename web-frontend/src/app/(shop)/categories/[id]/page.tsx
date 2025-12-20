@@ -1,456 +1,327 @@
-// app/books/[id]/page.tsx
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { Button, Badge, Alert } from "@/components/ui";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { bookService, cartService, wishlistService } from "@/services";
-import type { BookDetailDto, BookDto } from "@/types/dtos";
-import { useAuth } from "@/contexts";
-import { resolveBookPrice, formatPrice } from "@/lib/price";
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Button, Badge, Card, CardContent } from '@/components/ui';
+import { bookService, orderService } from '@/services';
+import type { BookDetailDto } from '@/types/dtos';
 
-// ============================================================================
-// TYPES (Chỉ giữ lại Type, xóa Mock Data)
-// ============================================================================
-type CommentItem = {
-  id: string;
-  author: string;
-  content: string;
-  createdAt: string;
-  replies?: CommentItem[];
-};
-
-type Review = {
-  id: string;
-  author: string;
-  text: string;
-  rating: number;
-  likes: number;
-  dislikes: number;
-  userVote: "up" | "down" | null;
-  createdAt: string;
-};
-
-type CarouselBook = {
-  id: string;
-  title: string;
-  author: string;
-  price: number;
-  originalPrice: number;
-  cover: string;
-  rating: number;
-  reviews: number;
-  hot?: boolean;
-};
-
-// ============================================================================
-// UTILS
-// ============================================================================
-function timeAgo(iso: string) {
-  const rtf = new Intl.RelativeTimeFormat("vi", { numeric: "auto" });
-  const diff = Date.now() - new Date(iso).getTime();
-  const units: [Intl.RelativeTimeFormatUnit, number][] = [
-    ["year", 1000 * 60 * 60 * 24 * 365],
-    ["month", 1000 * 60 * 60 * 24 * 30],
-    ["day", 1000 * 60 * 60 * 24],
-    ["hour", 1000 * 60 * 60],
-    ["minute", 1000 * 60],
-    ["second", 1000],
-  ];
-  for (const [unit, ms] of units) {
-    const val = Math.floor(diff / ms);
-    if (Math.abs(val) >= 1) return rtf.format(-val, unit);
-  }
-  return rtf.format(0, "second");
-}
-
-const calculateDiscountPercent = (original: number, price: number) => {
-  if (original <= 0 || price <= 0 || price >= original) return 0;
-  return Math.round(((original - price) / original) * 100);
-};
-
-// ============================================================================
-// COMPONENT: CARD SÁCH (CAROUSEL)
-// ============================================================================
-function CarouselBookCard({ book }: { book: CarouselBook }) {
-  const hasDiscount = book.originalPrice > 0 && book.originalPrice > book.price;
-
-  return (
-    <Link
-      href={`/books/${book.id}`}
-      className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
-                 border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
-    >
-      <div className="relative w-full aspect-[4/5]">
-        <Image
-          src={book.cover}
-          alt={book.title}
-          fill
-          sizes="260px"
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        {book.hot && (
-          <div className="absolute top-2 right-2">
-            <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500 text-white shadow">
-              HOT
-            </Badge>
-          </div>
-        )}
-      </div>
-
-      <div className="p-3 flex flex-col gap-1 flex-1">
-        <h3 className="font-semibold text-sm line-clamp-2 min-h-[40px]" title={book.title}>
-          {book.title}
-        </h3>
-        <p className="text-xs text-gray-600 line-clamp-1">{book.author}</p>
-        <div className="mt-2 flex items-center gap-2 flex-wrap">
-          <p className="text-red-600 font-bold text-sm">
-            {formatPrice(book.price)}
-          </p>
-          {hasDiscount && (
-            <>
-              <p className="text-xs text-gray-400 line-through">
-                {formatPrice(book.originalPrice)}
-              </p>
-              <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
-                -{calculateDiscountPercent(book.originalPrice, book.price)}%
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-// ============================================================================
-// PAGE COMPONENT
-// ============================================================================
-export default function BookDetailPage() {
+export default function RentDetailPage() {
   const params = useParams();
-  const id = params?.id as string;
   const router = useRouter();
-  const { isLoggedIn } = useAuth();
+  const id = params.id as string;
 
-  // -------- API States (Khởi tạo là null hoặc mảng rỗng) --------
   const [book, setBook] = useState<BookDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false); // State loading khi bấm nút thuê
   
-  // Carousel Data
-  const [suggestedBooks, setSuggestedBooks] = useState<CarouselBook[]>([]);
-  const [popularBooks, setPopularBooks] = useState<CarouselBook[]>([]);
-  const [relatedBooks, setRelatedBooks] = useState<CarouselBook[]>([]);
+  // State lưu ID gói thuê đang chọn
+  const [selectedPlanId, setSelectedPlanId] = useState<number>(0);
+  
+  // Tabs hiển thị
+  const [activeTab, setActiveTab] = useState<'description' | 'details' | 'reviews'>('description');
 
-  // Review & Comment Data (API Only - Khởi tạo rỗng)
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [comments, setComments] = useState<CommentItem[]>([]);
-
-  // -------- UI States --------
-  const [activeTab, setActiveTab] = useState<"desc" | "review" | "comments">("desc");
-  const [descExpanded, setDescExpanded] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
-  const [cartMessage, setCartMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
-  // Helper chuyển đổi DTO sang model Carousel
-  const transformBookDto = (dto: BookDto): CarouselBook => {
-    const priceInfo = resolveBookPrice(dto);
-    return {
-      id: dto.id,
-      title: dto.title,
-      author: dto.authorNames?.[0] || "Tác giả không xác định",
-      price: priceInfo.finalPrice,
-      originalPrice: priceInfo.originalPrice,
-      cover: dto.coverImage || "/image/anh.png",
-      rating: dto.averageRating || 0,
-      reviews: dto.totalReviews || 0,
-      hot: priceInfo.hasDiscount,
-    };
-  };
-
-  // FETCH DATA TỪ API
+  // 1. Fetch chi tiết sách từ API
   useEffect(() => {
-    if (!id) return;
-
-    const fetchAllData = async () => {
+    const fetchBookDetail = async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        // 1. Fetch thông tin chi tiết sách
-        const bookData = await bookService.getBookById(id);
-        setBook(bookData);
-
-        // 2. Fetch các danh sách gợi ý (Chạy song song)
-        const [newestRes, mostViewedRes] = await Promise.all([
-          bookService.getNewestBooks(8),
-          bookService.getMostViewedBooks(8)
-        ]);
-        setSuggestedBooks(newestRes.map(transformBookDto));
-        setPopularBooks(mostViewedRes.map(transformBookDto));
-
-        // 3. Fetch sách liên quan (nếu có category)
-        if (bookData.categories && bookData.categories.length > 0) {
-          const relatedRes = await bookService.getBooksByCategory(bookData.categories[0].id, 12);
-          setRelatedBooks(relatedRes.map(transformBookDto));
+        const data = await bookService.getBookById(id);
+        setBook(data);
+        
+        // Tự động chọn gói "Phổ biến" hoặc gói đầu tiên nếu có
+        if (data?.rentalPlans && data.rentalPlans.length > 0) {
+            const popularPlan = data.rentalPlans.find(p => p.isPopular);
+            setSelectedPlanId(popularPlan ? popularPlan.id : data.rentalPlans[0].id);
         }
-
-        // 4. (TODO) Fetch Reviews & Comments từ API
-        // Hiện tại chưa có endpoint nên để mảng rỗng.
-        // Khi backend có, bạn thêm: const reviewsData = await reviewService.getReviews(id);
-        // setReviews(reviewsData);
-
-      } catch (err) {
-        console.error("Lỗi khi tải dữ liệu:", err);
-        setError("Không thể tải thông tin sách. Vui lòng thử lại sau.");
+      } catch (error) {
+        console.error("Error fetching book detail:", error);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchAllData();
+    
+    if (id) fetchBookDetail();
   }, [id]);
 
-  // Logic hiển thị Book (Single Source of Truth)
-  const displayBook = book ? (() => {
-    const priceInfo = resolveBookPrice(book);
-    return {
-      id: book.id,
-      title: book.title,
-      author: book.authors?.map(a => a.name).join(", ") || "Đang cập nhật",
-      category: book.categories?.map(c => c.name).join(", ") || "Khác",
-      publisher: book.publisher?.name || "NXB",
-      price: priceInfo.finalPrice,
-      originalPrice: priceInfo.originalPrice,
-      rating: book.averageRating || 0,
-      reviewCount: book.totalReviews || 0,
-      stock: book.stockQuantity || 0,
-      year: book.publicationYear || new Date().getFullYear(),
-      weight: book.metadata?.find(m => m.key.toLowerCase() === "weight")?.value || "---",
-      size: `${book.pageCount || 0} trang`,
-      language: book.language || "Tiếng Việt",
-      cover: book.images?.find(img => img.isCover)?.imageUrl || book.images?.[0]?.imageUrl || "/image/anh.png",
-      description: book.description || "Chưa có mô tả chi tiết.",
-    };
-  })() : null;
+  // Lấy object gói thuê hiện tại dựa trên ID đã chọn
+  const currentPlan = book?.rentalPlans?.find(p => p.id === selectedPlanId);
 
-  // Xử lý Wishlist
-  const handleToggleWishlist = async () => {
-    if (!isLoggedIn) {
-       router.push('/auth/login');
-       return;
-    }
+  // --- HÀM XỬ LÝ THUÊ MỚI (GỌI API) ---
+  const handleRentNow = async () => {
+    if (!book || !currentPlan) return;
+
     try {
-      setIsTogglingWishlist(true);
-      const newStatus = await wishlistService.toggleWishlist(id);
-      setIsLiked(newStatus);
-      setCartMessage({ type: 'success', text: newStatus ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích' });
-      setTimeout(() => setCartMessage(null), 2000);
-    } catch (e) {
-      console.error(e);
+        setProcessing(true);
+        
+        // Gọi API tạo đơn hàng (Backend tự tính giá dựa trên BookId và Days)
+        const result = await orderService.createRentalOrder({
+            bookId: book.id,
+            days: currentPlan.days
+        });
+
+        if (result.success) {
+            // Thành công -> Chuyển sang trang thanh toán QR với OrderId thật
+            // Không truyền price qua URL nữa để bảo mật
+            router.push(`/payment/qr?orderId=${result.orderId}&amount=${result.amount}`);
+        } else {
+            alert(result.message || "Không thể tạo đơn hàng");
+        }
+    } catch (err: any) {
+        console.error(err);
+        alert(err.message || "Lỗi kết nối server. Vui lòng thử lại.");
     } finally {
-      setIsTogglingWishlist(false);
+        setProcessing(false);
     }
   };
 
-  // Xử lý Giỏ hàng
-  const handleAddToCart = async () => {
-    if (!isLoggedIn) return router.push('/auth/login');
-    try {
-      setIsAddingToCart(true);
-      await cartService.addToCart({ bookId: id, quantity: 1 });
-      setCartMessage({ type: 'success', text: 'Đã thêm vào giỏ hàng!' });
-      window.dispatchEvent(new Event('cartUpdated')); // Update Header Cart Count
-      setTimeout(() => setCartMessage(null), 3000);
-    } catch (e) {
-      setCartMessage({ type: 'error', text: 'Lỗi thêm giỏ hàng' });
-    } finally {
-      setIsAddingToCart(false);
-    }
+  const handleBuyNow = () => {
+    if (!book) return;
+    router.push(`/checkout?type=buy&bookId=${book.id}`);
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-    </div>
-  );
+  // --- Render UI ---
 
-  if (error || !displayBook) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center p-8 bg-white rounded-lg shadow">
-        <h2 className="text-xl font-bold text-red-600 mb-2">Đã có lỗi xảy ra</h2>
-        <p className="text-gray-600">{error || "Không tìm thấy sách"}</p>
-        <Button className="mt-4" onClick={() => window.location.reload()}>Thử lại</Button>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
-    </div>
-  );
+    );
+  }
 
-  const hasMainDiscount = displayBook.originalPrice > 0 && displayBook.originalPrice > displayBook.price;
-  const mainDiscountPercent = hasMainDiscount ? calculateDiscountPercent(displayBook.originalPrice, displayBook.price) : 0;
+  if (!book) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
+        <h2 className="text-2xl font-bold text-gray-900">Không tìm thấy sách</h2>
+        <Link href="/rent" className="text-blue-600 hover:underline">Quay lại trang thuê sách</Link>
+      </div>
+    );
+  }
+
+  // Dữ liệu hiển thị (Fallback nếu null)
+  const rentalPlans = book.rentalPlans || [];
+  const coverImage = book.images?.find(i => i.isMain)?.imageUrl || book.images?.[0]?.imageUrl || '/image/anh.png';
+  const authorName = book.authors?.[0]?.name || "Tác giả không xác định";
+  const categoryName = book.categories?.[0]?.name || "Chưa phân loại";
+  // Nếu backend chưa có field features, dùng list cứng tạm thời
+  const features = book.features && book.features.length > 0 ? book.features : [
+      'Đọc offline không cần kết nối internet',
+      'Đồng bộ trên nhiều thiết bị',
+      'Tìm kiếm và highlight văn bản',
+      'Chế độ đọc ban đêm'
+  ];
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-20">
-      <Breadcrumb items={[{ label: 'Sách', href: '/books' }, { label: displayBook.title }]} />
-      
-      <div className="container mx-auto px-4 py-8 text-gray-900">
-        {cartMessage && (
-           <div className="fixed top-20 right-4 z-50 animate-in fade-in slide-in-from-right-5">
-             <Alert variant={cartMessage.type === 'success' ? 'success' : 'danger'}>{cartMessage.text}</Alert>
-           </div>
-        )}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Breadcrumb */}
+      <div className="container mx-auto px-4 py-3">
+        <nav className="flex items-center gap-2 text-sm text-gray-600">
+          <Link href="/" className="hover:text-blue-600">Trang chủ</Link>
+          <span>/</span>
+          <Link href="/rent" className="hover:text-blue-600">Thuê eBook</Link>
+          <span>/</span>
+          <span className="text-gray-900 line-clamp-1">{book.title}</span>
+        </nav>
+      </div>
 
-        {/* --- MAIN PRODUCT SECTION --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 bg-white p-6 rounded-2xl shadow-sm mb-12">
-            {/* Left: Images */}
-            <div className="flex justify-center items-start">
-               <div className="relative w-full max-w-[400px] aspect-[3/4] shadow-lg rounded-xl overflow-hidden">
-                 <Image src={displayBook.cover} alt={displayBook.title} fill className="object-cover" priority />
-               </div>
-            </div>
-
-            {/* Right: Info */}
-            <div className="space-y-5">
-               <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight">{displayBook.title}</h1>
-               
-               <div className="flex flex-wrap items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1 text-yellow-500 font-bold">
-                    <span>{displayBook.rating.toFixed(1)}</span>
-                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                  </div>
-                  <span className="text-gray-400">|</span>
-                  <span className="text-gray-600">{displayBook.reviewCount} đánh giá</span>
-                  <span className="text-gray-400">|</span>
-                  <span className="text-gray-600">Đã bán: 0</span>
-               </div>
-
-               <div className="grid grid-cols-2 gap-y-2 text-sm text-gray-600 border-t border-b border-gray-100 py-4">
-                  <p>Tác giả: <span className="text-blue-600 font-medium">{displayBook.author}</span></p>
-                  <p>Nhà xuất bản: <span className="font-medium">{displayBook.publisher}</span></p>
-                  <p>Năm xuất bản: <span className="font-medium">{displayBook.year}</span></p>
-                  <p>Hình thức: <span className="font-medium">Bìa mềm</span></p>
-               </div>
-
-               <div className="flex items-end gap-3">
-                  <span className="text-4xl font-bold text-red-600">{formatPrice(displayBook.price)}</span>
-                  {hasMainDiscount && (
-                    <div className="flex flex-col mb-1">
-                      <span className="text-sm text-gray-400 line-through">{formatPrice(displayBook.originalPrice)}</span>
-                      <span className="text-xs font-bold text-red-500">Tiết kiệm {mainDiscountPercent}%</span>
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* LEFT COLUMN: Book Info */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-sm p-6 md:p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                {/* Book Cover */}
+                <div>
+                  <div className="relative aspect-[3/4] rounded-lg overflow-hidden shadow-lg border border-gray-100">
+                    <Image src={coverImage} alt={book.title} fill className="object-cover" />
+                    <div className="absolute top-4 left-4">
+                      <Badge className="bg-green-500 text-white hover:bg-green-600">eBook</Badge>
                     </div>
-                  )}
-               </div>
+                  </div>
+                  
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-3 gap-4 mt-6">
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <div className="flex items-center justify-center font-bold text-gray-900">
+                            {book.averageRating || 0} ⭐
+                        </div>
+                        <p className="text-xs text-gray-600">{book.totalReviews || 0} đánh giá</p>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                        <div className="font-bold text-gray-900">{book.pageCount}</div>
+                        <p className="text-xs text-gray-600">Trang</p>
+                    </div>
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="font-bold text-gray-900">{book.bookFormat?.name || 'PDF'}</div>
+                        <p className="text-xs text-gray-600">Định dạng</p>
+                    </div>
+                  </div>
+                </div>
 
-               {/* Stock Status */}
-               <div>
-                  {displayBook.stock > 0 ? (
-                    <Badge variant="success" className="bg-emerald-100 text-emerald-700">Còn hàng ({displayBook.stock})</Badge>
-                  ) : (
-                    <Badge variant="danger">Hết hàng</Badge>
-                  )}
-               </div>
+                {/* Info Text */}
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 leading-tight">{book.title}</h1>
+                  <div className="space-y-2 mb-6 text-gray-700 text-sm">
+                    <p><span className="font-semibold text-gray-900">Tác giả:</span> <span className="text-blue-600">{authorName}</span></p>
+                    <p><span className="font-semibold text-gray-900">Nhà xuất bản:</span> {book.publisher?.name}</p>
+                    <p><span className="font-semibold text-gray-900">Năm xuất bản:</span> {book.publicationYear}</p>
+                    <p><span className="font-semibold text-gray-900">Ngôn ngữ:</span> {book.language}</p>
+                    <p><span className="font-semibold text-gray-900">ISBN:</span> {book.isbn}</p>
+                  </div>
+                  <div className="mb-6">
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
+                          {categoryName}
+                      </Badge>
+                  </div>
+                  
+                  {/* Features List */}
+                  <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-4 border border-blue-100">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" /></svg>
+                        Tính năng nổi bật
+                    </h3>
+                    <ul className="space-y-1 text-sm text-gray-700">
+                        {features.map((f, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                                <span className="text-green-500 mt-0.5">✓</span> {f}
+                            </li>
+                        ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
 
-               {/* Actions */}
-               <div className="flex gap-4 pt-4">
-                  <Button 
-                    variant="danger" size="lg" className="flex-1 font-bold shadow-lg shadow-red-200"
-                    disabled={displayBook.stock === 0}
-                  >
-                    MUA NGAY
-                  </Button>
-                  <Button 
-                    variant="primary" size="lg" className="flex-1 font-bold shadow-lg shadow-blue-200"
-                    onClick={handleAddToCart}
-                    disabled={displayBook.stock === 0 || isAddingToCart}
-                  >
-                    {isAddingToCart ? 'Đang thêm...' : 'THÊM VÀO GIỎ'}
-                  </Button>
-                  <Button variant="outline" size="lg" className="px-3" onClick={handleToggleWishlist}>
-                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={isLiked ? "red" : "none"} stroke={isLiked ? "red" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                  </Button>
-               </div>
+              {/* Tabs Section */}
+              <div className="border-b mb-6">
+                <div className="flex gap-8">
+                    <button 
+                        onClick={() => setActiveTab('description')} 
+                        className={`py-4 border-b-2 text-sm font-medium transition ${activeTab === 'description' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Mô tả
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('details')} 
+                        className={`py-4 border-b-2 text-sm font-medium transition ${activeTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Chi tiết
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('reviews')} 
+                        className={`py-4 border-b-2 text-sm font-medium transition ${activeTab === 'reviews' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Đánh giá ({book.totalReviews || 0})
+                    </button>
+                </div>
+              </div>
+              
+              <div className="prose max-w-none text-gray-700 text-sm leading-relaxed">
+                {activeTab === 'description' && (
+                    <div dangerouslySetInnerHTML={{ __html: book.description || '<p>Chưa có mô tả.</p>' }} />
+                )}
+                {activeTab === 'details' && (
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Render chi tiết thêm nếu cần */}
+                        <div className="p-4 bg-gray-50 rounded">Thông tin chi tiết đang cập nhật...</div>
+                    </div>
+                )}
+                {activeTab === 'reviews' && (
+                    <div className="text-center py-8 text-gray-500">
+                        Chưa có đánh giá nào.
+                    </div>
+                )}
+              </div>
             </div>
+          </div>
+
+          {/* RIGHT COLUMN: Action Card */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-4">
+              <Card className="shadow-lg border-t-4 border-t-blue-600">
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">Chọn gói thuê</h2>
+                  
+                  {rentalPlans.length === 0 ? (
+                      <div className="text-red-500 bg-red-50 p-4 rounded text-center text-sm">
+                          Sách này hiện chưa hỗ trợ thuê hoặc chưa có giá bán.
+                      </div>
+                  ) : (
+                      <div className="space-y-3 mb-6">
+                        {rentalPlans.map((plan) => (
+                          <div 
+                            key={plan.id}
+                            onClick={() => setSelectedPlanId(plan.id)}
+                            className={`relative w-full p-4 border rounded-lg cursor-pointer transition-all group ${
+                              selectedPlanId === plan.id 
+                                ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600' 
+                                : 'border-gray-200 hover:border-blue-400 hover:shadow-sm'
+                            }`}
+                          >
+                            {plan.isPopular && (
+                              <div className="absolute -top-2.5 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">
+                                Phổ biến
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="font-bold text-gray-900">{plan.durationLabel}</div>
+                                {plan.savingsPercentage > 0 && (
+                                  <div className="text-xs text-green-600 font-medium mt-0.5">Tiết kiệm {plan.savingsPercentage}%</div>
+                                )}
+                              </div>
+                              <div className="font-bold text-lg text-blue-600 group-hover:scale-105 transition-transform">
+                                {plan.price.toLocaleString('vi-VN')}₫
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <Button 
+                        onClick={handleRentNow}
+                        disabled={rentalPlans.length === 0 || processing}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 text-lg shadow-md transition-all hover:-translate-y-0.5"
+                    >
+                        {processing ? (
+                            <span className="flex items-center gap-2">
+                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                Đang xử lý...
+                            </span>
+                        ) : (
+                            `Thuê ngay - ${currentPlan ? currentPlan.price.toLocaleString('vi-VN') : 0}₫`
+                        )}
+                    </Button>
+
+                    <div className="relative py-2">
+                        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div>
+                        <div className="relative flex justify-center"><span className="px-3 bg-white text-gray-400 text-xs uppercase">Hoặc</span></div>
+                    </div>
+
+                    <Button 
+                        onClick={handleBuyNow} 
+                        variant="outline" 
+                        disabled={!book.currentPrice}
+                        className="w-full border-2 border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white font-semibold py-5 h-auto transition-colors"
+                    >
+                        Mua sở hữu - {book.currentPrice?.toLocaleString('vi-VN') || 0}₫
+                    </Button>
+                    
+                    <p className="text-xs text-center text-gray-500 mt-2">
+                        Thanh toán an toàn qua QR Code / Ngân hàng
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
         </div>
-
-        {/* --- TABS (DESCRIPTION, REVIEW) --- */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-12 min-h-[300px]">
-           <div className="flex border-b border-gray-200 mb-6">
-              <button 
-                onClick={() => setActiveTab('desc')}
-                className={`pb-3 px-6 font-medium text-lg transition-colors border-b-2 ${activeTab === 'desc' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-              >
-                Mô tả sản phẩm
-              </button>
-              <button 
-                onClick={() => setActiveTab('review')}
-                className={`pb-3 px-6 font-medium text-lg transition-colors border-b-2 ${activeTab === 'review' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-              >
-                Đánh giá ({reviews.length})
-              </button>
-           </div>
-
-           {activeTab === 'desc' && (
-             <div className={`prose max-w-none text-gray-700 ${!descExpanded ? 'line-clamp-6' : ''}`}>
-                <p className="whitespace-pre-line">{displayBook.description}</p>
-                {/* Nếu description dài thì hiện nút xem thêm (Logic này bạn có thể thêm lại nếu muốn) */}
-             </div>
-           )}
-
-           {activeTab === 'review' && (
-             <div className="text-center py-10">
-               {reviews.length === 0 ? (
-                 <div className="text-gray-500">
-                   <p>Chưa có đánh giá nào cho cuốn sách này.</p>
-                   <p className="text-sm">Hãy là người đầu tiên đánh giá!</p>
-                 </div>
-               ) : (
-                 // Render reviews list here when API is connected
-                 <p>Danh sách đánh giá sẽ hiện ở đây</p>
-               )}
-             </div>
-           )}
-        </div>
-
-        {/* --- CAROUSELS --- */}
-        {/* Render Carousel Helper Component */}
-        <BookCarouselSection title="Có thể bạn thích" books={suggestedBooks} />
-        <BookCarouselSection title="Sách đọc nhiều" books={popularBooks} />
-        <BookCarouselSection title="Cùng thể loại" books={relatedBooks} />
-      </div>
-    </main>
-  );
-}
-
-// Sub-component để render Carousel cho gọn file
-function BookCarouselSection({ title, books }: { title: string, books: CarouselBook[] }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  
-  if (!books || books.length === 0) return null;
-
-  const scroll = (dir: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const step = 300;
-      scrollRef.current.scrollBy({ left: dir === 'left' ? -step : step, behavior: 'smooth' });
-    }
-  };
-
-  return (
-    <div className="mt-12">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-        <div className="flex gap-2">
-           <button onClick={() => scroll('left')} className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100">←</button>
-           <button onClick={() => scroll('right')} className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100">→</button>
-        </div>
-      </div>
-      <div ref={scrollRef} className="flex gap-6 overflow-x-auto pb-4 scroll-smooth no-scrollbar">
-         {books.map(b => <CarouselBookCard key={b.id} book={b} />)}
       </div>
     </div>
   );
