@@ -1,328 +1,362 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Button, Badge, Card, CardContent } from '@/components/ui';
-import { bookService, orderService } from '@/services';
-import type { BookDetailDto } from '@/types/dtos';
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
+import { bookService, categoryService } from "@/services";
+import type { BookDto, CategoryDto } from "@/types/dtos";
 
-export default function RentDetailPage() {
+// ============================================================================
+// CONFIG & HELPERS
+// ============================================================================
+const API_BASE_URL = 'http://localhost:5276';
+
+// Helper: Xử lý ảnh (tránh lỗi 404 localhost)
+const getFullImageUrl = (url?: string | null) => {
+  if (!url) return '/image/anh.png';
+  if (url.startsWith('http')) return url;
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
+// Helper: Format tiền tệ
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(price);
+};
+
+// Helper: Tính % giảm giá
+const calculateDiscount = (original: number, current: number) => {
+  if (original <= 0 || current <= 0 || current >= original) return 0;
+  return Math.round(((original - current) / original) * 100);
+};
+
+// ============================================================================
+// TYPES
+// ============================================================================
+type BookDisplay = {
+  id: string;
+  title: string;
+  author: string;
+  price: number;
+  originalPrice?: number;
+  cover: string;
+  rating: number;
+  reviewCount: number;
+  isBestseller: boolean;
+  stockQuantity: number;
+  isAvailable: boolean;
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+export default function CategoryDetailPage() {
   const params = useParams();
-  const router = useRouter();
-  const id = params.id as string;
+  const categoryId = params?.id as string;
 
-  const [book, setBook] = useState<BookDetailDto | null>(null);
+  // State
+  const [category, setCategory] = useState<CategoryDto | null>(null);
+  const [subCategories, setSubCategories] = useState<CategoryDto[]>([]);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>("all");
+  
+  const [books, setBooks] = useState<BookDisplay[]>([]);
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false); // State loading khi bấm nút thuê
+  const [categoryLoading, setCategoryLoading] = useState(true);
   
-  // State lưu ID gói thuê đang chọn
-  const [selectedPlanId, setSelectedPlanId] = useState<number>(0);
-  
-  // Tabs hiển thị
-  const [activeTab, setActiveTab] = useState<'description' | 'details' | 'reviews'>('description');
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 20;
 
-  // 1. Fetch chi tiết sách từ API
+  // 1. Fetch Category Info
   useEffect(() => {
-    const fetchBookDetail = async () => {
+    const fetchCategoryInfo = async () => {
+      if (!categoryId) return;
       try {
-        setLoading(true);
-        const data = await bookService.getBookById(id);
-        setBook(data);
-        
-        // Tự động chọn gói "Phổ biến" hoặc gói đầu tiên nếu có
-        if (data?.rentalPlans && data.rentalPlans.length > 0) {
-            const popularPlan = data.rentalPlans.find(p => p.isPopular);
-            setSelectedPlanId(popularPlan ? popularPlan.id : data.rentalPlans[0].id);
+        setCategoryLoading(true);
+        const catRes = await categoryService.getCategoryById(categoryId);
+        setCategory((catRes as any).data || catRes);
+
+        // Fetch sub-categories (nếu có API)
+        try {
+           // const subs = await categoryService.getSubCategories(categoryId);
+           // setSubCategories(subs);
+           setSubCategories([]); 
+        } catch (err) {
+           console.log("No subcategories");
         }
       } catch (error) {
-        console.error("Error fetching book detail:", error);
+        console.error("Error fetching category:", error);
+      } finally {
+        setCategoryLoading(false);
+      }
+    };
+    fetchCategoryInfo();
+  }, [categoryId]);
+
+  // 2. Fetch Books
+  useEffect(() => {
+    const fetchBooks = async () => {
+      if (!categoryId) return;
+
+      try {
+        setLoading(true);
+        const targetId = selectedSubCategory === "all" ? categoryId : selectedSubCategory;
+
+        const response = await bookService.getBooks({
+          pageNumber: currentPage,
+          pageSize: itemsPerPage,
+          categoryId: targetId
+        });
+
+        if (response.items && response.items.length > 0) {
+          // --- LOGIC MAP DỮ LIỆU ĐÃ SỬA ---
+          const transformedBooks: BookDisplay[] = response.items.map((book: any) => {
+            // Ưu tiên lấy currentPrice, nếu không có thì lấy price, không có nữa thì 0
+            const finalPrice = book.currentPrice ?? book.price ?? 0;
+            const originalPrice = book.originalPrice ?? 0;
+
+            return {
+              id: book.id,
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              cover: getFullImageUrl(book.coverImage),
+              rating: book.averageRating || 0,
+              reviewCount: book.totalReviews || 0,
+              price: finalPrice, // Sử dụng giá đã check kỹ
+              originalPrice: originalPrice > finalPrice ? originalPrice : undefined,
+              isBestseller: (book.totalReviews || 0) > 50,
+              stockQuantity: book.stockQuantity ?? 0,
+              isAvailable: book.isAvailable ?? true,
+            };
+          });
+
+          setBooks(transformedBooks);
+          setTotalItems(response.totalCount || 0);
+        } else {
+          setBooks([]);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setBooks([]);
       } finally {
         setLoading(false);
       }
     };
-    
-    if (id) fetchBookDetail();
-  }, [id]);
 
-  // Lấy object gói thuê hiện tại dựa trên ID đã chọn
-  const currentPlan = book?.rentalPlans?.find(p => p.id === selectedPlanId);
+    fetchBooks();
+  }, [categoryId, selectedSubCategory, currentPage]);
 
-  // --- HÀM XỬ LÝ THUÊ MỚI (GỌI API) ---
-  const handleRentNow = async () => {
-    if (!book || !currentPlan) return;
+  // Handlers
+  const handleSubCategoryChange = (subCatId: string) => {
+    setSelectedSubCategory(subCatId);
+    setCurrentPage(1);
+  };
 
-    try {
-        setProcessing(true);
-        
-        // Gọi API tạo đơn hàng (Backend tự tính giá dựa trên BookId và Days)
-        const result = await orderService.createRentalOrder({
-            bookId: book.id,
-            days: currentPlan.days
-        });
-
-        if (result.success) {
-            // Thành công -> Chuyển sang trang thanh toán QR với OrderId thật
-            // Không truyền price qua URL nữa để bảo mật
-            router.push(`/payment/qr?orderId=${result.orderId}&amount=${result.amount}`);
-        } else {
-            alert(result.message || "Không thể tạo đơn hàng");
-        }
-    } catch (err: any) {
-        console.error(err);
-        alert(err.message || "Lỗi kết nối server. Vui lòng thử lại.");
-    } finally {
-        setProcessing(false);
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
-  const handleBuyNow = () => {
-    if (!book) return;
-    router.push(`/checkout?type=buy&bookId=${book.id}`);
-  };
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  // --- Render UI ---
+  // --- RENDER ---
 
-  if (loading) {
+  if (categoryLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  if (!book) {
+  if (!category) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">Không tìm thấy sách</h2>
-        <Link href="/rent" className="text-blue-600 hover:underline">Quay lại trang thuê sách</Link>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 flex flex-col items-center justify-center gap-4">
+        <h2 className="text-2xl font-bold text-gray-900">Không tìm thấy danh mục</h2>
+        <Link href="/" className="text-blue-600 hover:underline">Về trang chủ</Link>
       </div>
     );
   }
 
-  // Dữ liệu hiển thị (Fallback nếu null)
-  const rentalPlans = book.rentalPlans || [];
-  const coverImage = book.images?.find(i => i.isMain)?.imageUrl || book.images?.[0]?.imageUrl || '/image/anh.png';
-  const authorName = book.authors?.[0]?.name || "Tác giả không xác định";
-  const categoryName = book.categories?.[0]?.name || "Chưa phân loại";
-  // Nếu backend chưa có field features, dùng list cứng tạm thời
-  const features = book.features && book.features.length > 0 ? book.features : [
-      'Đọc offline không cần kết nối internet',
-      'Đồng bộ trên nhiều thiết bị',
-      'Tìm kiếm và highlight văn bản',
-      'Chế độ đọc ban đêm'
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Breadcrumb */}
-      <div className="container mx-auto px-4 py-3">
-        <nav className="flex items-center gap-2 text-sm text-gray-600">
-          <Link href="/" className="hover:text-blue-600">Trang chủ</Link>
-          <span>/</span>
-          <Link href="/rent" className="hover:text-blue-600">Thuê eBook</Link>
-          <span>/</span>
-          <span className="text-gray-900 line-clamp-1">{book.title}</span>
-        </nav>
-      </div>
-
+    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Breadcrumb */}
+        <nav className="mb-6 text-sm text-gray-600">
+          <Link href="/" className="hover:text-blue-600">Trang chủ</Link>
+          {" / "}
+          <Link href="/categories" className="hover:text-blue-600">Danh mục</Link>
+          {" / "}
+          <span className="font-medium text-gray-800">{category.name}</span>
+        </nav>
+
+        {/* Header - Giữ phần "Não bộ" & Icon */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 flex items-center justify-center bg-blue-100 rounded-full text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                </svg>
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900">{category.name}</h1>
+          </div>
           
-          {/* LEFT COLUMN: Book Info */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm p-6 md:p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                {/* Book Cover */}
-                <div>
-                  <div className="relative aspect-[3/4] rounded-lg overflow-hidden shadow-lg border border-gray-100">
-                    <Image src={coverImage} alt={book.title} fill className="object-cover" />
-                    <div className="absolute top-4 left-4">
-                      <Badge className="bg-green-500 text-white hover:bg-green-600">eBook</Badge>
-                    </div>
-                  </div>
-                  
-                  {/* Quick Stats */}
-                  <div className="grid grid-cols-3 gap-4 mt-6">
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                        <div className="flex items-center justify-center font-bold text-gray-900">
-                            {book.averageRating || 0} ⭐
-                        </div>
-                        <p className="text-xs text-gray-600">{book.totalReviews || 0} đánh giá</p>
-                    </div>
-                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                        <div className="font-bold text-gray-900">{book.pageCount}</div>
-                        <p className="text-xs text-gray-600">Trang</p>
-                    </div>
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                        <div className="font-bold text-gray-900">{book.bookFormat?.name || 'PDF'}</div>
-                        <p className="text-xs text-gray-600">Định dạng</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Info Text */}
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 leading-tight">{book.title}</h1>
-                  <div className="space-y-2 mb-6 text-gray-700 text-sm">
-                    <p><span className="font-semibold text-gray-900">Tác giả:</span> <span className="text-blue-600">{authorName}</span></p>
-                    <p><span className="font-semibold text-gray-900">Nhà xuất bản:</span> {book.publisher?.name}</p>
-                    <p><span className="font-semibold text-gray-900">Năm xuất bản:</span> {book.publicationYear}</p>
-                    <p><span className="font-semibold text-gray-900">Ngôn ngữ:</span> {book.language}</p>
-                    <p><span className="font-semibold text-gray-900">ISBN:</span> {book.isbn}</p>
-                  </div>
-                  <div className="mb-6">
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
-                          {categoryName}
-                      </Badge>
-                  </div>
-                  
-                  {/* Features List */}
-                  <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-4 border border-blue-100">
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" /></svg>
-                        Tính năng nổi bật
-                    </h3>
-                    <ul className="space-y-1 text-sm text-gray-700">
-                        {features.map((f, i) => (
-                            <li key={i} className="flex items-start gap-2">
-                                <span className="text-green-500 mt-0.5">✓</span> {f}
-                            </li>
-                        ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tabs Section */}
-              <div className="border-b mb-6">
-                <div className="flex gap-8">
-                    <button 
-                        onClick={() => setActiveTab('description')} 
-                        className={`py-4 border-b-2 text-sm font-medium transition ${activeTab === 'description' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                    >
-                        Mô tả
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('details')} 
-                        className={`py-4 border-b-2 text-sm font-medium transition ${activeTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                    >
-                        Chi tiết
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('reviews')} 
-                        className={`py-4 border-b-2 text-sm font-medium transition ${activeTab === 'reviews' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                    >
-                        Đánh giá ({book.totalReviews || 0})
-                    </button>
-                </div>
-              </div>
-              
-              <div className="prose max-w-none text-gray-700 text-sm leading-relaxed">
-                {activeTab === 'description' && (
-                    <div dangerouslySetInnerHTML={{ __html: book.description || '<p>Chưa có mô tả.</p>' }} />
-                )}
-                {activeTab === 'details' && (
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Render chi tiết thêm nếu cần */}
-                        <div className="p-4 bg-gray-50 rounded">Thông tin chi tiết đang cập nhật...</div>
-                    </div>
-                )}
-                {activeTab === 'reviews' && (
-                    <div className="text-center py-8 text-gray-500">
-                        Chưa có đánh giá nào.
-                    </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT COLUMN: Action Card */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-4">
-              <Card className="shadow-lg border-t-4 border-t-blue-600">
-                <CardContent className="p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4">Chọn gói thuê</h2>
-                  
-                  {rentalPlans.length === 0 ? (
-                      <div className="text-red-500 bg-red-50 p-4 rounded text-center text-sm">
-                          Sách này hiện chưa hỗ trợ thuê hoặc chưa có giá bán.
-                      </div>
-                  ) : (
-                      <div className="space-y-3 mb-6">
-                        {rentalPlans.map((plan) => (
-                          <div 
-                            key={plan.id}
-                            onClick={() => setSelectedPlanId(plan.id)}
-                            className={`relative w-full p-4 border rounded-lg cursor-pointer transition-all group ${
-                              selectedPlanId === plan.id 
-                                ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600' 
-                                : 'border-gray-200 hover:border-blue-400 hover:shadow-sm'
-                            }`}
-                          >
-                            {plan.isPopular && (
-                              <div className="absolute -top-2.5 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">
-                                Phổ biến
-                              </div>
-                            )}
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <div className="font-bold text-gray-900">{plan.durationLabel}</div>
-                                {plan.savingsPercentage > 0 && (
-                                  <div className="text-xs text-green-600 font-medium mt-0.5">Tiết kiệm {plan.savingsPercentage}%</div>
-                                )}
-                              </div>
-                              <div className="font-bold text-lg text-blue-600 group-hover:scale-105 transition-transform">
-                                {plan.price.toLocaleString('vi-VN')}₫
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                  )}
-
-                  <div className="space-y-4">
-                    <Button 
-                        onClick={handleRentNow}
-                        disabled={rentalPlans.length === 0 || processing}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 text-lg shadow-md transition-all hover:-translate-y-0.5"
-                    >
-                        {processing ? (
-                            <span className="flex items-center gap-2">
-                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                                Đang xử lý...
-                            </span>
-                        ) : (
-                            `Thuê ngay - ${currentPlan ? currentPlan.price.toLocaleString('vi-VN') : 0}₫`
-                        )}
-                    </Button>
-
-                    <div className="relative py-2">
-                        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div>
-                        <div className="relative flex justify-center"><span className="px-3 bg-white text-gray-400 text-xs uppercase">Hoặc</span></div>
-                    </div>
-
-                    <Button 
-                        onClick={handleBuyNow} 
-                        variant="outline" 
-                        disabled={!book.currentPrice}
-                        className="w-full border-2 border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white font-semibold py-5 h-auto transition-colors"
-                    >
-                        Mua sở hữu - {book.currentPrice?.toLocaleString('vi-VN') || 0}₫
-                    </Button>
-                    
-                    <p className="text-xs text-center text-gray-500 mt-2">
-                        Thanh toán an toàn qua QR Code / Ngân hàng
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
+          <p className="text-gray-600 text-lg">
+            {(category as any).description || `Khám phá những cuốn sách hay nhất thuộc chủ đề ${category.name}`}
+          </p>
+          <p className="text-gray-500 text-sm mt-1">
+             Tìm thấy <span className="font-bold text-gray-800">{totalItems}</span> đầu sách
+          </p>
         </div>
+
+        {/* Subcategory Filters */}
+        {subCategories.length > 0 && (
+          <div className="mb-8 flex flex-wrap gap-3">
+            <Button
+              onClick={() => handleSubCategoryChange("all")}
+              variant={selectedSubCategory === "all" ? "primary" : "outline"}
+              size="sm"
+            >
+              Tất cả
+            </Button>
+            {subCategories.map((sub) => (
+              <Button
+                key={sub.id}
+                onClick={() => handleSubCategoryChange(sub.id)}
+                variant={selectedSubCategory === sub.id ? "primary" : "outline"}
+                size="sm"
+              >
+                {sub.name}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* Loading Books */}
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex flex-col rounded-xl bg-white p-3 shadow-sm animate-pulse">
+                <div className="w-full aspect-[3/4] bg-gray-200 rounded-lg mb-3" />
+                <div className="h-4 bg-gray-200 rounded mb-2" />
+                <div className="h-3 bg-gray-200 rounded w-2/3 mb-2" />
+                <div className="h-4 bg-gray-200 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : books.length === 0 ? (
+          /* Empty State */
+          <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Chưa có sách nào</h3>
+            <p className="text-gray-600 mb-4">Chúng tôi đang cập nhật thêm sách cho danh mục này.</p>
+            <Link href="/categories" className="inline-block text-blue-600 hover:underline font-medium">
+              Xem các danh mục khác →
+            </Link>
+          </div>
+        ) : (
+          /* Books Grid - Giao diện giống Life Skills */
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {books.map((book) => (
+              <Link
+                key={book.id}
+                href={`/books/${book.id}`}
+                className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg hover:-translate-y-1 group border border-transparent hover:border-blue-100"
+              >
+                {/* Book Cover */}
+                <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3 shadow-inner">
+                  <Image
+                    src={book.cover}
+                    alt={book.title}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/image/anh.png'; }}
+                  />
+
+                  {/* Badges Container */}
+                  <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                    {/* Bestseller Badge */}
+                    {book.isBestseller && (
+                      <Badge className="text-[10px] bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-md px-2 py-0.5">
+                        HOT
+                      </Badge>
+                    )}
+                    
+                    {/* Stock Badge */}
+                    {!book.isAvailable || book.stockQuantity === 0 ? (
+                      <Badge variant="danger" className="text-[10px] font-bold px-2 py-0.5">
+                        HẾT HÀNG
+                      </Badge>
+                    ) : book.stockQuantity > 0 && book.stockQuantity < 10 ? (
+                      <Badge variant="warning" className="text-[10px] font-bold px-2 py-0.5">
+                        Còn {book.stockQuantity}
+                      </Badge>
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* Book Info */}
+                <h3 className="font-bold text-sm text-gray-800 line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors min-h-[40px]" title={book.title}>
+                  {book.title}
+                </h3>
+                <p className="text-xs text-gray-500 mb-2 line-clamp-1">{book.author}</p>
+
+                {/* Rating */}
+                <div className="flex items-center gap-1 mb-2">
+                  {book.rating > 0 ? (
+                    <>
+                      <span className="text-yellow-400 text-xs">★</span>
+                      <span className="text-xs font-medium text-gray-700">{book.rating.toFixed(1)}</span>
+                      <span className="text-[10px] text-gray-400">({book.reviewCount})</span>
+                    </>
+                  ) : (
+                    <span className="text-[10px] text-gray-400 italic">Chưa có đánh giá</span>
+                  )}
+                </div>
+
+                {/* Price - Đã Fix hiển thị */}
+                <div className="mt-auto flex items-center gap-2 flex-wrap pt-2 border-t border-gray-50">
+                  <p className="text-red-600 font-bold text-sm">
+                    {formatPrice(book.price)}
+                  </p>
+                  {book.originalPrice && (
+                    <>
+                      <p className="text-[10px] text-gray-400 line-through">
+                        {formatPrice(book.originalPrice)}
+                      </p>
+                      <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1 rounded">
+                        -{calculateDiscount(book.originalPrice, book.price)}%
+                      </span>
+                    </>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && !loading && (
+          <div className="flex justify-center mt-8">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
       </div>
-    </div>
+    </main>
   );
 }

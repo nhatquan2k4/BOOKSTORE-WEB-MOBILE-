@@ -351,15 +351,25 @@ class AuthService {
   /**
    * Gửi lại email xác thực
    */
-  async resendVerificationEmail(
-    email: string
-  ): Promise<{ success: boolean; message: string }> {
+  async resendVerificationEmail(email: string) {
     try {
-      const response = await axiosInstance.post<{ success: boolean; message: string }>(
-        `${AUTH_BASE_URL}/resend-verification`,
-        { email }
-      );
+      // 1. URL phải là /api/EmailVerification/resend (Không phải /api/auth/...)
+      // 2. Body phải là object { email: ... } để khớp với class ResendVerificationRequest bên C#
+      const response = await axiosInstance.post('/api/EmailVerification/resend', {
+        email: email
+      });
+
       return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  }
+
+  async checkVerificationStatus(userId: string) {
+    try {
+      const response = await axiosInstance.get(`/api/EmailVerification/status/${userId}`);
+      return response.data; 
+      // Mong đợi trả về: { success: true, data: { isVerified: true/false } }
     } catch (error) {
       return handleApiError(error);
     }

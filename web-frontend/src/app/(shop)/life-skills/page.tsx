@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
-import { bookService } from "@/services";
+import { bookService, categoryService } from "@/services";
 import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
 
@@ -45,18 +45,38 @@ export default function LifeSkillsPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
+  const [lifeSkillsCategoryId, setLifeSkillsCategoryId] = useState<string | null>(null);
   const itemsPerPage = 20;
+
+  // Fetch Life Skills Category ID
+  useEffect(() => {
+    const fetchCategoryId = async () => {
+      try {
+        const response = await categoryService.getCategories(1, 100);
+        const lifeSkillsCategory = response.items?.find(
+          (cat) => cat.name === "Kỹ năng sống" || cat.name.includes("Kỹ năng")
+        );
+        if (lifeSkillsCategory) {
+          setLifeSkillsCategoryId(lifeSkillsCategory.id);
+        }
+      } catch (error) {
+        console.error("Error fetching life-skills category:", error);
+      }
+    };
+    fetchCategoryId();
+  }, []);
 
   // Fetch books from API
   useEffect(() => {
+    if (!lifeSkillsCategoryId) return;
     const fetchBooks = async () => {
       try {
         setLoading(true);
-        // Fetch books with "Kỹ năng sống" category (you need to find the correct categoryId)
+        // Fetch books with "Kỹ năng sống" category
         const response = await bookService.getBooks({
           pageNumber: currentPage,
           pageSize: itemsPerPage,
-          // categoryId: "life-skills-category-id", // Replace with actual category ID
+          categoryId: lifeSkillsCategoryId,
         });
         
         if (response.items && response.items.length > 0) {
@@ -96,7 +116,7 @@ export default function LifeSkillsPage() {
     };
 
     fetchBooks();
-  }, [currentPage]);
+  }, [currentPage, lifeSkillsCategoryId]);
 
   // Filter books
   const filteredBooks =

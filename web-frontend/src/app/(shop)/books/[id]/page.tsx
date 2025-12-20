@@ -781,6 +781,20 @@ export default function BookDetailPage() {
 
             <p className="text-sm text-slate-500">Tác giả: {displayBook.author}</p>
             <p className="text-sm text-slate-500">Nhà xuất bản: {displayBook.publisher}</p>
+            
+            {/* Hiển thị số lượng tồn kho */}
+            {/* <div className="rounded-lg bg-slate-50 border border-slate-200 p-3"> */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-grey-600">Số lượng còn lại:</span>
+                <span className={`text-lg font-bold ${
+                  displayBook.stock === 0 ? 'text-red-600' : 
+                  displayBook.stock < 10 ? 'text-amber-600' : 
+                  'text-green-600'
+                }`}>
+                  {displayBook.stock === 0 ? 'Hết hàng' : `${displayBook.stock} cuốn`}
+                </span>
+              </div>
+            {/* </div> */}
 
             <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
               <p className="text-2xl font-bold text-red-600">
@@ -798,18 +812,22 @@ export default function BookDetailPage() {
                 </>
               )}
 
-              {displayBook.stock > 0 ? (
-                <Badge variant={displayBook.stock < 5 ? "warning" : "success"} size="sm">
+              {displayBook.stock === 0 ? (
+                <Badge variant="danger" size="sm">
+                  HẾT HÀNG
+                </Badge>
+              ) : displayBook.stock < 10 ? (
+                <Badge variant="warning" size="sm">
                   Còn {displayBook.stock} cuốn
                 </Badge>
               ) : (
-                <Badge variant="danger" size="sm">
-                  Hết hàng
+                <Badge variant="success" size="sm">
+                  Còn hàng
                 </Badge>
               )}
             </div>
 
-            {displayBook.stock > 0 && displayBook.stock < 5 && (
+            {displayBook.stock > 0 && displayBook.stock < 10 && (
               <Alert variant="warning">
                 <div className="flex items-center gap-2">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -935,10 +953,12 @@ export default function BookDetailPage() {
                   </li>
                   <li className="flex justify-between">
                     <strong className="text-gray-600">Tình trạng:</strong>
-                    {displayBook.stock > 0 ? (
-                      <Badge variant="success" size="sm">Còn hàng</Badge>
-                    ) : (
+                    {displayBook.stock === 0 ? (
                       <Badge variant="danger" size="sm">Hết hàng</Badge>
+                    ) : displayBook.stock < 10 ? (
+                      <Badge variant="warning" size="sm">Còn {displayBook.stock} cuốn</Badge>
+                    ) : (
+                      <Badge variant="success" size="sm">Còn hàng</Badge>
                     )}
                   </li>
                   <li className="flex justify-between">

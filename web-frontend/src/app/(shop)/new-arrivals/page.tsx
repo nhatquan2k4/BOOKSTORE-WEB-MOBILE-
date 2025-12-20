@@ -5,7 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
-import { useBooks, type Book } from "@/hooks";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 // ============================================================================
 // TYPES
@@ -18,39 +19,59 @@ type SortOption = "newest" | "popular" | "price-asc" | "price-desc";
 export default function NewArrivalsPage() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [currentPage, setCurrentPage] = useState(1);
+  const [books, setBooks] = useState<BookDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 20;
+  const totalItems = 100; // Tạm ước tính, backend không trả về total cho API newest
 
-  // Map sort options to API format
-  const getSortBy = () => {
+  // Fetch newest books from API
+  useEffect(() => {
+    async function fetchNewestBooks() {
+      try {
+        setLoading(true);
+        setError(null);
+        // Gọi API /api/book/newest với top = 100 để có đủ dữ liệu cho nhiều trang
+        const data = await bookService.getNewestBooks(100);
+        setBooks(data);
+      } catch (err) {
+        console.error('Error fetching newest books:', err);
+        setError(err instanceof Error ? err.message : 'Không thể tải dữ liệu');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchNewestBooks();
+  }, []);
+
+  // Client-side pagination and sorting
+  const sortedBooks = [...books].sort((a, b) => {
     switch (sortBy) {
       case "newest":
-        return "createdAt_desc"; // Sort by creation date descending
+        // API đã sort theo newest rồi
+        return 0;
       case "popular":
-        return "popular";
+        return (b.totalReviews || 0) - (a.totalReviews || 0);
       case "price-asc":
-        return "price_asc";
+        return (a.currentPrice || 0) - (b.currentPrice || 0);
       case "price-desc":
-        return "price_desc";
+        return (b.currentPrice || 0) - (a.currentPrice || 0);
       default:
-        return undefined;
+        return 0;
     }
-  };
-
-  // Fetch books from API
-  const { books, totalPages, loading, error } = useBooks({
-    page: currentPage,
-    pageSize: itemsPerPage,
-    sortBy: getSortBy(),
   });
+
+  // Paginate
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedBooks = sortedBooks.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(sortedBooks.length / itemsPerPage);
 
   // reset page when sort changes
   useEffect(() => {
     setCurrentPage(1);
   }, [sortBy]);
-
-  // Calculate pagination info
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, startIndex + books.length);
 
   // Format price
   const formatPrice = (price: number) => {
@@ -131,8 +152,8 @@ export default function NewArrivalsPage() {
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="text-sm text-gray-600">
                 Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
-                <span className="font-semibold">{endIndex}</span> trong tổng số{" "}
-                <span className="font-semibold">{totalPages * itemsPerPage}</span> sách
+                <span className="font-semibold">{Math.min(endIndex, sortedBooks.length)}</span> trong tổng số{" "}
+                <span className="font-semibold">{sortedBooks.length}</span> sách
               </div>
 
               <div className="flex items-center gap-2">
@@ -152,9 +173,11 @@ export default function NewArrivalsPage() {
 
             {/* Books Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-              {books.map((book: Book) => {
-                const currentPrice = book.salePrice || book.price;
-                const imageUrl = book.imageUrl || book.cover || "/placeholder-book.png";
+              {paginatedBooks.map((book) => {
+                const currentPrice = book.currentPrice || book.discountPrice || 0;
+                const originalPrice = book.currentPrice && book.discountPrice ? book.currentPrice : 0;
+                const discount = calculateDiscount(originalPrice, currentPrice);
+                const imageUrl = book.coverImage || "/image/anh.png";
                 
                 return (
                 <Link
@@ -173,16 +196,16 @@ export default function NewArrivalsPage() {
                     />
 
                     {/* Discount Badge */}
-                    {book.originalPrice && book.originalPrice > currentPrice && (
+                    {discount > 0 && (
                       <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold shadow-lg">
-                        -{calculateDiscount(book.originalPrice, currentPrice)}%
+                        -{discount}%
                       </Badge>
                     )}
 
                     {/* Low stock warning */}
-                    {book.stock !== undefined && book.stock < 10 && book.stock > 0 && (
+                    {book.stockQuantity !== undefined && book.stockQuantity < 10 && book.stockQuantity > 0 && (
                       <Badge className="absolute top-2 left-2 text-xs bg-orange-500 text-white">
-                        Còn {book.stock}
+                        Còn {book.stockQuantity}
                       </Badge>
                     )}
                   </div>
@@ -191,10 +214,12 @@ export default function NewArrivalsPage() {
                   <h3 className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
                     {book.title}
                   </h3>
-                  <p className="text-xs text-gray-600 mb-1">{book.author}</p>
+                  <p className="text-xs text-gray-600 mb-1">
+                    {book.authorNames?.join(", ") || "Đang cập nhật"}
+                  </p>
 
                   {/* Rating */}
-                  {book.rating && book.rating > 0 && book.reviewCount && book.reviewCount > 0 ? (
+                  {book.averageRating && book.averageRating > 0 && book.totalReviews && book.totalReviews > 0 ? (
                     <div className="flex items-center gap-1 mb-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -207,10 +232,10 @@ export default function NewArrivalsPage() {
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                       </svg>
                       <span className="text-xs text-gray-600">
-                        {book.rating.toFixed(1)}
+                        {book.averageRating.toFixed(1)}
                       </span>
                       <span className="text-xs text-gray-400">
-                        ({book.reviewCount})
+                        ({book.totalReviews})
                       </span>
                     </div>
                   ) : (
@@ -222,9 +247,9 @@ export default function NewArrivalsPage() {
                     <p className="text-red-600 font-bold text-sm">
                       {formatPrice(currentPrice)}
                     </p>
-                    {book.originalPrice && book.originalPrice > currentPrice && (
+                    {discount > 0 && (
                       <p className="text-xs text-gray-400 line-through">
-                        {formatPrice(book.originalPrice)}
+                        {formatPrice(originalPrice)}
                       </p>
                     )}
                   </div>

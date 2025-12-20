@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
-import { bookService } from "@/services";
+import { bookService, categoryService } from "@/services";
 import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
 
@@ -45,10 +45,30 @@ export default function EconomicsPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
+  const [economicsCategoryId, setEconomicsCategoryId] = useState<string | null>(null);
   const itemsPerPage = 20;
+
+  // Fetch Economics Category ID
+  useEffect(() => {
+    const fetchCategoryId = async () => {
+      try {
+        const response = await categoryService.getCategories(1, 100);
+        const economicsCategory = response.items?.find(
+          (cat) => cat.name === "Kinh tế" || cat.name.includes("Kinh tế")
+        );
+        if (economicsCategory) {
+          setEconomicsCategoryId(economicsCategory.id);
+        }
+      } catch (error) {
+        console.error("Error fetching economics category:", error);
+      }
+    };
+    fetchCategoryId();
+  }, []);
 
   // Fetch books from API
   useEffect(() => {
+    if (!economicsCategoryId) return;
     const fetchBooks = async () => {
       try {
         setLoading(true);
@@ -56,7 +76,7 @@ export default function EconomicsPage() {
         const response = await bookService.getBooks({
           pageNumber: currentPage,
           pageSize: itemsPerPage,
-          // categoryId: "economics-category-id", // Replace with actual category ID
+          categoryId: economicsCategoryId,
         });
         
         if (response.items && response.items.length > 0) {
@@ -96,7 +116,7 @@ export default function EconomicsPage() {
     };
 
     fetchBooks();
-  }, [currentPage]);
+  }, [currentPage, economicsCategoryId]);
 
   // Filter books
   const filteredBooks =

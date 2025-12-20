@@ -1,28 +1,22 @@
 import axiosInstance, { handleApiError } from '@/lib/axios';
+import { 
+  ApiResponse, 
+  UserProfile, 
+  UpdateUserProfileDto, 
+  UserAddress, 
+  CreateUserAddressDto 
+} from '@/types/dtos/userprofile'; // Hãy chắc chắn đường dẫn import đúng với project của bạn
 
 const BASE_URL = '/api/UserProfile';
-
-export interface UpdateUserProfileDto {
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  address?: string;
-  city?: string;
-  country?: string;
-  postalCode?: string;
-  dateOfBirth?: string;
-  gender?: 'Male' | 'Female' | 'Other';
-  bio?: string;
-  avatarUrl?: string;
-}
 
 export const userProfileService = {
   /**
    * Lấy profile của user hiện tại
+   * Route: GET /api/UserProfile/profile
    */
-  async getCurrentUserProfile(): Promise<unknown> {
+  async getMyProfile(): Promise<ApiResponse<UserProfile>> {
     try {
-      const response = await axiosInstance.get(BASE_URL);
+      const response = await axiosInstance.get(`${BASE_URL}/profile`);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -30,11 +24,12 @@ export const userProfileService = {
   },
 
   /**
-   * Cập nhật profile của user hiện tại
+   * Cập nhật profile
+   * Route: PUT /api/UserProfile/profile
    */
-  async updateCurrentUserProfile(dto: UpdateUserProfileDto): Promise<unknown> {
+  async updateMyProfile(dto: UpdateUserProfileDto): Promise<ApiResponse<UserProfile>> {
     try {
-      const response = await axiosInstance.put(BASE_URL, dto);
+      const response = await axiosInstance.put(`${BASE_URL}/profile`, dto);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -42,27 +37,19 @@ export const userProfileService = {
   },
 
   /**
-   * Lấy profile theo user ID
+   * Upload Avatar (MỚI THÊM)
+   * Route: POST /api/UserProfile/avatar
    */
-  async getUserProfile(userId: string): Promise<unknown> {
-    try {
-      const response = await axiosInstance.get(`${BASE_URL}/${userId}`);
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Cập nhật avatar
-   */
-  async updateAvatar(file: File): Promise<{ avatarUrl: string }> {
+  async uploadAvatar(file: File): Promise<{ success: boolean; avatarUrl?: string; message?: string }> {
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      // 'file' ở đây phải khớp tên tham số trong Controller (IFormFile file)
+      formData.append('file', file); 
 
       const response = await axiosInstance.post(`${BASE_URL}/avatar`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: {
+          'Content-Type': 'multipart/form-data', // Bắt buộc header này để upload file
+        },
       });
       return response.data;
     } catch (error) {
@@ -71,22 +58,12 @@ export const userProfileService = {
   },
 
   /**
-   * Xóa avatar
+   * Lấy danh sách địa chỉ
+   * Route: GET /api/UserProfile/addresses
    */
-  async deleteAvatar(): Promise<void> {
+  async getMyAddresses(): Promise<ApiResponse<UserAddress[]>> {
     try {
-      await axiosInstance.delete(`${BASE_URL}/avatar`);
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Lấy địa chỉ giao hàng của user
-   */
-  async getShippingAddresses(): Promise<unknown[]> {
-    try {
-      const response = await axiosInstance.get(`${BASE_URL}/shipping-addresses`);
+      const response = await axiosInstance.get(`${BASE_URL}/addresses`);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -94,19 +71,12 @@ export const userProfileService = {
   },
 
   /**
-   * Thêm địa chỉ giao hàng
+   * Thêm địa chỉ mới
+   * Route: POST /api/UserProfile/addresses
    */
-  async addShippingAddress(address: {
-    name: string;
-    phoneNumber: string;
-    address: string;
-    city: string;
-    country: string;
-    postalCode?: string;
-    isDefault?: boolean;
-  }): Promise<unknown> {
+  async addAddress(dto: CreateUserAddressDto): Promise<ApiResponse<UserAddress>> {
     try {
-      const response = await axiosInstance.post(`${BASE_URL}/shipping-addresses`, address);
+      const response = await axiosInstance.post(`${BASE_URL}/addresses`, dto);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -114,19 +84,12 @@ export const userProfileService = {
   },
 
   /**
-   * Cập nhật địa chỉ giao hàng
+   * Đặt địa chỉ mặc định
+   * Route: PUT /api/UserProfile/addresses/{id}/set-default
    */
-  async updateShippingAddress(addressId: string, address: Partial<{
-    name: string;
-    phoneNumber: string;
-    address: string;
-    city: string;
-    country: string;
-    postalCode: string;
-    isDefault: boolean;
-  }>): Promise<unknown> {
+  async setDefaultAddress(id: string): Promise<ApiResponse<any>> {
     try {
-      const response = await axiosInstance.put(`${BASE_URL}/shipping-addresses/${addressId}`, address);
+      const response = await axiosInstance.put(`${BASE_URL}/addresses/${id}/set-default`);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -134,13 +97,28 @@ export const userProfileService = {
   },
 
   /**
-   * Xóa địa chỉ giao hàng
+   * Xóa địa chỉ
+   * Route: DELETE /api/UserProfile/addresses/{id}
    */
-  async deleteShippingAddress(addressId: string): Promise<void> {
+  async deleteAddress(id: string): Promise<ApiResponse<any>> {
     try {
-      await axiosInstance.delete(`${BASE_URL}/shipping-addresses/${addressId}`);
+      const response = await axiosInstance.delete(`${BASE_URL}/addresses/${id}`);
+      return response.data;
     } catch (error) {
       return handleApiError(error);
     }
   },
+
+  /**
+   * Cập nhật địa chỉ
+   * Route: PUT /api/UserProfile/addresses/{id}
+   */
+  async updateAddress(id: string, dto: any): Promise<ApiResponse<any>> {
+      try {
+        const response = await axiosInstance.put(`${BASE_URL}/addresses/${id}`, dto);
+        return response.data;
+      } catch (error) {
+        return handleApiError(error);
+      }
+  }
 };

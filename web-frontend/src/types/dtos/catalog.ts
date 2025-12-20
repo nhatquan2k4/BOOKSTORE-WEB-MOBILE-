@@ -21,6 +21,15 @@ export interface BookDto {
   averageRating?: number;
   totalReviews: number;
   coverImage?: string;
+  // Compatibility with old code
+  images?: BookImageDto[];
+  authors?: AuthorDto[];
+  categories?: CategoryDto[];
+  price?: number;
+  salePrice?: number;
+  discount?: number;
+  publisher?: PublisherDto;
+  bookFormat?: BookFormatDto;
 }
 
 export interface BookDetailDto {
