@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace BookStore.API.Hubs
 {
-    [Authorize] // Chỉ user đăng nhập mới kết nối được Hub
+    [AllowAnonymous] // ✅ Cho phép kết nối không cần token (để nhận thông báo thanh toán)
     public class NotificationHub : Hub
     {
         // Khi user kết nối, hàm này chạy

@@ -45,6 +45,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using BookStore.Infrastructure.Services;
 using BookStore.API.Services;
+using BookStore.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -113,10 +114,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.AllowAnyOrigin()  // ✅ Cho phép tất cả origins (mobile app, web, etc.)
+        policy.SetIsOriginAllowed(origin => true) 
               .AllowAnyHeader()
-              .AllowAnyMethod();
-        // Note: Không dùng AllowCredentials() khi dùng AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -428,7 +429,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.UseStaticFiles();
 
-// ✅ Map SignalR Hub
-app.MapHub<BookStore.API.Hubs.NotificationHub>("/hubs/notification");
+// Map SignalR Hub
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

@@ -6,6 +6,10 @@ using BookStore.Domain.IRepository.Ordering;
 using BookStore.Domain.IRepository.Payment;
 using BookStore.Shared.Utilities;
 using Microsoft.Extensions.Logging;
+using BookStore.Application.IService.System;
+using BookStore.Application.Dtos.System.Notification;
+using IdentityEmailService = BookStore.Application.IService.Identity.Email.IEmailService;
+using BookStore.Domain.IRepository.Identity.User;
 
 namespace BookStore.Application.Services.Payment
 {
@@ -14,15 +18,24 @@ namespace BookStore.Application.Services.Payment
         private readonly IPaymentTransactionRepository _paymentRepository;
         private readonly IOrderRepository _orderRepository;
         private readonly ILogger<PaymentService> _logger;
+        private readonly INotificationService _notificationService;
+        private readonly IdentityEmailService _emailService;
+        private readonly IUserRepository _userRepository;
 
         public PaymentService(
             IPaymentTransactionRepository paymentRepository,
             IOrderRepository orderRepository,
-            ILogger<PaymentService> logger)
+            ILogger<PaymentService> logger,
+            INotificationService notificationService,
+            IdentityEmailService emailService,
+            IUserRepository userRepository)
         {
             _paymentRepository = paymentRepository;
             _orderRepository = orderRepository;
             _logger = logger;
+            _notificationService = notificationService;
+            _emailService = emailService;
+            _userRepository = userRepository;
         }
 
 
@@ -132,10 +145,89 @@ namespace BookStore.Application.Services.Payment
             await _paymentRepository.SaveChangesAsync();
 
             // If payment is successful, update order status
-            if (dto.NewStatus == "Success")
+            if (dto.NewStatus == "Success" || dto.NewStatus == "Paid" || dto.NewStatus == "Completed")
             {
                 await _orderRepository.UpdateOrderStatusAsync(payment!.OrderId, "Paid", "Payment confirmed");
                 await _orderRepository.SaveChangesAsync();
+
+                // ✅ Tạo notification cho user
+                try
+                {
+                    var order = await _orderRepository.GetByIdAsync(payment.OrderId);
+                    if (order != null)
+                    {
+                        await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+                        {
+                            UserId = order.UserId,
+                            Title = "Thanh toán thành công",
+                            Message = $"Đơn hàng #{order.OrderNumber} đã được thanh toán thành công. Số tiền: {order.FinalAmount:N0}₫",
+                            Type = "order",
+                            Link = $"/account/orders/{order.Id}"
+                        });
+
+                        _logger.LogInformation("Created payment success notification for order {OrderId}", order.Id);
+
+                        // ✅ Gửi email thông báo thanh toán thành công
+                        try
+                        {
+                            var user = await _userRepository.GetByIdAsync(order.UserId);
+                            if (user != null && !string.IsNullOrEmpty(user.Email))
+                            {
+                                var subject = $"Thanh toán thành công - Đơn hàng #{order.OrderNumber}";
+                                var body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #4CAF50; color: white; padding: 20px; text-align: center; }}
+        .content {{ padding: 20px; background-color: #f9f9f9; }}
+        .order-info {{ background-color: #fff; padding: 15px; border-left: 4px solid #4CAF50; margin: 20px 0; }}
+        .footer {{ padding: 20px; text-align: center; font-size: 12px; color: #666; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>✅ Thanh toán thành công</h1>
+        </div>
+        <div class='content'>
+                            <h2>Xin chào {user.Profiles?.FullName ?? user.Email}!</h2>
+            <p>Đơn hàng của bạn đã được thanh toán thành công.</p>
+            
+            <div class='order-info'>
+                <p><strong>Mã đơn hàng:</strong> {order.OrderNumber}</p>
+                <p><strong>Số tiền:</strong> {order.FinalAmount:N0}₫</p>
+                <p><strong>Thời gian thanh toán:</strong> {DateTime.Now:dd/MM/yyyy HH:mm}</p>
+            </div>
+            
+            <p>Đơn hàng của bạn đang được xử lý và sẽ sớm được giao đến bạn.</p>
+            <p>Bạn có thể theo dõi trạng thái đơn hàng tại trang <a href='{_emailService.GetType().Assembly.GetName().Name}/account/orders/{order.Id}'>Đơn hàng của tôi</a>.</p>
+        </div>
+        <div class='footer'>
+            <p>© 2024 BookStore. All rights reserved.</p>
+            <p>Email này được gửi tự động, vui lòng không trả lời.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+                                await _emailService.SendEmailAsync(user.Email, subject, body);
+                                _logger.LogInformation("Sent payment success email to {Email}", user.Email);
+                            }
+                        }
+                        catch (Exception emailEx)
+                        {
+                            _logger.LogError(emailEx, "Failed to send payment success email");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to create payment success notification");
+                }
             }
 
             var updatedPayment = await _paymentRepository.GetPaymentWithOrderAsync(dto.PaymentId);

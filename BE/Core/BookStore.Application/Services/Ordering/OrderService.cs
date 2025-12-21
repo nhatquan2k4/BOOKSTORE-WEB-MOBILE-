@@ -9,7 +9,10 @@ using BookStore.Domain.IRepository.Ordering;
 using BookStore.Shared.Utilities;
 using BookStore.Shared.Exceptions;
 using Microsoft.Extensions.Logging;
-using BookStore.Application.IService.System; // ✅ Sử dụng Interface thay vì Hub trực tiếp
+using BookStore.Application.IService.System;
+using BookStore.Application.Dtos.System.Notification;
+using IdentityEmailService = BookStore.Application.IService.Identity.Email.IEmailService;
+using BookStore.Domain.IRepository.Identity.User;
 
 namespace BookStore.Application.Services.Ordering
 {
@@ -21,8 +24,9 @@ namespace BookStore.Application.Services.Ordering
         private readonly ICartRepository _cartRepository;
         private readonly IBookRepository _bookRepository;
         private readonly ILogger<OrderService> _logger;
-        
-        // ✅ Thay IHubContext bằng Interface để tránh lỗi Circular Dependency
+        private readonly INotificationService _notificationService;
+        private readonly IdentityEmailService _emailService;
+        private readonly IUserRepository _userRepository;
         private readonly ISignalRService _signalRService;
 
         public OrderService(
@@ -32,7 +36,10 @@ namespace BookStore.Application.Services.Ordering
             ICartRepository cartRepository,
             IBookRepository bookRepository,
             ILogger<OrderService> logger,
-            ISignalRService signalRService) // ✅ Inject Interface
+            INotificationService notificationService,
+            IdentityEmailService emailService,
+            IUserRepository userRepository,
+            ISignalRService signalRService)
         {
             _orderRepository = orderRepository;
             _orderItemRepository = orderItemRepository;
@@ -40,6 +47,9 @@ namespace BookStore.Application.Services.Ordering
             _cartRepository = cartRepository;
             _bookRepository = bookRepository;
             _logger = logger;
+            _notificationService = notificationService;
+            _emailService = emailService;
+            _userRepository = userRepository;
             _signalRService = signalRService;
         }
 
@@ -54,7 +64,7 @@ namespace BookStore.Application.Services.Ordering
             if (!string.IsNullOrEmpty(status))
             {
                 orders = await _orderRepository.GetOrdersByStatusAsync(status, skip, pageSize);
-                totalCount = orders.Count(); 
+                totalCount = orders.Count();
             }
             else
             {
@@ -110,7 +120,7 @@ namespace BookStore.Application.Services.Ordering
             };
 
             decimal totalAmount = dto.Items!.Sum(item => item.UnitPrice * item.Quantity);
-            decimal discountAmount = 0; 
+            decimal discountAmount = 0;
 
             var order = new Order
             {
@@ -146,6 +156,116 @@ namespace BookStore.Application.Services.Ordering
 
             _logger.LogInformation($"Order created: {order.OrderNumber} for user {dto.UserId}");
 
+            // ✅ Tạo notification khi đặt hàng thành công
+            try
+            {
+                await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+                {
+                    UserId = dto.UserId,
+                    Title = "Đơn hàng đã được tạo",
+                    Message = $"Đơn hàng #{order.OrderNumber} của bạn đã được tạo thành công với tổng giá trị {totalAmount:N0}₫",
+                    Type = "order",
+                    Link = $"/account/orders/{order.Id}"
+                });
+
+                _logger.LogInformation("Created order notification for user {UserId}", dto.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create notification for order {OrderNumber}", order.OrderNumber);
+            }
+
+            // ✅ Gửi email xác nhận đơn hàng
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(dto.UserId);
+                if (user != null && !string.IsNullOrEmpty(user.Email))
+                {
+                    var itemsHtml = string.Join("", order.Items.Select(item => 
+                        $"<tr><td>{item.Book?.Title ?? "Sản phẩm"}</td><td style='text-align: center;'>{item.Quantity}</td><td style='text-align: right;'>{item.UnitPrice:N0}₫</td><td style='text-align: right;'>{(item.Quantity * item.UnitPrice):N0}₫</td></tr>"
+                    ));
+
+                    var subject = $"Xác nhận đơn hàng #{order.OrderNumber} - BookStore";
+                    var body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #2196F3; color: white; padding: 20px; text-align: center; }}
+        .content {{ padding: 20px; background-color: #f9f9f9; }}
+        .order-info {{ background-color: #fff; padding: 15px; border-left: 4px solid #2196F3; margin: 20px 0; }}
+        table {{ width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #fff; }}
+        th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
+        th {{ background-color: #2196F3; color: white; }}
+        .total {{ font-size: 18px; font-weight: bold; color: #2196F3; text-align: right; padding: 15px; background-color: #fff; }}
+        .footer {{ padding: 20px; text-align: center; font-size: 12px; color: #666; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>📦 Đơn hàng của bạn đã được tạo</h1>
+        </div>
+        <div class='content'>
+            <h2>Xin chào {user.Profiles?.FullName ?? user.Email}!</h2>
+            <p>Cảm ơn bạn đã đặt hàng tại BookStore. Đơn hàng của bạn đã được tiếp nhận và đang chờ xử lý.</p>
+            
+            <div class='order-info'>
+                <p><strong>Mã đơn hàng:</strong> {order.OrderNumber}</p>
+                <p><strong>Ngày đặt:</strong> {order.CreatedAt:dd/MM/yyyy HH:mm}</p>
+                <p><strong>Trạng thái:</strong> Chờ thanh toán</p>
+            </div>
+
+            <h3>Chi tiết đơn hàng:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th style='text-align: center;'>Số lượng</th>
+                        <th style='text-align: right;'>Đơn giá</th>
+                        <th style='text-align: right;'>Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {itemsHtml}
+                </tbody>
+            </table>
+
+            <div class='total'>
+                Tổng cộng: {totalAmount:N0}₫
+            </div>
+
+            <div class='order-info'>
+                <h4>Địa chỉ giao hàng:</h4>
+                <p><strong>Người nhận:</strong> {orderAddress.RecipientName}</p>
+                <p><strong>Số điện thoại:</strong> {orderAddress.PhoneNumber}</p>
+                <p><strong>Địa chỉ:</strong> {orderAddress.Street}, {orderAddress.Ward}, {orderAddress.District}, {orderAddress.Province}</p>
+                {(!string.IsNullOrEmpty(orderAddress.Note) ? $"<p><strong>Ghi chú:</strong> {orderAddress.Note}</p>" : "")}
+            </div>
+
+            <p>Vui lòng thanh toán để chúng tôi bắt đầu xử lý đơn hàng của bạn.</p>
+            <p>Bạn có thể theo dõi trạng thái đơn hàng tại <a href='https://bookstore.com/account/orders/{order.Id}'>Đơn hàng của tôi</a>.</p>
+        </div>
+        <div class='footer'>
+            <p>© 2024 BookStore. All rights reserved.</p>
+            <p>Nếu có bất kỳ thắc mắc, vui lòng liên hệ: support@bookstore.com</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+                    await _emailService.SendEmailAsync(user.Email, subject, body);
+                    _logger.LogInformation("Sent order confirmation email to {Email}", user.Email);
+                }
+            }
+            catch (Exception emailEx)
+            {
+                _logger.LogError(emailEx, "Failed to send order confirmation email");
+            }
+
             return order.ToDto();
         }
 
@@ -158,7 +278,7 @@ namespace BookStore.Application.Services.Ordering
             {
                 BookId = cartItem.BookId,
                 Quantity = cartItem.Quantity,
-                UnitPrice = cartItem.UnitPrice 
+                UnitPrice = cartItem.UnitPrice
             }).ToList();
 
             var createOrderDto = new CreateOrderDto
@@ -189,14 +309,21 @@ namespace BookStore.Application.Services.Ordering
 
             decimal rentalPrice = 0;
             if (days == 3) rentalPrice = 10000;
-            else 
+            else
             {
-                decimal percent = days switch { 
-                    7 => 0.05m, 15 => 0.08m, 30 => 0.12m, 60 => 0.20m, 
-                    90 => 0.25m, 180 => 0.35m, 365 => 0.50m, _ => 0 
+                decimal percent = days switch
+                {
+                    7 => 0.05m,
+                    15 => 0.08m,
+                    30 => 0.12m,
+                    60 => 0.20m,
+                    90 => 0.25m,
+                    180 => 0.35m,
+                    365 => 0.50m,
+                    _ => 0
                 };
                 if (percent == 0) throw new UserFriendlyException("Gói thuê không hợp lệ");
-                
+
                 rentalPrice = Math.Round((bookPrice * percent) / 1000) * 1000;
             }
 
@@ -221,7 +348,7 @@ namespace BookStore.Application.Services.Ordering
                 TotalAmount = rentalPrice,
                 DiscountAmount = 0,
                 CreatedAt = DateTime.UtcNow,
-                AddressId = dummyAddress.Id, 
+                AddressId = dummyAddress.Id,
                 Address = dummyAddress
             };
 
@@ -259,8 +386,8 @@ namespace BookStore.Application.Services.Ordering
             Guard.Against(order == null, "Đơn hàng không tồn tại");
 
             Guard.Against(order!.Status != "Pending",
-                "Chỉ có thể hủy đơn hàng đang ở trạng thái Pending"); 
-            
+                "Chỉ có thể hủy đơn hàng đang ở trạng thái Pending");
+
             await _orderRepository.UpdateOrderStatusAsync(dto.OrderId, "Cancelled", dto.Reason);
             await _orderRepository.SaveChangesAsync();
 
@@ -286,7 +413,7 @@ namespace BookStore.Application.Services.Ordering
             {
                 order = await _orderRepository.GetByIdAsync(orderGuid);
             }
-            
+
             if (order == null)
             {
                 order = await _orderRepository.GetByOrderNumberAsync(orderId);
@@ -311,10 +438,10 @@ namespace BookStore.Application.Services.Ordering
                 // 1. Cập nhật trạng thái
                 order.Status = "Paid";
                 order.PaidAt = DateTime.UtcNow;
-                
+
                 // 2. Lưu lại
                 await _orderRepository.SaveChangesAsync();
-                
+
                 // 3. Ghi log lịch sử
                 await _orderRepository.UpdateOrderStatusAsync(order.Id, "Paid", $"SePay confirmed payment: {amountPaid:N0}");
                 await _orderRepository.SaveChangesAsync();
@@ -322,12 +449,14 @@ namespace BookStore.Application.Services.Ordering
                 _logger.LogInformation($"[SePay] Order {order.OrderNumber} updated to Paid.");
 
                 // 4. BẮN TÍN HIỆU REAL-TIME CHO FRONTEND QUA INTERFACE
-                try 
+                try
                 {
+                    // SỬA LẠI: Dùng order.Id.ToString() để khớp với GUID trên URL của bạn
                     await _signalRService.SendPaymentStatusAsync(order.Id.ToString(), "Paid");
-                    _logger.LogInformation($"[SignalR] Sent ReceivePaymentStatus for {order.OrderNumber}");
+
+                    _logger.LogInformation($"[SignalR] Sent ReceivePaymentStatus for ID: {order.Id}");
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     _logger.LogError($"[SignalR] Error sending notification: {ex.Message}");
                 }
@@ -344,8 +473,8 @@ namespace BookStore.Application.Services.Ordering
             Guard.Against(order == null, "Đơn hàng không tồn tại");
 
             Guard.Against(order!.Status != "Paid",
-                "Chỉ có thể ship đơn hàng đã thanh toán"); 
-            
+                "Chỉ có thể ship đơn hàng đã thanh toán");
+
             await _orderRepository.UpdateOrderStatusAsync(orderId, "Shipped", note ?? "Order shipped");
             await _orderRepository.SaveChangesAsync();
 
@@ -359,8 +488,8 @@ namespace BookStore.Application.Services.Ordering
             Guard.Against(order == null, "Đơn hàng không tồn tại");
 
             Guard.Against(order!.Status != "Shipped",
-                "Chỉ có thể hoàn thành đơn hàng đã được ship"); 
-            
+                "Chỉ có thể hoàn thành đơn hàng đã được ship");
+
             order.Status = "Completed";
             order.CompletedAt = DateTime.UtcNow;
             await _orderRepository.SaveChangesAsync();
