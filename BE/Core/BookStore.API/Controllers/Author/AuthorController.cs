@@ -15,15 +15,30 @@ namespace BookStore.API.Controllers.Author
         }
 
         /// <summary>
-        /// Lấy danh sách tất cả tác giả
+        /// Lấy danh sách tất cả tác giả với phân trang
         /// </summary>
-        /// <returns>Danh sách AuthorDto</returns>
+        /// <returns>Danh sách AuthorDto có phân trang</returns>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<AuthorDto>>> GetAll()
+        public async Task<ActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
         {
-            var authors = await _authorService.GetAllAsync();
-            return Ok(authors);
+            var allAuthors = string.IsNullOrWhiteSpace(searchTerm) 
+                ? await _authorService.GetAllAsync()
+                : await _authorService.SearchByNameAsync(searchTerm);
+            
+            var totalCount = allAuthors.Count();
+            var items = allAuthors
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+            
+            return Ok(new
+            {
+                items,
+                totalCount,
+                pageNumber,
+                pageSize
+            });
         }
 
         /// <summary>

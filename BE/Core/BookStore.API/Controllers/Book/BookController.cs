@@ -1,6 +1,7 @@
 using BookStore.Application.Dtos.Catalog.Book;
 using BookStore.Application.IService.Catalog;
 using BookStore.Shared.Utilities;
+using BookStore.Shared.Exceptions;
 using BookStore.API.Base;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -236,13 +237,54 @@ namespace BookStore.API.Controllers.Book
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var result = await _bookService.DeleteAsync(id);
-            if (!result)
-                return NotFound(new { message = $"Kh�ng t�m th?y s�ch v?i ID: {id}" });
+            try
+            {
+                var result = await _bookService.DeleteAsync(id);
+                if (!result)
+                    return NotFound(new { message = $"Không tìm thấy sách với ID: {id}" });
 
-            return NoContent();
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi xóa sách", details = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Cập nhật giá bán cho sách
+        /// </summary>
+        /// <param name="id">ID của sách</param>
+        /// <param name="dto">Thông tin giá mới</param>
+        /// <returns>Kết quả cập nhật</returns>
+        [HttpPatch("{id:guid}/price")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdatePrice(Guid id, [FromBody] UpdateBookPriceDto dto)
+        {
+            try
+            {
+                var result = await _bookService.UpdatePriceAsync(id, dto);
+                return Ok(new { message = "Cập nhật giá thành công", success = result });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi cập nhật giá", details = ex.Message });
+            }
         }
 
         /// <summary>

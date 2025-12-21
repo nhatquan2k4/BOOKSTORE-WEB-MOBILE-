@@ -50,6 +50,7 @@ export interface Publisher {
     address?: string;
     email?: string;
     phoneNumber?: string;
+    website?: string;
     bookCount: number;
 }
 
@@ -81,6 +82,8 @@ export interface BookDetail {
     edition?: string;
     pageCount: number;
     isAvailable: boolean;
+    currentPrice?: number;
+    stockQuantity?: number;
     publisher: Publisher;
     bookFormat?: BookFormat;
     authors: Author[];
@@ -106,9 +109,19 @@ export interface Order {
     customerName: string;
     items: OrderItem[];
     totalAmount: number;
-    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled';
     orderDate: string;
     deliveryAddress: string;
+    orderNumber?: string;
+    createdAt?: string;
+    phoneNumber?: string;
+    email?: string;
+    shippingAddress?: string;
+    subtotal?: number;
+    shippingFee?: number;
+    discount?: number;
+    paymentMethod?: string;
+    notes?: string;
 }
 
 export interface OrderItem {
@@ -116,4 +129,20 @@ export interface OrderItem {
     bookTitle: string;
     quantity: number;
     price: number;
+    isbn?: string;
+}
+
+export interface CreateBookDto {
+    title: string;
+    isbn: string;
+    description?: string;
+    publicationYear: number;
+    language: string;
+    edition?: string;
+    pageCount: number;
+    isAvailable: boolean;
+    publisherId: string;
+    bookFormatId?: string;
+    authorIds: string[];
+    categoryIds: string[];
 }

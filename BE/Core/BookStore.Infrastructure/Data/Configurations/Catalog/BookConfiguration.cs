@@ -72,6 +72,30 @@ namespace BookStore.Infrastructure.Data.Configurations.Catalog
                 .WithOne(m => m.Book)
                 .HasForeignKey(m => m.BookId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            //  1-n với Price (Pricing module)
+            builder.HasMany(b => b.Prices)
+                .WithOne(p => p.Book)
+                .HasForeignKey(p => p.BookId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            //  1-1 với StockItem
+            builder.HasOne(b => b.StockItem)
+                .WithOne(s => s.Book)
+                .HasForeignKey<BookStore.Domain.Entities.Pricing_Inventory.StockItem>(s => s.BookId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            //  1-n với Review
+            builder.HasMany(b => b.Reviews)
+                .WithOne(r => r.Book)
+                .HasForeignKey(r => r.BookId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            //  1-n với BookRental
+            builder.HasMany(b => b.Rentals)
+                .WithOne(r => r.Book)
+                .HasForeignKey(r => r.BookId)
+                .OnDelete(DeleteBehavior.Restrict); // Không xóa sách nếu đang cho thuê
         }
     }
 }
