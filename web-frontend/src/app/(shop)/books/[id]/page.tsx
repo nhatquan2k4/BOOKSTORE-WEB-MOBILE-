@@ -685,10 +685,20 @@ export default function BookDetailPage() {
   }
 
   function handleBuyNow() {
+    if (!isLoggedIn) {
+      setCartMessage({ type: 'error', text: 'Vui lòng đăng nhập để mua hàng' });
+      setTimeout(() => { router.push('/auth/login?redirect=/books/' + id); }, 1500);
+      return;
+    }
     if (!book || !displayBook) return;
-    const orderId = `ORD${Date.now()}`;
-    const queryParams = new URLSearchParams({ type: "buy", bookId: String(id), bookTitle: displayBook.title, bookCover: displayBook.cover, orderId: orderId, price: String(displayBook.price), amount: String(displayBook.price), });
-    router.push(`/payment/qr?${queryParams.toString()}`);
+    
+    // Thêm sách vào giỏ hàng trước, sau đó chuyển đến checkout
+    handleAddToCart(); // Thêm vào giỏ
+    
+    // Sau khi thêm xong, chuyển đến trang checkout
+    setTimeout(() => {
+      router.push('/checkout');
+    }, 800); // Delay nhỏ để người dùng thấy thông báo đã thêm
   }
 
   function handleShareToFacebook() {

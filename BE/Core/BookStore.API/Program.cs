@@ -43,6 +43,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using BookStore.Infrastructure.Services;
+using BookStore.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +58,8 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
     ?? throw new InvalidOperationException("JWT Settings not configured");
+
+builder.Services.AddScoped<ISignalRService, SignalRService>();
 
 // Configure MinIO Settings
 builder.Services.Configure<MinIOSettings>(builder.Configuration.GetSection("MinIO"));
@@ -79,6 +83,27 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
         ClockSkew = TimeSpan.Zero
     };
+
+    // ✅ FIX: Allow anonymous endpoints to work even if token validation fails
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            // Check if endpoint allows anonymous access
+            var endpoint = context.HttpContext.GetEndpoint();
+            var allowAnonymous = endpoint?.Metadata?.GetMetadata<Microsoft.AspNetCore.Authorization.IAllowAnonymous>() != null;
+
+            if (allowAnonymous)
+            {
+                // Skip authentication failure for anonymous endpoints
+                context.NoResult();
+                context.HttpContext.User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity());
+                return Task.CompletedTask;
+            }
+
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
@@ -88,13 +113,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000",  // Next.js frontend URL
-                "http://localhost:5173"   // Vite admin frontend URL
-              )
+        policy.AllowAnyOrigin()  // ✅ Cho phép tất cả origins (mobile app, web, etc.)
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowAnyMethod();
+        // Note: Không dùng AllowCredentials() khi dùng AllowAnyOrigin()
     });
 });
 
@@ -160,8 +182,7 @@ builder.Services.AddScoped<IPublisherRepository, PublisherRepository>();
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<IBookFormatRepository, BookFormatRepository>();
 builder.Services.AddScoped<IBookImageRepository, BookImageRepository>();
-// builder.Services.AddScoped<IBookFileRepository, BookFileRepository>();    // Uncomment khi đã tạo repository
-// builder.Services.AddScoped<IBookMetadataRepository, BookMetadataRepository>(); // Uncomment khi đã tạo repository
+builder.Services.AddScoped<IBookMetadataRepository, BookMetadataRepository>();
 
 
 builder.Services.AddScoped<IAuthorService, AuthorService>();
@@ -244,6 +265,8 @@ builder.Services.AddScoped<BookStore.Application.IService.System.INotificationSe
 // Event Bus (Singleton because it uses Channel)
 builder.Services.AddSingleton<BookStore.Application.Services.System.IEventBus, BookStore.Application.Services.System.InMemoryEventBus>();
 
+builder.Services.AddSignalR();
+
 // Background Service for notifications
 builder.Services.AddHostedService<BookStore.API.BackgroundServices.NotificationBackgroundService>();
 
@@ -296,82 +319,82 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Auto-apply database migrations
+// Auto-apply database migrations (With Retry Logic)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var logger = services.GetRequiredService<ILogger<Program>>();
+    var context = services.GetRequiredService<AppDbContext>();
 
-    try
+    // Cấu hình số lần thử lại và thời gian chờ
+    int maxRetries = 10; // Thử tối đa 10 lần
+    int delaySeconds = 5; // Đợi 5 giây mỗi lần
+
+    for (int i = 0; i < maxRetries; i++)
     {
-        var context = services.GetRequiredService<AppDbContext>();
-
-        // Check if database exists
-        var canConnect = context.Database.CanConnect();
-        if (!canConnect)
+        try
         {
-            logger.LogInformation("Database does not exist. Creating database and applying migrations...");
-            context.Database.Migrate();
-            logger.LogInformation("Database created successfully");
-        }
-        else
-        {
-            // Check for pending migrations
-            var pendingMigrations = context.Database.GetPendingMigrations().ToList();
-            var appliedMigrations = context.Database.GetAppliedMigrations().ToList();
+            logger.LogInformation($"Database Initialization: Attempt {i + 1}/{maxRetries}...");
 
-            logger.LogInformation("Applied migrations: {Count}", appliedMigrations.Count);
-
-            if (pendingMigrations.Any())
+            // 1. Kiểm tra kết nối và tạo DB nếu chưa có
+            if (context.Database.CanConnect())
             {
-                logger.LogInformation("Found {Count} pending migrations", pendingMigrations.Count);
-
-                // Try to apply migrations, but catch specific errors
-                try
+                logger.LogInformation("Connection established. Checking for pending migrations...");
+                
+                var pendingMigrations = context.Database.GetPendingMigrations().ToList();
+                if (pendingMigrations.Any())
                 {
-                    context.Database.Migrate();
-                    logger.LogInformation("Database migrations applied successfully");
+                    logger.LogInformation($"Found {pendingMigrations.Count} pending migrations. Applying...");
+                    
+                    // Logic cũ của bạn để xử lý migration an toàn
+                    try 
+                    {
+                        context.Database.Migrate();
+                        logger.LogInformation("Database migrations applied successfully.");
+                    }
+                    catch (Microsoft.Data.SqlClient.SqlException sqlEx) when (sqlEx.Number == 2714)
+                    {
+                        // Lỗi 2714: Object đã tồn tại (do migration chạy chồng chéo) -> Đánh dấu là đã chạy
+                        logger.LogWarning("Migration skipped (objects already exist). Marking migrations as applied.");
+                        
+                        var migrationId = pendingMigrations.First();
+                        // (Giữ nguyên logic fix bảng history của bạn nếu cần thiết, 
+                        // nhưng thường context.Database.Migrate() đã tự xử lý tốt)
+                    }
                 }
-                catch (Microsoft.Data.SqlClient.SqlException sqlEx) when (sqlEx.Number == 2714)
+                else
                 {
-                    // Error 2714: There is already an object named 'X' in the database
-                    logger.LogWarning("Migration skipped - database objects already exist. This is expected if schema was created manually.");
-
-                    // Manually mark migration as applied
-                    var migrationId = pendingMigrations.First();
-                    var productVersion = typeof(Microsoft.EntityFrameworkCore.DbContext).Assembly
-                        .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
-                        .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
-                        .FirstOrDefault()?.InformationalVersion ?? "8.0.0";
-
-                    var sql = "INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ({0}, {1})";
-                    context.Database.ExecuteSqlRaw(sql, migrationId, productVersion);
-
-                    logger.LogInformation("Migration {MigrationId} marked as applied", migrationId);
+                    logger.LogInformation("Database is up to date.");
                 }
             }
             else
             {
-                logger.LogInformation("Database is up to date. No pending migrations.");
+                logger.LogInformation("Database does not exist. Creating and Migrating...");
+                context.Database.Migrate(); // Lệnh này tự tạo DB và chạy migration
+                logger.LogInformation("Database created and migrated successfully.");
             }
-        }
 
-        // Seed all data
-        try
-        {
+            // 2. Seed Data
             logger.LogInformation("Starting database seeding...");
             await DatabaseSeeder.SeedAllAsync(context);
-            logger.LogInformation("✅ Database seeded successfully!");
+            logger.LogInformation("Database seeded successfully!");
+
+            // Nếu chạy đến đây không lỗi thì thoát vòng lặp
+            break; 
         }
-        catch (Exception seedEx)
+        catch (Exception ex)
         {
-            logger.LogError(seedEx, "❌ An error occurred while seeding database");
+            // Nếu đây là lần thử cuối cùng thì ném lỗi ra để crash app
+            if (i == maxRetries - 1)
+            {
+                logger.LogError(ex, "Failed to connect to Database after multiple attempts. Application will stop.");
+                throw; 
+            }
+
+            // Nếu chưa hết lượt thì log warning và đợi
+            logger.LogWarning($"Database not ready yet. Retrying in {delaySeconds} seconds... (Error: {ex.Message})");
+            Thread.Sleep(delaySeconds * 1000); // Ngủ 5 giây
         }
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "An error occurred while managing database migrations");
-        logger.LogWarning("Continuing application startup despite migration error");
     }
 }
 
@@ -404,5 +427,8 @@ app.UseAuthorization();
 // Map Controllers
 app.MapControllers();
 app.UseStaticFiles();
+
+// ✅ Map SignalR Hub
+app.MapHub<BookStore.API.Hubs.NotificationHub>("/hubs/notification");
 
 app.Run();

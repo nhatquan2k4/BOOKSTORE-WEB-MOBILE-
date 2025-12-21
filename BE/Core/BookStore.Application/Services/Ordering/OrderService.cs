@@ -9,6 +9,7 @@ using BookStore.Domain.IRepository.Ordering;
 using BookStore.Shared.Utilities;
 using BookStore.Shared.Exceptions;
 using Microsoft.Extensions.Logging;
+using BookStore.Application.IService.System; // ✅ Sử dụng Interface thay vì Hub trực tiếp
 
 namespace BookStore.Application.Services.Ordering
 {
@@ -20,6 +21,9 @@ namespace BookStore.Application.Services.Ordering
         private readonly ICartRepository _cartRepository;
         private readonly IBookRepository _bookRepository;
         private readonly ILogger<OrderService> _logger;
+        
+        // ✅ Thay IHubContext bằng Interface để tránh lỗi Circular Dependency
+        private readonly ISignalRService _signalRService;
 
         public OrderService(
             IOrderRepository orderRepository,
@@ -27,7 +31,8 @@ namespace BookStore.Application.Services.Ordering
             IOrderStatusLogRepository statusLogRepository,
             ICartRepository cartRepository,
             IBookRepository bookRepository,
-            ILogger<OrderService> logger)
+            ILogger<OrderService> logger,
+            ISignalRService signalRService) // ✅ Inject Interface
         {
             _orderRepository = orderRepository;
             _orderItemRepository = orderItemRepository;
@@ -35,6 +40,7 @@ namespace BookStore.Application.Services.Ordering
             _cartRepository = cartRepository;
             _bookRepository = bookRepository;
             _logger = logger;
+            _signalRService = signalRService;
         }
 
         #region Get Orders
@@ -42,7 +48,6 @@ namespace BookStore.Application.Services.Ordering
         public async Task<(List<OrderDto> Items, int TotalCount)> GetAllOrdersAsync(int pageNumber = 1, int pageSize = 10, string? status = null)
         {
             var skip = (pageNumber - 1) * pageSize;
-
             IEnumerable<Order> orders;
             int totalCount;
 
@@ -90,10 +95,8 @@ namespace BookStore.Application.Services.Ordering
 
         public async Task<OrderDto> CreateOrderAsync(CreateOrderDto dto)
         {
-            // Validate items
             Guard.Against(dto.Items == null || !dto.Items.Any(), "Đơn hàng phải có ít nhất 1 sản phẩm");
 
-            // Create OrderAddress
             var orderAddress = new OrderAddress
             {
                 Id = Guid.NewGuid(),
@@ -106,11 +109,9 @@ namespace BookStore.Application.Services.Ordering
                 Note = dto.Address.Note
             };
 
-            // Calculate total
             decimal totalAmount = dto.Items!.Sum(item => item.UnitPrice * item.Quantity);
             decimal discountAmount = 0; 
 
-            // Create Order
             var order = new Order
             {
                 Id = Guid.NewGuid(),
@@ -125,7 +126,6 @@ namespace BookStore.Application.Services.Ordering
                 CouponId = dto.CouponId
             };
 
-            // Add OrderItems
             foreach (var itemDto in dto.Items!)
             {
                 var book = await _bookRepository.GetByIdAsync(itemDto.BookId);
@@ -141,7 +141,6 @@ namespace BookStore.Application.Services.Ordering
                 });
             }
 
-            // Save to database
             await _orderRepository.AddAsync(order);
             await _orderRepository.SaveChangesAsync();
 
@@ -152,11 +151,9 @@ namespace BookStore.Application.Services.Ordering
 
         public async Task<OrderDto> CreateOrderFromCartAsync(Guid userId, CreateOrderAddressDto address, Guid? couponId = null)
         {
-            // Get active cart
             var cart = await _cartRepository.GetActiveCartByUserIdAsync(userId);
             Guard.Against(cart == null || !cart.Items.Any(), "Giỏ hàng trống");
 
-            // Convert CartItems to OrderItems
             var orderItems = cart!.Items.Select(cartItem => new CreateOrderItemDto
             {
                 BookId = cartItem.BookId,
@@ -164,7 +161,6 @@ namespace BookStore.Application.Services.Ordering
                 UnitPrice = cartItem.UnitPrice 
             }).ToList();
 
-            // Create order
             var createOrderDto = new CreateOrderDto
             {
                 UserId = userId,
@@ -175,17 +171,14 @@ namespace BookStore.Application.Services.Ordering
 
             var order = await CreateOrderAsync(createOrderDto);
 
-            // Deactivate cart after successful order
             await _cartRepository.DeactivateCartAsync(cart.Id);
             await _cartRepository.SaveChangesAsync();
 
             return order;
         }
 
-        // --- NEW: Logic tạo đơn thuê sách (ĐÃ FIX LỖI BUILD) ---
         public async Task<OrderDto> CreateRentalOrderAsync(Guid userId, Guid bookId, int days)
         {
-            // 1. Lấy thông tin sách
             var book = await _bookRepository.GetDetailByIdAsync(bookId);
             Guard.Against(book == null, "Sách không tồn tại");
 
@@ -194,7 +187,6 @@ namespace BookStore.Application.Services.Ordering
                                         .FirstOrDefault()?.Amount ?? 0;
             Guard.Against(bookPrice <= 0, "Sách chưa có giá bán, không thể thuê");
 
-            // 2. Tính giá thuê
             decimal rentalPrice = 0;
             if (days == 3) rentalPrice = 10000;
             else 
@@ -208,8 +200,6 @@ namespace BookStore.Application.Services.Ordering
                 rentalPrice = Math.Round((bookPrice * percent) / 1000) * 1000;
             }
 
-            // 3. Tạo địa chỉ ảo (FIX LỖI AddressId non-nullable)
-            // Vì thuê sách điện tử không cần địa chỉ thật, nhưng DB bắt buộc phải có
             var dummyAddress = new OrderAddress
             {
                 Id = Guid.NewGuid(),
@@ -222,7 +212,6 @@ namespace BookStore.Application.Services.Ordering
                 Note = $"Rental: {days} days"
             };
 
-            // 4. Tạo đơn hàng
             var order = new Order
             {
                 Id = Guid.NewGuid(),
@@ -231,12 +220,7 @@ namespace BookStore.Application.Services.Ordering
                 Status = "Pending",
                 TotalAmount = rentalPrice,
                 DiscountAmount = 0,
-                // FinalAmount: KHÔNG GÁN (FIX LỖI read-only property)
-                // Nó sẽ tự động tính = TotalAmount - DiscountAmount
-                
                 CreatedAt = DateTime.UtcNow,
-                
-                // Gán địa chỉ ảo vừa tạo
                 AddressId = dummyAddress.Id, 
                 Address = dummyAddress
             };
@@ -286,11 +270,72 @@ namespace BookStore.Application.Services.Ordering
 
         public async Task<OrderDto> ConfirmOrderPaymentAsync(Guid orderId)
         {
-            await _orderRepository.UpdateOrderStatusAsync(orderId, "Paid", "Payment confirmed");
-            await _orderRepository.SaveChangesAsync();
-
+            await ConfirmPaymentAsync(orderId.ToString(), 0);
             var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
             return order!.ToDto();
+        }
+
+        // --- CẬP NHẬT: XỬ LÝ THANH TOÁN SEPAY & BẮN SIGNALR ---
+        public async Task ConfirmPaymentAsync(string orderId, decimal amountPaid)
+        {
+            _logger.LogInformation($"[SePay] Received payment confirm for {orderId}, amount: {amountPaid}");
+
+            Order? order = null;
+
+            if (Guid.TryParse(orderId, out var orderGuid))
+            {
+                order = await _orderRepository.GetByIdAsync(orderGuid);
+            }
+            
+            if (order == null)
+            {
+                order = await _orderRepository.GetByOrderNumberAsync(orderId);
+            }
+
+            if (order == null)
+            {
+                _logger.LogWarning($"[SePay] Order not found: {orderId}");
+                return;
+            }
+
+            if (order.Status == "Paid" || order.Status == "Completed" || order.Status == "Cancelled")
+            {
+                _logger.LogInformation($"[SePay] Order {order.OrderNumber} is already {order.Status}. Skipping.");
+                // Vẫn bắn SignalR để Frontend chuyển trang nếu lỡ chưa chuyển
+                await _signalRService.SendPaymentStatusAsync(order.Id.ToString(), "Paid");
+                return;
+            }
+
+            if (amountPaid == 0 || amountPaid >= order.TotalAmount - 1000)
+            {
+                // 1. Cập nhật trạng thái
+                order.Status = "Paid";
+                order.PaidAt = DateTime.UtcNow;
+                
+                // 2. Lưu lại
+                await _orderRepository.SaveChangesAsync();
+                
+                // 3. Ghi log lịch sử
+                await _orderRepository.UpdateOrderStatusAsync(order.Id, "Paid", $"SePay confirmed payment: {amountPaid:N0}");
+                await _orderRepository.SaveChangesAsync();
+
+                _logger.LogInformation($"[SePay] Order {order.OrderNumber} updated to Paid.");
+
+                // 4. BẮN TÍN HIỆU REAL-TIME CHO FRONTEND QUA INTERFACE
+                try 
+                {
+                    await _signalRService.SendPaymentStatusAsync(order.Id.ToString(), "Paid");
+                    _logger.LogInformation($"[SignalR] Sent ReceivePaymentStatus for {order.OrderNumber}");
+                }
+                catch(Exception ex)
+                {
+                    _logger.LogError($"[SignalR] Error sending notification: {ex.Message}");
+                }
+            }
+            else
+            {
+                _logger.LogWarning($"[SePay] Payment amount mismatch for {order.OrderNumber}. Expected: {order.TotalAmount}, Paid: {amountPaid}");
+            }
         }
 
         public async Task<OrderDto> ShipOrderAsync(Guid orderId, string? note = null)
@@ -316,6 +361,10 @@ namespace BookStore.Application.Services.Ordering
             Guard.Against(order!.Status != "Shipped",
                 "Chỉ có thể hoàn thành đơn hàng đã được ship"); 
             
+            order.Status = "Completed";
+            order.CompletedAt = DateTime.UtcNow;
+            await _orderRepository.SaveChangesAsync();
+
             await _orderRepository.UpdateOrderStatusAsync(orderId, "Completed", note ?? "Order completed");
             await _orderRepository.SaveChangesAsync();
 
@@ -325,7 +374,7 @@ namespace BookStore.Application.Services.Ordering
 
         #endregion
 
-        #region Statistics
+        #region Statistics & Validation & Helpers
 
         public async Task<decimal> GetTotalRevenueAsync(DateTime fromDate, DateTime toDate)
         {
@@ -339,7 +388,6 @@ namespace BookStore.Application.Services.Ordering
                 var allOrders = await _orderRepository.GetAllAsync();
                 return allOrders.Count();
             }
-
             var orders = await _orderRepository.GetOrdersByStatusAsync(status, 0, int.MaxValue);
             return orders.Count();
         }
@@ -350,10 +398,6 @@ namespace BookStore.Application.Services.Ordering
             return allOrders.GroupBy(o => o.Status)
                             .ToDictionary(g => g.Key, g => g.Count());
         }
-
-        #endregion
-
-        #region Validation
 
         public async Task<bool> IsOrderOwnedByUserAsync(Guid orderId, Guid userId)
         {
@@ -366,28 +410,17 @@ namespace BookStore.Application.Services.Ordering
             return order != null && order.Status == "Pending";
         }
 
-        #endregion
-
-        #region Helpers
-
         private string GenerateOrderNumber()
         {
-            // Format: ORD-YYYYMMDD-XXXXXX
             var date = DateTime.UtcNow.ToString("yyyyMMdd");
             var random = new Random().Next(100000, 999999);
             return $"ORD-{date}-{random}";
         }
 
-        #endregion
-
-        #region Order Status History
-
         public async Task<IEnumerable<OrderStatusLogDto>> GetOrderStatusHistoryAsync(Guid orderId)
         {
-            // Verify order exists
             var order = await _orderRepository.GetByIdAsync(orderId);
             Guard.Against(order == null, "Order not found");
-
             var logs = await _statusLogRepository.GetByOrderIdAsync(orderId);
             return logs.ToDtoList();
         }

@@ -1,10 +1,11 @@
 using BookStore.Application.IService;
 using BookStore.Application.Settings;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Minio;
 using Minio.DataModel.Args;
 
-namespace BookStore.Application.Services;
+namespace BookStore.Infrastructure.Services;
 
 public class MinIOService : IMinIOService
 {
@@ -22,6 +23,18 @@ public class MinIOService : IMinIOService
             .Build();
     }
 
+    // 1. Hàm Upload chính (nhận IFormFile từ Controller)
+    public async Task<string> UploadFileAsync(IFormFile file, string bucketName, string? objectName = null)
+    {
+        using var stream = file.OpenReadStream();
+        // Tạo tên file duy nhất nếu không được cung cấp
+        var fileName = objectName ?? $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+        
+        // Gọi lại hàm xử lý Stream bên dưới
+        return await UploadFileAsync(fileName, stream, file.ContentType, bucketName);
+    }
+
+    // 2. Hàm Upload xử lý Stream (Core logic MinIO)
     public async Task<string> UploadFileAsync(string fileName, Stream stream, string contentType, string? bucketName = null)
     {
         var bucket = bucketName ?? _settings.BucketName;
@@ -46,11 +59,9 @@ public class MinIOService : IMinIOService
 
         await _minioClient.PutObjectAsync(putObjectArgs);
 
-        // Return public URL
-        var publicEndpoint = string.IsNullOrEmpty(_settings.PublicEndpoint)
-            ? $"{(_settings.UseSSL ? "https" : "http")}://{_settings.Endpoint}"
-            : _settings.PublicEndpoint;
-        return $"{publicEndpoint}/{bucket}/{fileName}";
+        // Trả về tên file (để lưu vào DB) thay vì Full URL
+        // Frontend sẽ ghép với Endpoint MinIO sau, hoặc dùng GetPresignedUrl
+        return fileName; 
     }
 
     public async Task DeleteFileAsync(string fileName, string? bucketName = null)
@@ -81,11 +92,7 @@ public class MinIOService : IMinIOService
         try
         {
             var bucket = bucketName ?? _settings.BucketName;
-
-            var statObjectArgs = new StatObjectArgs()
-                .WithBucket(bucket)
-                .WithObject(fileName);
-
+            var statObjectArgs = new StatObjectArgs().WithBucket(bucket).WithObject(fileName);
             await _minioClient.StatObjectAsync(statObjectArgs);
             return true;
         }

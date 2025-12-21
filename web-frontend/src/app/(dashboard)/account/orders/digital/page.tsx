@@ -62,10 +62,26 @@ export default function DigitalOrdersPage() {
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="max-w-6xl mx-auto px-4 space-y-6">
         
-        {/* Header */}
+        {/* Header & Navigation Tabs */}
         <div>
-            <h1 className="text-2xl font-bold text-gray-900">Đơn hàng E-Book</h1>
-            <p className="text-gray-500">Sách điện tử bạn đã mua và có thể đọc ngay.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Đơn hàng của tôi</h1>
+            <p className="text-gray-500 mb-4">Quản lý và theo dõi đơn hàng.</p>
+            
+            {/* Tabs */}
+            <div className="flex gap-2 border-b">
+                <button 
+                    onClick={() => router.push('/account/orders/physical')}
+                    className="px-6 py-3 font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent hover:border-gray-300"
+                >
+                    Sách giấy
+                </button>
+                <button 
+                    onClick={() => router.push('/account/orders/digital')}
+                    className="px-6 py-3 font-medium text-blue-600 border-b-2 border-blue-600"
+                >
+                    e-Book
+                </button>
+            </div>
         </div>
 
         {/* Orders List */}

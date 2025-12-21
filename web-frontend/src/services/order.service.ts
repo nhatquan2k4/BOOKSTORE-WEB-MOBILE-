@@ -6,7 +6,6 @@ const BASE_URL = '/api/orders';
 export const orderService = {
   /**
    * Lấy danh sách đơn hàng của tôi
-   * URL: GET /api/orders/my-orders
    */
   async getMyOrders(params: { status?: string; pageNumber?: number; pageSize?: number; type?: string }) {
     try {
@@ -61,13 +60,51 @@ export const orderService = {
   },
 
   /**
-   * --- MỚI: Tạo đơn thuê sách ---
-   * Gọi API Backend để tính giá và tạo đơn an toàn
-   * POST /api/orders/rental
+   * --- TẠO ĐƠN HÀNG THƯỜNG (MUA SÁCH) ---
+   * Dùng cho trang Checkout
+   */
+  async createOrder(data: any): Promise<OrderDto> {
+    try {
+      // POST /api/orders
+      const response = await axiosInstance.post<OrderDto>(`${BASE_URL}`, data);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * --- Tạo đơn thuê sách ---
    */
   async createRentalOrder(data: CreateRentalOrderDto): Promise<OrderResponseDto> {
     try {
       const response = await axiosInstance.post<OrderResponseDto>(`${BASE_URL}/rental`, data);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * --- Tạo đơn hàng từ giỏ hàng (Legacy - nếu backend hỗ trợ endpoint riêng) ---
+   */
+  async createOrderFromCart(data: { 
+    address: {
+      recipientName: string;
+      recipientPhone: string;
+      street: string;
+      city: string;
+      district?: string;
+      ward?: string;
+      note?: string;
+    };
+    couponId?: string;
+  }) {
+    try {
+      const response = await axiosInstance.post(`${BASE_URL}/from-cart`, {
+        address: data.address,
+        couponId: data.couponId || null
+      });
       return response.data;
     } catch (error) {
       return handleApiError(error);
