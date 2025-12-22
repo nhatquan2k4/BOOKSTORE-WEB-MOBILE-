@@ -252,19 +252,7 @@ export default function CartPage() {
         alert("Vui lòng chọn ít nhất 1 sản phẩm");
         return;
     }
-
-    const orderId = `ORD${Date.now()}`;
-    const query = new URLSearchParams({
-        type: "buy",
-        orderId: orderId,
-        amount: String(finalTotal),
-        subtotal: String(subtotal),
-        discount: String(discountAmount),
-        shipping: String(shippingFee),
-        items: String(totalQuantity)
-    });
-
-    router.push(`/payment/qr?${query.toString()}`);
+    router.push('/checkout');
   };
 
   // =====================================================================

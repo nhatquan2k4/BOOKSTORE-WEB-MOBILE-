@@ -33,5 +33,7 @@ namespace BookStore.Application.IService.Ordering
         
         // Order Status History
         Task<IEnumerable<OrderStatusLogDto>> GetOrderStatusHistoryAsync(Guid orderId);
+
+        Task ConfirmPaymentAsync(string orderId, decimal amountPaid);
     }
 }

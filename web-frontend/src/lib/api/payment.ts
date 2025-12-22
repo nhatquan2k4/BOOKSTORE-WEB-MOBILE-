@@ -1,7 +1,5 @@
-// Payment API
 import axiosInstance from '@/lib/axios';
 
-// Types
 export interface CreateQRRequest {
   orderId: string;
   amount: number;
@@ -19,50 +17,59 @@ export interface CreateQRResponse {
 
 export interface CheckPaymentStatusResponse {
   success: boolean;
-  status: 'pending' | 'paid' | 'failed';
-  transaction?: {
-    id: string;
-    amount: number;
-    content: string;
-    time: string;
-  };
+  status: 'pending' | 'paid' | 'failed' | 'cancelled';
   message?: string;
 }
 
-/**
- * Payment API methods
- */
 export const paymentApi = {
-  /**
-   * Create VietQR payment QR code from real backend
-   */
   createQR: async (data: CreateQRRequest): Promise<CreateQRResponse> => {
     try {
+      // Validate UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(data.orderId)) {
+        throw new Error('OrderId phải là UUID hợp lệ');
+      }
+
       const response = await axiosInstance.post('/api/payment/qr', {
         orderId: data.orderId,
-        amount: data.amount,
+        amount: Number(data.amount),
         description: data.description
       });
       
       return response.data;
     } catch (error: any) {
-      console.error('QR creation error:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.Message || error.response?.data?.message || 'Không thể tạo mã QR thanh toán');
+      console.error('QR creation error details:', error.response?.data || error);
+      throw new Error(error.response?.data?.message || 'Lỗi tạo mã QR');
     }
   },
 
-  /**
-   * Check payment status (placeholder - requires real backend)
-   * TODO: Implement real payment verification when backend is ready
-   */
   checkStatus: async (orderId: string): Promise<CheckPaymentStatusResponse> => {
-    // TODO: Replace with real API call when backend is ready
-    // For now, return pending status
-    return {
-      success: true,
-      status: 'pending',
-      message: 'Chức năng kiểm tra tự động chưa khả dụng',
-    };
+    try {
+      const response = await axiosInstance.get(`/api/payment/status/${orderId}`);
+      
+      // Chuẩn hóa status về lowercase để dễ so sánh
+      const status = response.data.status?.toLowerCase() || 'pending';
+      
+      return {
+        success: true,
+        status: status,
+        message: response.data.message
+      };
+    } catch (error: any) {
+      console.error('Check status error:', error);
+      
+      // --- DEV MODE ONLY: GIẢ LẬP THANH TOÁN THÀNH CÔNG ---
+      // Nếu bạn đang chạy localhost và muốn test luồng success mà không cần webhook
+      // Hãy bỏ comment dòng dưới đây để giả lập là đã thanh toán sau khi gọi API lỗi
+      
+      // return { success: true, status: 'paid', message: 'Giả lập thành công' }; 
+
+      return {
+        success: false,
+        status: 'pending',
+        message: 'Đang chờ thanh toán...',
+      };
+    }
   },
 };
 

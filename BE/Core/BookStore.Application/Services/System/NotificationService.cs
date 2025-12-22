@@ -1,4 +1,4 @@
-using BookStore.Application.DTOs.System.Notification;
+using BookStore.Application.Dtos.System.Notification; // Chú ý: Dtos viết thường chữ 's'
 using BookStore.Application.IService.System;
 using BookStore.Domain.Entities.System;
 using BookStore.Domain.IRepository.System;
@@ -80,6 +80,7 @@ namespace BookStore.Application.Services.System
                 return false;
 
             await _notificationRepository.MarkAsReadAsync(id);
+            await _notificationRepository.SaveChangesAsync(); // Đảm bảo lưu thay đổi
             _logger.LogInformation("Marked notification {NotificationId} as read for user {UserId}", id, userId);
             
             return true;
@@ -88,6 +89,7 @@ namespace BookStore.Application.Services.System
         public async Task<bool> MarkAllAsReadAsync(Guid userId)
         {
             await _notificationRepository.MarkAllAsReadAsync(userId);
+            await _notificationRepository.SaveChangesAsync(); // Đảm bảo lưu thay đổi
             _logger.LogInformation("Marked all notifications as read for user {UserId}", userId);
             
             return true;
