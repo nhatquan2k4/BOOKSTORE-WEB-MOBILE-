@@ -28,11 +28,11 @@ const STORAGE_KEYS = {
 function convertUserInfo(dto: UserInfoDto): UserInfo {
   return {
     id: dto.id,
-    userName: dto.fullName, // Map fullName to userName
+    userName: dto.userName || dto.email.split('@')[0], // Backend returns userName
     email: dto.email,
-    isActive: true, // Default to true
-    roles: dto.roles,
-    permissions: [], // Not available in DTO, default to empty
+    isActive: dto.isActive ?? true,
+    roles: dto.roles || [],
+    permissions: dto.permissions || [],
   };
 }
 
@@ -67,30 +67,73 @@ class AuthService {
    */
   async login(credentials: LoginRequest): Promise<UserInfo> {
     try {
+      // Send with PascalCase to match .NET DTO exactly
       const response = await axiosInstance.post<{ data: LoginResponseDto }>(
         `${AUTH_BASE_URL}/login`,
         {
-          email: credentials.email,
-          password: credentials.password,
-          rememberMe: credentials.rememberMe ?? false,
-        } as LoginDto
+          Email: credentials.email,
+          Password: credentials.password,
+          RememberMe: credentials.rememberMe ?? false,
+        }
       );
 
-      const loginData = response.data.data;
+      console.log('Login response:', response);
+      console.log('Response data:', response.data);
 
-      // Convert LoginResponseDto to AuthResponse format
-      const userInfo = convertUserInfo(loginData.userInfo);
+      // Backend returns: { Success, Message, Data: { AccessToken, RefreshToken, User, ... } }
+      const apiResponse = response.data;
+      const loginData = apiResponse.Data || apiResponse.data || apiResponse;
+      
+      if (!loginData || (!loginData.AccessToken && !loginData.accessToken)) {
+        throw new Error('Invalid response from server: ' + JSON.stringify(apiResponse));
+      }
+
+      console.log('Login data:', loginData);
+
+      // Backend uses PascalCase, normalize to camelCase
+      const accessToken = loginData.AccessToken || loginData.accessToken;
+      const refreshToken = loginData.RefreshToken || loginData.refreshToken;
+      const accessTokenExpiresAt = loginData.AccessTokenExpiresAt || loginData.accessTokenExpiresAt;
+      const refreshTokenExpiresAt = loginData.RefreshTokenExpiresAt || loginData.refreshTokenExpiresAt;
+      const userDto = loginData.User || loginData.user || loginData.userInfo;
+
+      if (!accessToken || !refreshToken) {
+        throw new Error('Missing tokens in response');
+      }
+
+      // Save tokens first
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      }
+
+      // Convert user info
+      let userInfo: UserInfo;
+      
+      if (userDto) {
+        // User info included in login response
+        userInfo = convertUserInfo(userDto);
+      } else {
+        // Fetch user info separately (fallback)
+        console.log('User info not in login response, fetching from /auth/me');
+        const userResponse = await axiosInstance.get<{ Data: UserInfoDto; data: UserInfoDto }>(`${AUTH_BASE_URL}/me`);
+        const userData = userResponse.data?.Data || userResponse.data?.data || userResponse.data;
+        userInfo = convertUserInfo(userData);
+      }
+
+      // Save complete auth data
       const authData: AuthResponse = {
-        accessToken: loginData.accessToken,
-        refreshToken: loginData.refreshToken,
-        accessTokenExpiresAt: loginData.accessTokenExpiresAt,
-        refreshTokenExpiresAt: loginData.refreshTokenExpiresAt,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        accessTokenExpiresAt: accessTokenExpiresAt,
+        refreshTokenExpiresAt: refreshTokenExpiresAt,
         user: userInfo,
       };
 
       this.setSession(authData);
       return userInfo;
     } catch (error) {
+      console.error('Login error:', error);
       return handleApiError(error);
     }
   }
@@ -100,32 +143,97 @@ class AuthService {
    */
   async register(data: RegisterRequest): Promise<UserInfo> {
     try {
+      // Send with PascalCase to match .NET DTO exactly
       const response = await axiosInstance.post<{ data: LoginResponseDto }>(
         `${AUTH_BASE_URL}/register`,
         {
-          email: data.email,
-          password: data.password,
-          confirmPassword: data.confirmPassword,
-          fullName: data.fullName,
-          phoneNumber: data.phoneNumber,
-        } as RegisterDto
+          Email: data.email,
+          Password: data.password,
+          ConfirmPassword: data.confirmPassword,
+          FullName: data.fullName,
+          PhoneNumber: data.phoneNumber,
+        }
       );
 
-      const loginData = response.data.data;
+      console.log('Register response:', response);
+      console.log('Response data:', response.data);
 
-      // Convert LoginResponseDto to AuthResponse format
-      const userInfo = convertUserInfo(loginData.userInfo);
+      // Backend returns: { Success, Message, Data: { AccessToken, RefreshToken, User, ... } }
+      const apiResponse = response.data;
+      const loginData = apiResponse.Data || apiResponse.data || apiResponse;
+      
+      if (!loginData || (!loginData.AccessToken && !loginData.accessToken)) {
+        throw new Error('Invalid response from server: ' + JSON.stringify(apiResponse));
+      }
+
+      console.log('Register data:', loginData);
+
+      // Backend uses PascalCase, normalize to camelCase
+      const accessToken = loginData.AccessToken || loginData.accessToken;
+      const refreshToken = loginData.RefreshToken || loginData.refreshToken;
+      const accessTokenExpiresAt = loginData.AccessTokenExpiresAt || loginData.accessTokenExpiresAt;
+      const refreshTokenExpiresAt = loginData.RefreshTokenExpiresAt || loginData.refreshTokenExpiresAt;
+      const userDto = loginData.User || loginData.user || loginData.userInfo;
+
+      if (!accessToken || !refreshToken) {
+        throw new Error('Missing tokens in response');
+      }
+
+      // Save tokens first
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      }
+
+      // Convert user info
+      let userInfo: UserInfo;
+      
+      if (userDto) {
+        // User info included in register response
+        userInfo = convertUserInfo(userDto);
+      } else {
+        // Fetch user info separately (fallback)
+        console.log('User info not in register response, fetching from /auth/me');
+        const userResponse = await axiosInstance.get<{ Data: UserInfoDto; data: UserInfoDto }>(`${AUTH_BASE_URL}/me`);
+        const userData = userResponse.data?.Data || userResponse.data?.data || userResponse.data;
+        userInfo = convertUserInfo(userData);
+      }
+
+      // Save complete auth data
       const authData: AuthResponse = {
-        accessToken: loginData.accessToken,
-        refreshToken: loginData.refreshToken,
-        accessTokenExpiresAt: loginData.accessTokenExpiresAt,
-        refreshTokenExpiresAt: loginData.refreshTokenExpiresAt,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        accessTokenExpiresAt: accessTokenExpiresAt,
+        refreshTokenExpiresAt: refreshTokenExpiresAt,
         user: userInfo,
       };
 
       this.setSession(authData);
       return userInfo;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Register error:', error);
+      
+      // Check if error is about email sending (SMTP issue)
+      const errorMessage = error?.response?.data?.message || error?.message || '';
+      if (errorMessage.includes('Failed to send email') || errorMessage.includes('SMTP')) {
+        // Email sending failed, but registration might have succeeded
+        // Try to login with the credentials
+        try {
+          const loginResult = await this.login({
+            email: data.email,
+            password: data.password,
+            rememberMe: false,
+          });
+          
+          // Login successful - registration was successful, just email failed
+          console.log('Registration successful, but email verification failed. User can still login.');
+          return loginResult;
+        } catch (loginError) {
+          // Login also failed - registration actually failed
+          return handleApiError(error);
+        }
+      }
+      
       return handleApiError(error);
     }
   }
@@ -243,15 +351,25 @@ class AuthService {
   /**
    * Gửi lại email xác thực
    */
-  async resendVerificationEmail(
-    email: string
-  ): Promise<{ success: boolean; message: string }> {
+  async resendVerificationEmail(email: string) {
     try {
-      const response = await axiosInstance.post<{ success: boolean; message: string }>(
-        `${AUTH_BASE_URL}/resend-verification`,
-        { email }
-      );
+      // 1. URL phải là /api/EmailVerification/resend (Không phải /api/auth/...)
+      // 2. Body phải là object { email: ... } để khớp với class ResendVerificationRequest bên C#
+      const response = await axiosInstance.post('/api/EmailVerification/resend', {
+        email: email
+      });
+
       return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  }
+
+  async checkVerificationStatus(userId: string) {
+    try {
+      const response = await axiosInstance.get(`/api/EmailVerification/status/${userId}`);
+      return response.data; 
+      // Mong đợi trả về: { success: true, data: { isVerified: true/false } }
     } catch (error) {
       return handleApiError(error);
     }

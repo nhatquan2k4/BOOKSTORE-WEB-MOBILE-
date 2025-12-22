@@ -79,10 +79,10 @@ namespace BookStore.Infrastructure.Data.Configurations.Catalog
                 .HasForeignKey(p => p.BookId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            //  1-1 với StockItem
-            builder.HasOne(b => b.StockItem)
+            //  1-n với StockItems
+            builder.HasMany(b => b.StockItems)
                 .WithOne(s => s.Book)
-                .HasForeignKey<BookStore.Domain.Entities.Pricing_Inventory.StockItem>(s => s.BookId)
+                .HasForeignKey(s => s.BookId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             //  1-n với Review

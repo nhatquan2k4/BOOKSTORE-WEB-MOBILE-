@@ -1,12 +1,10 @@
 // Payment API
+import axiosInstance from '@/lib/axios';
 
 // Types
 export interface CreateQRRequest {
-  amount: number;
   orderId: string;
-  type: 'rent' | 'buy';
-  bookId?: string;
-  planId?: string;
+  amount: number;
   description?: string;
 }
 
@@ -36,22 +34,21 @@ export interface CheckPaymentStatusResponse {
  */
 export const paymentApi = {
   /**
-   * Create VietQR payment QR code
+   * Create VietQR payment QR code from real backend
    */
   createQR: async (data: CreateQRRequest): Promise<CreateQRResponse> => {
-    const response = await fetch('/api/payment/vietqr/create-qr', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw new Error('Không thể tạo mã QR');
+    try {
+      const response = await axiosInstance.post('/api/payment/qr', {
+        orderId: data.orderId,
+        amount: data.amount,
+        description: data.description
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('QR creation error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.Message || error.response?.data?.message || 'Không thể tạo mã QR thanh toán');
     }
-
-    return response.json();
   },
 
   /**

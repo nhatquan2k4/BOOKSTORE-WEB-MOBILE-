@@ -161,8 +161,15 @@ builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
 builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
 
-// Add Controllers
-builder.Services.AddControllers();
+// Add Controllers with JSON options for camelCase serialization
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Convert C# PascalCase to JavaScript camelCase
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        // Preserve null values for optional fields
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never;
+    });
 
 
 builder.Services.AddScoped<IAuthorRepository, AuthorRepository>();
@@ -193,6 +200,10 @@ builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepo
 //Cart Repositories
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
+
+// Wishlist Repository & Service
+builder.Services.AddScoped<BookStore.Domain.IRepository.Catalog.IWishlistRepository, BookStore.Infrastructure.Repositories.Catalog.WishlistRepository>();
+builder.Services.AddScoped<BookStore.Application.IService.Catalog.IWishlistService, BookStore.Application.Services.Catalog.WishlistService>();
 
 // Shipping Repositories
 builder.Services.AddScoped<BookStore.Domain.IRepository.Shipping.IShipperRepository, BookStore.Infrastructure.Repositories.Shipping.ShipperRepository>();
@@ -409,5 +420,6 @@ app.UseAuthorization();
 
 // Map Controllers
 app.MapControllers();
+app.UseStaticFiles();
 
 app.Run();

@@ -46,7 +46,6 @@ export default function SitemapPage() {
         { name: "Thông tin cá nhân", url: "/account/profile" },
         { name: "Đơn hàng", url: "/account/orders" },
         { name: "Thư viện", url: "/account/library-book" },
-        { name: "Thành tích", url: "/account/achievements" },
         { name: "Thông báo", url: "/account/notifications" },
       ]
     },

@@ -64,7 +64,7 @@ export function useFeaturedBooks(limit: number = 6) {
           price: book.price || book.salePrice || 0,
           originalPrice: book.originalPrice || book.regularPrice,
           salePrice: book.salePrice,
-          cover: book.imageUrl || book.coverImage || book.thumbnailUrl || '/image/anh.png',
+          cover: book.coverImage || '/image/anh.png',
           rating: book.rating || book.averageRating || 4.5,
           reviewCount: book.reviewCount || book.totalReviews || 0,
           stock: book.stock || book.quantity || 0,

@@ -3,20 +3,24 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts';
 import { useRouter } from 'next/navigation';
-import { userService } from '@/services';
+import { userProfileService } from '@/services/user-profile.service';
+import { UserProfile, UpdateUserProfileDto } from '@/types/dtos/userprofile';
+
+// 1. THÊM CẤU HÌNH DOMAIN BACKEND (Giống bên ProfilePage)
+const API_BASE_URL = 'http://localhost:5276'; 
 
 interface ProfileFormValues {
-  userName: string;
+  fullName: string;
   phoneNumber: string;
-  avatarUrl: string; // sẽ điền sau khi upload xong
+  avatarUrl: string;
 }
 
 export default function UpdateProfilePage() {
-  const { user, isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn, isLoading } = useAuth();
   const router = useRouter();
 
   const [form, setForm] = useState<ProfileFormValues>({
-    userName: '',
+    fullName: '',
     phoneNumber: '',
     avatarUrl: '',
   });
@@ -25,47 +29,55 @@ export default function UpdateProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
 
-  // chặn người chưa login
+  // 2. THÊM HÀM XỬ LÝ URL ẢNH (Logic đồng nhất)
+  const getFullAvatarUrl = (url?: string) => {
+    if (!url) return null;
+    // Nếu là 'blob:...' (ảnh vừa chọn từ máy) hoặc 'http...' (ảnh tuyệt đối) thì giữ nguyên
+    if (url.startsWith('http') || url.startsWith('blob:')) return url;
+    // Nếu là đường dẫn tương đối, nối domain backend vào
+    return `${API_BASE_URL}${url}`;
+  };
+
+  // Chặn người chưa login
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
       router.push('/login');
     }
   }, [isLoading, isLoggedIn, router]);
 
-  // load profile ban đầu
+  // Load profile từ API
   useEffect(() => {
     const loadProfile = async () => {
+      if (!isLoggedIn) return;
       try {
-        // nếu context đã có đủ thì dùng luôn
-        if (user) {
+        const res = await userProfileService.getMyProfile();
+        if (res.success && res.data) {
+          const data = res.data as UserProfile;
           setForm({
-            userName: user.userName || '',
-            phoneNumber: (user as any).phoneNumber || '',
-            avatarUrl: (user as any).avatarUrl || '',
+            fullName: data.fullName || '',
+            phoneNumber: data.phoneNumber || '',
+            avatarUrl: data.avatarUrl || '',
           });
-          setAvatarPreview((user as any).avatarUrl || null);
-        } else {
-          // nếu muốn chắc chắn thì gọi API
-          const res = await userService.getCurrentUser();
-          setForm({
-            userName: (res as any).userName || (res as any).fullName || '',
-            phoneNumber: (res as any).phoneNumber || '',
-            avatarUrl: (res as any).avatarUrl || '',
-          });
-          setAvatarPreview((res as any).avatarUrl || null);
+          
+          // 3. SỬ DỤNG HÀM XỬ LÝ URL KHI SET PREVIEW
+          // Để hiển thị đúng ảnh cũ đang có trong DB
+          setAvatarPreview(getFullAvatarUrl(data.avatarUrl) || null);
         }
-      } catch (err: any) {
+      } catch (err) {
         setLoadError('Không thể tải thông tin tài khoản.');
+      } finally {
+        setLoadingData(false);
       }
     };
     loadProfile();
-  }, [user]);
+  }, [isLoggedIn]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -75,13 +87,14 @@ export default function UpdateProfilePage() {
     }));
   };
 
-  // chọn ảnh từ máy
+  // Chọn ảnh từ máy
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setAvatarFile(file);
 
-    // tạo preview
+    // Tạo preview (Dạng blob:http://localhost:3000/...)
+    // Hàm getFullAvatarUrl ở trên đã có logic bỏ qua nếu gặp 'blob:' nên không lo bị lỗi
     const previewUrl = URL.createObjectURL(file);
     setAvatarPreview(previewUrl);
   };
@@ -92,52 +105,61 @@ export default function UpdateProfilePage() {
     setSaveMessage(null);
 
     try {
-      let avatarUrl = form.avatarUrl;
+      let currentAvatarUrl = form.avatarUrl;
 
-      // nếu user có chọn file mới → upload trước
+      // Bước 1: Upload ảnh mới (nếu có)
       if (avatarFile) {
-        // upload file
-        const uploadRes = await userService.uploadAvatar(avatarFile);
-        // backend trả { avatarUrl: '...' }
-        avatarUrl = uploadRes.avatarUrl;
+        const uploadRes = await userProfileService.uploadAvatar(avatarFile);
+        if (uploadRes.success && uploadRes.avatarUrl) {
+          currentAvatarUrl = uploadRes.avatarUrl;
+        } else {
+          throw new Error(uploadRes.message || 'Lỗi khi upload ảnh');
+        }
       }
 
-      const payload = {
-        fullName: form.userName,
+      // Bước 2: Cập nhật thông tin
+      const payload: UpdateUserProfileDto = {
+        fullName: form.fullName,
         phoneNumber: form.phoneNumber,
-        avatarUrl: avatarUrl,
+        avatarUrl: currentAvatarUrl,
       };
 
-      const res = await userService.updateProfile(payload);
+      const res = await userProfileService.updateMyProfile(payload);
 
-      setSaveMessage({
-        type: 'success',
-        text: 'Cập nhật thông tin thành công!',
-      });
-      // nếu muốn quay lại luôn:
-      // router.push('/account/profile');
+      if (res.success) {
+        setSaveMessage({
+          type: 'success',
+          text: 'Cập nhật thông tin thành công!',
+        });
+        setTimeout(() => {
+           window.location.reload(); 
+        }, 1000);
+      } else {
+        throw new Error(res.message || 'Cập nhật thất bại');
+      }
+
     } catch (err: any) {
       setSaveMessage({
         type: 'error',
-        text:
-          err?.response?.data?.message ||
-          'Có lỗi xảy ra khi cập nhật.',
+        text: err.message || 'Có lỗi xảy ra khi cập nhật.',
       });
     } finally {
       setSaving(false);
-      setTimeout(() => setSaveMessage(null), 5000);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Đang tải...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
       </div>
     );
   }
 
   if (!isLoggedIn) return null;
+
+  // Lấy chữ cái đầu cho avatar mặc định
+  const initialChar = form.fullName ? form.fullName.charAt(0).toUpperCase() : '?';
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -156,29 +178,18 @@ export default function UpdateProfilePage() {
             onClick={() => router.back()}
             className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-100 text-sm flex items-center gap-2"
           >
-            <svg
-              className="w-4 h-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
             Quay lại
           </button>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          {loadError ? (
+          {loadError && (
             <div className="p-3 mb-4 bg-red-100 border border-red-200 text-red-700 text-sm rounded">
               {loadError}
             </div>
-          ) : null}
+          )}
 
-          {saveMessage ? (
+          {saveMessage && (
             <div
               className={`p-3 mb-4 text-sm rounded ${
                 saveMessage.type === 'success'
@@ -188,7 +199,7 @@ export default function UpdateProfilePage() {
             >
               {saveMessage.text}
             </div>
-          ) : null}
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Avatar upload */}
@@ -197,34 +208,29 @@ export default function UpdateProfilePage() {
                 Ảnh đại diện
               </label>
               <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
+                <div className="w-20 h-20 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center border border-gray-200">
                   {avatarPreview ? (
                     <img
                       src={avatarPreview}
                       alt="avatar preview"
                       className="w-full h-full object-cover"
+                      // Thêm fallback nếu ảnh lỗi
+                      onError={(e) => {
+                         (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${form.fullName}&background=random`;
+                      }}
                     />
                   ) : (
-                    <svg
-                      className="w-10 h-10 text-gray-400"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M12 5a3 3 0 1 0-3-3 3 3 0 0 0 3 3Z" />
-                      <path d="M12 22c4.2-1.8 7-5.2 7-9a7 7 0 1 0-14 0c0 3.8 2.8 7.2 7 9Z" />
-                    </svg>
+                    <span className="text-gray-400 text-2xl font-bold">
+                       {initialChar}
+                    </span>
                   )}
                 </div>
                 <div>
                   <label
                     htmlFor="avatarFile"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-sm rounded-lg cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-sm font-medium rounded-lg cursor-pointer shadow-sm"
                   >
-                    Chọn ảnh
+                    Chọn ảnh mới
                   </label>
                   <input
                     id="avatarFile"
@@ -233,30 +239,32 @@ export default function UpdateProfilePage() {
                     onChange={handleAvatarFileChange}
                     className="hidden"
                   />
-                  <p className="text-xs text-gray-400 mt-1">
-                    PNG, JPG, tối đa 2MB
+                  <p className="text-xs text-gray-500 mt-2">
+                    JPG, PNG hoặc GIF. Tối đa 2MB.
                   </p>
                 </div>
               </div>
             </div>
 
+            {/* Full Name */}
             <div>
               <label
-                htmlFor="userName"
+                htmlFor="fullName"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Tên hiển thị
+                Họ và tên
               </label>
               <input
-                id="userName"
-                name="userName"
-                value={form.userName}
+                id="fullName"
+                name="fullName"
+                value={form.fullName}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                 placeholder="Ví dụ: Nguyễn Văn A"
               />
             </div>
 
+            {/* Phone Number */}
             <div>
               <label
                 htmlFor="phoneNumber"
@@ -269,50 +277,27 @@ export default function UpdateProfilePage() {
                 name="phoneNumber"
                 value={form.phoneNumber}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                 placeholder="090xxxxxxx"
               />
             </div>
 
-            {/* nếu bạn vẫn muốn cho sửa bằng URL thì để lại field này, không thì xoá */}
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Avatar URL (tùy chọn)
-              </label>
-              <input
-                name="avatarUrl"
-                value={form.avatarUrl}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://..."
-              />
-            </div> */}
-
-            <div className="flex gap-3 pt-2">
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4 border-t border-gray-100 mt-6">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-100 text-sm"
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700"
               >
-                Hủy
+                Hủy bỏ
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium shadow-sm"
               >
                 {saving && (
-                  <svg
-                    className="animate-spin h-4 w-4 text-white"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                  </svg>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                 )}
                 Lưu thay đổi
               </button>

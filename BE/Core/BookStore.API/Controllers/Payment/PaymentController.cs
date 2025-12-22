@@ -91,6 +91,48 @@ namespace BookStore.API.Controllers.Payment
             });
         }
 
+        // POST: api/payment/qr
+        [HttpPost("qr")]
+        public IActionResult CreateQRPayment([FromBody] CreateQRPaymentRequestDto dto)
+        {
+            try
+            {
+                // Bank configuration
+                const string accountNumber = "2230333906939";
+                const string accountName = "HOANG THO TU";
+                const string bankCode = "970422"; // MB Bank
+                const string template = "compact";
+
+                // Validate input
+                if (dto.OrderId == Guid.Empty || dto.Amount <= 0)
+                {
+                    return BadRequest(new { Message = "Thông tin thanh toán không hợp lệ" });
+                }
+
+                // Generate transfer content
+                var transferContent = dto.Description ?? $"MUA {dto.OrderId}";
+
+                // Create VietQR URL
+                var qrCodeUrl = $"https://img.vietqr.io/image/{bankCode}-{accountNumber}-{template}.jpg?amount={dto.Amount}&addInfo={Uri.EscapeDataString(transferContent)}&accountName={Uri.EscapeDataString(accountName)}";
+
+                var response = new CreateQRPaymentResponseDto
+                {
+                    Success = true,
+                    QrCodeUrl = qrCodeUrl,
+                    OrderId = dto.OrderId.ToString(),
+                    AccountNumber = accountNumber,
+                    AccountName = accountName,
+                    TransferContent = transferContent
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Lỗi tạo mã QR thanh toán", Error = ex.Message });
+            }
+        }
+
         // POST: api/payment
         [HttpPost]
         public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentDto dto)

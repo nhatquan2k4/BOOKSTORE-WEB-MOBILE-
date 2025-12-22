@@ -7,6 +7,7 @@ import Image from "next/image";
 import { Badge, Button } from "@/components/ui";
 import { bookService, categoryService } from "@/services";
 import type { BookDto, CategoryDto } from "@/types/dtos";
+import { resolveBookPrice, formatPrice } from "@/lib/price";
 
 // Helper format tiền
 const formatVnd = (price: number) =>
@@ -15,9 +16,11 @@ const formatVnd = (price: number) =>
     currency: "VND",
   }).format(price);
 
-// Helper tính %
-const calculateDiscount = (original: number, current: number) =>
-  Math.round(((original - current) / original) * 100);
+// Helper tính % giảm giá
+const calculateDiscount = (original: number, current: number) => {
+  if (original <= 0 || current <= 0 || current >= original) return 0;
+  return Math.round(((original - current) / original) * 100);
+};
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -291,29 +294,8 @@ export default function HomePage() {
                 <div key={idx} className="h-48 rounded-lg bg-gray-200 animate-pulse"></div>
               ))
             ) : (
-              displayCategories.slice(0, 8).map((cat) => {
-                // Map category to href
-                const categoryHrefMap: Record<string, string> = {
-                  "lập trình": "/programming",
-                  "programming": "/programming",
-                  "kinh doanh": "/business",
-                  "business": "/business",
-                  "thiết kế": "/design",
-                  "design": "/design",
-                  "khoa học": "/courses",
-                  "science": "/courses",
-                  "văn học": "/literature",
-                  "literature": "/literature",
-                  "kỹ năng sống": "/life-skills",
-                  "life skills": "/life-skills",
-                  "thiếu nhi": "/children",
-                  "children": "/children",
-                  "ngoại ngữ": "/foreign-languages",
-                  "foreign languages": "/foreign-languages",
-                };
-
-                const catName = cat.name || "";
-                const catHref = categoryHrefMap[catName.toLowerCase()] || `/categories/${cat.id}`;
+              displayCategories.slice(0, 8).map((cat, index) => {
+                // Use array index for color rotation (stable across any ID format)
                 const colorClasses = [
                   "from-blue-500 to-cyan-500",
                   "from-purple-500 to-pink-500",
@@ -324,9 +306,10 @@ export default function HomePage() {
                   "from-yellow-500 to-orange-500",
                   "from-cyan-500 to-blue-500",
                 ];
-                const colorClass = colorClasses[Number(cat.id) % colorClasses.length] || "from-blue-500 to-cyan-500";
+                const colorClass = colorClasses[index % colorClasses.length];
 
-                // Fallback images for categories
+                // Fallback images for categories (UI-only enhancement)
+                const catName = cat.name || "";
                 const categoryImages: Record<string, string> = {
                   "lập trình": "/image/lap_trinh.jpg",
                   "programming": "/image/lap_trinh.jpg",
@@ -348,7 +331,7 @@ export default function HomePage() {
                 const catImage = categoryImages[catName.toLowerCase()] || "/image/anh.png";
 
                 return (
-                  <Link key={cat.id} href={catHref}>
+                  <Link key={cat.id} href={`/categories/${cat.id}`}>
                     <div className="relative h-48 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 group">
                       {/* Background Image with Overlay */}
                       <div className="absolute inset-0">
@@ -484,9 +467,8 @@ export default function HomePage() {
                 </div>
               ) : (
                 displayFeaturedBooks.map((book) => {
-                  const bookOriginalPrice = book.discountPrice ? book.currentPrice ?? 0 : 0;
-                  const bookDiscountPrice = book.discountPrice ?? book.currentPrice ?? 0;
-                  const bookCover = "/image/anh.png"; // BookDto doesn't have images
+                  const priceInfo = resolveBookPrice(book);
+                  const bookCover = book.coverImage || "/image/anh.png";
                   const bookAuthor = book.authorNames && book.authorNames.length > 0 ? book.authorNames.join(", ") : "Chưa cập nhật";
                   const bookRating = book.averageRating ?? 0;
                   const bookReviews = book.totalReviews ?? 0;
@@ -547,15 +529,15 @@ export default function HomePage() {
                         {/* Giá: Giá giảm - Giá gốc - % giảm */}
                         <div className="mt-2 flex items-center gap-2 flex-wrap">
                           <p className="text-red-600 font-bold text-sm">
-                            {formatVnd(bookDiscountPrice)}
+                            {formatPrice(priceInfo.finalPrice)}
                           </p>
-                          {bookOriginalPrice > 0 && bookDiscountPrice < bookOriginalPrice && (
+                          {priceInfo.hasDiscount && (
                             <>
                               <p className="text-xs text-gray-400 line-through">
-                                {formatVnd(bookOriginalPrice)}
+                                {formatPrice(priceInfo.originalPrice)}
                               </p>
                               <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
-                                -{calculateDiscount(bookOriginalPrice, bookDiscountPrice)}%
+                                -{priceInfo.discountPercent}%
                               </span>
                             </>
                           )}
@@ -676,9 +658,8 @@ export default function HomePage() {
                 </div>
               ) : (
                 displayPopularBooks.map((book) => {
-                  const bookOriginalPrice = book.discountPrice ? book.currentPrice ?? 0 : 0;
-                  const bookDiscountPrice = book.discountPrice ?? book.currentPrice ?? 0;
-                  const bookCover = "/image/anh.png"; // BookDto doesn't have images
+                  const priceInfo = resolveBookPrice(book);
+                  const bookCover = book.coverImage || "/image/anh.png";
                   const bookAuthor = book.authorNames && book.authorNames.length > 0 ? book.authorNames.join(", ") : "Chưa cập nhật";
                   const bookRating = book.averageRating ?? 0;
                   const bookReviews = book.totalReviews ?? 0;
@@ -730,15 +711,15 @@ export default function HomePage() {
                         {/* Giá: Giá giảm - Giá gốc - % giảm */}
                         <div className="mt-2 flex items-center gap-2 flex-wrap">
                           <p className="text-red-600 font-bold text-sm">
-                            {formatVnd(bookDiscountPrice)}
+                            {formatPrice(priceInfo.finalPrice)}
                           </p>
-                          {bookOriginalPrice > 0 && bookDiscountPrice < bookOriginalPrice && (
+                          {priceInfo.hasDiscount && (
                             <>
                               <p className="text-xs text-gray-400 line-through">
-                                {formatVnd(bookOriginalPrice)}
+                                {formatPrice(priceInfo.originalPrice)}
                               </p>
                               <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
-                                -{calculateDiscount(bookOriginalPrice, bookDiscountPrice)}%
+                                -{priceInfo.discountPercent}%
                               </span>
                             </>
                           )}

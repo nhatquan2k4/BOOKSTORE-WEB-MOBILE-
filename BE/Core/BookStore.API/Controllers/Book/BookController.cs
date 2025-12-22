@@ -371,5 +371,44 @@ namespace BookStore.API.Controllers.Book
                     new { message = "Có lỗi xảy ra khi lấy gợi ý sách", details = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Lấy sách bán chạy nhất
+        /// </summary>
+        /// <param name="top">Số lượng sách (mặc định: 10)</param>
+        /// <returns>Danh sách BookDto</returns>
+        [HttpGet("best-selling")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<IEnumerable<BookDto>>> GetBestSelling([FromQuery] int top = 10)
+        {
+            var books = await _bookService.GetBestSellingBooksAsync(top);
+            return Ok(books);
+        }
+
+        /// <summary>
+        /// Lấy sách mới nhất
+        /// </summary>
+        /// <param name="top">Số lượng sách (mặc định: 10)</param>
+        /// <returns>Danh sách BookDto</returns>
+        [HttpGet("newest")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<IEnumerable<BookDto>>> GetNewest([FromQuery] int top = 10)
+        {
+            var books = await _bookService.GetNewestBooksAsync(top);
+            return Ok(books);
+        }
+
+        /// <summary>
+        /// Lấy sách được xem nhiều nhất
+        /// </summary>
+        /// <param name="top">Số lượng sách (mặc định: 10)</param>
+        /// <returns>Danh sách BookDto</returns>
+        [HttpGet("most-viewed")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<IEnumerable<BookDto>>> GetMostViewed([FromQuery] int top = 10)
+        {
+            var books = await _bookService.GetMostViewedBooksAsync(top);
+            return Ok(books);
+        }
     }
 }

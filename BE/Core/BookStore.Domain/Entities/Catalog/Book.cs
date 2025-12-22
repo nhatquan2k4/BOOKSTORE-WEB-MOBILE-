@@ -52,6 +52,9 @@ namespace BookStore.Domain.Entities.Catalog
         public decimal AverageRating { get; set; } = 0;         // Điểm trung bình
         public int TotalReviews { get; set; } = 0;              // Tổng số đánh giá
         
-        public virtual ICollection<BookRental> Rentals { get; set; } = new List<BookRental>(); 
+        public virtual ICollection<BookRental> Rentals { get; set; } = new List<BookRental>();
+
+        // 1-n: Wishlist items
+        public virtual ICollection<Wishlist> WishlistItems { get; set; } = new List<Wishlist>();
     }
 }

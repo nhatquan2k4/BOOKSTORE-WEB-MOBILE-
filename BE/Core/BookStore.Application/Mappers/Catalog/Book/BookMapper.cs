@@ -67,7 +67,13 @@ namespace BookStore.Application.Mappers.Catalog.Book
 
                 // Reviews (TODO: Calculate from Reviews when schema is fixed)
                 AverageRating = null,
-                TotalReviews = 0
+                TotalReviews = 0,
+
+                // Cover Image
+                CoverImage = book.Images?
+                    .Where(img => img.IsCover)
+                    .OrderBy(img => img.DisplayOrder)
+                    .FirstOrDefault()?.ImageUrl
             };
         }
         public static BookDetailDto ToDetailDto(this BookEntity book)
@@ -101,8 +107,8 @@ namespace BookStore.Application.Mappers.Catalog.Book
                     .OrderByDescending(p => p.EffectiveFrom)
                     .FirstOrDefault()?.Amount,
 
-                // Stock Quantity
-                StockQuantity = book.StockItem?.QuantityOnHand ?? 0,
+                // Stock Quantity (sum across all warehouses)
+                StockQuantity = book.StockItems?.Sum(s => s.QuantityOnHand) ?? 0,
 
                 // Publisher - sử dụng PublisherMapper
                 Publisher = book.Publisher?.ToDto()!,
@@ -125,7 +131,11 @@ namespace BookStore.Application.Mappers.Catalog.Book
                 Files = book.Files?.ToDtoList() ?? new List<BookFileDto>(),
 
                 // Metadata - sử dụng BookMetadataMapper
-                Metadata = book.Metadata?.ToDtoList() ?? new List<BookMetadataDto>()
+                Metadata = book.Metadata?.ToDtoList() ?? new List<BookMetadataDto>(),
+
+                // Reviews (TODO: Calculate from Reviews when schema is fixed)
+                AverageRating = null,
+                TotalReviews = 0
             };
         }
 
