@@ -433,10 +433,13 @@ namespace BookStore.Application.Services.Catalog
                 // Xóa metadata
                 await _bookMetadataRepository.DeleteByBookIdAsync(id);
                 
-                // Xóa StockItem (inventory)
-                if (book.StockItem != null)
+                // Xóa StockItems (inventory)
+                if (book.StockItems != null && book.StockItems.Any())
                 {
-                    _stockItemRepository.Delete(book.StockItem);
+                    foreach (var stockItem in book.StockItems)
+                    {
+                        _stockItemRepository.Delete(stockItem);
+                    }
                 }
                 
                 // Xóa Prices
@@ -553,6 +556,79 @@ namespace BookStore.Application.Services.Catalog
             catch (Exception ex)
             {
                 Console.WriteLine($"Error getting recommendations: {ex.Message}");
+                return new List<BookDto>();
+            }
+        }
+
+        /// <summary>
+        /// Get best selling books (based on stock quantity - more sold means less in stock)
+        /// </summary>
+        public async Task<List<BookDto>> GetBestSellingBooksAsync(int top = 10)
+        {
+            try
+            {
+                var books = await _repository.GetAllAsync();
+                
+                return books
+                    .Where(b => b.IsAvailable)
+                    .OrderByDescending(b => b.StockItems?.Sum(s => s.QuantityOnHand) ?? 0)
+                    .Take(top)
+                    .Select(b => b.ToDto())
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting best selling books: {ex.Message}");
+                return new List<BookDto>();
+            }
+        }
+
+        /// <summary>
+        /// Get newest books (based on publication year and created date)
+        /// </summary>
+        public async Task<List<BookDto>> GetNewestBooksAsync(int top = 10)
+        {
+            try
+            {
+                var books = await _repository.GetAllAsync();
+                
+                return books
+                    .Where(b => b.IsAvailable)
+                    .OrderByDescending(b => b.PublicationYear)
+                    .ThenBy(b => b.Title)
+                    .Take(top)
+                    .Select(b => b.ToDto())
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting newest books: {ex.Message}");
+                return new List<BookDto>();
+            }
+        }
+
+        /// <summary>
+        /// Get most viewed books (placeholder - requires view tracking implementation)
+        /// Currently returns books ordered by stock quantity as a proxy
+        /// </summary>
+        public async Task<List<BookDto>> GetMostViewedBooksAsync(int top = 10)
+        {
+            try
+            {
+                // TODO: Implement proper view tracking
+                // For now, return popular books based on stock
+                var books = await _repository.GetAllAsync();
+                
+                return books
+                    .Where(b => b.IsAvailable)
+                    .OrderByDescending(b => b.StockItems?.Sum(s => s.QuantityOnHand) ?? 0)
+                    .Take(top)
+                    .Select(b => b.ToDto())
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting most viewed books: {ex.Message}");
                 return new List<BookDto>();
             }
         }

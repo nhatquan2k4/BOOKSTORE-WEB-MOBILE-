@@ -33,6 +33,11 @@ namespace BookStore.Application.IService.Catalog
         // Smart recommendations
         Task<List<BookDto>> GetRecommendationsAsync(List<Guid> excludeBookIds, List<Guid> categoryIds, int limit = 8);
         
+        // Popular/Trending books
+        Task<List<BookDto>> GetBestSellingBooksAsync(int top = 10);
+        Task<List<BookDto>> GetNewestBooksAsync(int top = 10);
+        Task<List<BookDto>> GetMostViewedBooksAsync(int top = 10);
+        
         // Price management
         Task<bool> UpdatePriceAsync(Guid bookId, UpdateBookPriceDto dto);
     }

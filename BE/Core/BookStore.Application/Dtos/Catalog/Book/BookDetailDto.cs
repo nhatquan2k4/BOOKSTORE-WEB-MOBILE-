@@ -32,13 +32,6 @@ namespace BookStore.Application.Dtos.Catalog.Book
         public List<BookFileDto> Files { get; set; } = new();
         public List<BookMetadataDto> Metadata { get; set; } = new();
         
-        // Pricing
-        public decimal? CurrentPrice { get; set; }
-        public decimal? DiscountPrice { get; set; }
-        
-        // Stock
-        public int? StockQuantity { get; set; }
-        
         // Review summary
         public double? AverageRating { get; set; }
         public int TotalReviews { get; set; }
