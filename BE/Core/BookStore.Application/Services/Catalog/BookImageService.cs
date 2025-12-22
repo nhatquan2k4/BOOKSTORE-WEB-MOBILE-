@@ -255,7 +255,7 @@ namespace BookStore.Application.Services.Catalog
             Stream fileStream,
             string fileName,
             string contentType,
-            bool isCover = false,
+            bool isCover = true,
             int displayOrder = 0)
         {
             // Validate book exists
@@ -265,9 +265,12 @@ namespace BookStore.Application.Services.Catalog
                 throw new NotFoundException($"Không tìm thấy sách với ID {bookId}");
             }
 
-            // Generate unique filename
+            // Generate unique filename with bookId prefix for better organization
             var extension = Path.GetExtension(fileName).ToLowerInvariant();
-            var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+            var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8); // Short GUID
+            var uniqueFileName = $"book_{bookId}_{timestamp}_{uniqueId}{extension}";
+            // Example: book_a1b2c3d4-e5f6-7890-abcd-ef1234567890_20251215120000_abc12345.jpg
 
             // Upload to MinIO
             var imageUrl = await _minIOService.UploadFileAsync(
@@ -276,10 +279,21 @@ namespace BookStore.Application.Services.Catalog
                 contentType,
                 BOOK_IMAGES_BUCKET);
 
-            // If this image is set as cover, unset previous cover
+            // Get current cover image (if exists) to delete after upload
+            string? oldImageFileName = null;
             if (isCover)
             {
-                await UnsetCurrentCoverAsync(bookId);
+                var images = await _bookImageRepository.GetByBookIdAsync(bookId);
+                var currentCover = images.FirstOrDefault(i => i.IsCover);
+
+                if (currentCover != null)
+                {
+                    // Extract filename from old URL to delete later
+                    oldImageFileName = ExtractFileNameFromUrl(currentCover.ImageUrl);
+
+                    // Delete old cover from database
+                    _bookImageRepository.Delete(currentCover);
+                }
             }
 
             // Create entity
@@ -295,6 +309,20 @@ namespace BookStore.Application.Services.Catalog
             // Save to DB
             await _bookImageRepository.AddAsync(bookImage);
             await _bookImageRepository.SaveChangesAsync();
+
+            // Delete old image file from MinIO after successful DB update
+            if (!string.IsNullOrEmpty(oldImageFileName))
+            {
+                try
+                {
+                    await _minIOService.DeleteFileAsync(oldImageFileName, BOOK_IMAGES_BUCKET);
+                }
+                catch (Exception ex)
+                {
+                    // Log error but don't fail the upload
+                    Console.WriteLine($"Warning: Could not delete old cover image from MinIO: {ex.Message}");
+                }
+            }
 
             return bookImage.ToDto();
         }

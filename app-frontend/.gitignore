@@ -1,3 +1,4 @@
+
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
@@ -41,3 +42,55 @@ app-example
 # generated native folders
 /ios
 /android
+
+# VSCode
+.vscode/
+.idea/
+*.code-workspace
+
+# Documentation (if you want to keep these out of git)
+*.md.backup
+BOOK_DETAIL_README.md
+PROJECT_STRUCTURE.md
+STRUCTURE_EXAMPLES.md
+MOCK_DATA_UPDATE.md
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Build outputs
+build/
+out/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# OS Files
+Thumbs.db
+Desktop.ini
+
+# Package manager
+.pnpm-store/
+.yarn/
+.pnp.*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Lock files (optional - uncomment if you want to ignore)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
