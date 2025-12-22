@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import TableActions from './TableActions';
 
 interface Column<T> {
     key: keyof T | string;
@@ -12,18 +13,23 @@ interface TableProps<T> {
     onEdit?: (item: T) => void;
     onDelete?: (item: T) => void;
     onView?: (item: T) => void;
+    loading?: boolean;
 }
 
 function Table<T extends { id: string | number }>({
     columns,
-    data,
+    data = [],
     onEdit,
     onDelete,
     onView,
+    loading = false,
 }: TableProps<T>) {
     const getValue = (item: T, key: string): any => {
         return (item as any)[key];
     };
+
+    // Safety check
+    const safeData = Array.isArray(data) ? data : [];
 
     return (
         <div className="overflow-x-auto bg-white rounded-lg shadow">
@@ -46,17 +52,29 @@ function Table<T extends { id: string | number }>({
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                    {data.length === 0 ? (
+                    {loading ? (
                         <tr>
                             <td
-                                colSpan={columns.length + 1}
+                                colSpan={columns.length + (onEdit || onDelete || onView ? 1 : 0)}
+                                className="px-6 py-8 text-center text-gray-500"
+                            >
+                                <div className="flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                    <span className="ml-3">Đang tải...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    ) : safeData.length === 0 ? (
+                        <tr>
+                            <td
+                                colSpan={columns.length + (onEdit || onDelete || onView ? 1 : 0)}
                                 className="px-6 py-8 text-center text-gray-500"
                             >
                                 Không có dữ liệu
                             </td>
                         </tr>
                     ) : (
-                        data.map((item) => (
+                        safeData.map((item) => (
                             <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                                 {columns.map((column) => (
                                     <td
@@ -70,32 +88,12 @@ function Table<T extends { id: string | number }>({
                                 ))}
                                 {(onEdit || onDelete || onView) && (
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        <div className="flex gap-2">
-                                            {onView && (
-                                                <button
-                                                    onClick={() => onView(item)}
-                                                    className="text-blue-600 hover:text-blue-900 font-medium"
-                                                >
-                                                    Xem
-                                                </button>
-                                            )}
-                                            {onEdit && (
-                                                <button
-                                                    onClick={() => onEdit(item)}
-                                                    className="text-indigo-600 hover:text-indigo-900 font-medium"
-                                                >
-                                                    Sửa
-                                                </button>
-                                            )}
-                                            {onDelete && (
-                                                <button
-                                                    onClick={() => onDelete(item)}
-                                                    className="text-red-600 hover:text-red-900 font-medium"
-                                                >
-                                                    Xóa
-                                                </button>
-                                            )}
-                                        </div>
+                                        <TableActions
+                                            item={item}
+                                            onView={onView}
+                                            onEdit={onEdit}
+                                            onDelete={onDelete}
+                                        />
                                     </td>
                                 )}
                             </tr>

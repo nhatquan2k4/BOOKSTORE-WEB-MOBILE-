@@ -84,6 +84,26 @@ namespace BookStore.Application.Mappers.Catalog.Book
                 PageCount = book.PageCount,
                 IsAvailable = book.IsAvailable,
 
+                // Current Price (active, non-expired)
+                CurrentPrice = book.Prices?
+                    .Where(p => p.IsCurrent
+                                && p.EffectiveFrom <= DateTime.UtcNow
+                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .FirstOrDefault()?.Amount,
+
+                // Discount Price (active price with discount)
+                DiscountPrice = book.Prices?
+                    .Where(p => p.IsCurrent
+                                && p.EffectiveFrom <= DateTime.UtcNow
+                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow)
+                                && p.DiscountId.HasValue)
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .FirstOrDefault()?.Amount,
+
+                // Stock Quantity
+                StockQuantity = book.StockItem?.QuantityOnHand ?? 0,
+
                 // Publisher - sử dụng PublisherMapper
                 Publisher = book.Publisher?.ToDto()!,
 

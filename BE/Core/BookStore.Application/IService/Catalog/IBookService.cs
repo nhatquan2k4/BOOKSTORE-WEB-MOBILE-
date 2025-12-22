@@ -32,5 +32,8 @@ namespace BookStore.Application.IService.Catalog
 
         // Smart recommendations
         Task<List<BookDto>> GetRecommendationsAsync(List<Guid> excludeBookIds, List<Guid> categoryIds, int limit = 8);
+        
+        // Price management
+        Task<bool> UpdatePriceAsync(Guid bookId, UpdateBookPriceDto dto);
     }
 }
