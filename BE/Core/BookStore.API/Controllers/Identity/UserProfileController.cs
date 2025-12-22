@@ -42,68 +42,6 @@ namespace BookStore.API.Controllers.Identity
 
         #region Profile Management
 
-        /// <summary>
-        /// Upload Avatar (MỚI THÊM)
-        /// </summary>
-        [HttpPost("avatar")]
-        public async Task<IActionResult> UploadAvatar(IFormFile file)
-        {
-            if (file == null || file.Length == 0)
-                return BadRequest(new { Success = false, Message = "Vui lòng chọn file ảnh" });
-
-            try
-            {
-                var userId = GetCurrentUserId();
-                var profile = await _userProfileService.GetUserProfileByUserIdAsync(userId);
-
-                if (profile == null)
-                {
-                    return BadRequest(new { Success = false, Message = "Chỉ chấp nhận file ảnh (.jpg, .png, .gif, .webp)" });
-                }
-
-                // 2. Tạo tên file độc nhất để tránh trùng lặp
-                var fileName = $"{Guid.NewGuid()}{extension}";
-
-                // 3. Xử lý đường dẫn lưu file (FIX LỖI NULL PATH Ở ĐÂY)
-                // Nếu WebRootPath bị null (do chưa có folder wwwroot), ta lấy ContentRootPath + "wwwroot"
-                string rootPath = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
-                
-                // Đường dẫn: wwwroot/uploads/avatars
-                var uploadFolder = Path.Combine(rootPath, "uploads", "avatars");
-                
-                // 4. Tự động tạo thư mục nếu chưa có
-                if (!Directory.Exists(uploadFolder))
-                    Directory.CreateDirectory(uploadFolder);
-
-                var filePath = Path.Combine(uploadFolder, fileName);
-
-                // 5. Lưu file xuống ổ cứng
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                // 6. Trả về URL tương đối để Frontend lưu vào DB
-                var fileUrl = $"/uploads/avatars/{fileName}";
-
-                return Ok(new 
-                { 
-                    Success = true, 
-                    Message = "Upload ảnh thành công", 
-                    AvatarUrl = fileUrl 
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    Success = false,
-                    Message = "Lỗi khi upload ảnh",
-                    Error = ex.Message
-                });
-            }
-        }
-
         /// Lấy thông tin profile của user hiện tại
         [HttpGet("profile")]
         public async Task<IActionResult> GetMyProfile()

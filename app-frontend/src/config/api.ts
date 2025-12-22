@@ -9,10 +9,15 @@
 // export const API_BASE_URL = 'http://192.168.1.100:5276/api'; // Thiết bị thật (thay IP máy bạn)
 
 // ====== LOCAL NETWORK ======
-export const API_BASE_URL = 'http://192.168.1.252:5276'; // API backend
-export const MINIO_BASE_URL = 'http://192.168.1.252:9000'; // MinIO storage
+// Thay IP này bằng IP máy tính của bạn (chạy `ipconfig` để xem)
+// Máy tính và điện thoại phải cùng WiFi
+export const API_BASE_URL = "http://192.168.1.101:5276"; // API backend
+export const MINIO_BASE_URL = "http://192.168.1.101:9000"; // MinIO storage
 
-// ====== NGROK (Uncomment khi dùng ngrok) ======
+// ====== NGROK / TUNNEL (Dùng khi không cùng mạng) ======
+// Cách dùng: npm install -g @expo/ngrok
+// Expo sẽ tự động tạo tunnel khi chạy `npx expo start --tunnel`
+// Hoặc dùng ngrok thủ công:
 // export const API_BASE_URL = 'https://your-api.ngrok.io'; // Ngrok API URL (port 5276)
 // export const MINIO_BASE_URL = 'https://your-minio.ngrok.io'; // Ngrok MinIO URL (port 9000)
 // Lưu ý: Cần chạy 2 ngrok instances:

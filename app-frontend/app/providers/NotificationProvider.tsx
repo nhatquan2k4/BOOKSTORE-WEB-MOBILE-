@@ -75,3 +75,5 @@ export const useNotifications = () => {
   }
   return context;
 };
+
+export default NotificationProvider;
