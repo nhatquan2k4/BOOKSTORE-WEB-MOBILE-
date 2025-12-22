@@ -58,29 +58,27 @@ pipeline {
                             // 1. Login Docker trên Windows
                             sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"echo ${D_PASS} | docker login ${REGISTRY_URL} -u ${D_USER} --password-stdin\""
 
-                            // 2. Stop & Remove container cũ (Dùng try-catch PowerShell để không lỗi nếu chưa có container)
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"try { docker stop ${IMAGE_NAME}; docker rm ${IMAGE_NAME} } catch {}; echo 'Cleaned old container'\""
+                            // 2. Backup docker-compose.yml hiện tại
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"cd ${COMPOSE_PATH}; Copy-Item docker-compose.yml docker-compose.yml.bak -Force\""
 
-                            // 3. Khởi động Infrastructure (DB, MinIO) bằng Docker Compose
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"cd ${COMPOSE_PATH}; docker compose up -d\""
+                            // 3. Update docker-compose.yml để sử dụng image từ registry thay vì build
+                            def composeUpdateCmd = """
+                                cd ${COMPOSE_PATH};
+                                \\\$content = Get-Content docker-compose.yml -Raw;
+                                \\\$content = \\\$content -replace 'build:[\\s\\S]*?dockerfile: Dockerfile', 'image: ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}';
+                                \\\$content | Set-Content docker-compose.yml;
+                                Write-Host 'Updated docker-compose.yml to use image: ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}';
+                            """
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"${composeUpdateCmd}\""
 
-                            // 4. Pull Image mới nhất
+                            // 4. Pull image mới từ registry
                             sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""
 
-                            // 5. Tìm tên Network (PowerShell syntax)
-                            def findNetworkCmd = "docker network ls --format '{{.Name}}' | Where-Object { \\\$_ -like '*bookstore*' } | Select-Object -First 1"
-                            def networkName = sh(script: "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"${findNetworkCmd}\"", returnStdout: true).trim()
-                            
-                            echo "Found Network: '${networkName}'"
-                            if (networkName == "") {
-                                error "Không tìm thấy Docker Network nào có tên chứa 'bookstore'. Hãy kiểm tra lại docker-compose!"
-                            }
+                            // 5. Restart backend service với image mới
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"cd ${COMPOSE_PATH}; docker compose up -d bookstore-api\""
 
-                            // 6. Chạy Container mới
-                            sh """ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} "docker run -d --name ${IMAGE_NAME} --network ${networkName} -e ASPNETCORE_ENVIRONMENT=Development -e 'ConnectionStrings__UsersDb=Server=bookstore-sqlserver;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;TrustServerCertificate=True' -e MinIO__Endpoint=minio:9000 -e MinIO__AccessKey=minioadmin -e MinIO__SecretKey=minioadmin123 -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""""
-                            
-                            // 7. Sleep và restart Nginx
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"Start-Sleep -Seconds 5; docker restart bookstore-nginx; docker ps --filter name=${IMAGE_NAME}\""
+                            // 6. Kiểm tra trạng thái
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"docker ps --filter name=bookstore-api\""
                         }
                     }
                 }
