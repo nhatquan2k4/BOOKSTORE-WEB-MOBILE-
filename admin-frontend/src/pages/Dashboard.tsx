@@ -90,8 +90,8 @@ const Dashboard: React.FC = () => {
             // Set recent orders
             setRecentOrders(recentOrders?.data || recentOrders?.items || []);
 
-            // Set top books
-            setTopBooks(topBooks || []);
+            // Set top books - ensure it's always an array
+            setTopBooks(Array.isArray(topBooks) ? topBooks : []);
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
             // Set default values on error
@@ -250,7 +250,7 @@ const Dashboard: React.FC = () => {
                         <h2 className="text-lg font-semibold text-gray-800">Sách bán chạy</h2>
                     </div>
                     <div className="p-6">
-                        {topBooks.length === 0 ? (
+                        {!topBooks || topBooks.length === 0 ? (
                             <p className="text-gray-500 text-center py-4">Chưa có dữ liệu bán hàng</p>
                         ) : (
                             <div className="space-y-4">

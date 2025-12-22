@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, Package, Calendar, BookOpen, Globe, FileText, DollarSign, X, Upload } from 'lucide-react';
 import { bookService, bookImageService, authorService, publisherService, categoryService } from '../services';
 import type { BookDetail, Author, Publisher, Category } from '../types';
+import { getImageUrl } from '../constants/config';
 
 const BookDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -179,12 +180,15 @@ const BookDetailPage: React.FC = () => {
 
         setUploadingImages(true);
         try {
+            // Nếu upload 1 file → set làm cover (ghi đè ảnh cũ)
+            // Nếu upload nhiều file → không set cover (thêm ảnh phụ)
+            const isCoverImage = files.length === 1;
             const currentImageCount = book.images?.length || 0;
             
             for (let i = 0; i < files.length; i++) {
                 const formData = new FormData();
                 formData.append('file', files[i]);
-                formData.append('isCover', 'false');
+                formData.append('isCover', isCoverImage ? 'true' : 'false');
                 formData.append('displayOrder', (currentImageCount + i).toString());
 
                 await bookImageService.upload(book.id, formData);
@@ -241,6 +245,7 @@ const BookDetailPage: React.FC = () => {
     }
 
     const coverImage = book.images?.find(img => img.isCover)?.imageUrl || book.images?.[0]?.imageUrl;
+    const coverImageUrl = getImageUrl(coverImage);
 
     return (
         <div className="space-y-6">
@@ -286,7 +291,7 @@ const BookDetailPage: React.FC = () => {
                         <div className="sticky top-8">
                             {coverImage ? (
                                 <img
-                                    src={coverImage}
+                                    src={coverImageUrl}
                                     alt={book.title}
                                     className="w-full rounded-lg shadow-md object-cover"
                                     onError={(e) => {
@@ -307,7 +312,7 @@ const BookDetailPage: React.FC = () => {
                                         {book.images.map((image) => (
                                             <div key={image.id} className="relative group">
                                                 <img
-                                                    src={image.imageUrl}
+                                                    src={getImageUrl(image.imageUrl)}
                                                     alt={`${book.title} - ${image.displayOrder}`}
                                                     className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-75 transition-opacity"
                                                     onError={(e) => {
