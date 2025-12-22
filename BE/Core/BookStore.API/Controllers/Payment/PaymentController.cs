@@ -1,7 +1,9 @@
 using BookStore.Application.Dtos.Payment;
 using BookStore.Application.IService.Payment;
+using BookStore.API.Settings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
 namespace BookStore.API.Controllers.Payment
@@ -12,10 +14,14 @@ namespace BookStore.API.Controllers.Payment
     public class PaymentController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
+        private readonly PaymentSettings _paymentSettings;
 
-        public PaymentController(IPaymentService paymentService)
+        public PaymentController(
+            IPaymentService paymentService,
+            IOptions<PaymentSettings> paymentSettings)
         {
             _paymentService = paymentService;
+            _paymentSettings = paymentSettings.Value;
         }
 
         // GET: api/payment/{id}
@@ -97,38 +103,58 @@ namespace BookStore.API.Controllers.Payment
         {
             try
             {
-                // Bank configuration
-                const string accountNumber = "2230333906939";
-                const string accountName = "HOANG THO TU";
-                const string bankCode = "970422"; // MB Bank
-                const string template = "compact";
+                Console.WriteLine($"=== CreateQRPayment Called ===");
+                Console.WriteLine($"OrderId: {dto.OrderId}");
+                Console.WriteLine($"Amount: {dto.Amount}");
+                Console.WriteLine($"Description: {dto.Description}");
+
+                // Get bank configuration from appsettings
+                var vietQR = _paymentSettings.VietQR;
+                
+                Console.WriteLine($"Bank Config - Code: {vietQR.BankCode}, Account: {vietQR.AccountNumber}");
 
                 // Validate input
                 if (dto.OrderId == Guid.Empty || dto.Amount <= 0)
                 {
+                    Console.WriteLine($"Validation failed - OrderId: {dto.OrderId}, Amount: {dto.Amount}");
                     return BadRequest(new { Message = "Thông tin thanh toán không hợp lệ" });
+                }
+
+                // Validate settings
+                if (string.IsNullOrWhiteSpace(vietQR.BankCode) || 
+                    string.IsNullOrWhiteSpace(vietQR.AccountNumber) || 
+                    string.IsNullOrWhiteSpace(vietQR.AccountName))
+                {
+                    Console.WriteLine("❌ Payment settings not configured properly!");
+                    return StatusCode(500, new { Message = "Cấu hình thanh toán chưa được thiết lập" });
                 }
 
                 // Generate transfer content
                 var transferContent = dto.Description ?? $"MUA {dto.OrderId}";
 
                 // Create VietQR URL
-                var qrCodeUrl = $"https://img.vietqr.io/image/{bankCode}-{accountNumber}-{template}.jpg?amount={dto.Amount}&addInfo={Uri.EscapeDataString(transferContent)}&accountName={Uri.EscapeDataString(accountName)}";
+                var qrCodeUrl = $"https://img.vietqr.io/image/{vietQR.BankCode}-{vietQR.AccountNumber}-{vietQR.Template}.jpg?amount={dto.Amount}&addInfo={Uri.EscapeDataString(transferContent)}&accountName={Uri.EscapeDataString(vietQR.AccountName)}";
 
                 var response = new CreateQRPaymentResponseDto
                 {
                     Success = true,
                     QrCodeUrl = qrCodeUrl,
                     OrderId = dto.OrderId.ToString(),
-                    AccountNumber = accountNumber,
-                    AccountName = accountName,
+                    AccountNumber = vietQR.AccountNumber,
+                    AccountName = vietQR.AccountName,
                     TransferContent = transferContent
                 };
+
+                Console.WriteLine($"QR URL Generated: {qrCodeUrl}");
+                Console.WriteLine($"=== Response Created Successfully ===");
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"=== Error in CreateQRPayment ===");
+                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
                 return StatusCode(500, new { Message = "Lỗi tạo mã QR thanh toán", Error = ex.Message });
             }
         }

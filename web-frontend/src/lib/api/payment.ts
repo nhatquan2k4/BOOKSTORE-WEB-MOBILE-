@@ -24,11 +24,17 @@ export interface CheckPaymentStatusResponse {
 export const paymentApi = {
   createQR: async (data: CreateQRRequest): Promise<CreateQRResponse> => {
     try {
+      console.log('[PAYMENT API] Creating QR with data:', data);
+      
       // Validate UUID
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(data.orderId)) {
+        console.error('[PAYMENT API] Invalid UUID:', data.orderId);
         throw new Error('OrderId phải là UUID hợp lệ');
       }
+
+      console.log('[PAYMENT API] UUID validation passed');
+      console.log('[PAYMENT API] Sending request to /api/payment/qr');
 
       const response = await axiosInstance.post('/api/payment/qr', {
         orderId: data.orderId,
@@ -36,9 +42,17 @@ export const paymentApi = {
         description: data.description
       });
       
+      console.log('[PAYMENT API] Response received:', response);
+      console.log('[PAYMENT API] Response data:', response.data);
+      console.log('[PAYMENT API] Response status:', response.status);
+      
       return response.data;
     } catch (error: any) {
-      console.error('QR creation error details:', error.response?.data || error);
+      console.error('[PAYMENT API] ❌ QR creation error:', error);
+      console.error('[PAYMENT API] Error response:', error.response);
+      console.error('[PAYMENT API] Error data:', error.response?.data);
+      console.error('[PAYMENT API] Error status:', error.response?.status);
+      console.error('[PAYMENT API] Error message:', error.message);
       throw new Error(error.response?.data?.message || 'Lỗi tạo mã QR');
     }
   },
