@@ -14,7 +14,7 @@ namespace BookStore.Infrastructure.Data.Seeders
             {
                 new Warehouse
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.Parse("d1925db2-8fa2-4471-ae9d-acb6cf133a73"), 
                     Name = "Kho Hà Nội",
                     Address = "Số 123, Đường Giải Phóng, Quận Hai Bà Trưng, Hà Nội",
                     Description = "Kho trung tâm khu vực miền Bắc",

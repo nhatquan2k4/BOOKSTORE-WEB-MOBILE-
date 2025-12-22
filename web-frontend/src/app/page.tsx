@@ -5,261 +5,8 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge, Button } from "@/components/ui";
-import { Card, CardContent } from "@/components/ui/Card";
-
-const featuredBooks = [
-  {
-    id: 1,
-    title: "Clean Code",
-    author: "Robert C. Martin",
-    price: 350000,
-    originalPrice: 450000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 1234,
-    hot: true,
-  },
-  {
-    id: 2,
-    title: "Design Patterns",
-    author: "Gang of Four",
-    price: 280000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 856,
-    hot: true,
-  },
-  {
-    id: 3,
-    title: "The Pragmatic Programmer",
-    author: "Andrew Hunt",
-    price: 320000,
-    originalPrice: 400000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 645,
-    hot: false,
-  },
-  {
-    id: 4,
-    title: "Refactoring",
-    author: "Martin Fowler",
-    price: 290000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 432,
-    hot: false,
-  },
-  {
-    id: 5,
-    title: "Introduction to Algorithms",
-    author: "Thomas H. Cormen",
-    price: 450000,
-    originalPrice: 550000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 1567,
-    hot: true,
-  },
-  {
-    id: 6,
-    title: "You Don't Know JS",
-    author: "Kyle Simpson",
-    price: 180000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviews: 892,
-    hot: false,
-  },
-];
-
-const categories = [
-  {
-    id: 1,
-    name: "Lập trình",
-    count: 1234,
-    color: "from-blue-500 to-cyan-500",
-    image: "/image/lap_trinh.jpg",
-    href: "/programming",
-  },
-  {
-    id: 2,
-    name: "Kinh doanh",
-    count: 856,
-    color: "from-purple-500 to-pink-500",
-    image: "/image/kinh_doanh.jpg",
-    href: "/business",
-  },
-  {
-    id: 3,
-    name: "Thiết kế",
-    count: 645,
-    color: "from-orange-500 to-red-500",
-    image: "/image/thiet_ke.jpg",
-    href: "/design",
-  },
-  {
-    id: 4,
-    name: "Khoa học",
-    count: 432,
-    color: "from-green-500 to-teal-500",
-    image: "/image/khoa_hoc.png",
-    href: "/courses",
-  },
-  {
-    id: 5,
-    name: "Văn học",
-    count: 1567,
-    color: "from-indigo-500 to-purple-500",
-    image: "/image/van_hoc.jpg",
-    href: "/literature",
-  },
-  {
-    id: 6,
-    name: "Kỹ năng sống",
-    count: 892,
-    color: "from-pink-500 to-rose-500",
-    image: "/image/ky_nang_song.jpg",
-    href: "/life-skills",
-  },
-  {
-    id: 7,
-    name: "Thiếu nhi",
-    count: 543,
-    color: "from-yellow-500 to-orange-500",
-    image: "/image/thieu_nhi.jpg",
-    href: "/children",
-  },
-  {
-    id: 8,
-    name: "Ngoại ngữ",
-    count: 721,
-    color: "from-cyan-500 to-blue-500",
-    image: "/image/ngoai_ngu.jpg",
-    href: "/foreign-languages",
-  },
-];
-
-const popularBooks = [
-  {
-    id: "p1",
-    title: "Bố Già",
-    author: "Mario Puzo",
-    price: 120000,
-    originalPrice: 150000,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p2",
-    title: "Tuổi trẻ đáng giá bao nhiêu",
-    author: "Rosie Nguyễn",
-    price: 85000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p3",
-    title: "Đắc nhân tâm",
-    author: "Dale Carnegie",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p4",
-    title: "Nhà giả kim",
-    author: "Paulo Coelho",
-    price: 78000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p5",
-    title: "Càng kỷ luật càng tự do",
-    author: "Jocko Willink",
-    price: 110000,
-    originalPrice: 135000,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p6",
-    title: "Nghĩ giàu làm giàu",
-    author: "Napoleon Hill",
-    price: 125000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p7",
-    title: "7 thói quen hiệu quả",
-    author: "Stephen Covey",
-    price: 140000,
-    originalPrice: 180000,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p8",
-    title: "Quẳng gánh lo đi mà vui sống",
-    author: "Dale Carnegie",
-    price: 88000,
-    originalPrice: 105000,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p9",
-    title: "Sapiens: Lược sử loài người",
-    author: "Yuval Noah Harari",
-    price: 195000,
-    originalPrice: 250000,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p10",
-    title: "Homo Deus",
-    author: "Yuval Noah Harari",
-    price: 185000,
-    originalPrice: 0,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p11",
-    title: "Atomic Habits",
-    author: "James Clear",
-    price: 160000,
-    originalPrice: 195000,
-    cover: "/image/anh.png",
-  },
-  {
-    id: "p12",
-    title: "Deep Work",
-    author: "Cal Newport",
-    price: 145000,
-    originalPrice: 175000,
-    cover: "/image/anh.png",
-  },
-];
-
-const benefits = [
-  {
-    title: "Miễn phí vận chuyển",
-    description: "Cho đơn hàng từ 500.000₫",
-  },
-  {
-    title: "Thanh toán an toàn",
-    description: "Bảo mật thông tin 100%",
-  },
-  {
-    title: "Đọc eBook",
-    description: "Mọi lúc, mọi nơi",
-  },
-  {
-    title: "Ưu đãi hấp dẫn",
-    description: "Giảm giá lên đến 50%",
-  },
-];
+import { bookService, categoryService } from "@/services";
+import type { BookDto, CategoryDto } from "@/types/dtos";
 
 // Helper format tiền
 const formatVnd = (price: number) =>
@@ -275,12 +22,18 @@ const calculateDiscount = (original: number, current: number) =>
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const heroImages = [
-    "/image/banner1.png",
-    "/image/banner2.png",
+    "/image/banner1.jpg",
+    "/image/banner2.jpg",
     "/image/banner3.png",
     "/image/banner4.png",
     "/image/banner5.png",
   ];
+
+  // API data state
+  const [featuredBooksData, setFeaturedBooksData] = useState<BookDto[]>([]);
+  const [popularBooksData, setPopularBooksData] = useState<BookDto[]>([]);
+  const [categoriesData, setCategoriesData] = useState<CategoryDto[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Carousel logic for featured books
   const featuredRef = useRef<HTMLDivElement>(null);
@@ -291,6 +44,41 @@ export default function HomePage() {
   const popularRef = useRef<HTMLDivElement>(null);
   const [canPrevPopular, setCanPrevPopular] = useState(false);
   const [canNextPopular, setCanNextPopular] = useState(true);
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [featuredRes, popularRes, categoriesRes] = await Promise.all([
+          bookService.getBestSellingBooks(12),
+          bookService.getMostViewedBooks(12),
+          categoryService.getCategories(1, 8),
+        ]);
+
+        console.log("Featured books response:", featuredRes);
+        console.log("Popular books response:", popularRes);
+        console.log("Categories response:", categoriesRes);
+
+        setFeaturedBooksData(Array.isArray(featuredRes) ? featuredRes : []);
+        setPopularBooksData(Array.isArray(popularRes) ? popularRes : []);
+        setCategoriesData(categoriesRes?.items || []);
+        
+        console.log("State updated - Featured:", featuredRes?.length, "Popular:", popularRes?.length, "Categories:", categoriesRes?.items?.length);
+      } catch (error) {
+        console.error("Error fetching home page data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Use API data only
+  const displayFeaturedBooks = featuredBooksData;
+  const displayPopularBooks = popularBooksData;
+  const displayCategories = categoriesData;
 
   const updateArrowsFeatured = () => {
     if (!featuredRef.current) return;
@@ -476,7 +264,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold">Danh mục nổi bật</h2>
-            <Link href="/books">
+            <Link href="/categories">
               <Button variant="ghost" size="sm">
                 Xem tất cả
                 <svg
@@ -497,58 +285,123 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {categories.slice(0, 8).map((cat) => (
-              <Link key={cat.id} href={cat.href}>
-                <div className="relative h-48 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 group">
-                  {/* Background Image with Overlay */}
-                  <div className="absolute inset-0">
-                    <Image
-                      src={cat.image}
-                      alt={cat.name}
-                      fill
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                      className="object-cover blur-[1px] group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-20`}
-                    ></div>
-                    <div className="absolute inset-0 bg-black/5"></div>
-                  </div>
+            {loading ? (
+              // Loading skeleton for categories
+              Array.from({ length: 8 }).map((_, idx) => (
+                <div key={idx} className="h-48 rounded-lg bg-gray-200 animate-pulse"></div>
+              ))
+            ) : (
+              displayCategories.slice(0, 8).map((cat) => {
+                // Map category to href
+                const categoryHrefMap: Record<string, string> = {
+                  "lập trình": "/programming",
+                  "programming": "/programming",
+                  "kinh doanh": "/business",
+                  "business": "/business",
+                  "thiết kế": "/design",
+                  "design": "/design",
+                  "khoa học": "/courses",
+                  "science": "/courses",
+                  "văn học": "/literature",
+                  "literature": "/literature",
+                  "kỹ năng sống": "/life-skills",
+                  "life skills": "/life-skills",
+                  "thiếu nhi": "/children",
+                  "children": "/children",
+                  "ngoại ngữ": "/foreign-languages",
+                  "foreign languages": "/foreign-languages",
+                };
 
-                  {/* Content */}
-                  <div className="relative z-10 p-6 h-full flex flex-col justify-between">
-                    <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center shadow-lg">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-white drop-shadow-md"
-                      >
-                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
-                      </svg>
-                    </div>
+                const catName = cat.name || "";
+                const catHref = categoryHrefMap[catName.toLowerCase()] || `/categories/${cat.id}`;
+                const colorClasses = [
+                  "from-blue-500 to-cyan-500",
+                  "from-purple-500 to-pink-500",
+                  "from-orange-500 to-red-500",
+                  "from-green-500 to-teal-500",
+                  "from-indigo-500 to-purple-500",
+                  "from-pink-500 to-rose-500",
+                  "from-yellow-500 to-orange-500",
+                  "from-cyan-500 to-blue-500",
+                ];
+                const colorClass = colorClasses[Number(cat.id) % colorClasses.length] || "from-blue-500 to-cyan-500";
 
-                    <div>
-                      <h3 className="font-bold text-xl mb-2 text-white drop-shadow-lg">
-                        {cat.name}
-                      </h3>
-                      <Badge
-                        variant="default"
-                        className="text-xs bg-white/95 text-gray-900 border-white/60 shadow-md"
-                      >
-                        {cat.count} sách
-                      </Badge>
+                // Fallback images for categories
+                const categoryImages: Record<string, string> = {
+                  "lập trình": "/image/lap_trinh.jpg",
+                  "programming": "/image/lap_trinh.jpg",
+                  "kinh doanh": "/image/kinh_doanh.jpg",
+                  "business": "/image/kinh_doanh.jpg",
+                  "thiết kế": "/image/thiet_ke.jpg",
+                  "design": "/image/thiet_ke.jpg",
+                  "khoa học": "/image/khoa_hoc.png",
+                  "science": "/image/khoa_hoc.png",
+                  "văn học": "/image/van_hoc.jpg",
+                  "literature": "/image/van_hoc.jpg",
+                  "kỹ năng sống": "/image/ky_nang_song.jpg",
+                  "life skills": "/image/ky_nang_song.jpg",
+                  "thiếu nhi": "/image/thieu_nhi.jpg",
+                  "children": "/image/thieu_nhi.jpg",
+                  "ngoại ngữ": "/image/ngoai_ngu.jpg",
+                  "foreign languages": "/image/ngoai_ngu.jpg",
+                };
+                const catImage = categoryImages[catName.toLowerCase()] || "/image/anh.png";
+
+                return (
+                  <Link key={cat.id} href={catHref}>
+                    <div className="relative h-48 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 group">
+                      {/* Background Image with Overlay */}
+                      <div className="absolute inset-0">
+                        <Image
+                          src={catImage}
+                          alt={cat.name}
+                          fill
+                          sizes="(max-width: 768px) 50vw, 25vw"
+                          className="object-cover blur-[1px] group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-br ${colorClass} opacity-20`}
+                        ></div>
+                        <div className="absolute inset-0 bg-black/5"></div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="relative z-10 p-6 h-full flex flex-col justify-between">
+                        <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center shadow-lg">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-white drop-shadow-md"
+                          >
+                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+                          </svg>
+                        </div>
+
+                        <div>
+                          <h3 className="font-bold text-xl mb-2 text-white drop-shadow-lg">
+                            {cat.name}
+                          </h3>
+                          <Badge
+                            variant="default"
+                            className="text-xs bg-white/95 text-gray-900 border-white/60 shadow-md"
+                          >
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            {(cat as any).description || "Khám phá ngay"}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                  </Link>
+                );
+              })
+            )}
           </div>
         </div>
       </section>
@@ -613,79 +466,105 @@ export default function HomePage() {
                         [&::-webkit-scrollbar]:hidden"
               style={{ overflowX: "auto" }}
             >
-              {featuredBooks.map((book) => (
-                <Link
-                  key={book.id}
-                  href={`/books/${book.id}`}
-                  className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
-                             border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
-                >
-                  {/* Ảnh sách full khung */}
-                  <div className="relative w-full aspect-[4/5]">
-                    <Image
-                      src={book.cover}
-                      alt={book.title}
-                      fill
-                      sizes="260px"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-
-                    {/* Badge level + mới 2024 giống mẫu */}
-                    {book.hot && (
-                      <div className="absolute top-2 left-2 flex items-center gap-1">
-                        <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-600 text-white shadow">
-                          Advanced
-                        </Badge>
-                      </div>
-                    )}
-
-                    <div className="absolute top-2 right-2">
-                      <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow">
-                        MỚI 2024
-                      </Badge>
+              {loading ? (
+                // Loading skeleton for featured books
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <div key={idx} className="w-[260px] min-w-[260px] rounded-2xl bg-white shadow-md overflow-hidden">
+                    <div className="w-full aspect-[4/5] bg-gray-200 animate-pulse"></div>
+                    <div className="p-3 space-y-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse"></div>
                     </div>
                   </div>
+                ))
+              ) : displayFeaturedBooks.length === 0 ? (
+                <div className="w-full text-center py-8 text-gray-500">
+                  Không có sách nổi bật.
+                </div>
+              ) : (
+                displayFeaturedBooks.map((book) => {
+                  const bookOriginalPrice = book.discountPrice ? book.currentPrice ?? 0 : 0;
+                  const bookDiscountPrice = book.discountPrice ?? book.currentPrice ?? 0;
+                  const bookCover = "/image/anh.png"; // BookDto doesn't have images
+                  const bookAuthor = book.authorNames && book.authorNames.length > 0 ? book.authorNames.join(", ") : "Chưa cập nhật";
+                  const bookRating = book.averageRating ?? 0;
+                  const bookReviews = book.totalReviews ?? 0;
 
-                  {/* Nội dung */}
-                  <div className="p-3 flex flex-col gap-1 flex-1">
-                    <h3 className="font-semibold text-sm line-clamp-2">
-                      {book.title}
-                    </h3>
-                    <p className="text-xs text-gray-600">{book.author}</p>
+                  return (
+                    <Link
+                      key={book.id}
+                      href={`/books/${book.id}`}
+                      className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
+                                 border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
+                    >
+                      {/* Ảnh sách full khung */}
+                      <div className="relative w-full aspect-[4/5]">
+                        <Image
+                          src={bookCover}
+                          alt={book.title}
+                          fill
+                          sizes="260px"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
 
-                    {/* Giá + % giảm */}
-                    <div className="mt-2 flex items-end justify-between gap-2">
-                      <div className="flex flex-col">
-                        <p className="text-red-600 font-bold text-sm">
-                          {formatVnd(book.price)}
-                        </p>
-                        {book.originalPrice > 0 && (
-                          <p className="text-xs text-gray-400 line-through">
-                            {formatVnd(book.originalPrice)}
-                          </p>
+                        {/* Badge level + mới 2024 giống mẫu */}
+                        {book.isAvailable && (
+                          <div className="absolute top-2 left-2 flex items-center gap-1">
+                            <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-600 text-white shadow">
+                              Advanced
+                            </Badge>
+                          </div>
                         )}
+
+                        <div className="absolute top-2 right-2">
+                          <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow">
+                            MỚI 2024
+                          </Badge>
+                        </div>
                       </div>
 
-                      {book.originalPrice > 0 && (
-                        <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
-                          -{calculateDiscount(book.originalPrice, book.price)}%
-                        </span>
-                      )}
-                    </div>
+                      {/* Nội dung */}
+                      <div className="p-3 flex flex-col gap-1 flex-1">
+                        <h3 className="font-semibold text-sm line-clamp-2">
+                          {book.title}
+                        </h3>
+                        <p className="text-xs text-gray-600">{bookAuthor}</p>
 
-                    {/* Rating */}
-                    <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
-                      <span className="text-yellow-400">★</span>
-                      <span className="font-semibold">
-                        {book.rating.toFixed(1)}
-                      </span>
-                      <span className="text-gray-400">
-                        ({book.reviews.toLocaleString()})
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                        {/* Rating */}
+                        {bookRating > 0 && (
+                          <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
+                            <span className="text-yellow-400">★</span>
+                            <span className="font-semibold">
+                              {bookRating.toFixed(1)}
+                            </span>
+                            <span className="text-gray-400">
+                              ({bookReviews.toLocaleString()})
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Giá: Giá giảm - Giá gốc - % giảm */}
+                        <div className="mt-2 flex items-center gap-2 flex-wrap">
+                          <p className="text-red-600 font-bold text-sm">
+                            {formatVnd(bookDiscountPrice)}
+                          </p>
+                          {bookOriginalPrice > 0 && bookDiscountPrice < bookOriginalPrice && (
+                            <>
+                              <p className="text-xs text-gray-400 line-through">
+                                {formatVnd(bookOriginalPrice)}
+                              </p>
+                              <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                                -{calculateDiscount(bookOriginalPrice, bookDiscountPrice)}%
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
             </div>
 
             {/* Nút phải */}
@@ -779,58 +658,96 @@ export default function HomePage() {
                         [&::-webkit-scrollbar]:hidden"
               style={{ overflowX: "auto" }}
             >
-              {popularBooks.map((book) => (
-                <Link
-                  key={book.id}
-                  href={`/books/${book.id}`}
-                  className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
-                             border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
-                >
-                  {/* Ảnh sách */}
-                  <div className="relative w-full aspect-[4/5]">
-                    <Image
-                      src={book.cover}
-                      alt={book.title}
-                      fill
-                      sizes="260px"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-
-                    <div className="absolute top-2 right-2">
-                      <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow">
-                        MỚI 2024
-                      </Badge>
+              {loading ? (
+                // Loading skeleton for popular books
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <div key={idx} className="w-[260px] min-w-[260px] rounded-2xl bg-white shadow-md overflow-hidden">
+                    <div className="w-full aspect-[4/5] bg-gray-200 animate-pulse"></div>
+                    <div className="p-3 space-y-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse"></div>
                     </div>
                   </div>
+                ))
+              ) : displayPopularBooks.length === 0 ? (
+                <div className="w-full text-center py-8 text-gray-500">
+                  Không có sách phổ biến.
+                </div>
+              ) : (
+                displayPopularBooks.map((book) => {
+                  const bookOriginalPrice = book.discountPrice ? book.currentPrice ?? 0 : 0;
+                  const bookDiscountPrice = book.discountPrice ?? book.currentPrice ?? 0;
+                  const bookCover = "/image/anh.png"; // BookDto doesn't have images
+                  const bookAuthor = book.authorNames && book.authorNames.length > 0 ? book.authorNames.join(", ") : "Chưa cập nhật";
+                  const bookRating = book.averageRating ?? 0;
+                  const bookReviews = book.totalReviews ?? 0;
 
-                  {/* Nội dung */}
-                  <div className="p-3 flex flex-col gap-1 flex-1">
-                    <h3 className="font-semibold text-sm line-clamp-2">
-                      {book.title}
-                    </h3>
-                    <p className="text-xs text-gray-600">{book.author}</p>
+                  return (
+                    <Link
+                      key={book.id}
+                      href={`/books/${book.id}`}
+                      className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
+                                 border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
+                    >
+                      {/* Ảnh sách */}
+                      <div className="relative w-full aspect-[4/5]">
+                        <Image
+                          src={bookCover}
+                          alt={book.title}
+                          fill
+                          sizes="260px"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
 
-                    <div className="mt-2 flex items-end justify-between gap-2">
-                      <div className="flex flex-col">
-                        <p className="text-red-600 font-bold text-sm">
-                          {formatVnd(book.price)}
-                        </p>
-                        {book.originalPrice > 0 && (
-                          <p className="text-xs text-gray-400 line-through">
-                            {formatVnd(book.originalPrice)}
-                          </p>
-                        )}
+                        <div className="absolute top-2 right-2">
+                          <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow">
+                            MỚI 2024
+                          </Badge>
+                        </div>
                       </div>
 
-                      {book.originalPrice > 0 && (
-                        <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
-                          -{calculateDiscount(book.originalPrice, book.price)}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                      {/* Nội dung */}
+                      <div className="p-3 flex flex-col gap-1 flex-1">
+                        <h3 className="font-semibold text-sm line-clamp-2">
+                          {book.title}
+                        </h3>
+                        <p className="text-xs text-gray-600">{bookAuthor}</p>
+
+                        {/* Rating */}
+                        {bookRating > 0 && (
+                          <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-600">
+                            <span className="text-yellow-400">★</span>
+                            <span className="font-semibold">
+                              {bookRating.toFixed(1)}
+                            </span>
+                            <span className="text-gray-400">
+                              ({bookReviews.toLocaleString()})
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Giá: Giá giảm - Giá gốc - % giảm */}
+                        <div className="mt-2 flex items-center gap-2 flex-wrap">
+                          <p className="text-red-600 font-bold text-sm">
+                            {formatVnd(bookDiscountPrice)}
+                          </p>
+                          {bookOriginalPrice > 0 && bookDiscountPrice < bookOriginalPrice && (
+                            <>
+                              <p className="text-xs text-gray-400 line-through">
+                                {formatVnd(bookOriginalPrice)}
+                              </p>
+                              <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">
+                                -{calculateDiscount(bookOriginalPrice, bookDiscountPrice)}%
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
             </div>
 
             {/* Nút phải */}
@@ -1013,97 +930,6 @@ export default function HomePage() {
               Dùng thử ngay - Miễn phí 7 ngày
             </Button>
           </Link>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Tại sao chọn chúng tôi?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((benefit, idx) => (
-              <Card key={idx} hover className="text-center">
-                <CardContent className="p-6">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-3xl">
-                    {idx === 0 && (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
-                        <path d="M15 18H9" />
-                        <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
-                        <circle cx="17" cy="18" r="2" />
-                        <circle cx="7" cy="18" r="2" />
-                      </svg>
-                    )}
-                    {idx === 1 && (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect width="20" height="16" x="2" y="4" rx="2" />
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                      </svg>
-                    )}
-                    {idx === 2 && (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
-                        <path d="M8 7h8" />
-                        <path d="M8 11h8" />
-                      </svg>
-                    )}
-                    {idx === 3 && (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
-                        <path d="m15 9-6 6" />
-                        <path d="M9 9h.01" />
-                        <path d="M15 15h.01" />
-                      </svg>
-                    )}
-                  </div>
-                  <h3 className="font-bold text-lg mb-2">{benefit.title}</h3>
-                  <p className="text-gray-600 text-sm">{benefit.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </div>
       </section>
     </div>

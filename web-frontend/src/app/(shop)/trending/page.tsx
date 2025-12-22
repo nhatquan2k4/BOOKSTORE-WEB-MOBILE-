@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 interface Book {
-  id: number;
+  id: string;
   title: string;
   author: string;
   price: number;
-  originalPrice: number;
+  originalPrice?: number;
   cover: string;
   rating: number;
   reviews: number;
@@ -25,330 +27,6 @@ interface Book {
   lastWeekPosition?: number;
 }
 
-const trendingBooks: Book[] = [
-  {
-    id: 1,
-    title: "Atomic Habits",
-    author: "James Clear",
-    price: 189000,
-    originalPrice: 250000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 15678,
-    trendScore: 98,
-    trendChange: "up",
-    weeklyViews: 125000,
-    weeklyOrders: 8500,
-    category: "Kỹ năng sống",
-    isHot: true,
-    position: 1,
-    lastWeekPosition: 3,
-  },
-  {
-    id: 2,
-    title: "Think and Grow Rich",
-    author: "Napoleon Hill",
-    price: 165000,
-    originalPrice: 220000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 12456,
-    trendScore: 95,
-    trendChange: "up",
-    weeklyViews: 98000,
-    weeklyOrders: 7200,
-    category: "Kinh doanh",
-    isHot: true,
-    position: 2,
-    lastWeekPosition: 5,
-  },
-  {
-    id: 3,
-    title: "The Psychology of Money",
-    author: "Morgan Housel",
-    price: 175000,
-    originalPrice: 230000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 11234,
-    trendScore: 94,
-    trendChange: "new",
-    weeklyViews: 89000,
-    weeklyOrders: 6800,
-    category: "Tài chính",
-    isHot: true,
-    position: 3,
-  },
-  {
-    id: 4,
-    title: "Clean Code",
-    author: "Robert C. Martin",
-    price: 350000,
-    originalPrice: 450000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 9876,
-    trendScore: 92,
-    trendChange: "stable",
-    weeklyViews: 76000,
-    weeklyOrders: 5400,
-    category: "Lập trình",
-    isHot: true,
-    position: 4,
-    lastWeekPosition: 4,
-  },
-  {
-    id: 5,
-    title: "Sapiens",
-    author: "Yuval Noah Harari",
-    price: 195000,
-    originalPrice: 260000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 18900,
-    trendScore: 91,
-    trendChange: "down",
-    weeklyViews: 72000,
-    weeklyOrders: 5100,
-    category: "Lịch sử",
-    isHot: false,
-    position: 5,
-    lastWeekPosition: 2,
-  },
-  {
-    id: 6,
-    title: "The 7 Habits of Highly Effective People",
-    author: "Stephen Covey",
-    price: 185000,
-    originalPrice: 240000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 8765,
-    trendScore: 89,
-    trendChange: "up",
-    weeklyViews: 68000,
-    weeklyOrders: 4800,
-    category: "Kỹ năng sống",
-    isHot: false,
-    position: 6,
-    lastWeekPosition: 8,
-  },
-  {
-    id: 7,
-    title: "Designing Data-Intensive Applications",
-    author: "Martin Kleppmann",
-    price: 420000,
-    originalPrice: 550000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 6543,
-    trendScore: 88,
-    trendChange: "new",
-    weeklyViews: 54000,
-    weeklyOrders: 4200,
-    category: "Lập trình",
-    isHot: false,
-    position: 7,
-  },
-  {
-    id: 8,
-    title: "The Lean Startup",
-    author: "Eric Ries",
-    price: 195000,
-    originalPrice: 250000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 7654,
-    trendScore: 86,
-    trendChange: "up",
-    weeklyViews: 51000,
-    weeklyOrders: 3900,
-    category: "Kinh doanh",
-    isHot: false,
-    position: 8,
-    lastWeekPosition: 11,
-  },
-  {
-    id: 9,
-    title: "Deep Work",
-    author: "Cal Newport",
-    price: 175000,
-    originalPrice: 225000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 6789,
-    trendScore: 85,
-    trendChange: "stable",
-    weeklyViews: 49000,
-    weeklyOrders: 3700,
-    category: "Kỹ năng sống",
-    isHot: false,
-    position: 9,
-    lastWeekPosition: 9,
-  },
-  {
-    id: 10,
-    title: "Zero to One",
-    author: "Peter Thiel",
-    price: 165000,
-    originalPrice: 210000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 7890,
-    trendScore: 84,
-    trendChange: "down",
-    weeklyViews: 47000,
-    weeklyOrders: 3500,
-    category: "Kinh doanh",
-    isHot: false,
-    position: 10,
-    lastWeekPosition: 7,
-  },
-  {
-    id: 11,
-    title: "The Design of Everyday Things",
-    author: "Don Norman",
-    price: 245000,
-    originalPrice: 320000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 5432,
-    trendScore: 82,
-    trendChange: "up",
-    weeklyViews: 43000,
-    weeklyOrders: 3200,
-    category: "Thiết kế",
-    isHot: false,
-    position: 11,
-    lastWeekPosition: 14,
-  },
-  {
-    id: 12,
-    title: "Hooked",
-    author: "Nir Eyal",
-    price: 175000,
-    originalPrice: 230000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 5678,
-    trendScore: 81,
-    trendChange: "new",
-    weeklyViews: 41000,
-    weeklyOrders: 3000,
-    category: "Kinh doanh",
-    isHot: false,
-    position: 12,
-  },
-  {
-    id: 13,
-    title: "Educated",
-    author: "Tara Westover",
-    price: 155000,
-    originalPrice: 200000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 9876,
-    trendScore: 80,
-    trendChange: "stable",
-    weeklyViews: 39000,
-    weeklyOrders: 2850,
-    category: "Văn học",
-    isHot: false,
-    position: 13,
-    lastWeekPosition: 13,
-  },
-  {
-    id: 14,
-    title: "The Subtle Art of Not Giving a F*ck",
-    author: "Mark Manson",
-    price: 145000,
-    originalPrice: 190000,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviews: 8765,
-    trendScore: 78,
-    trendChange: "down",
-    weeklyViews: 36000,
-    weeklyOrders: 2650,
-    category: "Kỹ năng sống",
-    isHot: false,
-    position: 14,
-    lastWeekPosition: 10,
-  },
-  {
-    id: 15,
-    title: "Refactoring UI",
-    author: "Adam Wathan & Steve Schoger",
-    price: 380000,
-    originalPrice: 480000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 4321,
-    trendScore: 77,
-    trendChange: "up",
-    weeklyViews: 34000,
-    weeklyOrders: 2500,
-    category: "Thiết kế",
-    isHot: false,
-    position: 15,
-    lastWeekPosition: 18,
-  },
-  {
-    id: 16,
-    title: "Start with Why",
-    author: "Simon Sinek",
-    price: 175000,
-    originalPrice: 230000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 6543,
-    trendScore: 76,
-    trendChange: "stable",
-    weeklyViews: 32000,
-    weeklyOrders: 2350,
-    category: "Kinh doanh",
-    isHot: false,
-    position: 16,
-    lastWeekPosition: 16,
-  },
-  {
-    id: 17,
-    title: "Đắc Nhân Tâm",
-    author: "Dale Carnegie",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 23456,
-    trendScore: 75,
-    trendChange: "down",
-    weeklyViews: 30000,
-    weeklyOrders: 2200,
-    category: "Kỹ năng sống",
-    isHot: false,
-    position: 17,
-    lastWeekPosition: 12,
-  },
-  {
-    id: 18,
-    title: "The Phoenix Project",
-    author: "Gene Kim",
-    price: 295000,
-    originalPrice: 380000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 5234,
-    trendScore: 74,
-    trendChange: "up",
-    weeklyViews: 28000,
-    weeklyOrders: 2050,
-    category: "Lập trình",
-    isHot: false,
-    position: 18,
-    lastWeekPosition: 21,
-  },
-];
-
 type SortOption = "trend" | "views" | "orders" | "rating" | "price-asc" | "price-desc";
 type TimeFilter = "today" | "week" | "month";
 
@@ -356,10 +34,56 @@ export default function TrendingBooksPage() {
   const [sortBy, setSortBy] = useState<SortOption>("trend");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("week");
   const [currentPage, setCurrentPage] = useState(1);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
   const booksPerPage = 18;
 
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await bookService.getBooks({
+          pageNumber: currentPage || 1,
+          pageSize: 20,
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
+            id: book.id,
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            price: book.discountPrice || book.currentPrice || 0,
+            originalPrice: book.currentPrice,
+            cover: "/image/anh.png",
+            rating: book.averageRating || 4.5,
+            reviews: book.totalReviews || 0,
+            trendScore: 90,
+            trendChange: "stable",
+            weeklyViews: 10000,
+            weeklyOrders: 500,
+            category: book.categoryNames?.[0] || "Chưa phân loại",
+            isHot: book.discountPrice ? true : false,
+          }));
+          setBooks(transformedBooks);
+          setTotalItems(response.totalCount || 0);
+        } else {
+          setBooks([]);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setBooks([]);
+        setTotalItems(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, [currentPage]);
+
   // Sort books
-  const sortedBooks = [...trendingBooks].sort((a, b) => {
+  const sortedBooks = [...books].sort((a, b) => {
     switch (sortBy) {
       case "trend":
         return b.trendScore - a.trendScore;
@@ -448,8 +172,20 @@ export default function TrendingBooksPage() {
         </div>
 
         {/* Books Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          {displayedBooks.map((book) => (
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                <div className="aspect-[2/3] bg-gray-200 rounded-lg mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {displayedBooks.map((book) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
@@ -515,7 +251,8 @@ export default function TrendingBooksPage() {
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (

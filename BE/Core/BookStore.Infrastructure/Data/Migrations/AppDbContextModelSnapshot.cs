@@ -1400,8 +1400,7 @@ namespace BookStore.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BookId")
-                        .IsUnique();
+                    b.HasIndex("BookId");
 
                     b.HasIndex("WarehouseId", "BookId")
                         .IsUnique();
@@ -2593,8 +2592,8 @@ namespace BookStore.Infrastructure.Data.Migrations
             modelBuilder.Entity("BookStore.Domain.Entities.Pricing_Inventory.StockItem", b =>
                 {
                     b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
-                        .WithOne("StockItem")
-                        .HasForeignKey("BookStore.Domain.Entities.Pricing_Inventory.StockItem", "BookId")
+                        .WithMany("StockItems")
+                        .HasForeignKey("BookId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -2820,7 +2819,7 @@ namespace BookStore.Infrastructure.Data.Migrations
 
                     b.Navigation("Reviews");
 
-                    b.Navigation("StockItem");
+                    b.Navigation("StockItems");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Catalog.BookFormat", b =>

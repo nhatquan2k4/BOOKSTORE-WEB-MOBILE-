@@ -131,11 +131,93 @@ namespace BookStore.Infrastructure.Data.Seeders
                     Address = "6/86 Duy Tân, Cầu Giấy, Hà Nội",
                     Email = "info@nxbctqg.org.vn",
                     PhoneNumber = "024-38221811"
+                },
+                new Publisher
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Nhà xuất bản Tri Thức",
+                    Address = "27 Nguyễn Trường Tộ, Ba Đình, Hà Nội",
+                    Email = "info@nxbtrithuc.vn",
+                    PhoneNumber = "024-37733544"
+                },
+                new Publisher
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Nhà xuất bản Giao thông Vận tải",
+                    Address = "80A Núi Trúc, Ba Đình, Hà Nội",
+                    Email = "info@nxbgtvt.vn",
+                    PhoneNumber = "024-37663388"
+                },
+                new Publisher
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Nhà xuất bản Công an Nhân dân",
+                    Address = "47 Phạm Văn Đồng, Bắc Từ Liêm, Hà Nội",
+                    Email = "info@nxbcand.vn",
+                    PhoneNumber = "024-37692788"
+                },
+                new Publisher
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Nhà xuất bản Khoa học và Kỹ thuật",
+                    Address = "46 Trần Hưng Đạo, Hoàn Kiếm, Hà Nội",
+                    Email = "info@nxbkhkt.vn",
+                    PhoneNumber = "024-39422131"
+                },
+                new Publisher
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Nhà xuất bản Hồng Đức",
+                    Address = "65 Tràng Thi, Hoàn Kiếm, Hà Nội",
+                    Email = "info@nxbhongduc.vn",
+                    PhoneNumber = "024-39260024"
+                },
+                new Publisher
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "IPM (Thái Hà Books)",
+                    Address = "Số 7 Ngõ 150 Thái Hà, Đống Đa, Hà Nội",
+                    Email = "info@ipm.vn",
+                    PhoneNumber = "024-35631632"
+                },
+                new Publisher
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Nhà xuất bản Thông tin và Truyền thông",
+                    Address = "115 Trần Duy Hưng, Cầu Giấy, Hà Nội",
+                    Email = "info@nxbthongtin.vn",
+                    PhoneNumber = "024-37834924"
+                },
+                new Publisher
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Nhà xuất bản Tài chính",
+                    Address = "27B Lý Thường Kiệt, Hoàn Kiếm, Hà Nội",
+                    Email = "info@nxbtaichinh.vn",
+                    PhoneNumber = "024-39420908"
+                },
+                new Publisher
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Nhà xuất bản Văn hóa Văn nghệ",
+                    Address = "51 Trần Hưng Đạo, Hoàn Kiếm, Hà Nội",
+                    Email = "info@nxbvhvn.com.vn",
+                    PhoneNumber = "024-39434082"
+                },
+                new Publisher
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Nhà xuất bản Giáo dục Việt Nam",
+                    Address = "81 Trần Hưng Đạo, Hoàn Kiếm, Hà Nội",
+                    Email = "info@nxbgd.vn",
+                    PhoneNumber = "024-38220801"
                 }
             };
 
             await context.Publishers.AddRangeAsync(publishers);
             await context.SaveChangesAsync();
+            
+            Console.WriteLine($"✅ Seeded {publishers.Length} publishers!");
         }
     }
 }

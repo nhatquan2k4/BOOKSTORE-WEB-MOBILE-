@@ -1,18 +1,20 @@
 // New Releases Page - Trang Sách Mới Ra Mắt
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 interface Book {
-  id: number;
+  id: string;
   title: string;
   author: string;
   price: number;
-  originalPrice: number;
+  originalPrice?: number;
   cover: string;
   rating: number;
   reviews: number;
@@ -21,252 +23,58 @@ interface Book {
   isNew: boolean;
 }
 
-const newReleases: Book[] = [
-  {
-    id: 1,
-    title: "AI 2024: The Future is Now",
-    author: "John Smith",
-    price: 295000,
-    originalPrice: 380000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 1234,
-    releaseDate: "2024-11-20",
-    category: "Công nghệ",
-    isNew: true,
-  },
-  {
-    id: 2,
-    title: "Web Development Mastery",
-    author: "Sarah Johnson",
-    price: 325000,
-    originalPrice: 420000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 987,
-    releaseDate: "2024-11-18",
-    category: "Lập trình",
-    isNew: true,
-  },
-  {
-    id: 3,
-    title: "The Modern Entrepreneur",
-    author: "Michael Chen",
-    price: 185000,
-    originalPrice: 240000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 756,
-    releaseDate: "2024-11-15",
-    category: "Kinh doanh",
-    isNew: true,
-  },
-  {
-    id: 4,
-    title: "Data Science Fundamentals",
-    author: "Emily Wang",
-    price: 350000,
-    originalPrice: 450000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 1456,
-    releaseDate: "2024-11-12",
-    category: "Khoa học dữ liệu",
-    isNew: true,
-  },
-  {
-    id: 5,
-    title: "Mindful Living in 2024",
-    author: "David Park",
-    price: 165000,
-    originalPrice: 220000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 892,
-    releaseDate: "2024-11-10",
-    category: "Kỹ năng sống",
-    isNew: true,
-  },
-  {
-    id: 6,
-    title: "Blockchain Revolution",
-    author: "Alex Thompson",
-    price: 395000,
-    originalPrice: 510000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 654,
-    releaseDate: "2024-11-08",
-    category: "Công nghệ",
-    isNew: true,
-  },
-  {
-    id: 7,
-    title: "The Art of Negotiation",
-    author: "Lisa Martinez",
-    price: 175000,
-    originalPrice: 230000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 543,
-    releaseDate: "2024-11-05",
-    category: "Kỹ năng sống",
-    isNew: true,
-  },
-  {
-    id: 8,
-    title: "Cloud Architecture Patterns",
-    author: "Robert Lee",
-    price: 425000,
-    originalPrice: 550000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 876,
-    releaseDate: "2024-11-03",
-    category: "Lập trình",
-    isNew: true,
-  },
-  {
-    id: 9,
-    title: "Marketing in the Digital Age",
-    author: "Jennifer Kim",
-    price: 195000,
-    originalPrice: 260000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 678,
-    releaseDate: "2024-11-01",
-    category: "Marketing",
-    isNew: true,
-  },
-  {
-    id: 10,
-    title: "Python for Everyone",
-    author: "Tom Wilson",
-    price: 285000,
-    originalPrice: 370000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 1123,
-    releaseDate: "2024-10-30",
-    category: "Lập trình",
-    isNew: true,
-  },
-  {
-    id: 11,
-    title: "Financial Freedom Guide",
-    author: "Amanda Brown",
-    price: 155000,
-    originalPrice: 200000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 445,
-    releaseDate: "2024-10-28",
-    category: "Tài chính",
-    isNew: true,
-  },
-  {
-    id: 12,
-    title: "UX Design Principles",
-    author: "Chris Anderson",
-    price: 245000,
-    originalPrice: 320000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 789,
-    releaseDate: "2024-10-25",
-    category: "Thiết kế",
-    isNew: true,
-  },
-  {
-    id: 13,
-    title: "Leadership 2.0",
-    author: "Patricia Garcia",
-    price: 185000,
-    originalPrice: 240000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 567,
-    releaseDate: "2024-10-22",
-    category: "Kinh doanh",
-    isNew: true,
-  },
-  {
-    id: 14,
-    title: "Machine Learning Basics",
-    author: "Kevin Zhang",
-    price: 365000,
-    originalPrice: 470000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviews: 1345,
-    releaseDate: "2024-10-20",
-    category: "Khoa học dữ liệu",
-    isNew: true,
-  },
-  {
-    id: 15,
-    title: "The Productivity System",
-    author: "Rachel White",
-    price: 145000,
-    originalPrice: 190000,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviews: 432,
-    releaseDate: "2024-10-18",
-    category: "Kỹ năng sống",
-    isNew: true,
-  },
-  {
-    id: 16,
-    title: "React Native Complete Guide",
-    author: "Daniel Kumar",
-    price: 335000,
-    originalPrice: 430000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviews: 998,
-    releaseDate: "2024-10-15",
-    category: "Lập trình",
-    isNew: true,
-  },
-  {
-    id: 17,
-    title: "Sustainable Business",
-    author: "Sophia Taylor",
-    price: 175000,
-    originalPrice: 230000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviews: 523,
-    releaseDate: "2024-10-12",
-    category: "Kinh doanh",
-    isNew: true,
-  },
-  {
-    id: 18,
-    title: "Cybersecurity Essentials",
-    author: "Mark Johnson",
-    price: 295000,
-    originalPrice: 380000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviews: 765,
-    releaseDate: "2024-10-10",
-    category: "Công nghệ",
-    isNew: true,
-  },
-];
-
 type SortOption = "newest" | "rating" | "price-asc" | "price-desc";
 
 export default function NewReleasesPage() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [currentPage, setCurrentPage] = useState(1);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
   const booksPerPage = 18;
 
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await bookService.getBooks({
+          pageNumber: currentPage || 1,
+          pageSize: 20,
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
+            id: book.id,
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            price: book.discountPrice || book.currentPrice || 0,
+            originalPrice: book.currentPrice,
+            cover: "/image/anh.png",
+            rating: book.averageRating || 4.5,
+            reviews: book.totalReviews || 0,
+            releaseDate: new Date().toISOString().split('T')[0],
+            category: book.categoryNames?.[0] || "Chưa phân loại",
+            isNew: true,
+          }));
+          setBooks(transformedBooks);
+          setTotalItems(response.totalCount || 0);
+        } else {
+          setBooks([]);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setBooks([]);
+        setTotalItems(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, [currentPage]);
+
   // Sort books
-  const sortedBooks = [...newReleases].sort((a, b) => {
+  const sortedBooks = [...books].sort((a, b) => {
     switch (sortBy) {
       case "newest":
         return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
@@ -350,8 +158,20 @@ export default function NewReleasesPage() {
         </div>
 
         {/* Books Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          {displayedBooks.map((book) => (
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                <div className="aspect-[2/3] bg-gray-200 rounded-lg mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {displayedBooks.map((book) => (
             <Link
               key={book.id}
               href={`/books/${book.id}`}
@@ -427,7 +247,8 @@ export default function NewReleasesPage() {
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (

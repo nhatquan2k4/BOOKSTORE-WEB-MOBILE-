@@ -4,7 +4,11 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import BooksPage from './pages/BooksPage';
+import CreateBookPage from './pages/CreateBookPage';
 import BookDetailPage from './pages/BookDetailPage';
+import AuthorsPage from './pages/AuthorsPage';
+import PublishersPage from './pages/PublishersPage';
+import CategoriesPage from './pages/CategoriesPage';
 import UsersPage from './pages/UsersPage';
 import OrdersPage from './pages/OrdersPage';
 import LoginPage from './pages/LoginPage';
@@ -30,10 +34,13 @@ function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="books" element={<BooksPage />} />
+            <Route path="books/create" element={<CreateBookPage />} />
             <Route path="books/:id" element={<BookDetailPage />} />
+            <Route path="authors" element={<AuthorsPage />} />
+            <Route path="publishers" element={<PublishersPage />} />
+            <Route path="categories" element={<CategoriesPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="orders" element={<OrdersPage />} />
-            <Route path="categories" element={<div className="text-2xl font-bold">Quản lý danh mục - Đang phát triển</div>} />
             <Route path="statistics" element={<div className="text-2xl font-bold">Thống kê - Đang phát triển</div>} />
             <Route path="settings" element={<div className="text-2xl font-bold">Cài đặt - Đang phát triển</div>} />
           </Route>

@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, use } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Pagination } from "@/components/ui/Pagination";
 
 interface PublisherData {
   id: number;
@@ -47,23 +50,218 @@ const publishers: Record<string, PublisherData> = {
       "Hơn 60 năm hoạt động"
     ],
     specialties: ["Văn học thiếu nhi", "Truyện tranh", "Sách giáo khoa", "Sách kỹ năng sống"]
+  },
+  "nxb-tre": {
+    id: 2,
+    name: "NXB Trẻ",
+    slug: "nxb-tre",
+    logo: "",
+    cover: "",
+    description: "Nhà xuất bản Trẻ là một trong những nhà xuất bản uy tín hàng đầu tại Việt Nam, chuyên xuất bản sách văn học, kinh tế, và phát triển bản thân. Được thành lập năm 1981, NXB Trẻ đã xuất bản hàng nghìn đầu sách chất lượng cao.",
+    foundedYear: 1981,
+    category: "Văn học - Kinh tế",
+    bookCount: 2456,
+    followers: 67890,
+    address: "161B Lý Chính Thắng, Q.3, TP.HCM",
+    phone: "028 3930 2090",
+    email: "info@nxbtre.com.vn",
+    website: "https://nxbtre.com.vn",
+    achievements: [
+      "Giải thưởng Sách hay năm 2022",
+      "Top 5 NXB lớn nhất Việt Nam",
+      "Hơn 40 năm kinh nghiệm"
+    ],
+    specialties: ["Văn học", "Kinh tế", "Phát triển bản thân", "Tiểu thuyết"]
+  },
+  "nxb-lao-dong": {
+    id: 3,
+    name: "NXB Lao Động",
+    slug: "nxb-lao-dong",
+    logo: "",
+    cover: "",
+    description: "Nhà xuất bản Lao Động là đơn vị xuất bản sách chuyên nghiệp với nhiều đầu sách về kinh tế, quản trị, kỹ năng sống và văn học. Với phương châm 'Tri thức là sức mạnh', chúng tôi cam kết mang đến những cuốn sách giá trị cho độc giả.",
+    foundedYear: 1961,
+    category: "Kinh tế - Kỹ năng",
+    bookCount: 1876,
+    followers: 52340,
+    address: "175 Giảng Võ, Đống Đa, Hà Nội",
+    phone: "024 3851 3380",
+    email: "info@nxblaodong.com.vn",
+    website: "https://nxblaodong.com.vn",
+    achievements: [
+      "Giải A Giải thưởng Sách Quốc gia",
+      "Nhà xuất bản tiêu biểu 2021",
+      "Hơn 60 năm phát triển"
+    ],
+    specialties: ["Kinh tế", "Quản trị", "Kỹ năng sống", "Tâm lý học"]
+  },
+  "nxb-van-hoc": {
+    id: 4,
+    name: "NXB Văn Học",
+    slug: "nxb-van-hoc",
+    logo: "",
+    cover: "",
+    description: "Nhà xuất bản Văn học là cơ quan xuất bản chuyên sâu về văn học thuộc Hội Nhà văn Việt Nam. Chúng tôi tự hào là đơn vị xuất bản các tác phẩm văn học kinh điển và đương đại của các nhà văn trong và ngoài nước.",
+    foundedYear: 1957,
+    category: "Văn học",
+    bookCount: 3210,
+    followers: 78900,
+    address: "18 Nguyễn Trường Tộ, Ba Đình, Hà Nội",
+    phone: "024 3733 4645",
+    email: "info@nxbvanhoc.com.vn",
+    website: "https://nxbvanhoc.com.vn",
+    achievements: [
+      "Giải thưởng Hồ Chí Minh về văn học nghệ thuật",
+      "Nhà xuất bản văn học hàng đầu VN",
+      "Hơn 65 năm hoạt động"
+    ],
+    specialties: ["Văn học Việt Nam", "Văn học nước ngoài", "Thơ", "Truyện ngắn"]
+  },
+  "nxb-thanh-nien": {
+    id: 5,
+    name: "NXB Thanh Niên",
+    slug: "nxb-thanh-nien",
+    logo: "",
+    cover: "",
+    description: "Nhà xuất bản Thanh Niên chuyên xuất bản các ấn phẩm hướng đến giới trẻ với nội dung đa dạng từ văn học, kỹ năng sống đến giải trí. Chúng tôi mong muốn đồng hành cùng thế hệ trẻ Việt Nam trong hành trình phát triển toàn diện.",
+    foundedYear: 1976,
+    category: "Thanh thiếu niên",
+    bookCount: 1650,
+    followers: 43210,
+    address: "64B Nguyễn Thị Minh Khai, Q.1, TP.HCM",
+    phone: "028 3822 0804",
+    email: "info@nxbthanhnien.vn",
+    website: "https://nxbthanhnien.vn",
+    achievements: [
+      "Top 10 NXB uy tín",
+      "Giải thưởng Sách hay dành cho tuổi teen",
+      "Gần 50 năm đồng hành cùng giới trẻ"
+    ],
+    specialties: ["Văn học tuổi teen", "Kỹ năng sống", "Light novel", "Manga"]
+  },
+  "nxb-chinh-tri-quoc-gia": {
+    id: 6,
+    name: "NXB Chính Trị Quốc Gia Sự Thật",
+    slug: "nxb-chinh-tri-quoc-gia",
+    logo: "",
+    cover: "",
+    description: "Nhà xuất bản Chính trị quốc gia Sự thật là nhà xuất bản hàng đầu về sách chính trị, lý luận, lịch sử và khoa học xã hội. Chúng tôi xuất bản các tác phẩm có giá trị lý luận và thực tiễn cao phục vụ sự nghiệp xây dựng và phát triển đất nước.",
+    foundedYear: 1945,
+    category: "Chính trị - Lịch sử",
+    bookCount: 5430,
+    followers: 92100,
+    address: "7/129 Trần Hưng Đạo, Hoàn Kiếm, Hà Nội",
+    phone: "024 3942 0426",
+    email: "info@nxbctqg.org.vn",
+    website: "https://nxbctqg.org.vn",
+    achievements: [
+      "Giải thưởng Sách Quốc gia (nhiều lần)",
+      "Nhà xuất bản hàng đầu về sách chính trị",
+      "Gần 80 năm lịch sử"
+    ],
+    specialties: ["Sách chính trị", "Lý luận", "Lịch sử", "Hồi ký"]
+  },
+  "nxb-phu-nu": {
+    id: 7,
+    name: "NXB Phụ Nữ Việt Nam",
+    slug: "nxb-phu-nu",
+    logo: "",
+    cover: "",
+    description: "Nhà xuất bản Phụ nữ Việt Nam chuyên xuất bản các ấn phẩm dành cho phụ nữ và gia đình với nội dung phong phú về nuôi dạy con, chăm sóc sức khỏe, làm đẹp, nấu ăn và văn học. Chúng tôi đồng hành cùng phụ nữ Việt trong cuộc sống hiện đại.",
+    foundedYear: 1960,
+    category: "Gia đình - Phụ nữ",
+    bookCount: 1980,
+    followers: 56780,
+    address: "39 Hàng Chuối, Hai Bà Trưng, Hà Nội",
+    phone: "024 3971 3145",
+    email: "info@nxbphunu.com.vn",
+    website: "https://nxbphunu.com.vn",
+    achievements: [
+      "Nhà xuất bản dành cho phụ nữ hàng đầu",
+      "Giải thưởng Sách hay về gia đình",
+      "Hơn 60 năm hoạt động"
+    ],
+    specialties: ["Nuôi dạy con", "Chăm sóc sức khỏe", "Nấu ăn", "Làm đẹp"]
+  },
+  "nxb-hoi-nha-van": {
+    id: 8,
+    name: "NXB Hội Nhà Văn",
+    slug: "nxb-hoi-nha-van",
+    logo: "",
+    cover: "",
+    description: "Nhà xuất bản Hội Nhà văn là cơ quan xuất bản trực thuộc Hội Nhà văn Việt Nam, chuyên xuất bản các tác phẩm văn học nghệ thuật của các hội viên và văn nghệ sĩ trong nước. Chúng tôi đề cao giá trị nghệ thuật và tính nhân văn trong từng tác phẩm.",
+    foundedYear: 1957,
+    category: "Văn học nghệ thuật",
+    bookCount: 2890,
+    followers: 64320,
+    address: "65 Nguyễn Du, Hai Bà Trưng, Hà Nội",
+    phone: "024 3943 1008",
+    email: "info@nxbhoinhavan.vn",
+    website: "https://nxbhoinhavan.vn",
+    achievements: [
+      "Nhiều tác phẩm đạt giải thưởng văn học",
+      "Nhà xuất bản uy tín về văn học",
+      "Hơn 65 năm phát triển"
+    ],
+    specialties: ["Văn học đương đại", "Thơ ca", "Tiểu luận", "Hồi ký văn học"]
   }
 };
 
 const mockBooks = [
-  { id: 1, title: "Thần Đồng Đất Việt", author: "Nhiều tác giả", price: 89000, image: "/image/anh.png", rating: 4.8 },
-  { id: 2, title: "Doraemon Tập 1", author: "Fujiko F Fujio", price: 25000, image: "/image/anh.png", rating: 4.9 },
-  { id: 3, title: "Thám Tử Lừng Danh Conan", author: "Aoyama Gosho", price: 25000, image: "/image/anh.png", rating: 4.7 },
-  { id: 4, title: "Harry Potter và Hòn Đá Phù Thủy", author: "J.K. Rowling", price: 165000, image: "/image/anh.png", rating: 5.0 },
-  { id: 5, title: "Nhật Ký Chú Bé Nhút Nhát", author: "Jeff Kinney", price: 79000, image: "/image/anh.png", rating: 4.6 },
-  { id: 6, title: "Điều Kỳ Diệu Của Tiệm Tạp Hóa", author: "Higashino Keigo", price: 125000, image: "/image/anh.png", rating: 4.8 }
+  { id: "1", title: "Thần Đồng Đất Việt", author: "Nhiều tác giả", price: 89000, originalPrice: 110000, cover: "/image/anh.png", rating: 4.8, reviewCount: 234, stock: 50 },
+  { id: "2", title: "Doraemon Tập 1", author: "Fujiko F Fujio", price: 25000, originalPrice: 30000, cover: "/image/anh.png", rating: 4.9, reviewCount: 567, stock: 120 },
+  { id: "3", title: "Thám Tử Lừng Danh Conan", author: "Aoyama Gosho", price: 25000, cover: "/image/anh.png", rating: 4.7, reviewCount: 432, stock: 95 },
+  { id: "4", title: "Harry Potter và Hòn Đá Phù Thủy", author: "J.K. Rowling", price: 165000, originalPrice: 200000, cover: "/image/anh.png", rating: 5.0, reviewCount: 1234, stock: 80 },
+  { id: "5", title: "Nhật Ký Chú Bé Nhút Nhát", author: "Jeff Kinney", price: 79000, originalPrice: 95000, cover: "/image/anh.png", rating: 4.6, reviewCount: 321, stock: 65 },
+  { id: "6", title: "Điều Kỳ Diệu Của Tiệm Tạp Hóa", author: "Higashino Keigo", price: 125000, cover: "/image/anh.png", rating: 4.8, reviewCount: 678, stock: 45 },
+  { id: "7", title: "Dế Mèn Phiêu Lưu Ký", author: "Tô Hoài", price: 68000, originalPrice: 85000, cover: "/image/anh.png", rating: 4.9, reviewCount: 890, stock: 110 },
+  { id: "8", title: "Conan Tập 50", author: "Aoyama Gosho", price: 25000, cover: "/image/anh.png", rating: 4.8, reviewCount: 345, stock: 88 }
 ];
 
-export default function PublisherDetailPage({ params }: { params: { slug: string } }) {
+export default function PublisherDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const [activeTab, setActiveTab] = useState<"books" | "info">("books");
   const [isFollowing, setIsFollowing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<"newest" | "popular" | "price-asc" | "price-desc">("newest");
+  const itemsPerPage = 8;
+  
+  const { slug } = use(params);
+  const publisher = publishers[slug];
 
-  const publisher = publishers[params.slug];
+  const sortedBooks = [...mockBooks].sort((a, b) => {
+    switch (sortBy) {
+      case "popular":
+        return b.reviewCount - a.reviewCount;
+      case "price-asc":
+        return a.price - b.price;
+      case "price-desc":
+        return b.price - a.price;
+      case "newest":
+      default:
+        return 0;
+    }
+  });
+
+  const totalPages = Math.ceil(sortedBooks.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedBooks = sortedBooks.slice(startIndex, endIndex);
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(price);
+  };
+
+  const calculateDiscount = (original: number, current: number) => {
+    return Math.round(((original - current) / original) * 100);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   if (!publisher) {
     notFound();
@@ -134,79 +332,131 @@ export default function PublisherDetailPage({ params }: { params: { slug: string
 
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm mb-8">
-          <div className="border-b flex">
-            <Button
+          <div className="border-b flex gap-8 px-6">
+            <button
               onClick={() => setActiveTab("books")}
-              variant={activeTab === "books" ? "primary" : "outline"}
-              size="md"
-              className="relative px-8 py-4 rounded-none"
+              className={`relative py-4 text-sm font-medium transition-colors ${
+                activeTab === "books" ? "text-blue-600" : "text-gray-600 hover:text-gray-900"
+              }`}
             >
               Sách xuất bản
               {activeTab === "books" && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
               )}
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={() => setActiveTab("info")}
-              variant={activeTab === "info" ? "primary" : "outline"}
-              size="md"
-              className="relative px-8 py-4 rounded-none"
+              className={`relative py-4 text-sm font-medium transition-colors ${
+                activeTab === "info" ? "text-blue-600" : "text-gray-600 hover:text-gray-900"
+              }`}
             >
               Thông tin
               {activeTab === "info" && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
               )}
-            </Button>
+            </button>
           </div>
 
           {/* Tab Content */}
           <div className="p-6">
             {activeTab === "books" ? (
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold">Sách xuất bản ({mockBooks.length})</h2>
-                  <select className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>Mới nhất</option>
-                    <option>Bán chạy</option>
-                    <option>Giá thấp</option>
-                    <option>Giá cao</option>
-                  </select>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                  <h2 className="text-xl font-bold">
+                    Sách xuất bản ({sortedBooks.length})
+                  </h2>
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-gray-600">
+                      Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
+                      <span className="font-semibold">{Math.min(endIndex, sortedBooks.length)}</span> /{" "}
+                      <span className="font-semibold">{sortedBooks.length}</span>
+                    </div>
+                    <select 
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as "newest" | "popular" | "price-asc" | "price-desc")}
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="newest">Mới nhất</option>
+                      <option value="popular">Bán chạy</option>
+                      <option value="price-asc">Giá tăng dần</option>
+                      <option value="price-desc">Giá giảm dần</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                  {mockBooks.map(book => (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                  {paginatedBooks.map((book) => (
                     <Link
                       key={book.id}
                       href={`/books/${book.id}`}
-                      className="group"
+                      className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
                     >
-                      <div className="bg-white border rounded-lg overflow-hidden hover:shadow-lg transition">
-                        <div className="relative aspect-[2/3]">
-                          <img
-                            src={book.image}
-                            alt={book.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="p-3">
-                          <h3 className="font-medium text-sm mb-1 line-clamp-2 group-hover:text-blue-600">
-                            {book.title}
-                          </h3>
-                          <p className="text-xs text-gray-600 mb-2">{book.author}</p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-blue-600 font-bold">{book.price.toLocaleString()}đ</span>
-                            <div className="flex items-center gap-1 text-xs">
-                              <svg className="w-3 h-3 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                              </svg>
-                              <span>{book.rating}</span>
-                            </div>
+                      <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
+                        <Image
+                          src={book.cover}
+                          alt={book.title}
+                          fill
+                          sizes="(max-width: 768px) 50vw, 25vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+
+                        {book.stock < 50 && (
+                          <div className="absolute top-2 left-2">
+                            <Badge className="text-xs bg-red-500 text-white font-bold">
+                              Sắp hết
+                            </Badge>
                           </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <h3 className="font-bold text-sm line-clamp-2 min-h-[40px] group-hover:text-blue-600 transition-colors">
+                          {book.title}
+                        </h3>
+                        <p className="text-xs text-gray-600 font-medium">{book.author}</p>
+
+                        <div className="flex items-center gap-1 pt-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            className="text-yellow-400"
+                          >
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
+                          <span className="text-xs font-bold text-gray-700">{book.rating}</span>
+                          <span className="text-xs text-gray-500">({book.reviewCount})</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1 flex-wrap">
+                          <p className="text-blue-600 font-bold text-sm">{formatPrice(book.price)}</p>
+                          {book.originalPrice && (
+                            <>
+                              <p className="text-xs text-gray-400 line-through">
+                                {formatPrice(book.originalPrice)}
+                              </p>
+                              <Badge variant="danger" className="text-xs font-bold">
+                                -{calculateDiscount(book.originalPrice, book.price)}%
+                              </Badge>
+                            </>
+                          )}
                         </div>
                       </div>
                     </Link>
                   ))}
                 </div>
+
+                {totalPages > 1 && (
+                  <div className="flex justify-center">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-8">

@@ -17,24 +17,57 @@ namespace BookStore.Application.Mappers.Catalog.Book
     {
         /// <summary>
         /// Map Book entity sang BookDto (Simple DTO với tên thay vì nested objects)
+        /// Bao gồm: Prices, StockQuantity, Reviews
         /// </summary>
         public static BookDto ToDto(this BookEntity book)
         {
             return new BookDto
             {
                 Id = book.Id,
-                Title = book.Title,
-                ISBN = book.ISBN.Value,
+                Title = book.Title ?? string.Empty,
+                ISBN = book.ISBN?.Value ?? string.Empty,
                 PublicationYear = book.PublicationYear,
-                Language = book.Language,
+                Language = book.Language ?? string.Empty,
                 PageCount = book.PageCount,
                 IsAvailable = book.IsAvailable,
                 PublisherId = book.PublisherId,
                 PublisherName = book.Publisher?.Name ?? string.Empty,
                 BookFormatId = book.BookFormatId,
                 BookFormatName = book.BookFormat?.FormatType ?? string.Empty,
-                AuthorNames = book.BookAuthors?.Select(ba => ba.Author.Name).ToList() ?? new List<string>(),
-                CategoryNames = book.BookCategories?.Select(bc => bc.Category.Name).ToList() ?? new List<string>()
+
+                AuthorNames = book.BookAuthors?
+                    .Where(ba => ba?.Author != null)
+                    .Select(ba => ba!.Author.Name)
+                    .ToList() ?? new List<string>(),
+
+                CategoryNames = book.BookCategories?
+                    .Where(bc => bc?.Category != null)
+                    .Select(bc => bc!.Category.Name)
+                    .ToList() ?? new List<string>(),
+
+                // Current Price (active, non-expired)
+                CurrentPrice = book.Prices?
+                    .Where(p => p.IsCurrent
+                                && p.EffectiveFrom <= DateTime.UtcNow
+                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .FirstOrDefault()?.Amount,
+
+                // Discount Price (active price with discount)
+                DiscountPrice = book.Prices?
+                    .Where(p => p.IsCurrent
+                                && p.EffectiveFrom <= DateTime.UtcNow
+                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow)
+                                && p.DiscountId.HasValue)
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .FirstOrDefault()?.Amount,
+
+                // Stock Quantity (sum across all warehouses)
+                StockQuantity = book.StockItems?.Sum(s => s.QuantityOnHand) ?? 0,
+
+                // Reviews (TODO: Calculate from Reviews when schema is fixed)
+                AverageRating = null,
+                TotalReviews = 0
             };
         }
         public static BookDetailDto ToDetailDto(this BookEntity book)
@@ -50,6 +83,26 @@ namespace BookStore.Application.Mappers.Catalog.Book
                 Edition = book.Edition,
                 PageCount = book.PageCount,
                 IsAvailable = book.IsAvailable,
+
+                // Current Price (active, non-expired)
+                CurrentPrice = book.Prices?
+                    .Where(p => p.IsCurrent
+                                && p.EffectiveFrom <= DateTime.UtcNow
+                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .FirstOrDefault()?.Amount,
+
+                // Discount Price (active price with discount)
+                DiscountPrice = book.Prices?
+                    .Where(p => p.IsCurrent
+                                && p.EffectiveFrom <= DateTime.UtcNow
+                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow)
+                                && p.DiscountId.HasValue)
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .FirstOrDefault()?.Amount,
+
+                // Stock Quantity
+                StockQuantity = book.StockItem?.QuantityOnHand ?? 0,
 
                 // Publisher - sử dụng PublisherMapper
                 Publisher = book.Publisher?.ToDto()!,

@@ -52,10 +52,10 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
               <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-cyan-50">
                 <div className="flex items-center gap-3">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                    {user?.avatar ? (
+                    {(user as any)?.avatar || (user as any)?.avatarUrl ? (
                       <Image
-                        src={user.avatar}
-                        alt={user.name || "User"}
+                        src={(user as any)?.avatar || (user as any)?.avatarUrl}
+                        alt={(user as any)?.name || (user as any)?.userName || "User"}
                         fill
                         sizes="48px"
                         className="object-cover"
@@ -78,7 +78,8 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">
-                      {user?.name || "Người dùng"}
+                       {/* SỬA: Kiểm tra nhiều trường tên khác nhau để tránh lỗi undefined */}
+                      {(user as any)?.name || (user as any)?.userName || (user as any)?.fullName || "Người dùng"}
                     </p>
                     <p className="text-xs text-gray-600 truncate">
                       {user?.email}
@@ -496,8 +497,6 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
               </nav>
             </div>
           </aside>
-
-          {/* Main content */}
           <main className="flex-1 min-w-0">{children}</main>
         </div>
       </div>

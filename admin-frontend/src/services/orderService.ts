@@ -3,11 +3,14 @@ import { API_ENDPOINTS } from '../constants';
 import type { Order } from '../types';
 
 interface OrderListResponse {
-    success: boolean;
-    data: Order[];
-    total: number;
-    page: number;
-    pageSize: number;
+    items?: Order[];
+    data?: Order[];
+    totalCount?: number;
+    total?: number;
+    pageNumber?: number;
+    page?: number;
+    pageSize?: number;
+    totalPages?: number;
 }
 
 interface OrderResponse {

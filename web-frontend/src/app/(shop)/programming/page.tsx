@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 type Book = {
   id: string;
@@ -24,261 +26,6 @@ type Book = {
 
 type SortOption = "popular" | "rating" | "price-asc" | "price-desc" | "newest";
 type SubCategory = "all" | "web" | "mobile" | "data-science" | "ai-ml" | "devops" | "game";
-
-const MOCK_BOOKS: Book[] = [
-  {
-    id: "1",
-    title: "Clean Code - Mã Sạch",
-    author: "Robert C. Martin",
-    subcategory: "web",
-    price: 350000,
-    originalPrice: 450000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 2134,
-    stock: 45,
-    level: "Intermediate",
-    year: 2024,
-  },
-  {
-    id: "2",
-    title: "Design Patterns - Gang of Four",
-    author: "Gang of Four",
-    subcategory: "web",
-    price: 420000,
-    originalPrice: 500000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 1856,
-    stock: 35,
-    level: "Advanced",
-    year: 2024,
-  },
-  {
-    id: "3",
-    title: "JavaScript: The Good Parts",
-    author: "Douglas Crockford",
-    subcategory: "web",
-    price: 285000,
-    originalPrice: 350000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1543,
-    stock: 60,
-    level: "Intermediate",
-    year: 2023,
-  },
-  {
-    id: "4",
-    title: "React Up & Running",
-    author: "Stoyan Stefanov",
-    subcategory: "web",
-    price: 320000,
-    originalPrice: 400000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1987,
-    stock: 55,
-    level: "Beginner",
-    year: 2024,
-  },
-  {
-    id: "5",
-    title: "Python for Data Analysis",
-    author: "Wes McKinney",
-    subcategory: "data-science",
-    price: 395000,
-    originalPrice: 480000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2345,
-    stock: 40,
-    level: "Intermediate",
-    year: 2024,
-  },
-  {
-    id: "6",
-    title: "Hands-On Machine Learning",
-    author: "Aurélien Géron",
-    subcategory: "ai-ml",
-    price: 450000,
-    originalPrice: 550000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 3456,
-    stock: 30,
-    level: "Advanced",
-    year: 2024,
-  },
-  {
-    id: "7",
-    title: "Flutter in Action",
-    author: "Eric Windmill",
-    subcategory: "mobile",
-    price: 340000,
-    originalPrice: 420000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1234,
-    stock: 50,
-    level: "Beginner",
-    year: 2024,
-  },
-  {
-    id: "8",
-    title: "Kotlin for Android Developers",
-    author: "Antonio Leiva",
-    subcategory: "mobile",
-    price: 315000,
-    originalPrice: 390000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 987,
-    stock: 45,
-    level: "Intermediate",
-    year: 2023,
-  },
-  {
-    id: "9",
-    title: "Docker Deep Dive",
-    author: "Nigel Poulton",
-    subcategory: "devops",
-    price: 365000,
-    originalPrice: 450000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1876,
-    stock: 38,
-    level: "Intermediate",
-    year: 2024,
-  },
-  {
-    id: "10",
-    title: "Kubernetes Up & Running",
-    author: "Kelsey Hightower",
-    subcategory: "devops",
-    price: 425000,
-    originalPrice: 520000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 2134,
-    stock: 32,
-    level: "Advanced",
-    year: 2024,
-  },
-  {
-    id: "11",
-    title: "Unity Game Development",
-    author: "Michelle Menard",
-    subcategory: "game",
-    price: 380000,
-    originalPrice: 470000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1543,
-    stock: 42,
-    level: "Beginner",
-    year: 2024,
-  },
-  {
-    id: "12",
-    title: "Game Programming Patterns",
-    author: "Robert Nystrom",
-    subcategory: "game",
-    price: 410000,
-    originalPrice: 500000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1765,
-    stock: 28,
-    level: "Advanced",
-    year: 2023,
-  },
-  {
-    id: "13",
-    title: "Deep Learning with Python",
-    author: "François Chollet",
-    subcategory: "ai-ml",
-    price: 465000,
-    originalPrice: 560000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 2987,
-    stock: 25,
-    level: "Advanced",
-    year: 2024,
-  },
-  {
-    id: "14",
-    title: "Vue.js 3 Complete Guide",
-    author: "Maximilian Schwarzmüller",
-    subcategory: "web",
-    price: 295000,
-    originalPrice: 360000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1432,
-    stock: 52,
-    level: "Beginner",
-    year: 2024,
-  },
-  {
-    id: "15",
-    title: "iOS Development with Swift",
-    author: "Craig Clayton",
-    subcategory: "mobile",
-    price: 355000,
-    originalPrice: 440000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1654,
-    stock: 48,
-    level: "Intermediate",
-    year: 2024,
-  },
-  {
-    id: "16",
-    title: "Data Science from Scratch",
-    author: "Joel Grus",
-    subcategory: "data-science",
-    price: 375000,
-    originalPrice: 460000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 1987,
-    stock: 35,
-    level: "Beginner",
-    year: 2023,
-  },
-  {
-    id: "17",
-    title: "Node.js Design Patterns",
-    author: "Mario Casciaro",
-    subcategory: "web",
-    price: 385000,
-    originalPrice: 475000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1765,
-    stock: 40,
-    level: "Advanced",
-    year: 2024,
-  },
-  {
-    id: "18",
-    title: "CI/CD Pipeline Mastery",
-    author: "Steve Smith",
-    subcategory: "devops",
-    price: 345000,
-    originalPrice: 430000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 1234,
-    stock: 44,
-    level: "Intermediate",
-    year: 2024,
-  },
-];
 
 const SUBCATEGORIES = [
   { 
@@ -315,12 +62,62 @@ export default function ProgrammingBooksPage() {
   const [selectedSubcategory, setSelectedSubcategory] = useState<SubCategory>("all");
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [currentPage, setCurrentPage] = useState(1);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 20;
+
+  // Fetch books from API
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await bookService.getBooks({
+          pageNumber: currentPage,
+          pageSize: itemsPerPage,
+          // TODO: Add programming category filter when backend supports it
+          // categoryId: "programming-category-id",
+        });
+
+        if (response.items && response.items.length > 0) {
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
+            id: book.id,
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            subcategory: "all", // TODO: Map from book categories
+            price: book.discountPrice || book.currentPrice || 0,
+            originalPrice:
+              book.currentPrice && book.discountPrice && book.discountPrice < book.currentPrice
+                ? book.currentPrice
+                : undefined,
+            cover: "/image/anh.png",
+            rating: book.averageRating || 4.5,
+            reviewCount: book.totalReviews || 0,
+            stock: 50, // TODO: Get from inventory API
+            level: "Intermediate", // TODO: Add level info from backend
+            year: new Date().getFullYear(),
+          }));
+          setBooks(transformedBooks);
+          setTotalItems(response.totalCount);
+        } else {
+          setBooks([]);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error("Error fetching programming books:", error);
+        setBooks([]);
+        setTotalItems(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, [currentPage]);
 
   const filteredBooks =
     selectedSubcategory === "all"
-      ? MOCK_BOOKS
-      : MOCK_BOOKS.filter((book) => book.subcategory === selectedSubcategory);
+      ? books
+      : books.filter((book) => book.subcategory === selectedSubcategory);
 
   const sortedBooks = [...filteredBooks].sort((a, b) => {
     switch (sortBy) {
@@ -339,10 +136,8 @@ export default function ProgrammingBooksPage() {
     }
   });
 
-  const totalPages = Math.ceil(sortedBooks.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedBooks = sortedBooks.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const paginatedBooks = sortedBooks;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -385,27 +180,12 @@ export default function ProgrammingBooksPage() {
 
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-slate-700"
-            >
-              <polyline points="16 18 22 12 16 6" />
-              <polyline points="8 6 2 12 8 18" />
-            </svg>
             <h1 className="text-5xl font-bold bg-gradient-to-r from-slate-700 to-gray-900 bg-clip-text text-transparent">
               Sách Lập Trình
             </h1>
           </div>
           <p className="text-gray-700 text-lg font-medium flex items-center gap-2">
-            {MOCK_BOOKS.length} cuốn sách lập trình chất lượng cao - Từ cơ bản đến nâng cao
+            {totalItems} cuốn sách lập trình chất lượng cao - Từ cơ bản đến nâng cao
           </p>
         </div>
 
@@ -428,10 +208,10 @@ export default function ProgrammingBooksPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="text-sm text-gray-600">
-              Hiển thị <span className="font-semibold">{startIndex + 1}</span> -{" "}
-              <span className="font-semibold">{Math.min(endIndex, sortedBooks.length)}</span> /{" "}
-              <span className="font-semibold">{sortedBooks.length}</span>
+          <div className="text-sm text-gray-600 mb-4">
+              Hiển thị <span className="font-semibold">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
+              <span className="font-semibold">{Math.min(currentPage * itemsPerPage, totalItems)}</span> /{" "}
+              <span className="font-semibold">{totalItems}</span> sách
             </div>
 
             <div>
@@ -454,9 +234,21 @@ export default function ProgrammingBooksPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          {paginatedBooks.map((book) => (
-            <Link
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="animate-pulse rounded-xl bg-white p-3 shadow-sm">
+                <div className="bg-gray-200 aspect-[3/4] rounded-lg mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {paginatedBooks.map((book) => (
+              <Link
               key={book.id}
               href={`/books/${book.id}`}
               className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
@@ -527,7 +319,8 @@ export default function ProgrammingBooksPage() {
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
         {totalPages > 1 && (
           <div className="flex justify-center mb-8">

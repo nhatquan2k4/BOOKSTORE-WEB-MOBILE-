@@ -14,6 +14,28 @@ pnpm dev
 bun dev
 ```
 
+## Environment Files
+
+- `.env.local`: loaded automatically by Next.js in development. It sets `NEXT_PUBLIC_API_URL` to a localhost URL.
+- `.env.ngrok`: for testing with a public Ngrok URL. Next.js does not auto-load this file, so use one of the options below.
+
+### Using localhost (default)
+- Update `NEXT_PUBLIC_API_URL` in `.env.local` if needed.
+- Run: `npm run dev`.
+
+### Using Ngrok URL
+Choose one:
+- Quick swap: temporarily rename `.env.ngrok` to `.env.local` before `npm run dev`.
+- Or set it per-run in PowerShell (Windows):
+
+```powershell
+$env:NEXT_PUBLIC_API_URL="https://your-subdomain.ngrok-free.app"; npm run dev
+```
+
+### Variable used in code
+- Read the value via `process.env.NEXT_PUBLIC_API_URL` in client code.
+- Ensure API clients build URLs from this base to switch between environments.
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.

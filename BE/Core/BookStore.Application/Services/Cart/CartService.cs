@@ -1,5 +1,6 @@
 using BookStore.Application.Dtos.Cart;
 using BookStore.Application.IService.Cart;
+using BookStore.Application.Mappers.Cart;
 using BookStore.Domain.Entities.Cart;
 using BookStore.Domain.IRepository.Cart;
 using BookStore.Domain.IRepository.Catalog;
@@ -27,29 +28,24 @@ namespace BookStore.Application.Services.Cart
             _logger = logger;
         }
 
-        #region Get Cart
-
         public async Task<CartDto?> GetActiveCartByUserIdAsync(Guid userId)
         {
             var cart = await _cartRepository.GetActiveCartByUserIdAsync(userId);
-            return cart == null ? null : MapToCartDto(cart);
+            return cart?.ToDto();
         }
 
         public async Task<CartDto?> GetCartByIdAsync(Guid cartId)
         {
             var cart = await _cartRepository.GetCartWithItemsAsync(cartId);
-            return cart == null ? null : MapToCartDto(cart);
+            return cart?.ToDto();
         }
 
         public async Task<CartDto> GetOrCreateCartAsync(Guid userId)
         {
             var cart = await _cartRepository.GetOrCreateCartAsync(userId);
-            return MapToCartDto(cart);
+            return cart.ToDto();
         }
 
-        #endregion
-
-        #region Manage Cart Items
 
         public async Task<CartDto> AddToCartAsync(AddToCartDto dto)
         {
@@ -69,7 +65,7 @@ namespace BookStore.Application.Services.Cart
             var cart = await _cartRepository.GetActiveCartByUserIdAsync(dto.UserId);
             Guard.Against(cart == null, "Không thể tạo hoặc lấy giỏ hàng");
 
-            return MapToCartDto(cart!);
+            return cart!.ToDto();
         }
 
         public async Task<CartDto> RemoveFromCartAsync(RemoveFromCartDto dto)
@@ -80,7 +76,7 @@ namespace BookStore.Application.Services.Cart
             _logger.LogInformation($"Removed book {dto.BookId} from cart of user {dto.UserId}");
 
             var cart = await _cartRepository.GetActiveCartByUserIdAsync(dto.UserId);
-            return cart == null ? new CartDto() : MapToCartDto(cart);
+            return cart?.ToDto() ?? new CartDto();
         }
 
         public async Task<CartDto> UpdateCartItemQuantityAsync(UpdateCartItemDto dto)
@@ -107,7 +103,7 @@ namespace BookStore.Application.Services.Cart
             var cart = await _cartRepository.GetActiveCartByUserIdAsync(dto.UserId);
             Guard.Against(cart == null, "Không thể lấy giỏ hàng");
 
-            return MapToCartDto(cart!);
+            return cart!.ToDto();
         }
 
         public async Task<CartDto> ClearCartAsync(ClearCartDto dto)
@@ -118,12 +114,9 @@ namespace BookStore.Application.Services.Cart
             _logger.LogInformation($"Cleared cart of user {dto.UserId}");
 
             var cart = await _cartRepository.GetActiveCartByUserIdAsync(dto.UserId);
-            return cart == null ? new CartDto() : MapToCartDto(cart);
+            return cart?.ToDto() ?? new CartDto();
         }
 
-        #endregion
-
-        #region Cart Info
 
         public async Task<int> GetCartItemCountAsync(Guid userId)
         {
@@ -135,9 +128,7 @@ namespace BookStore.Application.Services.Cart
             return await _cartRepository.GetCartTotalAsync(userId);
         }
 
-        #endregion
 
-        #region Checkout
 
         public async Task DeactivateCartAsync(Guid cartId)
         {
@@ -169,9 +160,6 @@ namespace BookStore.Application.Services.Cart
             return true;
         }
 
-        #endregion
-
-        #region Cleanup
 
         public async Task CleanupStaleCartsAsync(int daysThreshold = 30)
         {
@@ -180,46 +168,5 @@ namespace BookStore.Application.Services.Cart
 
             _logger.LogInformation($"Cleaned up stale cart items older than {daysThreshold} days");
         }
-
-        #endregion
-
-        #region Mappers
-
-        private CartDto MapToCartDto(Domain.Entities.Cart.Cart cart)
-        {
-            return new CartDto
-            {
-                Id = cart.Id,
-                UserId = cart.UserId,
-                IsActive = cart.IsActive,
-                CreatedAt = cart.CreatedAt,
-                Items = cart.Items.Select(MapToCartItemDto).ToList()
-            };
-        }
-
-        private CartItemDto MapToCartItemDto(CartItem item)
-        {
-            return new CartItemDto
-            {
-                Id = item.Id,
-                CartId = item.CartId,
-                BookId = item.BookId,
-                BookTitle = item.Book?.Title ?? string.Empty,
-                BookISBN = item.Book?.ISBN?.Value ?? string.Empty,
-                BookImageUrl = item.Book?.Images?.FirstOrDefault()?.ImageUrl,
-                BookPrice = item.UnitPrice,
-                Quantity = item.Quantity,
-                AddedAt = item.AddedAt,
-                UpdatedAt = item.UpdatedAt,
-                AuthorNames = item.Book?.BookAuthors != null
-                    ? string.Join(", ", item.Book.BookAuthors.Select(ba => ba.Author?.Name ?? string.Empty))
-                    : null,
-                PublisherName = item.Book?.Publisher?.Name,
-                IsAvailable = item.Book?.IsAvailable ?? false,
-                StockQuantity = item.Book?.StockItem?.QuantityOnHand ?? 0
-            };
-        }
-
-        #endregion
     }
 }

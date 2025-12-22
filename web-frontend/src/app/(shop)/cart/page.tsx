@@ -2,10 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils/format";
 import { Button, Input, Badge, EmptyState, Alert } from "@/components/ui";
+import { cartService } from "@/services/cart.service";
+import { CartItemDto } from "@/types/dtos/cart";
+import { couponService, CouponDto } from "@/services/coupon.service";
+import { bookService } from "@/services/book.service";
 
 type CartItem = {
   id: string;
@@ -20,72 +24,9 @@ type CartItem = {
   selected: boolean;
 };
 
-type Voucher = {
-  code: string;
-  discount: number; // percentage
-  minOrder: number;
-  maxDiscount: number;
-};
 
-// ============================================================================
-// MOCK DATA - XÓA TOÀN BỘ SECTION NÀY KHI NỐI API THẬT
-// ============================================================================
-const MOCK_CART_ITEMS: CartItem[] = [
-  {
-    id: "cart-1",
-    bookId: "1",
-    title: "101 cách cua đổ đại lão hàng xóm",
-    author: "Đồng Vu",
-    cover: "/image/anh.png",
-    price: 100000,
-    originalPrice: 150000,
-    quantity: 2,
-    stock: 12,
-    selected: true,
-  },
-  {
-    id: "cart-2",
-    bookId: "2",
-    title: "Tôi thấy hoa vàng trên cỏ xanh",
-    author: "Nguyễn Nhật Ánh",
-    cover: "/image/anh.png",
-    price: 85000,
-    originalPrice: 100000,
-    quantity: 1,
-    stock: 5,
-    selected: true,
-  },
-  {
-    id: "cart-3",
-    bookId: "3",
-    title: "Đắc nhân tâm",
-    author: "Dale Carnegie",
-    cover: "/image/anh.png",
-    price: 120000,
-    quantity: 1,
-    stock: 20,
-    selected: false,
-  },
-  {
-    id: "cart-4",
-    bookId: "4",
-    title: "Nhà giả kim",
-    author: "Paulo Coelho",
-    cover: "/image/anh.png",
-    price: 95000,
-    originalPrice: 110000,
-    quantity: 3,
-    stock: 8,
-    selected: true,
-  },
-];
 
-const MOCK_VOUCHERS: Voucher[] = [
-  { code: "FREESHIP", discount: 0, minOrder: 200000, maxDiscount: 30000 },
-  { code: "SAVE10", discount: 10, minOrder: 300000, maxDiscount: 50000 },
-  { code: "SAVE20", discount: 20, minOrder: 500000, maxDiscount: 100000 },
-];
-
+// Mock suggested books - Sẽ được thay thế bởi smart recommendations từ API
 const MOCK_SUGGESTED_BOOKS = [
   { id: "s1", title: "Bố Già", author: "Mario Puzo", cover: "/image/anh.png", price: 150000 },
   { id: "s2", title: "Tuổi trẻ đáng giá bao nhiêu", author: "Rosie Nguyễn", cover: "/image/anh.png", price: 90000 },
@@ -98,28 +39,130 @@ const MOCK_SUGGESTED_BOOKS = [
 // ============================================================================
 export default function CartPage() {
   const router = useRouter();
-  const [cartItems, setCartItems] = useState<CartItem[]>(MOCK_CART_ITEMS);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [voucherCode, setVoucherCode] = useState("");
-  const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null);
+  const [appliedVoucher, setAppliedVoucher] = useState<CouponDto | null>(null);
   const [voucherError, setVoucherError] = useState("");
+  const [publicCoupons, setPublicCoupons] = useState<CouponDto[]>([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+
+  // Fetch cart from API
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        setLoading(true);
+        const cartData = await cartService.getMyCart();
+        
+        if (cartData && cartData.items) {
+          // Transform API data to component format
+          const transformedItems: CartItem[] = cartData.items.map((item: CartItemDto) => ({
+            id: item.id,
+            bookId: item.bookId,
+            title: item.bookTitle,
+            author: item.authorNames || "Chưa rõ tác giả",
+            cover: item.bookImageUrl || "/image/anh.png",
+            price: item.bookPrice,
+            originalPrice: undefined, // API không có originalPrice
+            quantity: item.quantity,
+            stock: item.stockQuantity,
+            selected: true, // Mặc định chọn tất cả
+          }));
+          setCartItems(transformedItems);
+        } else {
+          setCartItems([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch cart:", error);
+        setCartItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCart();
+  }, []);
+
+  // Fetch public coupons
+  useEffect(() => {
+    const fetchPublicCoupons = async () => {
+      try {
+        setLoadingCoupons(true);
+        const coupons = await couponService.getPublicCoupons();
+        // Filter only valid coupons
+        const validCoupons = coupons.filter((coupon) => couponService.isValid(coupon));
+        setPublicCoupons(validCoupons);
+      } catch (error) {
+        console.error("Failed to fetch public coupons:", error);
+        setPublicCoupons([]);
+      } finally {
+        setLoadingCoupons(false);
+      }
+    };
+
+    fetchPublicCoupons();
+  }, []);
+
+  // Fetch smart recommendations based on cart items (same categories, related books)
+  const [suggestedBooks, setSuggestedBooks] = useState<typeof MOCK_SUGGESTED_BOOKS>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (cartItems.length === 0) {
+        setSuggestedBooks([]);
+        return;
+      }
+
+      try {
+        setLoadingSuggestions(true);
+        
+        // Get book IDs in cart to exclude from recommendations
+        const cartBookIds = cartItems.map((item) => item.bookId);
+
+        // Get category IDs from cart items for smart recommendations
+        // Note: For now we don't have categories in cart items, so we'll use empty array
+        // In future, we can fetch book details to get categories
+        const categoryIds: string[] = [];
+
+        // Use new smart recommendation API
+        const recommendations = await bookService.getRecommendations(cartBookIds, categoryIds, 8);
+
+        // Transform to component format
+        const suggestions = recommendations.slice(0, 4).map((book) => ({
+          id: book.id,
+          title: book.title,
+          author: book.authorNames?.[0] || "Chưa rõ tác giả",
+          cover: "/image/anh.png", // BookDto doesn't include images, use placeholder
+          price: book.currentPrice || 0,
+        }));
+
+        setSuggestedBooks(suggestions);
+      } catch (error) {
+        console.error("Failed to fetch smart recommendations:", error);
+        setSuggestedBooks(MOCK_SUGGESTED_BOOKS);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+
+    fetchSuggestions();
+  }, [cartItems]);
 
   // ========== CALCULATIONS ==========
   const selectedItems = cartItems.filter((item) => item.selected);
   const subtotal = selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalQuantity = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Calculate discount from coupon
   let discount = 0;
   if (appliedVoucher) {
-    if (appliedVoucher.discount > 0) {
-      discount = Math.min((subtotal * appliedVoucher.discount) / 100, appliedVoucher.maxDiscount);
-    } else {
-      discount = appliedVoucher.maxDiscount; // Free ship
-    }
+    discount = couponService.calculateDiscount(appliedVoucher, subtotal);
   }
 
   const shippingFee = subtotal >= 500000 ? 0 : 30000;
-  const finalShippingFee = appliedVoucher?.code === "FREESHIP" ? 0 : shippingFee;
-  const total = subtotal - discount + finalShippingFee;
+  const total = subtotal - discount + shippingFee;
 
   // ========== HANDLERS ==========
   const handleSelectAll = (checked: boolean) => {
@@ -130,45 +173,79 @@ export default function CartPage() {
     setCartItems(cartItems.map((item) => (item.id === id ? { ...item, selected: checked } : item)));
   };
 
-  const handleUpdateQuantity = (id: string, newQuantity: number) => {
+  const handleUpdateQuantity = async (id: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     const item = cartItems.find((item) => item.id === id);
     if (item && newQuantity > item.stock) {
       alert(`Chỉ còn ${item.stock} sản phẩm trong kho!`);
       return;
     }
-    setCartItems(cartItems.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item)));
-  };
 
-  const handleRemoveItem = (id: string) => {
-    if (confirm("Bạn có chắc muốn xóa sản phẩm này?")) {
-      setCartItems(cartItems.filter((item) => item.id !== id));
+    try {
+      await cartService.updateCartItemQuantity(id, newQuantity);
+      setCartItems(cartItems.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item)));
+    } catch (error) {
+      console.error("Failed to update quantity:", error);
+      alert("Không thể cập nhật số lượng. Vui lòng thử lại!");
     }
   };
 
-  const handleClearCart = () => {
+  const handleRemoveItem = async (id: string) => {
+    if (confirm("Bạn có chắc muốn xóa sản phẩm này?")) {
+      try {
+        await cartService.removeCartItem(id);
+        setCartItems(cartItems.filter((item) => item.id !== id));
+      } catch (error) {
+        console.error("Failed to remove item:", error);
+        alert("Không thể xóa sản phẩm. Vui lòng thử lại!");
+      }
+    }
+  };
+
+  const handleClearCart = async () => {
+    if (confirm("Bạn có chắc muốn xóa tất cả sản phẩm trong giỏ hàng?")) {
+      try {
+        await cartService.clearCart();
+        setCartItems([]);
+      } catch (error) {
+        console.error("Failed to clear cart:", error);
+        alert("Không thể xóa giỏ hàng. Vui lòng thử lại!");
+      }
+    }
+  };
+
+  const handleContinueClearCart = () => {
     if (confirm("Bạn có chắc muốn xóa tất cả sản phẩm trong giỏ hàng?")) {
       setCartItems([]);
       setAppliedVoucher(null);
     }
   };
 
-  const handleApplyVoucher = () => {
-    setVoucherError("");
-    const voucher = MOCK_VOUCHERS.find((v) => v.code === voucherCode.toUpperCase());
-
-    if (!voucher) {
-      setVoucherError("Mã giảm giá không hợp lệ");
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) {
+      setVoucherError("Vui lòng nhập mã giảm giá");
       return;
     }
 
-    if (subtotal < voucher.minOrder) {
-      setVoucherError(`Đơn hàng tối thiểu ${formatCurrency(voucher.minOrder)} để áp dụng mã này`);
-      return;
-    }
+    try {
+      setApplyingCoupon(true);
+      setVoucherError("");
 
-    setAppliedVoucher(voucher);
-    setVoucherCode("");
+      // Call API to validate coupon
+      const result = await couponService.validateCoupon(voucherCode.trim().toUpperCase(), subtotal);
+
+      if (result.success) {
+        setAppliedVoucher(result.coupon);
+        setVoucherCode("");
+      } else {
+        setVoucherError(result.message || "Mã giảm giá không hợp lệ");
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Mã giảm giá không hợp lệ";
+      setVoucherError(errorMessage);
+    } finally {
+      setApplyingCoupon(false);
+    }
   };
 
   const handleRemoveVoucher = () => {
@@ -176,6 +253,24 @@ export default function CartPage() {
   };
 
   const allSelected = cartItems.length > 0 && cartItems.every((item) => item.selected);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 w-64 rounded bg-gray-200"></div>
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-32 rounded-lg bg-gray-200"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -372,33 +467,59 @@ export default function CartPage() {
               ))
             )}
 
-            {/* Suggested Products */}
+            {/* Suggested Products - Smart recommendations based on cart */}
             {cartItems.length > 0 && (
               <div className="bg-white rounded-lg shadow-sm p-6 mt-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Có thể bạn quan tâm</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {MOCK_SUGGESTED_BOOKS.map((book) => (
-                    <Link
-                      key={book.id}
-                      href={`/books/${book.id}`}
-                      className="group"
-                    >
-                      <div className="aspect-[3/4] relative overflow-hidden rounded-lg bg-gray-100 mb-2">
-                        <Image
-                          src={book.cover}
-                          alt={book.title}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-                        {book.title}
-                      </h4>
-                      <p className="text-xs text-gray-500 mb-1">{book.author}</p>
-                      <p className="text-sm font-bold text-red-600">{formatCurrency(book.price)}</p>
-                    </Link>
-                  ))}
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">Có thể bạn quan tâm</h3>
+                  {loadingSuggestions && (
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span>Đang tải...</span>
+                    </div>
+                  )}
                 </div>
+                
+                {loadingSuggestions ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="aspect-[3/4] bg-gray-200 rounded-lg mb-2"></div>
+                        <div className="h-4 bg-gray-200 rounded mb-1"></div>
+                        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : suggestedBooks.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {suggestedBooks.map((book) => (
+                      <Link
+                        key={book.id}
+                        href={`/books/${book.id}`}
+                        className="group"
+                      >
+                        <div className="aspect-[3/4] relative overflow-hidden rounded-lg bg-gray-100 mb-2">
+                          <Image
+                            src={book.cover}
+                            alt={book.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                          {book.title}
+                        </h4>
+                        <p className="text-xs text-gray-500 mb-1">{book.author}</p>
+                        <p className="text-sm font-bold text-red-600">{formatCurrency(book.price)}</p>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 py-8">Không có gợi ý sách phù hợp</p>
+                )}
               </div>
             )}
           </div>
@@ -429,8 +550,31 @@ export default function CartPage() {
                       variant="primary"
                       size="lg"
                       className="flex-shrink-0"
+                      disabled={applyingCoupon || !voucherCode.trim()}
                     >
-                      Áp dụng
+                      {applyingCoupon ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        "Áp dụng"
+                      )}
                     </Button>
                   </div>
                   {voucherError && (
@@ -443,56 +587,73 @@ export default function CartPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div>
-                          <p className="text-sm font-medium">
-                            Đã áp dụng mã {appliedVoucher.code}
-                          </p>
+                          <p className="text-sm font-medium">Đã áp dụng mã {appliedVoucher.code}</p>
                           <p className="text-xs mt-1">
-                            {appliedVoucher.discount > 0
-                              ? `Giảm ${appliedVoucher.discount}% (tối đa ${formatCurrency(appliedVoucher.maxDiscount)})`
-                              : `Miễn phí vận chuyển (tối đa ${formatCurrency(appliedVoucher.maxDiscount)})`}
+                            {couponService.formatCouponDescription(appliedVoucher)}
                           </p>
                         </div>
                       </div>
                     </Alert>
                   )}
 
-                  {/* Available Vouchers */}
-                  <div className="mt-3 space-y-2">
-                    <p className="text-xs font-medium text-gray-600 mb-2">Mã khuyến mãi có sẵn:</p>
-                    {MOCK_VOUCHERS.map((voucher) => (
-                      <button
-                        key={voucher.code}
-                        onClick={() => {
-                          setVoucherCode(voucher.code);
-                          handleApplyVoucher();
-                        }}
-                        className="w-full text-left border border-dashed border-gray-300 rounded-lg p-3 hover:border-blue-500 hover:bg-blue-50 transition-colors group"
-                      >
-                        <div className="flex items-start justify-between mb-1">
-                          <Badge variant="info" size="sm">
-                            {voucher.code}
-                          </Badge>
-                          {subtotal >= voucher.minOrder ? (
-                            <Badge variant="success" size="sm">
-                              Có thể dùng
-                            </Badge>
-                          ) : (
-                            <Badge variant="default" size="sm">
-                              Chưa đủ điều kiện
-                            </Badge>
-                          )}
+                  {/* Available Public Coupons */}
+                  {publicCoupons.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs font-medium text-gray-600 mb-2">Mã khuyến mãi có sẵn:</p>
+                      {loadingCoupons ? (
+                        <div className="space-y-2">
+                          {[1, 2].map((i) => (
+                            <div key={i} className="animate-pulse border border-dashed border-gray-300 rounded-lg p-3">
+                              <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                              <div className="h-3 bg-gray-200 rounded w-2/3 mb-1"></div>
+                              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                          ))}
                         </div>
-                        <p className="text-xs text-gray-700 font-medium mt-2">
-                          {voucher.discount > 0
-                            ? `Giảm ${voucher.discount}% (tối đa ${formatCurrency(voucher.maxDiscount)})`
-                            : `Miễn phí vận chuyển (tối đa ${formatCurrency(voucher.maxDiscount)})`}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Đơn tối thiểu {formatCurrency(voucher.minOrder)}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
+                      ) : (
+                        publicCoupons.map((coupon) => {
+                          const isExpired = couponService.isExpired(coupon);
+                          const discountAmount = couponService.calculateDiscount(coupon, subtotal);
+
+                          return (
+                            <button
+                              key={coupon.id}
+                              onClick={() => {
+                                setVoucherCode(coupon.code);
+                                handleApplyVoucher();
+                              }}
+                              disabled={isExpired || applyingCoupon}
+                              className="w-full text-left border border-dashed border-gray-300 rounded-lg p-3 hover:border-blue-500 hover:bg-blue-50 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:bg-transparent"
+                            >
+                              <div className="flex items-start justify-between mb-1">
+                                <Badge variant="info" size="sm">
+                                  {coupon.code}
+                                </Badge>
+                                {isExpired ? (
+                                  <Badge variant="danger" size="sm">
+                                    Đã hết hạn
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="success" size="sm">
+                                    Có thể dùng
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-700 font-medium mt-2">
+                                {couponService.formatCouponDescription(coupon)}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Giảm ngay {formatCurrency(discountAmount)}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                HSD: {new Date(coupon.expiration).toLocaleDateString("vi-VN")}
+                              </p>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Order Summary */}
@@ -512,17 +673,17 @@ export default function CartPage() {
                   <div className="flex justify-between text-base">
                     <span className="text-gray-700">Phí vận chuyển</span>
                     <span className="font-semibold text-gray-900">
-                      {finalShippingFee === 0 ? (
+                      {shippingFee === 0 ? (
                         <Badge variant="success" size="sm" className="text-xs px-2 py-1">
                           Miễn phí
                         </Badge>
                       ) : (
-                        formatCurrency(finalShippingFee)
+                        formatCurrency(shippingFee)
                       )}
                     </span>
                   </div>
 
-                  {subtotal < 500000 && finalShippingFee > 0 && (
+                  {subtotal < 500000 && shippingFee > 0 && (
                     <Alert variant="info" className="bg-blue-50 border-blue-200">
                       <div className="flex items-center gap-2">
                         <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -563,7 +724,7 @@ export default function CartPage() {
                       items: String(selectedItems.length),
                       subtotal: String(subtotal),
                       discount: String(discount),
-                      shipping: String(finalShippingFee),
+                      shipping: String(shippingFee),
                     });
                     router.push(`/payment/qr?${queryParams.toString()}`);
                   }}

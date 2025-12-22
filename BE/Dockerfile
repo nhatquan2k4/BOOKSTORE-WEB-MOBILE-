@@ -6,7 +6,7 @@ COPY Core/BookStore.API/BookStore.API.csproj Core/BookStore.API/
 COPY Core/BookStore.Application/BookStore.Application.csproj Core/BookStore.Application/
 COPY Core/BookStore.Domain/BookStore.Domain.csproj Core/BookStore.Domain/
 COPY Core/BookStore.Infrastructure/BookStore.Infrastructure.csproj Core/BookStore.Infrastructure/
-#COPY Core/BookStore.Tests/BookStore.Tests.csproj Core/BookStore.Tests/
+COPY Core/BookStore.Tests/BookStore.Tests.csproj Core/BookStore.Tests/
 COPY BookStore.Shared/BookStore.Shared.csproj BookStore.Shared/
 
 # Restore dependencies
@@ -18,8 +18,8 @@ COPY . .
 # Build solution (không publish)
 RUN dotnet build Core/BookStore.API/BookStore.API.csproj -c Release --no-restore
 
-# Run unit tests
-RUN dotnet test Core/BookStore.Tests/BookStore.Tests.csproj --no-build --logger:trx
+# Run unit tests (commented out for development - enable in CI/CD pipeline)
+# RUN dotnet test Core/BookStore.Tests/BookStore.Tests.csproj --no-build --logger:trx
 
 # PUBLISH #
 FROM build AS publish

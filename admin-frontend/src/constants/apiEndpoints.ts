@@ -54,10 +54,12 @@ export const API_ENDPOINTS = {
     // Users Management
     USERS: {
         LIST: '/Users',
+        PAGED: '/Users/paged',
         GET_BY_ID: (id: string) => `/Users/${id}`,
         CREATE: '/Users',
         UPDATE: (id: string) => `/Users/${id}`,
         DELETE: (id: string) => `/Users/${id}`,
+        COUNT: '/Users/count',
     },
 
     // User Profile
@@ -85,6 +87,25 @@ export const API_ENDPOINTS = {
         DELETE: (id: string) => `/Orders/${id}`,
         UPDATE_STATUS: (id: string) => `/Orders/${id}/status`,
         GET_BY_USER: (userId: string) => `/Orders/user/${userId}`,
+        STATISTICS: {
+            REVENUE: '/Orders/statistics/revenue',
+            COUNT: '/Orders/statistics/count',
+            BY_STATUS: '/Orders/statistics/by-status',
+        },
+    },
+
+    // Admin Dashboard
+    DASHBOARD: {
+        REVENUE: '/admin/dashboard/revenue',
+        TOP_SELLING_BOOKS: '/admin/dashboard/top-selling-books',
+        ORDER_STATS: '/admin/dashboard/order-stats',
+        BOOK_VIEWS: '/admin/dashboard/book-views',
+    },
+
+    // Statistics
+    STATISTICS: {
+        BOOKS_COUNT: '/Book/count',
+        USERS_COUNT: '/Users/count',
     },
 
     // Reviews Management
@@ -211,7 +232,7 @@ export const API_ENDPOINTS = {
     // Book Images
     BOOK_IMAGES: {
         GET_BY_BOOK: (bookId: string) => `/books/${bookId}/images`,
-        UPLOAD: (bookId: string) => `/books/${bookId}/images`,
+        UPLOAD: (bookId: string) => `/books/${bookId}/images/upload`,
         DELETE: (bookId: string, imageId: string) => `/books/${bookId}/images/${imageId}`,
         SET_PRIMARY: (bookId: string, imageId: string) => `/books/${bookId}/images/${imageId}/primary`,
     },

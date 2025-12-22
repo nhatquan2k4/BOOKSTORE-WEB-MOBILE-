@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -9,6 +9,8 @@ import {
 } from "@/components/ui";
 import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
+import { bookService } from "@/services";
+import type { BookDto } from "@/types/dtos";
 
 type Book = {
   id: string;
@@ -28,264 +30,57 @@ type Book = {
 type SortOption = "read-count" | "rating" | "price-asc" | "price-desc" | "trending";
 type TimeRange = "week" | "month" | "year" | "all-time";
 
-const MOCK_BOOKS: Book[] = [
-  {
-    id: "1",
-    title: "Đắc Nhân Tâm",
-    author: "Dale Carnegie",
-    category: "Kỹ năng sống",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 5678,
-    readCount: 125000,
-    stock: 230,
-    trend: "up",
-  },
-  {
-    id: "2",
-    title: "Atomic Habits - Thói Quen Nguyên Tử",
-    author: "James Clear",
-    category: "Kỹ năng sống",
-    price: 195000,
-    originalPrice: 250000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 3456,
-    readCount: 98000,
-    stock: 120,
-    trend: "up",
-  },
-  {
-    id: "3",
-    title: "Nhà Giả Kim",
-    author: "Paulo Coelho",
-    category: "Văn học",
-    price: 85000,
-    originalPrice: 110000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 4321,
-    readCount: 87000,
-    stock: 180,
-    trend: "stable",
-  },
-  {
-    id: "4",
-    title: "Sapiens: Lược Sử Loài Người",
-    author: "Yuval Noah Harari",
-    category: "Khoa học",
-    price: 280000,
-    originalPrice: 350000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 3421,
-    readCount: 76000,
-    stock: 90,
-    trend: "up",
-  },
-  {
-    id: "5",
-    title: "Mắt Biếc",
-    author: "Nguyễn Nhật Ánh",
-    category: "Văn học",
-    price: 95000,
-    originalPrice: 120000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 3987,
-    readCount: 72000,
-    stock: 150,
-    trend: "stable",
-  },
-  {
-    id: "6",
-    title: "Tư Duy Nhanh Và Chậm",
-    author: "Daniel Kahneman",
-    category: "Tâm lý học",
-    price: 245000,
-    originalPrice: 310000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1234,
-    readCount: 65000,
-    stock: 60,
-    trend: "up",
-  },
-  {
-    id: "7",
-    title: "7 Thói Quen Hiệu Quả",
-    author: "Stephen Covey",
-    category: "Kỹ năng sống",
-    price: 125000,
-    originalPrice: 160000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 2345,
-    readCount: 58000,
-    stock: 95,
-    trend: "stable",
-  },
-  {
-    id: "8",
-    title: "Chiến Tranh Tiền Tệ",
-    author: "Song Hongbing",
-    category: "Kinh tế",
-    price: 165000,
-    originalPrice: 210000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 1876,
-    readCount: 54000,
-    stock: 45,
-    trend: "down",
-  },
-  {
-    id: "9",
-    title: "Nghĩ Giàu Làm Giàu",
-    author: "Napoleon Hill",
-    category: "Kinh doanh",
-    price: 115000,
-    originalPrice: 145000,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviewCount: 1987,
-    readCount: 52000,
-    stock: 110,
-    trend: "stable",
-  },
-  {
-    id: "10",
-    title: "Tôi Thấy Hoa Vàng Trên Cỏ Xanh",
-    author: "Nguyễn Nhật Ánh",
-    category: "Văn học",
-    price: 125000,
-    originalPrice: 160000,
-    cover: "/image/anh.png",
-    rating: 4.9,
-    reviewCount: 4567,
-    readCount: 48000,
-    stock: 140,
-    trend: "stable",
-  },
-  {
-    id: "11",
-    title: "Deep Work",
-    author: "Cal Newport",
-    category: "Kỹ năng sống",
-    price: 175000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 1987,
-    readCount: 45000,
-    stock: 65,
-    trend: "up",
-  },
-  {
-    id: "12",
-    title: "Càng Bình Tĩnh Càng Hạnh Phúc",
-    author: "Megumi",
-    category: "Tâm lý học",
-    price: 98000,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviewCount: 2134,
-    readCount: 43000,
-    stock: 180,
-    trend: "up",
-  },
-  {
-    id: "13",
-    title: "Homo Deus: Lược Sử Tương Lai",
-    author: "Yuval Noah Harari",
-    category: "Khoa học",
-    price: 295000,
-    originalPrice: 370000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2987,
-    readCount: 41000,
-    stock: 75,
-    trend: "stable",
-  },
-  {
-    id: "14",
-    title: "Đừng Bao Giờ Đi Ăn Một Mình",
-    author: "Keith Ferrazzi",
-    category: "Kỹ năng sống",
-    price: 155000,
-    originalPrice: 195000,
-    cover: "/image/anh.png",
-    rating: 4.5,
-    reviewCount: 876,
-    readCount: 38000,
-    stock: 70,
-    trend: "stable",
-  },
-  {
-    id: "15",
-    title: "Cây Cam Ngọt Của Tôi",
-    author: "José Mauro de Vasconcelos",
-    category: "Văn học",
-    price: 135000,
-    originalPrice: 170000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 3456,
-    readCount: 36000,
-    stock: 120,
-    trend: "stable",
-  },
-  {
-    id: "16",
-    title: "The Lean Startup",
-    author: "Eric Ries",
-    category: "Kinh doanh",
-    price: 185000,
-    cover: "/image/anh.png",
-    rating: 4.6,
-    reviewCount: 876,
-    readCount: 34000,
-    stock: 55,
-    trend: "up",
-  },
-  {
-    id: "17",
-    title: "Psychology of Money",
-    author: "Morgan Housel",
-    category: "Kinh tế",
-    price: 195000,
-    originalPrice: 245000,
-    cover: "/image/anh.png",
-    rating: 4.8,
-    reviewCount: 2876,
-    readCount: 32000,
-    stock: 90,
-    trend: "up",
-  },
-  {
-    id: "18",
-    title: "Số Đỏ",
-    author: "Vũ Trọng Phụng",
-    category: "Văn học",
-    price: 115000,
-    cover: "/image/anh.png",
-    rating: 4.7,
-    reviewCount: 2345,
-    readCount: 30000,
-    stock: 95,
-    trend: "down",
-  },
-];
-
 export default function MostReadBooksPage() {
   const [sortBy, setSortBy] = useState<SortOption>("read-count");
   const [timeRange, setTimeRange] = useState<TimeRange>("all-time");
   const [currentPage, setCurrentPage] = useState(1);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 20;
 
-  const sortedBooks = [...MOCK_BOOKS].sort((a, b) => {
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await bookService.getBooks({
+          pageNumber: currentPage || 1,
+          pageSize: 20,
+        });
+        
+        if (response.items && response.items.length > 0) {
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
+            id: book.id.toString(),
+            title: book.title,
+            author: book.authorNames?.[0] || "Tác giả không xác định",
+            category: book.categoryNames?.[0] || "Chưa phân loại",
+            price: book.discountPrice || book.currentPrice || 0,
+            originalPrice: book.currentPrice,
+            cover: "/image/anh.png",
+            rating: book.averageRating || 4.5,
+            reviewCount: book.totalReviews || 0,
+            readCount: Math.floor(Math.random() * 100000) + 10000,
+            stock: 100,
+            trend: "stable" as "up" | "down" | "stable",
+          }));
+          setBooks(transformedBooks);
+          setTotalItems(response.totalCount || 0);
+        } else {
+          setBooks([]);
+          setTotalItems(0);
+        }
+      } catch (error) {
+        console.error("Error fetching books:", error);
+        setBooks([]);
+        setTotalItems(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, [currentPage]);
+
+  const sortedBooks = [...books].sort((a, b) => {
     switch (sortBy) {
       case "read-count":
         return b.readCount - a.readCount;
@@ -327,7 +122,7 @@ export default function MostReadBooksPage() {
     }
   };
 
-  const totalReadCount = MOCK_BOOKS.reduce((acc, book) => acc + book.readCount, 0);
+  const totalReadCount = books.reduce((acc, book) => acc + book.readCount, 0);
 
   const EyeIcon = () => (
     <svg
@@ -493,8 +288,20 @@ export default function MostReadBooksPage() {
         </Card>
 
         {/* Books grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          {paginatedBooks.map((book, index) => (
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                <div className="aspect-[2/3] bg-gray-200 rounded-lg mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            {paginatedBooks.map((book, index) => (
             <Link key={book.id} href={`/books/${book.id}`}>
               <Card className="flex flex-col h-full rounded-xl bg-white shadow-sm transition hover:shadow-lg group">
                 <CardContent className="p-3">
@@ -564,7 +371,8 @@ export default function MostReadBooksPage() {
               </Card>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (

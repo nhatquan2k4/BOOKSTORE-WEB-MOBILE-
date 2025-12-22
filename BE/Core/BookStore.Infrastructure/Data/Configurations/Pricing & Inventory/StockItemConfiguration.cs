@@ -25,10 +25,10 @@ namespace BookStore.Infrastructure.Configurations.Pricing_Inventory
             builder.Property(x => x.LastUpdated)
                    .IsRequired();
 
-            // Quan hệ với Book (Catalog) - 1-1 relationship
+            // Quan hệ với Book (Catalog) - 1-n relationship (one book can have stock in multiple warehouses)
             builder.HasOne(x => x.Book)
-                   .WithOne(b => b.StockItem) // Book has one StockItem
-                   .HasForeignKey<StockItem>(x => x.BookId)
+                   .WithMany(b => b.StockItems) // Book has many StockItems
+                   .HasForeignKey(x => x.BookId)
                    .OnDelete(DeleteBehavior.Restrict);
 
             // Quan hệ với Warehouse
