@@ -16,7 +16,7 @@ import { orderService } from "@/services";
 import { formatPrice } from "@/lib/price";
 
 // --- CONFIG & HELPERS ---
-const API_BASE_URL = 'http://localhost:5276';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276';
 
 const getFullImageUrl = (url?: string | null) => {
   if (!url) return '/image/anh.png';

@@ -126,25 +126,29 @@ function QRPaymentContent() {
         // Lắng nghe sự kiện từ Backend
         connection.on("ReceivePaymentStatus", (receivedId, status) => {
           // 1. In ra số liệu thực tế
-          console.log(`[SIGNALR EVENT] Backend bắn sang: "${receivedId}"`);
+          console.log(`[SIGNALR EVENT] Backend bắn sang: "${receivedId}" | Status: "${status}"`);
           console.log(`[FRONTEND] Đang chờ ID:      "${orderId}"`);
+          console.log(`[TYPE] receivedId type: ${typeof receivedId} | orderId type: ${typeof orderId}`);
 
-          // 2. Chuẩn hóa để so sánh (biến tất cả thành chữ thường)
-          const backendId = String(receivedId).toLowerCase();
-          const currentId = String(orderId).toLowerCase();
+          // 2. Chuẩn hóa để so sánh (loại bỏ khoảng trắng và chuyển thành chữ thường)
+          const backendId = String(receivedId).trim().toLowerCase();
+          const currentId = String(orderId).trim().toLowerCase();
 
-          // 3. So sánh
-          if (backendId === currentId && status === "Paid") {
-            console.log("HAI MÃ KHỚP NHAU -> CHUYỂN TRANG!");
+          console.log(`[NORMALIZED] Backend: "${backendId}" | Frontend: "${currentId}"`);
+
+          // 3. So sánh - hỗ trợ nhiều status từ backend
+          const paidStatuses = ["paid", "completed", "success"];
+          const isPaidStatus = paidStatuses.includes(String(status).toLowerCase());
+
+          if (backendId === currentId && isPaidStatus) {
+            console.log("HAI MÃ KHỚP NHAU & STATUS PAID -> CHUYỂN TRANG!");
             handleSuccess();
           } else {
-            console.log(
-              "KHÔNG KHỚP! (Backend gửi sai hoặc Frontend đang xem đơn khác)"
-            );
+            console.log(`KHÔNG KHỚP! Backend ID: "${backendId}" | Current: "${currentId}" | Status: "${status}"`);
           }
         });
       })
-      .catch((err) => console.error("❌ SignalR Connection Error: ", err));
+      .catch((err) => console.error("SignalR Connection Error: ", err));
 
     return () => {
       if (connectionRef.current) {

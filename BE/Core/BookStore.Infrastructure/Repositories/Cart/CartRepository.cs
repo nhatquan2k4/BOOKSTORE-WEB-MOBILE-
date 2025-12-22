@@ -152,7 +152,8 @@ namespace BookStore.Infrastructure.Repositories.Cart
         public async Task<int> GetCartItemCountAsync(Guid userId)
         {
             var cart = await GetActiveCartByUserIdAsync(userId);
-            return cart?.Items.Sum(i => i.Quantity) ?? 0;
+            // Đếm số lượng sản phẩm khác nhau (số phần tử), không phải tổng quantity
+            return cart?.Items.Count ?? 0;
         }
 
         public async Task<decimal> GetCartTotalAsync(Guid userId)
