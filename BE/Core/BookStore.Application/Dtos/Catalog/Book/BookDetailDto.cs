@@ -2,7 +2,6 @@
 using BookStore.Application.Dtos.Catalog.Category;
 using BookStore.Application.Dtos.Catalog.Publisher;
 using BookStore.Application.Dtos.Catalog.BookImages;
-// using BookStore.Application.Dtos.Catalog.Review;
 
 namespace BookStore.Application.Dtos.Catalog.Book
 {
@@ -24,5 +23,29 @@ namespace BookStore.Application.Dtos.Catalog.Book
         public List<BookImageDto> Images { get; set; } = new();
         public List<BookFileDto> Files { get; set; } = new();
         public List<BookMetadataDto> Metadata { get; set; } = new();
+        
+        // Pricing
+        public decimal? CurrentPrice { get; set; }
+        public decimal? DiscountPrice { get; set; }
+        
+        // Stock
+        public int? StockQuantity { get; set; }
+        
+        // Review summary
+        public double? AverageRating { get; set; }
+        public int TotalReviews { get; set; }
+
+        // --- NEW: Rental Plans (Calculated from Backend) ---
+        public List<RentalPlanDto> RentalPlans { get; set; } = new();
+    }
+
+    public class RentalPlanDto
+    {
+        public int Id { get; set; } // 1, 2, 3...
+        public int Days { get; set; }
+        public string DurationLabel { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public int SavingsPercentage { get; set; }
+        public bool IsPopular { get; set; }
     }
 }

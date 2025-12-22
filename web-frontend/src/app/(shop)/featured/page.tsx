@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
+import { resolveBookPrice } from "@/lib/price";
 
 type Book = {
   id: string;
@@ -43,20 +44,23 @@ export default function FeaturedBooksPage() {
         });
         
         if (response.items && response.items.length > 0) {
-          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
-            id: book.id.toString(),
-            title: book.title,
-            author: book.authorNames?.[0] || "Tác giả không xác định",
-            category: book.categoryNames?.[0] || "Chưa phân loại",
-            price: book.discountPrice || book.currentPrice || 0,
-            originalPrice: book.currentPrice,
-            cover: "/image/anh.png",
-            rating: book.averageRating || 4.5,
-            reviewCount: book.totalReviews || 0,
-            stock: 100,
-            featuredReason: "Sách nổi bật",
-            highlight: book.discountPrice ? "Giảm giá" : undefined,
-          }));
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => {
+            const priceInfo = resolveBookPrice(book);
+            return {
+              id: book.id.toString(),
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              category: book.categoryNames?.[0] || "Chưa phân loại",
+              price: priceInfo.finalPrice,
+              originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
+              cover: book.coverImage || "/image/anh.png",
+              rating: book.averageRating || 0,
+              reviewCount: book.totalReviews || 0,
+              stock: 100,
+              featuredReason: "Sách nổi bật",
+              highlight: priceInfo.hasDiscount ? "Giảm giá" : undefined,
+            };
+          });
           setBooks(transformedBooks);
           setTotalItems(response.totalCount || 0);
         } else {
@@ -102,8 +106,10 @@ export default function FeaturedBooksPage() {
       currency: "VND",
     }).format(price);
 
-  const calculateDiscount = (original: number, current: number) =>
-    Math.round(((original - current) / original) * 100);
+  const calculateDiscount = (original: number, current: number) => {
+    if (original <= 0 || current <= 0 || current >= original) return 0;
+    return Math.round(((original - current) / original) * 100);
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -270,22 +276,28 @@ export default function FeaturedBooksPage() {
                 </div>
 
                 <div className="flex items-center gap-1 pt-1">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="text-yellow-400"
-                  >
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  <span className="text-xs font-bold text-gray-700">
-                    {book.rating}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    ({book.reviewCount})
-                  </span>
+                  {book.rating > 0 && book.reviewCount > 0 ? (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="text-yellow-400"
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                      <span className="text-xs font-bold text-gray-700">
+                        {book.rating}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({book.reviewCount})
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-gray-400">Đang cập nhật</span>
+                  )}
                 </div>
 
                 {/* Giá + giá gốc + % giảm */}

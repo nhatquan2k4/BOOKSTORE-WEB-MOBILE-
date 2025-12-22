@@ -401,39 +401,6 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                   <span>Lịch sử giao dịch</span>
                 </button>
 
-                {/* Thành tích */}
-                <button
-                  onClick={() => go("/account/achievements")}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                    isActive("/account/achievements")
-                      ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
-                      : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
-                  }`}
-                >
-                  <span
-                    className={
-                      isActive("/account/achievements")
-                        ? "text-blue-600"
-                        : "text-gray-500"
-                    }
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="m9 12 2 2 4-4M7.835 4.697a3.42 3.42 0 0 0 1.946-.806 3.42 3.42 0 0 1 4.438 0 3.42 3.42 0 0 0 1.946.806 3.42 3.42 0 0 1 3.138 3.138 3.42 3.42 0 0 0 .806 1.946 3.42 3.42 0 0 1 0 4.438 3.42 3.42 0 0 0-.806 1.946 3.42 3.42 0 0 1-3.138 3.138 3.42 3.42 0 0 0-1.946.806 3.42 3.42 0 0 1-4.438 0 3.42 3.42 0 0 0-1.946-.806 3.42 3.42 0 0 1-3.138-3.138 3.42 3.42 0 0 0-.806-1.946 3.42 3.42 0 0 1 0-4.438 3.42 3.42 0 0 0 .806-1.946 3.42 3.42 0 0 1 3.138-3.138Z"
-                      />
-                    </svg>
-                  </span>
-                  <span>Thành tích</span>
-                </button>
-
                 {/* Hỗ trợ khách hàng */}
                 <button
                   onClick={() => go("/account/customer-support")}

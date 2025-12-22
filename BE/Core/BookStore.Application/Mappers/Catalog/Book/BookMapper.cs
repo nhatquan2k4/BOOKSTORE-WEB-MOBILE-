@@ -67,7 +67,13 @@ namespace BookStore.Application.Mappers.Catalog.Book
 
                 // Reviews (TODO: Calculate from Reviews when schema is fixed)
                 AverageRating = null,
-                TotalReviews = 0
+                TotalReviews = 0,
+
+                // Cover Image
+                CoverImage = book.Images?
+                    .Where(img => img.IsCover)
+                    .OrderBy(img => img.DisplayOrder)
+                    .FirstOrDefault()?.ImageUrl
             };
         }
         public static BookDetailDto ToDetailDto(this BookEntity book)
@@ -105,7 +111,30 @@ namespace BookStore.Application.Mappers.Catalog.Book
                 Files = book.Files?.ToDtoList() ?? new List<BookFileDto>(),
 
                 // Metadata - sử dụng BookMetadataMapper
-                Metadata = book.Metadata?.ToDtoList() ?? new List<BookMetadataDto>()
+                Metadata = book.Metadata?.ToDtoList() ?? new List<BookMetadataDto>(),
+                
+                // Pricing - SAME LOGIC AS BookDto (SINGLE SOURCE OF TRUTH)
+                CurrentPrice = book.Prices?
+                    .Where(p => p.IsCurrent
+                                && p.EffectiveFrom <= DateTime.UtcNow
+                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .FirstOrDefault()?.Amount,
+
+                DiscountPrice = book.Prices?
+                    .Where(p => p.IsCurrent
+                                && p.EffectiveFrom <= DateTime.UtcNow
+                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow)
+                                && p.DiscountId.HasValue)
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .FirstOrDefault()?.Amount,
+
+                // Stock Quantity (sum across all warehouses)
+                StockQuantity = book.StockItems?.Sum(s => s.QuantityOnHand) ?? 0,
+
+                // Reviews (TODO: Calculate from Reviews when schema is fixed)
+                AverageRating = null,
+                TotalReviews = 0
             };
         }
 

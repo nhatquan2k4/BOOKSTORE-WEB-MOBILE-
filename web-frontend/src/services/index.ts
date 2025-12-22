@@ -7,12 +7,14 @@ export * from './cart.service';
 export * from './order.service';
 export * from './checkout.service';
 export * from './review.service';
+export * from './comment.service';
 export * from './category.service';
 export * from './author.service';
 export * from './publisher.service';
 export * from './user.service';
 export * from './notification.service';
 export * from './rental.service';
+export * from './wishlist.service';
 
 // Admin services
 export * from './admin-dashboard.service';

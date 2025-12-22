@@ -124,34 +124,35 @@ function QRPaymentContent() {
         setPaymentStatus('pending');
         setTimeLeft(900);
         
-        console.log('Creating QR with params:', { amount, orderId, type, bookId, planId });
+        console.log('Creating QR with params:', { amount, orderId });
         
+        // Call REAL backend API with authentication
         const data = await paymentApi.createQR({
-          amount: Number.parseInt(amount),
           orderId,
-          type: (type || 'buy') as 'rent' | 'buy',
-          bookId: bookId || undefined,
-          planId: planId || undefined,
+          amount: Number.parseInt(amount),
           description: type === 'rent' 
             ? `THUE ${bookId} ${planId}` 
             : `MUA ${orderId}`,
         });
         
-        console.log('QR Response:', data);
+        console.log('Backend QR Response:', data);
         
-        if (data.success) {
+        if (data.success && data.qrCodeUrl) {
           setQrCodeUrl(data.qrCodeUrl);
           setSepayOrderId(data.orderId);
           setAccountNumber(data.accountNumber);
           setAccountName(data.accountName);
           setTransferContent(data.transferContent);
-          console.log('QR Code URL set:', data.qrCodeUrl);
+          console.log('QR Code URL from backend:', data.qrCodeUrl);
         } else {
-          console.error('QR creation failed:', data);
+          console.error('QR creation failed - invalid response:', data);
+          alert('Lỗi tạo mã QR: Phản hồi từ server không hợp lệ');
         }
       } catch (error) {
-        console.error('Error creating QR:', error);
-        alert('Lỗi tạo mã QR: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        console.error('Error creating QR from backend:', error);
+        // Show real backend error message instead of generic text
+        const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định khi tạo mã QR';
+        alert('Lỗi tạo mã QR: ' + errorMessage);
       } finally {
         setIsLoadingQR(false);
       }

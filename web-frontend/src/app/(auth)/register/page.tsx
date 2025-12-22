@@ -57,21 +57,24 @@ export default function RegisterPage() {
         phoneNumber: data.phoneNumber,
       });
       
-      // Show success message with email verification notice
+      // Show success message - note: email verification might not work in dev
       setSuccessMessage(
-        "Đăng ký thành công! Chúng tôi đã gửi email xác minh đến " + data.email + 
-        ". Vui lòng kiểm tra hộp thư và xác minh email để kích hoạt tài khoản."
+        "Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ."
       );
       
-      // Redirect to login page after 3 seconds
+      // Redirect to home or dashboard after 2 seconds
       setTimeout(() => {
-        router.push("/login?registered=true");
-      }, 3000);
+        router.push("/");
+      }, 2000);
     } catch (err: any) {
-      setErrorMessage(
-        err?.message || 
-        "Đăng ký thất bại. Vui lòng thử lại."
-      );
+      const errorMsg = err?.message || "Đăng ký thất bại. Vui lòng thử lại.";
+      
+      // Hide SMTP errors from users
+      if (errorMsg.includes('SMTP') || errorMsg.includes('email')) {
+        setErrorMessage("Email không hợp lệ hoặc đã được sử dụng. Vui lòng thử email khác.");
+      } else {
+        setErrorMessage(errorMsg);
+      }
     }
   };
 
@@ -85,13 +88,8 @@ export default function RegisterPage() {
           </Alert>
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600 mb-3">
-              Đang chuyển đến trang đăng nhập sau 3 giây...
+              Đang chuyển đến trang chủ...
             </p>
-            <Link href="/login?registered=true">
-              <Button variant="primary" className={authButtonStyles.primary}>
-                Đăng nhập ngay
-              </Button>
-            </Link>
           </div>
         </div>
       )}

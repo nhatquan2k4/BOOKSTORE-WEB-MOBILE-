@@ -32,5 +32,10 @@ namespace BookStore.Application.IService.Catalog
 
         // Smart recommendations
         Task<List<BookDto>> GetRecommendationsAsync(List<Guid> excludeBookIds, List<Guid> categoryIds, int limit = 8);
+        
+        // Popular books
+        Task<List<BookDto>> GetBestSellingBooksAsync(int top = 10);
+        Task<List<BookDto>> GetNewestBooksAsync(int top = 10);
+        Task<List<BookDto>> GetMostViewedBooksAsync(int top = 10);
     }
 }

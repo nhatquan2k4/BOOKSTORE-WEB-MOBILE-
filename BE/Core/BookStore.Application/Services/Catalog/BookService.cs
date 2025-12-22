@@ -42,14 +42,12 @@ namespace BookStore.Application.Services.Catalog
             _bookFormatRepository = bookFormatRepository;
         }
 
-        // Implement base interface method (simple version)
         public override async Task<IEnumerable<BookDto>> GetAllAsync()
         {
             var allBooks = await _bookRepository.GetAllAsync();
             return allBooks.Select(b => b.ToDto()).ToList();
         }
 
-        // Overloaded version with pagination and filters
         public async Task<PagedResult<BookDto>> GetAllAsync(
             int pageNumber = 1,
             int pageSize = 10,
@@ -103,11 +101,106 @@ namespace BookStore.Application.Services.Catalog
             return new PagedResult<BookDto>(bookDtos, totalCount, pageNumber, pageSize);
         }
 
-        // Hide base method to return detail dto
+        // --- UPDATE: Get detail and calculate rental plans ---
         public new async Task<BookDetailDto?> GetByIdAsync(Guid id)
         {
             var book = await _bookRepository.GetDetailByIdAsync(id);
-            return book?.ToDetailDto();
+            if (book == null) return null;
+
+            var dto = book.ToDetailDto();
+
+            // Calculate rental plans if price exists
+            // Logic: Get current valid price
+            var currentPrice = book.Prices
+                                .Where(p => p.IsCurrent && p.EffectiveFrom <= DateTime.UtcNow)
+                                .OrderByDescending(p => p.EffectiveFrom)
+                                .FirstOrDefault()?.Amount ?? 0;
+
+            if (currentPrice > 0)
+            {
+                if (dto.CurrentPrice == null || dto.CurrentPrice == 0) dto.CurrentPrice = currentPrice;
+                dto.RentalPlans = CalculateRentalPlans(currentPrice);
+            }
+
+            return dto;
+        }
+
+        // Helper: Calculate Rental Plans (New Logic: Percent based + Min Floor + Consistency Check)
+        private List<RentalPlanDto> CalculateRentalPlans(decimal purchasePrice)
+        {
+            var plans = new List<RentalPlanDto>();
+            
+            // Cấu hình % giá thuê dựa trên giá bìa
+            // 3 ngày: 2.5% (Thấp hơn gói 7 ngày là 5%)
+            var configs = new[]
+            {
+                new { Days = 3,   Percent = 0.025m, Label = "3 ngày", Popular = false }, 
+                new { Days = 7,   Percent = 0.05m,  Label = "7 ngày", Popular = false },
+                new { Days = 15,  Percent = 0.08m,  Label = "15 ngày", Popular = false },
+                new { Days = 30,  Percent = 0.12m,  Label = "30 ngày", Popular = false },
+                new { Days = 60,  Percent = 0.20m,  Label = "60 ngày", Popular = false },
+                new { Days = 90,  Percent = 0.25m,  Label = "90 ngày", Popular = false },
+                new { Days = 180, Percent = 0.35m,  Label = "180 ngày", Popular = true },
+                new { Days = 365, Percent = 0.50m,  Label = "1 năm (365 ngày)", Popular = false }
+            };
+
+            // Tính giá cơ sở gói 7 ngày để so sánh mức tiết kiệm
+            decimal base7Price = Math.Ceiling((purchasePrice * 0.05m) / 1000) * 1000;
+            if (base7Price < 2000) base7Price = 2000; // Giá tối thiểu tham chiếu
+            decimal basePerDay = base7Price / 7;
+
+            int index = 1;
+            foreach (var cfg in configs)
+            {
+                // 1. Tính giá theo %
+                decimal rawPrice = purchasePrice * cfg.Percent;
+
+                // 2. Làm tròn lên hàng nghìn (VD: 1250 -> 2000)
+                decimal price = Math.Ceiling(rawPrice / 1000) * 1000;
+
+                // 3. Áp dụng giá sàn (Min Price) để tránh giá thuê quá thấp (VD: 0đ hoặc 500đ)
+                // Gói 3 ngày tối thiểu 2k, các gói khác tối thiểu 3k
+                decimal minPrice = cfg.Days <= 3 ? 2000 : 3000;
+                if (price < minPrice) price = minPrice;
+
+                // 4. Logic đảm bảo tính hợp lý: 
+                // Giá gói thấp ngày KHÔNG ĐƯỢC cao hơn hoặc bằng giá gói cao ngày liền kề
+                // (Logic này tự động đúng do % tăng dần, nhưng check thêm cho chắc chắn với trường hợp làm tròn)
+                if (plans.Any())
+                {
+                    var prevPlan = plans.Last();
+                    // Nếu giá gói hiện tại (nhiều ngày hơn) <= giá gói trước (ít ngày hơn)
+                    // Thì tăng giá gói hiện tại lên 1 chút (thêm 1000đ so với gói trước)
+                    if (price <= prevPlan.Price)
+                    {
+                        price = prevPlan.Price + 1000;
+                    }
+                }
+
+                // 5. Tính % tiết kiệm (So với việc thuê gói 7 ngày lặp lại)
+                int savings = 0;
+                if (cfg.Days > 7 && basePerDay > 0)
+                {
+                    decimal theoreticalPrice = basePerDay * cfg.Days;
+                    if (theoreticalPrice > price)
+                    {
+                        savings = (int)Math.Round((1 - price / theoreticalPrice) * 100);
+                        if (savings < 0) savings = 0;
+                    }
+                }
+
+                plans.Add(new RentalPlanDto
+                {
+                    Id = index++,
+                    Days = cfg.Days,
+                    DurationLabel = cfg.Label,
+                    Price = price,
+                    SavingsPercentage = savings,
+                    IsPopular = cfg.Popular
+                });
+            }
+
+            return plans;
         }
 
         public async Task<BookDetailDto?> GetByISBNAsync(string isbn)
@@ -155,7 +248,6 @@ namespace BookStore.Application.Services.Catalog
             if (await _bookRepository.IsISBNExistsAsync(dto.ISBN))
                 throw new UserFriendlyException($"Sách với ISBN '{dto.ISBN}' đã tồn tại");
 
-            // Validate related entities (publisher + format)
             var validationTasks = new List<Task>
             {
                 ValidatePublisherExists(dto.PublisherId)
@@ -166,25 +258,21 @@ namespace BookStore.Application.Services.Catalog
 
             await Task.WhenAll(validationTasks);
 
-            // Authors
             var authors = new List<Author>();
             foreach (var authorId in dto.AuthorIds!)
             {
                 var author = await _authorRepository.GetByIdAsync(authorId);
                 if (author == null)
                     throw new NotFoundException($"Không tìm thấy tác giả với ID {authorId}");
-
                 authors.Add(author);
             }
 
-            // Categories
             var categories = new List<Category>();
             foreach (var categoryId in dto.CategoryIds!)
             {
                 var category = await _categoryRepository.GetByIdAsync(categoryId);
                 if (category == null)
                     throw new NotFoundException($"Không tìm thấy thể loại với ID {categoryId}");
-
                 categories.Add(category);
             }
 
@@ -251,25 +339,21 @@ namespace BookStore.Application.Services.Catalog
             if (dto.BookFormatId.HasValue)
                 await ValidateBookFormatExists(dto.BookFormatId.Value);
 
-            // Authors
             var authors = new List<Author>();
             foreach (var authorId in dto.AuthorIds!)
             {
                 var author = await _authorRepository.GetByIdAsync(authorId);
                 if (author == null)
                     throw new NotFoundException($"Không tìm thấy tác giả với ID {authorId}");
-
                 authors.Add(author);
             }
 
-            // Categories
             var categories = new List<Category>();
             foreach (var categoryId in dto.CategoryIds!)
             {
                 var category = await _categoryRepository.GetByIdAsync(categoryId);
                 if (category == null)
                     throw new NotFoundException($"Không tìm thấy thể loại với ID {categoryId}");
-
                 categories.Add(category);
             }
 
@@ -336,7 +420,6 @@ namespace BookStore.Application.Services.Catalog
             return true;
         }
 
-        // Implement interface methods
         public override async Task SaveChangesAsync()
         {
             await _bookRepository.SaveChangesAsync();
@@ -381,7 +464,6 @@ namespace BookStore.Application.Services.Catalog
                     recommendations.AddRange(sameCategoryBooks);
                 }
 
-                // 30%: popular fallback
                 var remainingSlots = limit - recommendations.Count;
                 if (remainingSlots > 0)
                 {
@@ -395,7 +477,6 @@ namespace BookStore.Application.Services.Catalog
                     recommendations.AddRange(popularBooks);
                 }
 
-                // fill random if still 부족
                 remainingSlots = limit - recommendations.Count;
                 if (remainingSlots > 0)
                 {
@@ -418,7 +499,75 @@ namespace BookStore.Application.Services.Catalog
             }
         }
 
-        #region Base GenericService overrides (not used - AddAsync/UpdateAsync handle everything)
+        public async Task<List<BookDto>> GetBestSellingBooksAsync(int top = 10)
+        {
+            try
+            {
+                var allBooks = await _bookRepository.GetAllAsync();
+                
+                var bestSelling = allBooks
+                    .Where(b => b.IsAvailable)
+                    .OrderByDescending(b => b.TotalReviews)
+                    .ThenByDescending(b => b.AverageRating)
+                    .ThenBy(b => b.Id)
+                    .Take(top)
+                    .ToList();
+
+                return bestSelling.Select(b => b.ToDto()).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting best-selling books: {ex.Message}");
+                return new List<BookDto>();
+            }
+        }
+
+        public async Task<List<BookDto>> GetNewestBooksAsync(int top = 10)
+        {
+            try
+            {
+                var allBooks = await _bookRepository.GetAllAsync();
+                
+                var newest = allBooks
+                    .Where(b => b.IsAvailable)
+                    .OrderByDescending(b => b.PublicationYear)
+                    .ThenByDescending(b => b.Id)
+                    .Take(top)
+                    .ToList();
+
+                return newest.Select(b => b.ToDto()).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting newest books: {ex.Message}");
+                return new List<BookDto>();
+            }
+        }
+
+        public async Task<List<BookDto>> GetMostViewedBooksAsync(int top = 10)
+        {
+            try
+            {
+                var allBooks = await _bookRepository.GetAllAsync();
+                
+                var mostViewed = allBooks
+                    .Where(b => b.IsAvailable)
+                    .OrderByDescending(b => b.TotalReviews)
+                    .ThenByDescending(b => b.AverageRating)
+                    .ThenBy(b => b.Id)
+                    .Take(top)
+                    .ToList();
+
+                return mostViewed.Select(b => b.ToDto()).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting most-viewed books: {ex.Message}");
+                return new List<BookDto>();
+            }
+        }
+
+        #region Base GenericService overrides
 
         protected override BookDto MapToDto(Book entity) => entity.ToDto();
 
@@ -447,6 +596,5 @@ namespace BookStore.Application.Services.Catalog
             if (bookFormat == null)
                 throw new NotFoundException($"Không tìm thấy định dạng sách với ID {bookFormatId}");
         }
-
     }
 }

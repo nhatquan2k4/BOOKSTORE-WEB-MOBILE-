@@ -106,9 +106,9 @@ services:
       - EmailSettings__SmtpHost=smtp.gmail.com
       - EmailSettings__SmtpPort=587
       - EmailSettings__SmtpUsername=quangtraan20004@gmail.com
-      - EmailSettings__SmtpPassword=Quang
+      - EmailSettings__SmtpPassword=xnuo kvlu berx kklm
       - EmailSettings__FromEmail=quangtraan20004@gmail.com
-      - EmailSettings__FromName=BookStore
+      - EmailSettings__FromName=xnuo kvlu berx kklm
       - EmailSettings__EnableSsl=true
       - EmailSettings__TokenExpirationHours=24
       - EmailSettings__FrontendUrl=http://localhost:3000

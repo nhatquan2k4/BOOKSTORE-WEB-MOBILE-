@@ -6,8 +6,9 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
-import { bookService } from "@/services";
+import { bookService, categoryService } from "@/services";
 import type { BookDto } from "@/types/dtos";
+import { resolveBookPrice } from "@/lib/price";
 
 // ============================================================================
 // TYPES
@@ -44,37 +45,58 @@ export default function LifeSkillsPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
+  const [lifeSkillsCategoryId, setLifeSkillsCategoryId] = useState<string | null>(null);
   const itemsPerPage = 20;
+
+  // Fetch Life Skills Category ID
+  useEffect(() => {
+    const fetchCategoryId = async () => {
+      try {
+        const response = await categoryService.getCategories(1, 100);
+        const lifeSkillsCategory = response.items?.find(
+          (cat) => cat.name === "Kỹ năng sống" || cat.name.includes("Kỹ năng")
+        );
+        if (lifeSkillsCategory) {
+          setLifeSkillsCategoryId(lifeSkillsCategory.id);
+        }
+      } catch (error) {
+        console.error("Error fetching life-skills category:", error);
+      }
+    };
+    fetchCategoryId();
+  }, []);
 
   // Fetch books from API
   useEffect(() => {
+    if (!lifeSkillsCategoryId) return;
     const fetchBooks = async () => {
       try {
         setLoading(true);
-        // Fetch books with "Kỹ năng sống" category (you need to find the correct categoryId)
+        // Fetch books with "Kỹ năng sống" category
         const response = await bookService.getBooks({
           pageNumber: currentPage,
           pageSize: itemsPerPage,
-          // categoryId: "life-skills-category-id", // Replace with actual category ID
+          categoryId: lifeSkillsCategoryId,
         });
         
         if (response.items && response.items.length > 0) {
           // Transform API data to match component Book type
-          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
-            id: book.id,
-            title: book.title,
-            author: book.authorNames?.[0] || "Tác giả không xác định",
-            cover: "/image/anh.png", // Default cover since BookDto doesn't have images array
-            rating: book.averageRating || 4.5,
-            reviewCount: book.totalReviews || 0,
-            price: book.discountPrice || book.currentPrice || 0,
-            originalPrice: book.currentPrice && book.discountPrice && book.discountPrice < book.currentPrice 
-              ? book.currentPrice 
-              : undefined,
-            description: book.title, // Use title as description since BookDto doesn't have description
-            isBestseller: (book.totalReviews || 0) > 1000,
-            subCategory: "all", // Map to appropriate subcategory if available
-          }));
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => {
+            const priceInfo = resolveBookPrice(book);
+            return {
+              id: book.id,
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              cover: book.coverImage || "/image/anh.png",
+              rating: book.averageRating || 0,
+              reviewCount: book.totalReviews || 0,
+              price: priceInfo.finalPrice,
+              originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
+                description: book.title, // Use title as description since BookDto doesn't have description
+              isBestseller: (book.totalReviews || 0) > 1000,
+              subCategory: "all", // Map to appropriate subcategory if available
+            };
+          });
           
           setBooks(transformedBooks);
           setTotalItems(response.totalCount || 0);
@@ -94,7 +116,7 @@ export default function LifeSkillsPage() {
     };
 
     fetchBooks();
-  }, [currentPage]);
+  }, [currentPage, lifeSkillsCategoryId]);
 
   // Filter books
   const filteredBooks =
@@ -120,6 +142,7 @@ export default function LifeSkillsPage() {
 
   // Calculate discount
   const calculateDiscount = (original: number, current: number) => {
+    if (original <= 0 || current <= 0 || current >= original) return 0;
     return Math.round(((original - current) / original) * 100);
   };
 
@@ -331,22 +354,28 @@ export default function LifeSkillsPage() {
               <p className="text-xs text-gray-600 mb-1">{book.author}</p>
 
               {/* Rating */}
-              <div className="flex items-center gap-1 mb-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="text-yellow-400"
-                >
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                <span className="text-xs text-gray-600">{book.rating}</span>
-                <span className="text-xs text-gray-400">
-                  ({book.reviewCount})
-                </span>
-              </div>
+              {book.rating > 0 && book.reviewCount > 0 ? (
+                <div className="flex items-center gap-1 mb-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="text-yellow-400"
+                  >
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span className="text-xs text-gray-600">{book.rating.toFixed(1)}</span>
+                  <span className="text-xs text-gray-400">
+                    ({book.reviewCount})
+                  </span>
+                </div>
+              ) : (
+                <div className="text-xs text-gray-400 mb-2">
+                  Đang cập nhật
+                </div>
+              )}
 
               {/* Price */}
               <div className="flex items-center gap-2 flex-wrap">

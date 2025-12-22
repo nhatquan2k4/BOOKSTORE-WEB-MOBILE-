@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
+import { resolveBookPrice } from "@/lib/price";
 
 interface HeroBook {
   id: string;
@@ -59,7 +60,7 @@ export default function DiscoverNowPage() {
             id: book.id,
             title: book.title,
             desc: `${book.authorNames?.[0] || "Tác giả không xác định"} - ${book.categoryNames?.[0] || "Sách hay"}`,
-            image: "/image/anh.png",
+            image: book.coverImage || "/image/anh.png",
           }));
           setHeroBooks(transformed);
         }
@@ -79,16 +80,19 @@ export default function DiscoverNowPage() {
         });
         
         if (response.items && response.items.length > 0) {
-          const transformed: TrendingBook[] = response.items.map((book: BookDto) => ({
-            id: book.id,
-            title: book.title,
-            author: book.authorNames?.[0] || "Tác giả không xác định",
-            price: book.discountPrice || book.currentPrice || 0,
-            originalPrice: book.currentPrice,
-            rating: book.averageRating || 4.5,
-            image: "/image/anh.png",
-            hot: book.discountPrice ? true : false,
-          }));
+          const transformed: TrendingBook[] = response.items.map((book: BookDto) => {
+            const priceInfo = resolveBookPrice(book);
+            return {
+              id: book.id,
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              price: priceInfo.finalPrice,
+              originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
+              rating: book.averageRating || 0,
+              image: book.coverImage || "/image/anh.png",
+              hot: priceInfo.hasDiscount,
+            };
+          });
           setTrendingBooks(transformed);
         }
       } catch (error) {
@@ -107,14 +111,17 @@ export default function DiscoverNowPage() {
         });
         
         if (response.items && response.items.length > 0) {
-          const transformed: NewArrival[] = response.items.map((book: BookDto) => ({
-            id: book.id,
-            title: book.title,
-            author: book.authorNames?.[0] || "Tác giả không xác định",
-            price: book.discountPrice || book.currentPrice || 0,
-            rating: book.averageRating || 4.5,
-            image: "/image/anh.png",
-          }));
+          const transformed: NewArrival[] = response.items.map((book: BookDto) => {
+            const priceInfo = resolveBookPrice(book);
+            return {
+              id: book.id,
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              price: priceInfo.finalPrice,
+              rating: book.averageRating || 0,
+              image: book.coverImage || "/image/anh.png",
+            };
+          });
           setNewArrivals(transformed);
         }
       } catch (error) {

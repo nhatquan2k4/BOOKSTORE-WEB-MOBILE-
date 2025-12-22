@@ -13,7 +13,7 @@ namespace BookStore.Application.Mappers.Catalog.Author
             {
                 Id = author.Id,
                 Name = author.Name,
-                AvartarUrl = author.AvartarUrl,
+                AvatarUrl = author.AvartarUrl,
                 BookCount = author.BookAuthors?.Count ?? 0
             };
         }

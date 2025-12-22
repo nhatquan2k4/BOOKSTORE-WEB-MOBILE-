@@ -20,6 +20,16 @@ export interface BookDto {
   stockQuantity?: number;
   averageRating?: number;
   totalReviews: number;
+  coverImage?: string;
+  // Compatibility with old code
+  images?: BookImageDto[];
+  authors?: AuthorDto[];
+  categories?: CategoryDto[];
+  price?: number;
+  salePrice?: number;
+  discount?: number;
+  publisher?: PublisherDto;
+  bookFormat?: BookFormatDto;
 }
 
 export interface BookDetailDto {
@@ -39,6 +49,12 @@ export interface BookDetailDto {
   images: BookImageDto[];
   files: BookFileDto[];
   metadata: BookMetadataDto[];
+  // Pricing - SAME AS BookDto (SINGLE SOURCE OF TRUTH)
+  currentPrice?: number;
+  discountPrice?: number;
+  stockQuantity?: number;
+  averageRating?: number;
+  totalReviews: number;
 }
 
 export interface CreateBookDto {

@@ -42,6 +42,7 @@ namespace BookStore.Domain.Entities.Identity
         public virtual ICollection<BookRental> BookRentals { get; set; } = new List<BookRental>(); // Sách thuê
         public virtual ICollection<UserActivity> Activities { get; set; } = new List<UserActivity>(); // Nhật ký hành động
         public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>(); // Thông báo
+        public virtual ICollection<Catalog.Wishlist> WishlistItems { get; set; } = new List<Catalog.Wishlist>(); // Danh sách yêu thích
     }
 
 }

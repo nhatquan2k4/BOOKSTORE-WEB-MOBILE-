@@ -87,7 +87,7 @@ export function slugify(text: string): string {
  * Calculate discount percentage
  */
 export function calculateDiscountPercent(originalPrice: number, discountPrice: number): number {
-  if (originalPrice <= 0) return 0;
+  if (originalPrice <= 0 || discountPrice <= 0 || discountPrice >= originalPrice) return 0;
   return Math.round(((originalPrice - discountPrice) / originalPrice) * 100);
 }
 

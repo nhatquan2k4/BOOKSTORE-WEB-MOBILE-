@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts";
 import { bookService, cartService, authorService, categoryService } from "@/services";
 import type { BookDto, AuthorDto, CategoryDto } from "@/types/dtos";
 import { matchVietnameseText } from "@/lib/utils/text";
+import { resolveBookPrice, formatPrice } from "@/lib/price";
 
 export function Header() {
   const router = useRouter();
@@ -61,7 +62,16 @@ export function Header() {
       }
     }, 30000);
 
-    return () => clearInterval(interval);
+    // Listen for custom cart update events
+    const handleCartUpdate = () => {
+      fetchCartCount();
+    };
+    window.addEventListener('cartUpdated', handleCartUpdate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+    };
   }, [isLoggedIn]);
 
   // Get notifications
@@ -386,7 +396,7 @@ export function Header() {
                           >
                             <div className="relative w-16 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
                               <Image
-                                src="/image/anh.png"
+                                src={book.coverImage || "/image/anh.png"}
                                 alt={book.title}
                                 fill
                                 className="object-cover"
@@ -400,20 +410,21 @@ export function Header() {
                                 {book.authorNames?.join(", ") || "Chưa cập nhật"}
                               </p>
                               <div className="flex items-center gap-2">
-                                {book.discountPrice ? (
-                                  <>
-                                    <span className="font-bold text-red-600">
-                                      {(book.discountPrice || 0).toLocaleString("vi-VN")}₫
-                                    </span>
-                                    <span className="text-sm text-gray-400 line-through">
-                                      {(book.currentPrice || 0).toLocaleString("vi-VN")}₫
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="font-bold text-gray-900">
-                                    {(book.currentPrice || 0).toLocaleString("vi-VN")}₫
-                                  </span>
-                                )}
+                                {(() => {
+                                  const priceInfo = resolveBookPrice(book);
+                                  return (
+                                    <>
+                                      <span className={`font-bold ${priceInfo.hasDiscount ? 'text-red-600' : 'text-gray-900'}`}>
+                                        {formatPrice(priceInfo.finalPrice)}
+                                      </span>
+                                      {priceInfo.hasDiscount && priceInfo.originalPrice && (
+                                        <span className="text-sm text-gray-400 line-through">
+                                          {formatPrice(priceInfo.originalPrice)}
+                                        </span>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </button>
@@ -648,7 +659,7 @@ export function Header() {
                         </Link>
 
                         <Link
-                          href="/account/readbooks"
+                          href="/account/library-book"
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                           onClick={() => setShowUserMenu(false)}
                         >
@@ -714,27 +725,6 @@ export function Header() {
                             />
                           </svg>
                           <span>Lịch sử giao dịch</span>
-                        </Link>
-
-                        <Link
-                          href="/account/achievements"
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                          onClick={() => setShowUserMenu(false)}
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-                            />
-                          </svg>
-                          <span>Thành tích</span>
                         </Link>
 
                         <Link
@@ -976,7 +966,7 @@ export function Header() {
                       >
                         <div className="relative w-12 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
                           <Image
-                            src="/image/anh.png"
+                            src={book.coverImage || "/image/anh.png"}
                             alt={book.title}
                             fill
                             className="object-cover"

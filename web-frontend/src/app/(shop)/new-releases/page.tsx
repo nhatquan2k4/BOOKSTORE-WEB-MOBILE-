@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
+import { resolveBookPrice } from "@/lib/price";
 
 interface Book {
   id: string;
@@ -43,19 +44,22 @@ export default function NewReleasesPage() {
         });
         
         if (response.items && response.items.length > 0) {
-          const transformedBooks: Book[] = response.items.map((book: BookDto) => ({
-            id: book.id,
-            title: book.title,
-            author: book.authorNames?.[0] || "Tác giả không xác định",
-            price: book.discountPrice || book.currentPrice || 0,
-            originalPrice: book.currentPrice,
-            cover: "/image/anh.png",
-            rating: book.averageRating || 4.5,
-            reviews: book.totalReviews || 0,
-            releaseDate: new Date().toISOString().split('T')[0],
-            category: book.categoryNames?.[0] || "Chưa phân loại",
-            isNew: true,
-          }));
+          const transformedBooks: Book[] = response.items.map((book: BookDto) => {
+            const priceInfo = resolveBookPrice(book);
+            return {
+              id: book.id,
+              title: book.title,
+              author: book.authorNames?.[0] || "Tác giả không xác định",
+              price: priceInfo.finalPrice,
+              originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
+              cover: book.coverImage || "/image/anh.png",
+              rating: book.averageRating || 0,
+              reviews: book.totalReviews || 0,
+              releaseDate: new Date().toISOString().split('T')[0],
+              category: book.categoryNames?.[0] || "Chưa phân loại",
+              isNew: true,
+            };
+          });
           setBooks(transformedBooks);
           setTotalItems(response.totalCount || 0);
         } else {
@@ -105,6 +109,7 @@ export default function NewReleasesPage() {
 
   // Calculate discount
   const calculateDiscount = (original: number, current: number) => {
+    if (original <= 0 || current <= 0 || current >= original) return 0;
     return Math.round(((original - current) / original) * 100);
   };
 
@@ -213,20 +218,26 @@ export default function NewReleasesPage() {
 
               {/* Rating */}
               <div className="flex items-center gap-1 mb-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="text-yellow-400"
-                >
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                <span className="text-xs text-gray-600">{book.rating}</span>
-                <span className="text-xs text-gray-400">
-                  ({book.reviews})
-                </span>
+                {book.rating > 0 && book.reviews > 0 ? (
+                  <>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="text-yellow-400"
+                    >
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                    <span className="text-xs text-gray-600">{book.rating}</span>
+                    <span className="text-xs text-gray-400">
+                      ({book.reviews})
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-xs text-gray-400">Đang cập nhật</span>
+                )}
               </div>
 
               {/* Price */}

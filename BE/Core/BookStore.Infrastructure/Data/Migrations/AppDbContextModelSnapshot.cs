@@ -524,6 +524,30 @@ namespace BookStore.Infrastructure.Data.Migrations
                     b.ToTable("Publishers", "catalog");
                 });
 
+            modelBuilder.Entity("BookStore.Domain.Entities.Catalog.Wishlist", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BookId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Wishlists");
+                });
+
             modelBuilder.Entity("BookStore.Domain.Entities.Common.Comment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2334,6 +2358,25 @@ namespace BookStore.Infrastructure.Data.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("BookStore.Domain.Entities.Catalog.Wishlist", b =>
+                {
+                    b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
+                        .WithMany("WishlistItems")
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BookStore.Domain.Entities.Identity.User", "User")
+                        .WithMany("WishlistItems")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("BookStore.Domain.Entities.Common.Comment", b =>
                 {
                     b.HasOne("BookStore.Domain.Entities.Catalog.Book", "Book")
@@ -2820,6 +2863,8 @@ namespace BookStore.Infrastructure.Data.Migrations
                     b.Navigation("Reviews");
 
                     b.Navigation("StockItems");
+
+                    b.Navigation("WishlistItems");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Catalog.BookFormat", b =>
@@ -2881,6 +2926,8 @@ namespace BookStore.Infrastructure.Data.Migrations
                     b.Navigation("Reviews");
 
                     b.Navigation("UserRoles");
+
+                    b.Navigation("WishlistItems");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Ordering.Order", b =>

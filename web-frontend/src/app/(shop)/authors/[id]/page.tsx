@@ -154,6 +154,7 @@ export default function AuthorDetailPage() {
   };
 
   const calculateDiscount = (original: number, current: number) => {
+    if (original <= 0 || current <= 0 || current >= original) return 0;
     return Math.round(((original - current) / original) * 100);
   };
 

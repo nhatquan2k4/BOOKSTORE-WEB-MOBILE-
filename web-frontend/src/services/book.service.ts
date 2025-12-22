@@ -179,10 +179,8 @@ export const bookService = {
   },
 
   /**
-   * Lấy gợi ý sách thông minh dựa trên giỏ hàng
-   * @param excludeBookIds - Danh sách ID sách cần loại trừ (đã có trong giỏ)
-   * @param categoryIds - Danh sách ID danh mục quan tâm
-   * @param limit - Số lượng gợi ý tối đa
+   * Lấy gợi ý sách thông minh
+   * Backend API: GET /api/book/recommendations?excludeBookIds=...&categoryIds=...&limit=...
    */
   async getRecommendations(
     excludeBookIds: string[] = [],
@@ -207,7 +205,9 @@ export const bookService = {
       );
       return response.data;
     } catch (error) {
-      return handleApiError(error);
+      // Nếu API recommendations chưa có, fallback về getBooks bình thường
+      // console.warn("Fallback to generic books");
+      return []; 
     }
   },
 };
