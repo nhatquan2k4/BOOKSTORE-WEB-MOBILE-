@@ -2,21 +2,36 @@ pipeline {
     agent any
 
     environment {
-
-        SERVER_IP    = '192.168.0.102'
-        
-        REMOTE_USER  = 'jenkins' 
-        
+        // --- SERVER & SSH CONFIG ---
+        SERVER_HOST  = 'NQ.local'
+        REMOTE_USER  = 'jenkins'
         SSH_CRED_ID  = 'windows-ssh-creds'
         
+        // --- REGISTRY CONFIG ---
         REGISTRY_ID  = 'docker-registry'
-
-        // --- CẤU HÌNH DOCKER ---
-        REGISTRY_URL = '192.168.0.102:5000'
+        REGISTRY_URL = 'NQ.local:5000'
+        
+        // --- IMAGE CONFIG ---
         IMAGE_NAME   = 'bookstore-backend'
         IMAGE_TAG    = "v${BUILD_NUMBER}"
         
+        // --- PATH CONFIG ---
         COMPOSE_PATH = 'D:\\BOOKSTORE-WEB-MOBILE-\\BE\\docker'
+        ENV_FILE     = 'D:\\BOOKSTORE-WEB-MOBILE-\\BE\\.env.jenkins'
+        
+        // --- LOAD ENVIRONMENT VARIABLES ---
+        DB_SERVER           = credentials('db-server')
+        DB_NAME             = credentials('db-name')
+        DB_USER             = credentials('db-user')
+        DB_PASSWORD         = credentials('db-password')
+        MINIO_ENDPOINT      = credentials('minio-endpoint')
+        MINIO_ACCESS_KEY    = credentials('minio-access-key')
+        MINIO_SECRET_KEY    = credentials('minio-secret-key')
+        ASPNETCORE_ENV      = credentials('aspnetcore-environment')
+        APP_PORT            = credentials('app-port')
+        CONTAINER_PORT      = credentials('container-port')
+        NGINX_CONTAINER     = credentials('nginx-container')
+        NETWORK_PATTERN     = credentials('network-pattern')
     }
 
     stages {
@@ -50,37 +65,49 @@ pipeline {
             steps {
                 sshagent(credentials: [SSH_CRED_ID]) {
                     script {
-                        echo "--- Bắt đầu Deploy sang ${SERVER_IP} ---"
+                        echo "--- Bắt đầu Deploy sang ${SERVER_HOST} ---"
                         
                         // Lấy user/pass registry để login trên máy Windows
                         withCredentials([usernamePassword(credentialsId: REGISTRY_ID, usernameVariable: 'D_USER', passwordVariable: 'D_PASS')]) {
                             
                             // 1. Login Docker trên Windows
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"echo ${D_PASS} | docker login ${REGISTRY_URL} -u ${D_USER} --password-stdin\""
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"echo ${D_PASS} | docker login ${REGISTRY_URL} -u ${D_USER} --password-stdin\""
 
                             // 2. Stop & Remove container cũ (Dùng try-catch PowerShell để không lỗi nếu chưa có container)
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"try { docker stop ${IMAGE_NAME}; docker rm ${IMAGE_NAME} } catch {}; echo 'Cleaned old container'\""
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"try { docker stop ${IMAGE_NAME}; docker rm ${IMAGE_NAME} } catch {}; echo 'Cleaned old container'\""
 
                             // 3. Khởi động Infrastructure (DB, MinIO) bằng Docker Compose
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"cd ${COMPOSE_PATH}; docker compose up -d\""
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"cd ${COMPOSE_PATH}; docker compose up -d\""
 
                             // 4. Pull Image mới nhất
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""
 
                             // 5. Tìm tên Network (PowerShell syntax)
-                            def findNetworkCmd = "docker network ls --format '{{.Name}}' | Where-Object { \\\$_ -like '*bookstore*' } | Select-Object -First 1"
-                            def networkName = sh(script: "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"${findNetworkCmd}\"", returnStdout: true).trim()
+                            def findNetworkCmd = "docker network ls --format '{{.Name}}' | Where-Object { \\\$_ -like '*${NETWORK_PATTERN}*' } | Select-Object -First 1"
+                            def networkName = sh(script: "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"${findNetworkCmd}\"", returnStdout: true).trim()
                             
                             echo "Found Network: '${networkName}'"
                             if (networkName == "") {
-                                error "Không tìm thấy Docker Network nào có tên chứa 'bookstore'. Hãy kiểm tra lại docker-compose!"
+                                error "Không tìm thấy Docker Network nào có tên chứa '${NETWORK_PATTERN}'. Hãy kiểm tra lại docker-compose!"
                             }
 
-                            // 6. Chạy Container mới
-                            sh """ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} "docker run -d --name ${IMAGE_NAME} --network ${networkName} -e ASPNETCORE_ENVIRONMENT=Development -e 'ConnectionStrings__UsersDb=Server=bookstore-sqlserver;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;TrustServerCertificate=True' -e MinIO__Endpoint=minio:9000 -e MinIO__AccessKey=minioadmin -e MinIO__SecretKey=minioadmin123 -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""""
+                            // 6. Build Connection String
+                            def connectionString = "Server=${DB_SERVER};Database=${DB_NAME};User Id=${DB_USER};Password=${DB_PASSWORD};TrustServerCertificate=True"
                             
-                            // 7. Sleep và restart Nginx
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"Start-Sleep -Seconds 5; docker restart bookstore-nginx; docker ps --filter name=${IMAGE_NAME}\""
+                            // 7. Chạy Container mới với biến môi trường
+                            sh """ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} "docker run -d \
+                                --name ${IMAGE_NAME} \
+                                --network ${networkName} \
+                                -e ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENV} \
+                                -e 'ConnectionStrings__UsersDb=${connectionString}' \
+                                -e MinIO__Endpoint=${MINIO_ENDPOINT} \
+                                -e MinIO__AccessKey=${MINIO_ACCESS_KEY} \
+                                -e MinIO__SecretKey=${MINIO_SECRET_KEY} \
+                                -p ${APP_PORT}:${CONTAINER_PORT} \
+                                ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""""
+                            
+                            // 8. Sleep và restart Nginx
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"Start-Sleep -Seconds 5; docker restart ${NGINX_CONTAINER}; docker ps --filter name=${IMAGE_NAME}\""
                         }
                     }
                 }
