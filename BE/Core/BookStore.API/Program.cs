@@ -79,6 +79,27 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
         ClockSkew = TimeSpan.Zero
     };
+
+    // ✅ FIX: Allow anonymous endpoints to work even if token validation fails
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            // Check if endpoint allows anonymous access
+            var endpoint = context.HttpContext.GetEndpoint();
+            var allowAnonymous = endpoint?.Metadata?.GetMetadata<Microsoft.AspNetCore.Authorization.IAllowAnonymous>() != null;
+
+            if (allowAnonymous)
+            {
+                // Skip authentication failure for anonymous endpoints
+                context.NoResult();
+                context.HttpContext.User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity());
+                return Task.CompletedTask;
+            }
+
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
@@ -88,13 +109,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000",  // Next.js frontend URL
-                "http://localhost:5173"   // Vite admin frontend URL
-              )
+        policy.AllowAnyOrigin()  // ✅ Cho phép tất cả origins (mobile app, web, etc.)
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowAnyMethod();
+        // Note: Không dùng AllowCredentials() khi dùng AllowAnyOrigin()
     });
 });
 

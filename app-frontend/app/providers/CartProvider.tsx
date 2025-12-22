@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 
 type CartItem = {
-  id: number;
+  id: string | number; // Support both UUID string and number
   title: string;
   price: number;
   quantity: number;
@@ -10,11 +10,11 @@ type CartItem = {
 
 type CartContextValue = {
   items: CartItem[];
-  addToCart: (item: { id: number; title: string; price: number }) => void;
-  removeFromCart: (id: number) => void;
+  addToCart: (item: { id: string | number; title: string; price: number }) => void;
+  removeFromCart: (id: string | number) => void;
   clearCart: () => void;
-  toggleSelect: (id: number) => void;
-  setQuantity: (id: number, qty: number) => void;
+  toggleSelect: (id: string | number) => void;
+  setQuantity: (id: string | number, qty: number) => void;
   selectAll: (value: boolean) => void;
   totalCount: number; // selected quantity sum
   totalPrice: number; // selected total amount
@@ -26,7 +26,7 @@ const CartContext = createContext<CartContextValue | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addToCart = (item: { id: number; title: string; price: number }) => {
+  const addToCart = (item: { id: string | number; title: string; price: number }) => {
     setItems((prev) => {
       const found = prev.find((p) => p.id === item.id);
       if (found) {
@@ -36,11 +36,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const toggleSelect = (id: number) => {
+  const toggleSelect = (id: string | number) => {
     setItems((prev) => prev.map((p) => (p.id === id ? { ...p, selected: !p.selected } : p)));
   };
 
-  const setQuantity = (id: number, qty: number) => {
+  const setQuantity = (id: string | number, qty: number) => {
     setItems((prev) => prev.map((p) => (p.id === id ? { ...p, quantity: Math.max(1, qty) } : p)));
   };
 
@@ -48,7 +48,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => prev.map((p) => ({ ...p, selected: value })));
   };
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string | number) => {
     setItems((prev) => prev.filter((p) => p.id !== id));
   };
 

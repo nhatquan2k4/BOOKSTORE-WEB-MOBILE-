@@ -1,4 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+// Use centralized token storage (SecureStore) to keep storage consistent with AuthProvider
+import { saveTokens, loadTokens, clearTokens } from '@/src/services/tokenStorage';
 import {
   LoginRequest,
   LoginResponse,
@@ -15,8 +17,9 @@ import {
   ServiceResult,
   UserInfo,
 } from '@/src/types/auth';
-import { loadTokens, saveTokens, clearTokens } from './tokenStorage';
 import { API_BASE_URL, API_TIMEOUT } from '@/src/config/api';
+
+// Token storage helpers are imported from tokenStorage.ts (SecureStore)
 
 class AuthService {
   private api: AxiosInstance;
@@ -89,8 +92,9 @@ class AuthService {
         }
 
         const result = await this.refreshToken({ refreshToken: tokens.refreshToken });
-        
+
         if (result.ok && result.data) {
+          // Save full token payload using centralized saveTokens
           await saveTokens({
             accessToken: result.data.accessToken,
             refreshToken: result.data.refreshToken,
@@ -120,6 +124,12 @@ class AuthService {
       );
 
       if (response.data.success && response.data.data) {
+        await saveTokens({
+          accessToken: response.data.data.accessToken,
+          refreshToken: response.data.data.refreshToken,
+          accessTokenExpiresAt: response.data.data.accessTokenExpiresAt,
+          refreshTokenExpiresAt: response.data.data.refreshTokenExpiresAt,
+        });
         return {
           ok: true,
           data: response.data.data,
@@ -232,16 +242,29 @@ class AuthService {
    */
   async changePassword(data: ChangePasswordRequest): Promise<ServiceResult> {
     try {
-      const response = await this.api.post<ApiResponse>(
+      // Backend expects: CurrentPassword, NewPassword, ConfirmNewPassword
+      const backendPayload = {
+        currentPassword: data.oldPassword,
+        newPassword: data.newPassword,
+        confirmNewPassword: data.confirmNewPassword,
+      };
+
+      console.log('🔐 Changing password...');
+      const response = await this.api.post<{ success: boolean; message: string; data?: any }>(
         '/api/Auth/change-password',
-        data
+        backendPayload
       );
 
+      console.log('✅ Change password response:', response.data);
+
+      // Backend trả về { Success: true, Message: "...", Data: {...} }
+      const responseData = response.data as any;
       return {
-        ok: response.data.success,
-        message: response.data.message || 'Đổi mật khẩu thành công',
+        ok: responseData.success || responseData.Success || false,
+        message: responseData.message || responseData.Message || 'Đổi mật khẩu thành công',
       };
     } catch (error) {
+      // Không log raw error, để handleError xử lý
       return this.handleError(error, 'Không thể đổi mật khẩu');
     }
   }
@@ -333,13 +356,30 @@ class AuthService {
    */
   private handleError(error: unknown, defaultMessage: string): ServiceResult {
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<ApiResponse>;
+      const axiosError = error as AxiosError<any>;
       
       // Lỗi từ server
       if (axiosError.response?.data) {
+        const errorData = axiosError.response.data;
+        
+        // Try multiple possible error message fields (case-insensitive)
+        const errorMessage = 
+          errorData.message || 
+          errorData.Message || 
+          errorData.error || 
+          errorData.Error ||
+          defaultMessage;
+        
+        console.log('📛 Error from server:', {
+          status: axiosError.response.status,
+          message: errorMessage,
+          fullData: errorData
+        });
+
         return {
           ok: false,
-          error: axiosError.response.data.message || axiosError.response.data.error || defaultMessage,
+          error: errorMessage,
+          message: errorMessage,
         };
       }
 

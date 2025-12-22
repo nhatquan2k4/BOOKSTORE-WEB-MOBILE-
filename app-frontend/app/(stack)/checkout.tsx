@@ -1,23 +1,61 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { getBookById } from '@/data/mockBooks';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, Modal, Animated } from 'react-native';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useCart } from '@/app/providers/CartProvider';
+import { useNotifications } from '@/app/providers/NotificationProvider';
 import { Ionicons } from '@expo/vector-icons';
+import bookService from '@/src/services/bookService';
+import addressService, { Address } from '@/src/services/addressService';
+import userProfileService from '@/src/services/userProfileService';
+import checkoutService from '@/src/services/checkoutService';
+import * as cartService from '@/src/services/cartService';
+import { toDisplayBookDetail } from '@/src/types/book';
+import { PLACEHOLDER_IMAGES } from '@/src/constants/placeholders';
+import { API_BASE_URL, MINIO_BASE_URL } from '@/src/config/api';
 
 type PaymentMethod = 'COD' | 'EWALLET';
 
 export default function CheckoutScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const bookId = params.bookId ? Number(params.bookId) : null;
-  const book = bookId ? getBookById(bookId) : null;
+  const { addNotification } = useNotifications();
+
+  // Local snackbar for transient in-page messages (better UX than Alert.alert)
+  const [snackbar, setSnackbar] = useState<{ message: string; type?: 'info'|'error'|'success' } | null>(null);
+  const showSnackbar = (message: string, type: 'info'|'error'|'success' = 'info', duration = 2500) => {
+    setSnackbar({ message, type });
+    setTimeout(() => setSnackbar(null), duration);
+  };
+  
+  // Determine checkout source: from cart or from book-detail (buy-now)
+  const fromCart = params.fromCart === 'true';
+  const bookId = params.bookId ? params.bookId.toString() : null;
   const qtyParam = params.qty ? Number(params.qty) : null;
+
+  console.log('🛒 Checkout params:', { fromCart, bookId, qty: qtyParam, allParams: params });
+
+  // Loading states
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const [book, setBook] = useState<any>(null);
+  const [serverCart, setServerCart] = useState<cartService.Cart | null>(null);
+  const [bookImages, setBookImages] = useState<Record<string, string>>({});
+
+  // QR Payment Modal
+  const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<any>(null);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  const [currentTransactionCode, setCurrentTransactionCode] = useState<string | null>(null);
+  // Keep last checkout items to allow restoring cart if user cancels QR
+  const [lastCheckoutItems, setLastCheckoutItems] = React.useState([] as Array<{ bookId: string; quantity: number }>);
+  const qrModalAnim = useRef(new Animated.Value(0)).current;
 
   // Recipient info
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>([]);
 
   // Voucher
   const [voucherCode, setVoucherCode] = useState('');
@@ -26,8 +64,23 @@ export default function CheckoutScreen() {
   // Payment method
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD');
 
-  // Shipping fee - mock
-  const shippingFee = 30000;
+  // Shipping method
+  type ShippingMethod = 'STANDARD' | 'EXPRESS';
+  const [shippingMethod, setShippingMethod] = useState<ShippingMethod>('STANDARD');
+
+  // Shipping fee based on method
+  const getShippingFee = () => {
+    switch (shippingMethod) {
+      case 'STANDARD':
+        return 30000; // Giao hàng nhanh
+      case 'EXPRESS':
+        return 50000; // Giao hàng hỏa tốc
+      default:
+        return 30000;
+    }
+  };
+
+  const shippingFee = getShippingFee();
 
   // Voucher mock rules: 'SHIPFREE' => free shipping; 'SALE10' => 10% off product
   const voucherApply = (code: string) => {
@@ -41,18 +94,421 @@ export default function CheckoutScreen() {
     setAppliedVoucher(v);
   };
 
-  // Cart / product quantity
+  // Cart / product quantity and pricing
   const { items } = useCart();
   const cartItem = book ? items.find((i) => i.id === book.id) : null;
   const qty = qtyParam ?? (cartItem ? cartItem.quantity : 1);
 
-  // Totals
-  const productPrice = book ? book.price || 0 : 0;
-  const totalBefore = productPrice * qty;
-  const discountOnProduct = useMemo(() => (appliedVoucher === 'SALE10' ? Math.round(totalBefore * 0.1) : 0), [appliedVoucher, totalBefore]);
-  const discountOnShipping = useMemo(() => (appliedVoucher === 'SHIPFREE' ? shippingFee : 0), [appliedVoucher]);
+  // Calculate subtotal based on checkout source
+  const calculateSubtotal = () => {
+    if (fromCart && serverCart) {
+      return serverCart.totalAmount;
+    } else if (book) {
+      return book.price * qty;
+    }
+    return 0;
+  };
+
+  const subtotal = calculateSubtotal();
+
+  // Fetch book details and user info on mount
+  useEffect(() => {
+    loadData();
+  }, [bookId]);
+
+  // Reload addresses when coming back from address selection
+  useFocusEffect(
+    React.useCallback(() => {
+      loadAddresses();
+    }, [])
+  );
+
+  const loadAddresses = async () => {
+    try {
+      const addressList = await addressService.getMyAddresses();
+      setAddresses(addressList);
+
+      // Find default address or use first one
+      const defaultAddr = addressList.find((a) => a.isDefault) || addressList[0];
+      if (defaultAddr) {
+        setSelectedAddress(defaultAddr);
+        setName(defaultAddr.recipientName);
+        setPhone(defaultAddr.phoneNumber);
+        setAddress(`${defaultAddr.streetAddress}, ${defaultAddr.ward}, ${defaultAddr.district}, ${defaultAddr.province}`);
+      }
+    } catch (err) {
+      console.error('Failed to load addresses:', err);
+    }
+  };
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      if (fromCart) {
+        // Checkout from cart - load server cart
+        console.log('🛒 Loading server cart for checkout...');
+        try {
+          const cart = await cartService.getMyCart();
+          setServerCart(cart);
+          console.log('✅ Server cart loaded:', cart);
+          
+          // Fetch images for items that don't have imageUrl
+          if (cart && cart.items) {
+            const imagesToFetch = cart.items.filter(item => !item.imageUrl);
+            if (imagesToFetch.length > 0) {
+              console.log(`🖼️ Fetching images for ${imagesToFetch.length} books in checkout...`);
+              
+              const imagePromises = imagesToFetch.map(async (item) => {
+                try {
+                  const coverDto = await bookService.getBookCover(item.bookId);
+                  if (coverDto?.imageUrl) {
+                    setBookImages(prev => ({ ...prev, [item.bookId]: coverDto.imageUrl }));
+                    console.log(`✅ Fetched image for ${item.bookId}`);
+                  }
+                } catch (err) {
+                  console.warn(`⚠️ Could not fetch image for ${item.bookId}`);
+                  setBookImages(prev => ({ ...prev, [item.bookId]: PLACEHOLDER_IMAGES.DEFAULT_BOOK }));
+                }
+              });
+              
+              await Promise.all(imagePromises);
+            }
+          }
+        } catch (cartErr: any) {
+          console.error('❌ Failed to fetch cart:', cartErr.message);
+          throw new Error('Không thể tải giỏ hàng');
+        }
+      } else if (bookId) {
+        // Buy-now checkout - load single book
+        console.log('🔍 Fetching book with ID:', bookId);
+        
+        try {
+          const bookDetail = await bookService.getBookById(bookId);
+          const displayBook = toDisplayBookDetail(bookDetail as any);
+
+          // Fetch cover image
+          try {
+            const coverDto = await bookService.getBookCover(bookId);
+            if (coverDto) {
+              displayBook.cover = coverDto.imageUrl;
+            } else {
+              displayBook.cover = PLACEHOLDER_IMAGES.DEFAULT_BOOK;
+            }
+          } catch (coverErr) {
+            console.warn('⚠️ Cover image not found, using placeholder');
+            displayBook.cover = PLACEHOLDER_IMAGES.DEFAULT_BOOK;
+          }
+
+          setBook(displayBook);
+          console.log('✅ Book loaded:', displayBook.title, 'Price:', displayBook.price);
+        } catch (bookErr: any) {
+          console.error('❌ Failed to fetch book:', bookErr.message);
+          throw new Error('Không tìm thấy sách với ID: ' + bookId);
+        }
+      }
+
+      // 2. Fetch user profile for name & phone
+      try {
+        const profile = await userProfileService.getMyProfile();
+        setName(profile.fullName || '');
+        setPhone(profile.phoneNumber || '');
+        console.log('✅ Profile loaded:', profile.fullName);
+      } catch (err: any) {
+        console.warn('⚠️ Failed to load profile:', err.message);
+        // Not critical, user can still checkout
+      }
+
+      // 3. Fetch addresses and set default
+      try {
+        const addressList = await addressService.getMyAddresses();
+        setAddresses(addressList);
+
+        // Find default address or use first one
+        const defaultAddr = addressList.find((a) => a.isDefault) || addressList[0];
+        if (defaultAddr) {
+          setSelectedAddress(defaultAddr);
+          setName(defaultAddr.recipientName);
+          setPhone(defaultAddr.phoneNumber);
+          setAddress(`${defaultAddr.streetAddress}, ${defaultAddr.ward}, ${defaultAddr.district}, ${defaultAddr.province}`);
+          console.log('✅ Default address loaded:', defaultAddr.recipientName);
+        } else {
+          console.warn('⚠️ No addresses found');
+        }
+      } catch (err: any) {
+        console.warn('⚠️ Failed to load addresses:', err.message);
+        // Not critical, user can enter manually
+      }
+    } catch (err: any) {
+      console.error('❌ Failed to load checkout data:', err);
+      showSnackbar(err.message || 'Không thể tải thông tin. Vui lòng thử lại.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangeAddress = () => {
+    router.push('/(stack)/addresses?mode=select');
+  };
+
+  // Handle COD Order
+  const handlePlaceOrder = async () => {
+    if (!selectedAddress) {
+      showSnackbar('Vui lòng chọn địa chỉ giao hàng', 'error');
+      return;
+    }
+
+    // Validate: must have either bookId (buy-now) or serverCart (cart checkout)
+    if (!fromCart && !bookId) {
+      showSnackbar('Không tìm thấy thông tin sản phẩm', 'error');
+      return;
+    }
+
+    if (fromCart && (!serverCart || serverCart.items.length === 0)) {
+      showSnackbar('Giỏ hàng trống', 'error');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+
+      // Build address object matching CreateOrderAddressDto
+      const checkoutRequest = {
+        address: {
+          recipientName: selectedAddress.recipientName,
+          phoneNumber: selectedAddress.phoneNumber,
+          province: selectedAddress.province,
+          district: selectedAddress.district,
+          ward: selectedAddress.ward,
+          street: selectedAddress.streetAddress, // Map field name
+          note: undefined,
+        },
+        couponCode: appliedVoucher || undefined,
+        paymentMethod: "COD", // String literal, not TypeScript const
+        provider: "VietQR",
+        note: undefined,
+      };
+
+      console.log('📦 Placing COD order:');
+      console.log('Selected Address:', JSON.stringify(selectedAddress, null, 2));
+      console.log('Request:', JSON.stringify(checkoutRequest, null, 2));
+
+      const result = await checkoutService.processCheckout(checkoutRequest);
+
+  if (result.success) {
+        // Prefer in-app snackbar + notification instead of native alert
+        showSnackbar(`Đặt hàng thành công — ${result.orderCode}`, 'success');
+        addNotification({ type: 'order', title: 'Đặt hàng thành công', message: `Mã: ${result.orderCode}`, orderId: result.orderId });
+        // Navigate back after short delay so user sees snackbar
+        setTimeout(() => router.back(), 1200);
+      } else {
+        showSnackbar(result.message || 'Không thể đặt hàng. Vui lòng thử lại.', 'error');
+      }
+    } catch (error: any) {
+      console.error('❌ Error placing order:', error);
+      showSnackbar(error.message || 'Có lỗi xảy ra khi đặt hàng', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Handle E-Wallet Payment
+  const handlePayNow = async () => {
+    if (!selectedAddress) {
+      showSnackbar('Vui lòng chọn địa chỉ giao hàng', 'error');
+      return;
+    }
+
+    // Validate: must have either bookId (buy-now) or serverCart (cart checkout)
+    if (!fromCart && !bookId) {
+      showSnackbar('Không tìm thấy thông tin sản phẩm', 'error');
+      return;
+    }
+
+    if (fromCart && (!serverCart || serverCart.items.length === 0)) {
+      showSnackbar('Giỏ hàng trống', 'error');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+
+      // Build address object matching CreateOrderAddressDto
+      const checkoutRequest = {
+        address: {
+          recipientName: selectedAddress.recipientName,
+          phoneNumber: selectedAddress.phoneNumber,
+          province: selectedAddress.province,
+          district: selectedAddress.district,
+          ward: selectedAddress.ward,
+          street: selectedAddress.streetAddress, // Map field name
+          note: undefined,
+        },
+        couponCode: appliedVoucher || undefined,
+        paymentMethod: "Online", // String literal "Online" for e-wallet
+        provider: "VietQR",
+        note: undefined,
+      };
+
+      console.log('💳 Processing online payment:');
+      console.log('Selected Address:', JSON.stringify(selectedAddress, null, 2));
+      console.log('Request:', JSON.stringify(checkoutRequest, null, 2));
+
+      const result = await checkoutService.processCheckout(checkoutRequest);
+
+      console.log('💳 Checkout result:', JSON.stringify(result, null, 2));
+
+      if (result.success && result.paymentInfo) {
+        console.log('✅ Payment info received, showing QR modal');
+        // Show QR modal
+        setPaymentInfo(result.paymentInfo);
+        setCurrentOrderId(result.orderId || null);
+        setCurrentTransactionCode(result.paymentInfo.transferContent || null); // Save transaction code
+        
+        // Save last checkout items for cart restore if cancelled
+        if (fromCart && serverCart) {
+          setLastCheckoutItems(
+            serverCart.items.map(item => ({ bookId: item.bookId, quantity: item.quantity }))
+          );
+        } else if (bookId) {
+          setLastCheckoutItems([{ bookId: bookId as string, quantity: qty }]);
+        }
+        
+        setQrModalVisible(true);
+        
+        // Animate modal
+        qrModalAnim.setValue(0);
+        Animated.spring(qrModalAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 50,
+          friction: 7,
+        }).start();
+      } else {
+        console.log('❌ No payment info or not success:', result);
+        showSnackbar(result.message || 'Không thể tạo thanh toán', 'error');
+      }
+    } catch (error: any) {
+      console.error('❌ Error processing payment:', error);
+      showSnackbar(error.message || 'Có lỗi xảy ra khi thanh toán', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Simulate payment callback
+  const handlePaymentSuccess = async () => {
+    if (!currentOrderId || !currentTransactionCode) {
+      showSnackbar('Thiếu thông tin thanh toán', 'error');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+
+      const callback = {
+        transactionCode: currentTransactionCode, // Use real transaction code from backend
+        orderId: currentOrderId,
+        amount: totalPayment,
+        status: 'SUCCESS' as const,
+        message: 'Thanh toán thành công',
+      };
+
+      console.log('✅ Simulating payment callback:', callback);
+
+      await checkoutService.handlePaymentCallback(callback);
+
+      // Add notification
+      addNotification({
+        type: 'payment',
+        title: 'Thanh toán thành công',
+        message: `Đơn hàng của bạn đã được thanh toán. Tổng tiền: ${totalPayment.toLocaleString('vi-VN')}₫`,
+        orderId: currentOrderId,
+      });
+
+      // Close modal
+      setQrModalVisible(false);
+
+      // Show in-app success and navigate back
+      showSnackbar('Thanh toán thành công! Đơn hàng đã được xác nhận.', 'success');
+      setTimeout(() => router.back(), 1200);
+    } catch (error: any) {
+      console.error('❌ Error handling payment callback:', error);
+      showSnackbar('Có lỗi xảy ra. Vui lòng liên hệ hỗ trợ.', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const closeQrModal = () => {
+    Animated.timing(qrModalAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setQrModalVisible(false);
+      setPaymentInfo(null);
+      // If user cancels QR modal without payment, restore items to backend cart so they can retry
+      if (lastCheckoutItems && lastCheckoutItems.length > 0) {
+        (async () => {
+          try {
+            console.log('🔁 Restoring cart items after QR cancel:', JSON.stringify(lastCheckoutItems));
+            for (const it of lastCheckoutItems) {
+              await cartService.addToCart({ bookId: it.bookId, quantity: it.quantity });
+            }
+          } catch (err) {
+            console.error('❌ Failed to restore cart after QR cancel:', err);
+          }
+        })();
+      }
+      setCurrentOrderId(null);
+    });
+  };
+
+  // Totals calculation
+  const discountOnProduct = useMemo(() => (appliedVoucher === 'SALE10' ? Math.round(subtotal * 0.1) : 0), [appliedVoucher, subtotal]);
+  const discountOnShipping = useMemo(() => (appliedVoucher === 'SHIPFREE' ? shippingFee : 0), [appliedVoucher, shippingFee]);
   const shipping = shippingFee;
-  const totalPayment = totalBefore - discountOnProduct + shipping - discountOnShipping;
+  const totalPayment = subtotal - discountOnProduct + shipping - discountOnShipping;
+
+  // Show loading state
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#FF4757" />
+        <Text style={{ marginTop: 12, color: '#666' }}>Đang tải...</Text>
+      </View>
+    );
+  }
+
+  // Show error if no book in buy-now mode or no cart in cart mode
+  if (!fromCart && !book) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <Ionicons name="alert-circle-outline" size={64} color="#FF4757" style={{ marginBottom: 16 }} />
+        <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 12 }}>
+          Không tìm thấy sản phẩm
+        </Text>
+        <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: '#FF4757', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20 }}>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Quay lại</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (fromCart && (!serverCart || serverCart.items.length === 0)) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <Ionicons name="cart-outline" size={64} color="#FF4757" style={{ marginBottom: 16 }} />
+        <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 12 }}>
+          Giỏ hàng trống
+        </Text>
+        <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: '#FF4757', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20 }}>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Quay lại</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -67,22 +523,78 @@ export default function CheckoutScreen() {
 
         {/* 1. Recipient info */}
         <Text style={styles.sectionTitle}>Thông tin người nhận</Text>
-        <View style={styles.card}>
-          <TextInput placeholder="Họ và tên" value={name} onChangeText={setName} style={styles.input} />
-          <TextInput placeholder="Số điện thoại" value={phone} onChangeText={setPhone} style={styles.input} keyboardType="phone-pad" />
-          <TextInput placeholder="Địa chỉ nhận hàng" value={address} onChangeText={setAddress} style={styles.input} />
-        </View>
+        <TouchableOpacity style={styles.addressCard} onPress={handleChangeAddress}>
+          {selectedAddress ? (
+            <>
+              <View style={styles.addressHeader}>
+                <Text style={styles.addressName}>
+                  {name} <Text style={styles.addressPhone}>| {phone}</Text>
+                </Text>
+              </View>
+              <Text style={styles.addressDetail}>
+                {address}
+              </Text>
+              {selectedAddress.isDefault && (
+                <View style={styles.defaultBadge}>
+                  <Text style={styles.defaultBadgeText}>Mặc định</Text>
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.emptyAddress}>
+              <Ionicons name="add-circle-outline" size={24} color="#FF4757" />
+              <Text style={styles.emptyAddressText}>Thêm địa chỉ giao hàng</Text>
+            </View>
+          )}
+          <View style={styles.chevronIcon}>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </View>
+        </TouchableOpacity>
 
         {/* 2. Product info */}
         <Text style={styles.sectionTitle}>Thông tin sản phẩm</Text>
         <View style={styles.cartCardSmall}>
-          {book ? (
+          {fromCart && serverCart ? (
+            <>
+              {serverCart.items.map((item, idx) => {
+                // Get image URL with priority: backend > fetched > placeholder
+                let imageUrl: string;
+                if (item.imageUrl) {
+                  imageUrl = item.imageUrl.startsWith('http') 
+                    ? item.imageUrl 
+                    : `${MINIO_BASE_URL}${item.imageUrl}`;
+                } else if (bookImages[item.bookId]) {
+                  imageUrl = bookImages[item.bookId].startsWith('http')
+                    ? bookImages[item.bookId]
+                    : `${MINIO_BASE_URL}${bookImages[item.bookId]}`;
+                } else {
+                  imageUrl = PLACEHOLDER_IMAGES.DEFAULT_BOOK;
+                }
+                
+                return (
+                  <View key={idx} style={[styles.cartContentRow, idx > 0 && { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f0f0f0' }]}>
+                    <Image 
+                      source={{ uri: imageUrl }} 
+                      style={styles.cartImage} 
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text numberOfLines={2} style={styles.title}>{item.bookTitle}</Text>
+                      <Text style={styles.unitPrice}>{item.bookPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.qtyLabel}>x{item.quantity}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </>
+          ) : book ? (
             <>
               <View style={styles.cartContentRow}>
                 <Image source={{ uri: book.cover }} style={styles.cartImage} />
                 <View style={{ flex: 1 }}>
                   <Text numberOfLines={2} style={styles.title}>{book.title}</Text>
-                  <Text style={styles.unitPrice}>{productPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
+                  <Text style={styles.unitPrice}>{book.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={styles.qtyLabel}>x{qty}</Text>
@@ -106,7 +618,57 @@ export default function CheckoutScreen() {
           <Text style={styles.voucherApplied}>Đã áp dụng: {appliedVoucher}</Text>
         )}
 
-        {/* 4. Payment method */}
+        {/* 4. Shipping method */}
+        <Text style={styles.sectionTitle}>Phương thức vận chuyển</Text>
+        <View style={styles.shippingMethodContainer}>
+          <TouchableOpacity 
+            style={[styles.shippingMethodCard, shippingMethod === 'STANDARD' && styles.shippingMethodActive]} 
+            onPress={() => setShippingMethod('STANDARD')}
+          >
+            <View style={styles.shippingMethodHeader}>
+              <View style={styles.radioOuter}>
+                {shippingMethod === 'STANDARD' && <View style={styles.radioInner} />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.shippingMethodTitle, shippingMethod === 'STANDARD' && styles.shippingMethodTitleActive]}>
+                  Giao hàng nhanh
+                </Text>
+                <Text style={styles.shippingMethodDesc}>Nhận hàng trong 3-5 ngày</Text>
+              </View>
+              <Text style={[styles.shippingMethodPrice, shippingMethod === 'STANDARD' && styles.shippingMethodPriceActive]}>
+                30.000₫
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.shippingMethodCard, shippingMethod === 'EXPRESS' && styles.shippingMethodActive]} 
+            onPress={() => setShippingMethod('EXPRESS')}
+          >
+            <View style={styles.shippingMethodHeader}>
+              <View style={styles.radioOuter}>
+                {shippingMethod === 'EXPRESS' && <View style={styles.radioInner} />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={[styles.shippingMethodTitle, shippingMethod === 'EXPRESS' && styles.shippingMethodTitleActive]}>
+                    Giao hàng hỏa tốc
+                  </Text>
+                  <View style={styles.expressBadge}>
+                    <Ionicons name="flash" size={12} color="#FF4757" />
+                    <Text style={styles.expressBadgeText}>Nhanh</Text>
+                  </View>
+                </View>
+                <Text style={styles.shippingMethodDesc}>Nhận hàng trong 24 giờ</Text>
+              </View>
+              <Text style={[styles.shippingMethodPrice, shippingMethod === 'EXPRESS' && styles.shippingMethodPriceActive]}>
+                50.000₫
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* 5. Payment method */}
         <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
         <View style={styles.cardRowSmall}>
           <TouchableOpacity style={[styles.methodBtn, paymentMethod === 'COD' ? styles.methodActive : null]} onPress={() => setPaymentMethod('COD')}>
@@ -117,10 +679,10 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 5. Payment details */}
+        {/* 6. Payment details */}
         <Text style={styles.sectionTitle}>Chi tiết thanh toán</Text>
         <View style={styles.summaryCard}>
-          <View style={styles.summaryRow}><Text>Tổng tiền hàng</Text><Text>{totalBefore.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>
+          <View style={styles.summaryRow}><Text>Tổng tiền hàng</Text><Text>{subtotal.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>
           <View style={styles.summaryRow}><Text>Tổng tiền phí vận chuyển</Text><Text>{shipping.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>
           {discountOnShipping > 0 && <View style={styles.summaryRow}><Text>Giảm giá phí vận chuyển</Text><Text>-{discountOnShipping.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>}
           {discountOnProduct > 0 && <View style={styles.summaryRow}><Text>Giảm giá tiền hàng</Text><Text>-{discountOnProduct.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>}
@@ -137,15 +699,99 @@ export default function CheckoutScreen() {
           <Text style={styles.bottomTotal}>{totalPayment.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
         </View>
         {paymentMethod === 'COD' ? (
-          <TouchableOpacity style={styles.placeOrderBtn} onPress={() => { /* place order flow */ }}>
-            <Text style={styles.placeOrderText}>Đặt hàng</Text>
+          <TouchableOpacity 
+            style={[styles.placeOrderBtn, processing && styles.btnDisabled]} 
+            onPress={handlePlaceOrder}
+            disabled={processing}
+          >
+            {processing ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.placeOrderText}>Đặt hàng</Text>
+            )}
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.payNowBtn} onPress={() => { /* e-wallet flow */ }}>
-            <Text style={styles.payNowText}>Tiến hành thanh toán</Text>
+          <TouchableOpacity 
+            style={[styles.payNowBtn, processing && styles.btnDisabled]} 
+            onPress={handlePayNow}
+            disabled={processing}
+          >
+            {processing ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.payNowText}>Tiến hành thanh toán</Text>
+            )}
           </TouchableOpacity>
         )}
       </View>
+
+      {/* QR Payment Modal */}
+      <Modal visible={qrModalVisible} transparent animationType="none" onRequestClose={closeQrModal}>
+        <View style={styles.modalOverlay}>
+          <Animated.View style={[styles.qrModalCard, { transform: [{ scale: qrModalAnim }], opacity: qrModalAnim }]}>
+            <TouchableOpacity style={styles.closeModalBtn} onPress={closeQrModal}>
+              <Ionicons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+
+            <Text style={styles.qrModalTitle}>Quét mã QR để thanh toán</Text>
+            
+            {paymentInfo?.qrCodeUrl ? (
+              <View style={styles.qrCodeContainer}>
+                <Image source={{ uri: paymentInfo.qrCodeUrl }} style={styles.qrCodeImage} />
+              </View>
+            ) : (
+              <View style={styles.qrCodePlaceholder}>
+                <Ionicons name="qr-code-outline" size={150} color="#DDD" />
+              </View>
+            )}
+
+            <View style={styles.paymentDetails}>
+              <Text style={styles.paymentLabel}>Ngân hàng</Text>
+              <Text style={styles.paymentValue}>{paymentInfo?.bankName || 'VietQR Bank'}</Text>
+              
+              <Text style={styles.paymentLabel}>Số tài khoản</Text>
+              <Text style={styles.paymentValue}>{paymentInfo?.accountNumber || '0123456789'}</Text>
+              
+              <Text style={styles.paymentLabel}>Chủ tài khoản</Text>
+              <Text style={styles.paymentValue}>{paymentInfo?.accountName || 'BOOKSTORE'}</Text>
+              
+              <Text style={styles.paymentLabel}>Nội dung chuyển khoản</Text>
+              <Text style={styles.paymentValue}>{paymentInfo?.transferContent || `DH${Date.now()}`}</Text>
+              
+              <View style={styles.amountRow}>
+                <Text style={styles.paymentLabel}>Số tiền</Text>
+                <Text style={styles.amountValue}>{(paymentInfo?.amount || totalPayment).toLocaleString('vi-VN')}₫</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.confirmPaymentBtn, processing && styles.btnDisabled]}
+              onPress={handlePaymentSuccess}
+              disabled={processing}
+            >
+              {processing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                  <Text style={styles.confirmPaymentText}>Đã thanh toán</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <Text style={styles.qrModalNote}>
+              * Nút "Đã thanh toán" để giả lập callback từ cổng thanh toán
+            </Text>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      {/* Snackbar (in-app) */}
+      {snackbar && (
+        <View style={[styles.snackbar, snackbar.type === 'error' ? styles.snackbarError : snackbar.type === 'success' ? styles.snackbarSuccess : styles.snackbarInfo]}>
+          <Text style={styles.snackbarText}>{snackbar.message}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -158,6 +804,17 @@ const styles = StyleSheet.create({
   backIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   sectionTitle: { fontSize: 14, color: '#666', marginTop: 8, marginBottom: 8 },
   card: { backgroundColor: '#fff', padding: 12, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3, marginBottom: 12 },
+  addressCard: { backgroundColor: '#fff', padding: 14, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3, marginBottom: 12, position: 'relative' },
+  addressHeader: { marginBottom: 8 },
+  addressName: { fontSize: 16, fontWeight: '700', color: '#333' },
+  addressPhone: { fontSize: 14, fontWeight: '500', color: '#666' },
+  addressDetail: { fontSize: 14, color: '#666', lineHeight: 20, marginBottom: 8 },
+  defaultBadge: { alignSelf: 'flex-start', backgroundColor: '#FFF0F0', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginTop: 4 },
+  defaultBadgeText: { color: '#ff5a3c', fontSize: 12, fontWeight: '600' },
+  chevronIcon: { position: 'absolute', right: 14, top: '50%', marginTop: -10 },
+  emptyAddress: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  emptyAddressText: { fontSize: 15, color: '#FF4757', marginLeft: 8, fontWeight: '500' },
+  infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
   cartCardSmall: { backgroundColor: '#fff', padding: 12, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3, marginBottom: 12 },
   cartContentRow: { flexDirection: 'row', alignItems: 'center' },
   cartImage: { width: 64, height: 88, borderRadius: 8, marginRight: 12, backgroundColor: '#f0f0f0' },
@@ -173,6 +830,19 @@ const styles = StyleSheet.create({
   applyBtn: { backgroundColor: '#1976d2', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, marginLeft: 8 },
   applyText: { color: '#fff', fontWeight: '700' },
   voucherApplied: { color: '#2CB47B', marginBottom: 8 },
+  shippingMethodContainer: { gap: 10, marginBottom: 12 },
+  shippingMethodCard: { backgroundColor: '#fff', padding: 14, borderRadius: 10, borderWidth: 2, borderColor: '#EEE' },
+  shippingMethodActive: { borderColor: '#FF4757', backgroundColor: '#FFF5F5' },
+  shippingMethodHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#DDD', alignItems: 'center', justifyContent: 'center' },
+  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF4757' },
+  shippingMethodTitle: { fontSize: 15, fontWeight: '600', color: '#333', marginBottom: 2 },
+  shippingMethodTitleActive: { color: '#FF4757' },
+  shippingMethodDesc: { fontSize: 13, color: '#999' },
+  shippingMethodPrice: { fontSize: 15, fontWeight: '700', color: '#333' },
+  shippingMethodPriceActive: { color: '#FF4757' },
+  expressBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFE8EB', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 6 },
+  expressBadgeText: { fontSize: 11, color: '#FF4757', fontWeight: '600', marginLeft: 2 },
   title: { fontSize: 16, fontWeight: '700' },
   author: { color: '#666', marginBottom: 8 },
   price: { fontSize: 16, fontWeight: '700', color: '#FF4757' },
@@ -188,8 +858,42 @@ const styles = StyleSheet.create({
   bottomBar: { position: 'absolute', left: 12, right: 12, bottom: 12, backgroundColor: '#fff', padding: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: '#000', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 6 },
   smallLabel: { fontSize: 12, color: '#666' },
   bottomTotal: { fontSize: 18, fontWeight: '700', color: '#FF4757' },
-  placeOrderBtn: { backgroundColor: '#2CB47B', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8 },
+  placeOrderBtn: { backgroundColor: '#2CB47B', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8, minWidth: 120, alignItems: 'center' },
   placeOrderText: { color: '#fff', fontWeight: '700' },
-  payNowBtn: { backgroundColor: '#FF4757', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8 },
+  payNowBtn: { backgroundColor: '#FF4757', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8, minWidth: 120, alignItems: 'center' },
   payNowText: { color: '#fff', fontWeight: '700' },
+  btnDisabled: { opacity: 0.6 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  qrModalCard: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '100%', maxWidth: 400, maxHeight: '90%' },
+  closeModalBtn: { position: 'absolute', right: 12, top: 12, zIndex: 10, width: 32, height: 32, borderRadius: 16, backgroundColor: '#f5f5f5', alignItems: 'center', justifyContent: 'center' },
+  qrModalTitle: { fontSize: 20, fontWeight: '700', color: '#333', textAlign: 'center', marginBottom: 20 },
+  qrCodeContainer: { alignItems: 'center', marginBottom: 20, padding: 10, backgroundColor: '#F8F8F8', borderRadius: 12 },
+  qrCodeImage: { width: 250, height: 250, borderRadius: 8 },
+  qrCodePlaceholder: { alignItems: 'center', justifyContent: 'center', height: 250, backgroundColor: '#F8F8F8', borderRadius: 12, marginBottom: 20 },
+  paymentDetails: { backgroundColor: '#F8F8F8', borderRadius: 12, padding: 16, marginBottom: 16 },
+  paymentLabel: { fontSize: 13, color: '#666', marginTop: 8, marginBottom: 4 },
+  paymentValue: { fontSize: 15, fontWeight: '600', color: '#333' },
+  amountRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E0E0E0' },
+  amountValue: { fontSize: 20, fontWeight: '700', color: '#FF4757' },
+  confirmPaymentBtn: { backgroundColor: '#2CB47B', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 10, gap: 8, marginBottom: 12 },
+  confirmPaymentText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  qrModalNote: { fontSize: 12, color: '#999', textAlign: 'center', fontStyle: 'italic' },
+  snackbar: { 
+    position: 'absolute', 
+    left: 0, 
+    right: 0, 
+    bottom: 50, 
+    marginHorizontal: 16, 
+    borderRadius: 8, 
+    padding: 12, 
+    shadowColor: '#000', 
+    shadowOpacity: 0.2, 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowRadius: 4, 
+    elevation: 3 
+  },
+  snackbarText: { color: '#fff', fontWeight: '500' },
+  snackbarError: { backgroundColor: '#FF4757' },
+  snackbarSuccess: { backgroundColor: '#2CB47B' },
+  snackbarInfo: { backgroundColor: '#1976d2' },
 });

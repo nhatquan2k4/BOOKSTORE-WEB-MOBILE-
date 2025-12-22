@@ -46,11 +46,10 @@ public class MinIOService : IMinIOService
 
         await _minioClient.PutObjectAsync(putObjectArgs);
 
-        // Return public URL
-        var publicEndpoint = string.IsNullOrEmpty(_settings.PublicEndpoint)
-            ? $"{(_settings.UseSSL ? "https" : "http")}://{_settings.Endpoint}"
-            : _settings.PublicEndpoint;
-        return $"{publicEndpoint}/{bucket}/{fileName}";
+        // Return relative path only (for ngrok compatibility)
+        // Frontend will prepend MINIO_BASE_URL
+        // MinIO structure: /{bucket}/{fileName} (NO /storage/ prefix!)
+        return $"/{bucket}/{fileName}";
     }
 
     public async Task DeleteFileAsync(string fileName, string? bucketName = null)
