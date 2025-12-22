@@ -39,8 +39,22 @@ class CategoryService {
     }
 
     async update(id: string, category: Partial<Omit<Category, 'id' | 'bookCount' | 'subCategoriesCount' | 'parentName'>>) {
-        const response = await apiClient.put<Category>(API_ENDPOINTS.CATEGORY.UPDATE(id), category);
-        return response.data;
+        try {
+          console.debug("Category update payload:", { id, category });
+          const body = { id, ...(category || {}) };
+          console.debug("Category update payload (body):", body);
+          const response = await apiClient.put<Category>(
+            API_ENDPOINTS.CATEGORY.UPDATE(id),
+            body
+          );
+          return response.data;
+        } catch (err: any) {
+          console.error(
+            "Error in categoryService.update:",
+            err?.response?.data ?? err
+          );
+          throw err;
+        }
     }
 
     async delete(id: string) {

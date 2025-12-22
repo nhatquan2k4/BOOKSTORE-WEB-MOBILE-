@@ -32,9 +32,7 @@ const CreateBookPage: React.FC = () => {
 
     // Load danh sách authors, publishers, categories
     useEffect(() => {
-        // Kiểm tra role Admin
-        console.log('Current user:', user);
-        console.log('User roles:', user?.roles);
+        // Kiểm tra role Admin (no debug logs)
         
         const loadData = async () => {
             try {
