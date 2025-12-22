@@ -4,19 +4,24 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  // Animation values for each tab
+  // Filter out routes we want to hide from the tab bar (e.g. "explore")
+  const visibleRoutes = state.routes.filter((r) => r.name !== 'explore');
+
+  // Animation values for each visible tab
   const animatedValues = useRef(
-    state.routes.map(() => ({
+    visibleRoutes.map(() => ({
       scale: new Animated.Value(1),
       translateY: new Animated.Value(0),
       opacity: new Animated.Value(0),
     }))
   ).current;
 
-  // Animated value for bottom glow position
+  // Animated value for bottom glow position (index among visible tabs)
   const glowPosition = useRef(new Animated.Value(0)).current;
 
-  const prevIndex = useRef(state.index);
+  // Track previous visible index
+  const initialVisibleIndex = visibleRoutes.findIndex((r) => r.key === state.routes[state.index].key);
+  const prevIndex = useRef(initialVisibleIndex >= 0 ? initialVisibleIndex : 0);
 
   // Hàm chạy animation cho tab cụ thể
   const animateTab = useCallback((index: number, isActive: boolean) => {
@@ -49,50 +54,68 @@ export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarPro
 
 // Theo dõi tab thay đổi
   useEffect(() => {
-    const current = state.index;
-    const previous = prevIndex.current;
+    // Find the index of the currently focused route among visible routes
+    const currentVisibleIndex = visibleRoutes.findIndex((r) => r.key === state.routes[state.index].key);
+    const previousVisibleIndex = prevIndex.current;
 
-    if (previous !== current) {
+    // If the focused route is hidden (e.g. explore), skip animation
+    if (currentVisibleIndex === -1) return;
+
+    if (previousVisibleIndex !== currentVisibleIndex) {
       // Tắt animation tab cũ
-      animateTab(previous, false);
+      if (previousVisibleIndex >= 0 && animatedValues[previousVisibleIndex]) {
+        animateTab(previousVisibleIndex, false);
+      }
+
       // Bật animation tab mới
-      animateTab(current, true);
+      animateTab(currentVisibleIndex, true);
 
       // Hiệu ứng di chuyển glow
       Animated.spring(glowPosition, {
-        toValue: current,
+        toValue: currentVisibleIndex,
         useNativeDriver: false,
         friction: 8,
         tension: 100,
       }).start();
 
-      prevIndex.current = current;
+      prevIndex.current = currentVisibleIndex;
     }
-  }, [state.index, animateTab, glowPosition]);
+  }, [state.index, animateTab, glowPosition, visibleRoutes]);
 
 
   return (
     <View style={styles.container}>
       <View style={styles.tabBar}>
         {/* Background glow at the bottom of tab bar */}
-        <Animated.View
-          style={[
-            styles.bottomGlow,
-            {
-              backgroundColor: glowPosition.interpolate({
-                inputRange: [0, 1, 2, 3, 4],
-                outputRange: ['#4A90E2', '#E24A4A', '#E24AA5', '#7FB85E', '#A54AE2'],
-              }),
-              left: glowPosition.interpolate({
-                inputRange: [0, 1, 2, 3, 4],
-                outputRange: ['7%', '27.5%', '47.5%', '67.5%', '87.5%'],
-              }),
-              opacity: 0.4,
-            },
-          ]}
-        />
-        
-        {state.routes.map((route, index) => {
+        {
+          // Prepare dynamic ranges for only visible tabs
+        }
+        {(() => {
+          const colors = ['#4A90E2', '#E24A4A', '#E24AA5', '#7FB85E', '#A54AE2'].slice(0, visibleRoutes.length);
+          const inputRange = visibleRoutes.map((_, i) => i);
+          const leftOutput = visibleRoutes.map((_, i) => `${7 + i * 20}%`);
+
+          return (
+            <Animated.View
+              style={[
+                styles.bottomGlow,
+                {
+                  backgroundColor: glowPosition.interpolate({
+                    inputRange,
+                    outputRange: colors,
+                  }) as any,
+                  left: glowPosition.interpolate({
+                    inputRange,
+                    outputRange: leftOutput,
+                  }) as any,
+                  opacity: 0.4,
+                },
+              ]}
+            />
+          );
+        })()}
+
+        {visibleRoutes.map((route, index) => {
           const { options } = descriptors[route.key];
           const label =
             options.tabBarLabel !== undefined
@@ -101,7 +124,8 @@ export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               ? options.title
               : route.name;
 
-          const isFocused = state.index === index;
+          // Determine focus by matching route keys
+          const isFocused = state.routes[state.index]?.key === route.key;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -128,7 +152,7 @@ export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             });
           };
 
-          // Icon mapping và màu sắc cho từng tab
+          // Icon mapping và màu sắc cho từng visible tab (index-based)
           let iconName: keyof typeof Ionicons.glyphMap = 'help-circle';
           let tabColor = '#7FB85E';
           
