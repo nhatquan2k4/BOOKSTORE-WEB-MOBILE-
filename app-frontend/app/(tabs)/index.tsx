@@ -1,10 +1,14 @@
 import { BookCard } from '@/components/BookCard';
 import { CategoryItem } from '@/components/CategoryItem';
 import { SectionHeader } from '@/components/SectionHeader';
-import { ebooks, popularBooks } from '@/data/mockBooks';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import * as React from 'react';
+import { useEffect, useState } from 'react';
+import bookService from '@/src/services/bookService';
+import type { Book } from '@/src/types/book';
+import { toDisplayBook } from '@/src/types/book';
+import { PLACEHOLDER_IMAGES } from '@/src/constants/placeholders';
 import {
   Image,
   ScrollView,
@@ -72,15 +76,111 @@ const categories = [
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = React.useState(1);
+  const [selectedCategory, setSelectedCategory] = useState(1);
+  
+  // State for API data
+  const [popularBooksData, setPopularBooksData] = useState<any[]>([]);
+  const [ebooksData, setEbooksData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleBookPress = (bookId: number) => {
-    router.push(`/(stack)/book-detail?id=${bookId}`);
+  // Fetch books from API
+  useEffect(() => {
+    fetchBooks();
+  }, []);
+
+  const fetchBooks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch popular books (first page)
+      const popularResponse = await bookService.getBooks({
+        pageNumber: 1,
+        pageSize: 10,
+        sortBy: 'averageRating',
+        sortDescending: true,
+      });
+      
+      // Convert to display format and add cover images
+      const popularWithCovers = await Promise.all(
+        popularResponse.items.map(async (book: Book) => {
+          try {
+            const coverDto = await bookService.getBookCover(book.id);
+            const resolvedCover = coverDto?.imageUrl || PLACEHOLDER_IMAGES.DEFAULT_BOOK;
+            console.log(`[Book Cover] id=${book.id} cover=${resolvedCover}`);
+
+                return {
+                  ...toDisplayBook(book),
+                  guid: book.id, // keep original GUID for navigation
+                  cover: resolvedCover,
+                };
+          } catch (imgErr) {
+            console.error(`Error fetching cover for book ${book.id}:`, imgErr);
+            return {
+              ...toDisplayBook(book),
+              cover: PLACEHOLDER_IMAGES.DEFAULT_BOOK,
+            };
+          }
+        })
+      );
+      
+      setPopularBooksData(popularWithCovers);
+      
+      // Fetch ebooks (filter by format if possible)
+      const ebooksResponse = await bookService.getBooks({
+        pageNumber: 1,
+        pageSize: 10,
+        // TODO: Add filter for ebook format if backend supports it
+      });
+      
+      const ebooksWithCovers = await Promise.all(
+        ebooksResponse.items.slice(0, 6).map(async (book: Book) => {
+          try {
+            const coverDto = await bookService.getBookCover(book.id);
+            return {
+              ...toDisplayBook(book),
+              guid: book.id,
+              cover: coverDto?.imageUrl || PLACEHOLDER_IMAGES.DEFAULT_BOOK,
+            };
+          } catch (imgErr) {
+            console.error(`Error fetching cover for book ${book.id}:`, imgErr);
+            return {
+              ...toDisplayBook(book),
+              cover: PLACEHOLDER_IMAGES.DEFAULT_BOOK,
+            };
+          }
+        })
+      );
+      
+      setEbooksData(ebooksWithCovers);
+    } catch (err: any) {
+      console.error('Error fetching books:', err);
+      setError(err.message || 'Failed to fetch books');
+      // Show empty state on error
+      setPopularBooksData([]);
+      setEbooksData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBookPress = (bookId: string | number) => {
+  // If item includes original GUID (guid), use it. Some components use numeric id for UI.
+  const idToUse = (bookId as any)?.guid ? (bookId as any).guid : bookId;
+  router.push(`/(stack)/book-detail?id=${idToUse}`);
   };
 
   return (
     <View style={styles.container}>
+      {/* Top banner image inserted above StatusBar/header */}
+      {/* <Image
+        source={{ uri: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&q=80&auto=format&fit=crop' }}
+        style={styles.topBanner}
+        resizeMode="cover"
+      /> */}
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+  {/* ...existing code... */}
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header with Background Banner */}
         <View style={[styles.headerBannerContainer, { paddingTop: insets.top }]}>
@@ -140,38 +240,64 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <SectionHeader title="Popular Books" onViewAll={() => {}} />
             
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.booksScroll}
-            >
-              {popularBooks.map((book) => (
-                <BookCard 
-                  key={book.id} 
-                  {...book} 
-                  onPress={() => handleBookPress(book.id)} 
-                />
-              ))}
-            </ScrollView>
+            {loading ? (
+              <Text style={{ padding: 20, textAlign: 'center', color: '#666' }}>Đang tải sách phổ biến...</Text>
+            ) : error ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Text style={{ color: '#FF4757', marginBottom: 10 }}>{error}</Text>
+                <TouchableOpacity onPress={fetchBooks}>
+                  <Text style={{ color: '#4ECDC4', fontWeight: '600' }}>Thử lại</Text>
+                </TouchableOpacity>
+              </View>
+            ) : popularBooksData.length === 0 ? (
+              <Text style={{ padding: 20, textAlign: 'center', color: '#999' }}>Không có sách nào</Text>
+            ) : (
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.booksScroll}
+              >
+                {popularBooksData.map((book) => (
+                  <BookCard 
+                    key={book.id} 
+                    {...book} 
+                    onPress={() => handleBookPress(book.guid || book.id)} 
+                  />
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           {/* eBooks Section */}
           <View style={styles.section}>
             <SectionHeader title="eBooks" onViewAll={() => {}} />
             
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.booksScroll}
-            >
-              {ebooks.map((book) => (
-                <BookCard 
-                  key={book.id} 
-                  {...book} 
-                  onPress={() => handleBookPress(book.id)} 
-                />
-              ))}
-            </ScrollView>
+            {loading ? (
+              <Text style={{ padding: 20, textAlign: 'center', color: '#666' }}>Đang tải eBooks...</Text>
+            ) : error ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Text style={{ color: '#FF4757', marginBottom: 10 }}>{error}</Text>
+                <TouchableOpacity onPress={fetchBooks}>
+                  <Text style={{ color: '#4ECDC4', fontWeight: '600' }}>Thử lại</Text>
+                </TouchableOpacity>
+              </View>
+            ) : ebooksData.length === 0 ? (
+              <Text style={{ padding: 20, textAlign: 'center', color: '#999' }}>Không có eBook nào</Text>
+            ) : (
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.booksScroll}
+              >
+                {ebooksData.map((book) => (
+                  <BookCard 
+                    key={book.id} 
+                    {...book} 
+                    onPress={() => handleBookPress(book.guid || book.id)} 
+                  />
+                ))}
+              </ScrollView>
+            )}
           </View>
 
         {/* Padding bottom để tránh bị che bởi tab bar */}
@@ -297,6 +423,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: '#f0ede4',
     gap: 15,
+  },
+  topBanner: {
+    width: '100%',
+    height: 140,
   },
 
 });
