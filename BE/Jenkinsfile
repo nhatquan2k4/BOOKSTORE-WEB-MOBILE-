@@ -61,13 +61,13 @@ pipeline {
                             // 2. Backup docker-compose.yml hiện tại
                             sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"cd ${COMPOSE_PATH}; Copy-Item docker-compose.yml docker-compose.yml.bak -Force\""
 
-                            // 3. Update docker-compose.yml để sử dụng image từ registry thay vì build
+                            // 3. Update version trong docker-compose.yml
                             def composeUpdateCmd = """
                                 cd ${COMPOSE_PATH};
                                 \\\$content = Get-Content docker-compose.yml -Raw;
-                                \\\$content = \\\$content -replace 'build:[\\s\\S]*?dockerfile: Dockerfile', 'image: ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}';
+                                \\\$content = \\\$content -replace '${REGISTRY_URL}/${IMAGE_NAME}:v\\d+', '${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}';
                                 \\\$content | Set-Content docker-compose.yml;
-                                Write-Host 'Updated docker-compose.yml to use image: ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}';
+                                Write-Host 'Updated docker-compose.yml to version ${IMAGE_TAG}';
                             """
                             sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"${composeUpdateCmd}\""
 
@@ -77,8 +77,8 @@ pipeline {
                             // 5. Restart backend service với image mới
                             sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"cd ${COMPOSE_PATH}; docker compose up -d bookstore-api\""
 
-                            // 6. Kiểm tra trạng thái
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"docker ps --filter name=bookstore-api\""
+                            // 6. Kiểm tra trạng thái và version
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"docker ps --filter name=bookstore-api --format 'table {{.Names}}\\t{{.Image}}\\t{{.Status}}'\""
                         }
                     }
                 }
