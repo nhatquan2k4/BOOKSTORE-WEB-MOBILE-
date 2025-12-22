@@ -39,8 +39,21 @@ class PublisherService {
     }
 
     async update(id: string, publisher: Partial<Omit<Publisher, 'id' | 'bookCount'>>) {
-        const response = await apiClient.put<Publisher>(API_ENDPOINTS.PUBLISHER.UPDATE(id), publisher);
-        return response.data;
+        try {
+          const body = { id, ...(publisher || {}) };
+          console.debug("Publisher update payload (body):", body);
+          const response = await apiClient.put<Publisher>(
+            API_ENDPOINTS.PUBLISHER.UPDATE(id),
+            body
+          );
+          return response.data;
+        } catch (err: any) {
+          console.error(
+            "Error in publisherService.update:",
+            err?.response?.data ?? err
+          );
+          throw err;
+        }
     }
 
     async delete(id: string) {
