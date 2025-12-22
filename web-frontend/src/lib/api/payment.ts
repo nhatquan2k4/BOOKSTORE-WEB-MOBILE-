@@ -26,14 +26,8 @@ export const paymentApi = {
     try {
       console.log('[PAYMENT API] Creating QR with data:', data);
       
-      // Validate UUID
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(data.orderId)) {
-        console.error('[PAYMENT API] Invalid UUID:', data.orderId);
-        throw new Error('OrderId phải là UUID hợp lệ');
-      }
+      // --- ĐÃ XÓA ĐOẠN VALIDATE UUID ĐỂ CHẤP NHẬN MÃ ORD-... ---
 
-      console.log('[PAYMENT API] UUID validation passed');
       console.log('[PAYMENT API] Sending request to /api/payment/qr');
 
       const response = await axiosInstance.post('/api/payment/qr', {
@@ -42,26 +36,21 @@ export const paymentApi = {
         description: data.description
       });
       
-      console.log('[PAYMENT API] Response received:', response);
-      console.log('[PAYMENT API] Response data:', response.data);
-      console.log('[PAYMENT API] Response status:', response.status);
+      console.log('[PAYMENT API] Response received:', response.data);
       
       return response.data;
     } catch (error: any) {
       console.error('[PAYMENT API] ❌ QR creation error:', error);
-      console.error('[PAYMENT API] Error response:', error.response);
-      console.error('[PAYMENT API] Error data:', error.response?.data);
-      console.error('[PAYMENT API] Error status:', error.response?.status);
-      console.error('[PAYMENT API] Error message:', error.message);
       throw new Error(error.response?.data?.message || 'Lỗi tạo mã QR');
     }
   },
 
   checkStatus: async (orderId: string): Promise<CheckPaymentStatusResponse> => {
     try {
-      const response = await axiosInstance.get(`/api/payment/status/${orderId}`);
+      // Encode orderId để tránh lỗi nếu mã có ký tự đặc biệt
+      const safeOrderId = encodeURIComponent(orderId);
+      const response = await axiosInstance.get(`/api/payment/status/${safeOrderId}`);
       
-      // Chuẩn hóa status về lowercase để dễ so sánh
       const status = response.data.status?.toLowerCase() || 'pending';
       
       return {
@@ -71,13 +60,6 @@ export const paymentApi = {
       };
     } catch (error: any) {
       console.error('Check status error:', error);
-      
-      // --- DEV MODE ONLY: GIẢ LẬP THANH TOÁN THÀNH CÔNG ---
-      // Nếu bạn đang chạy localhost và muốn test luồng success mà không cần webhook
-      // Hãy bỏ comment dòng dưới đây để giả lập là đã thanh toán sau khi gọi API lỗi
-      
-      // return { success: true, status: 'paid', message: 'Giả lập thành công' }; 
-
       return {
         success: false,
         status: 'pending',
