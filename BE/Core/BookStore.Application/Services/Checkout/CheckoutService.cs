@@ -28,7 +28,7 @@ namespace BookStore.Application.Services.Checkout
         private const decimal DEFAULT_SHIPPING_FEE = 30000m; // 30,000 VND
 
         // Warehouse mặc định - Phahasa Warehouse (Hà Nội)
-        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("d1925db2-8fa2-4471-ae9d-acb6cf133a73");
+        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("08d381e0-b0cf-426f-a5f4-430c63f3a552");
 
         public CheckoutService(
             ICartService cartService,

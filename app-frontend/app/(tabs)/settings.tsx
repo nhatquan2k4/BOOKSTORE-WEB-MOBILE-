@@ -1,8 +1,12 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+// ...existing imports above
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/app/providers/AuthProvider';
+import userProfileService from '@/src/services/userProfileService';
+import { useEffect } from 'react';
+import { useState } from 'react';
+import avatarStore from '@/src/utils/avatarStore';
 
 export default function ProfileScreen() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -10,6 +14,24 @@ export default function ProfileScreen() {
 
   const router = useRouter();
   const { logout, user } = useAuth();
+
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const profile = await userProfileService.getMyProfile();
+        if (mounted && profile?.avatarUrl) setAvatarUri(profile.avatarUrl);
+      } catch (e) {
+        // ignore
+      }
+    })();
+    const unsubscribe = avatarStore.onAvatarChanged((uri) => {
+      if (mounted) setAvatarUri(uri);
+    });
+    return () => { mounted = false; unsubscribe(); };
+  }, []);
 
   // Xử lý đăng xuất
   const handleLogout = () => {
@@ -42,8 +64,8 @@ export default function ProfileScreen() {
 
   const otherSettings = [
     { id: 1, icon: 'person-outline', label: 'Hồ sơ của tôi', hasArrow: true, onPress: () => router.push('/(stack)/profile-details') },
-    { id: 2, icon: 'lock-closed-outline', label: 'Mật khẩu', hasArrow: true, onPress: () => console.log('Mật khẩu') },
-    { id: 3, icon: 'location-outline', label: 'Địa chỉ', hasArrow: true, onPress: () => console.log('Địa chỉ') },
+    { id: 2, icon: 'lock-closed-outline', label: 'Đổi mật khẩu', hasArrow: true, onPress: () => router.push('/(stack)/change-password') },
+    { id: 3, icon: 'location-outline', label: 'Địa chỉ', hasArrow: true, onPress: () => router.push('/(stack)/addresses') },
 
   ];
 
@@ -65,7 +87,11 @@ export default function ProfileScreen() {
       <TouchableOpacity style={styles.profileCard}>
         <View style={styles.profileLeft}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarEmoji}>👨</Text>
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.avatarImageSmall} />
+            ) : (
+              <Text style={styles.avatarEmoji}>👨</Text>
+            )}
           </View>
           <View>
             <Text style={styles.userName}>{user?.userName || 'Người dùng'}</Text>
@@ -300,4 +326,5 @@ const styles = StyleSheet.create({
   bottomSpacer: {
     height: 100,
   },
+  avatarImageSmall: { width: 50, height: 50, borderRadius: 25 },
 });

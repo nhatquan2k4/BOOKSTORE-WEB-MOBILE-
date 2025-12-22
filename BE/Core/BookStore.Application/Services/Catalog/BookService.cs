@@ -12,6 +12,7 @@ using BookStore.Application.Mappers.Catalog.Publisher;
 using BookStore.Application.Service;
 using BookStore.Domain.Entities.Catalog;
 using BookStore.Domain.IRepository.Catalog;
+using BookStore.Domain.IRepository.Inventory;
 using BookStore.Domain.ValueObjects;
 using BookStore.Shared.Exceptions;
 using BookStore.Shared.Utilities;
@@ -26,13 +27,21 @@ namespace BookStore.Application.Services.Catalog
         private readonly ICategoryRepository _categoryRepository;
         private readonly IPublisherRepository _publisherRepository;
         private readonly IBookFormatRepository _bookFormatRepository;
+        private readonly IBookImageRepository _bookImageRepository;
+        private readonly IBookMetadataRepository _bookMetadataRepository;
+        private readonly IPriceRepository _priceRepository;
+        private readonly IStockItemRepository _stockItemRepository;
 
         public BookService(
             IBookRepository bookRepository,
             IAuthorRepository authorRepository,
             ICategoryRepository categoryRepository,
             IPublisherRepository publisherRepository,
-            IBookFormatRepository bookFormatRepository)
+            IBookFormatRepository bookFormatRepository,
+            IBookImageRepository bookImageRepository,
+            IBookMetadataRepository bookMetadataRepository,
+            IPriceRepository priceRepository,
+            IStockItemRepository stockItemRepository)
             : base(bookRepository)
         {
             _bookRepository = bookRepository;
@@ -40,6 +49,10 @@ namespace BookStore.Application.Services.Catalog
             _categoryRepository = categoryRepository;
             _publisherRepository = publisherRepository;
             _bookFormatRepository = bookFormatRepository;
+            _bookImageRepository = bookImageRepository;
+            _bookMetadataRepository = bookMetadataRepository;
+            _priceRepository = priceRepository;
+            _stockItemRepository = stockItemRepository;
         }
 
         public override async Task<IEnumerable<BookDto>> GetAllAsync()
@@ -401,12 +414,60 @@ namespace BookStore.Application.Services.Catalog
 
         public override async Task<bool> DeleteAsync(Guid id)
         {
-            var book = await _bookRepository.GetByIdAsync(id);
+            // Load book với đầy đủ navigation properties
+            var book = await _bookRepository.GetDetailByIdAsync(id);
             if (book == null) return false;
 
-            _bookRepository.Delete(book);
-            await _bookRepository.SaveChangesAsync();
-            return true;
+            // Kiểm tra xem sách có đang được cho thuê không
+            if (book.Rentals != null && book.Rentals.Any(r => r.Status == "Active" && !r.IsReturned))
+            {
+                throw new UserFriendlyException("Không thể xóa sách đang được cho thuê");
+            }
+
+            // Xóa các dữ liệu liên quan trước
+            try
+            {
+                // Xóa ảnh
+                await _bookImageRepository.DeleteByBookIdAsync(id);
+                
+                // Xóa metadata
+                await _bookMetadataRepository.DeleteByBookIdAsync(id);
+                
+                // Xóa StockItems (inventory)
+                if (book.StockItems != null && book.StockItems.Any())
+                {
+                    foreach (var stockItem in book.StockItems)
+                    {
+                        _stockItemRepository.Delete(stockItem);
+                    }
+                }
+                
+                // Xóa Prices
+                if (book.Prices != null && book.Prices.Any())
+                {
+                    foreach (var price in book.Prices)
+                    {
+                        _priceRepository.Delete(price);
+                    }
+                }
+                
+                // Xóa Reviews (nếu có)
+                if (book.Reviews != null && book.Reviews.Any())
+                {
+                    // Reviews sẽ được cascade delete hoặc cần xóa thủ công
+                    // Tùy thuộc vào cấu hình database
+                }
+                
+                // Xóa sách
+                _bookRepository.Delete(book);
+                await _bookRepository.SaveChangesAsync();
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new UserFriendlyException($"Lỗi khi xóa sách: {ex.Message}");
+            }
         }
 
         public async Task<bool> UpdateAvailabilityAsync(Guid id, bool isAvailable)
@@ -499,43 +560,45 @@ namespace BookStore.Application.Services.Catalog
             }
         }
 
+        /// <summary>
+        /// Get best selling books (based on stock quantity - more sold means less in stock)
+        /// </summary>
         public async Task<List<BookDto>> GetBestSellingBooksAsync(int top = 10)
         {
             try
             {
-                var allBooks = await _bookRepository.GetAllAsync();
+                var books = await _repository.GetAllAsync();
                 
-                var bestSelling = allBooks
+                return books
                     .Where(b => b.IsAvailable)
-                    .OrderByDescending(b => b.TotalReviews)
-                    .ThenByDescending(b => b.AverageRating)
-                    .ThenBy(b => b.Id)
+                    .OrderByDescending(b => b.StockItems?.Sum(s => s.QuantityOnHand) ?? 0)
                     .Take(top)
+                    .Select(b => b.ToDto())
                     .ToList();
-
-                return bestSelling.Select(b => b.ToDto()).ToList();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error getting best-selling books: {ex.Message}");
+                Console.WriteLine($"Error getting best selling books: {ex.Message}");
                 return new List<BookDto>();
             }
         }
 
+        /// <summary>
+        /// Get newest books (based on publication year and created date)
+        /// </summary>
         public async Task<List<BookDto>> GetNewestBooksAsync(int top = 10)
         {
             try
             {
-                var allBooks = await _bookRepository.GetAllAsync();
+                var books = await _repository.GetAllAsync();
                 
-                var newest = allBooks
+                return books
                     .Where(b => b.IsAvailable)
                     .OrderByDescending(b => b.PublicationYear)
-                    .ThenByDescending(b => b.Id)
+                    .ThenBy(b => b.Title)
                     .Take(top)
+                    .Select(b => b.ToDto())
                     .ToList();
-
-                return newest.Select(b => b.ToDto()).ToList();
             }
             catch (Exception ex)
             {
@@ -544,30 +607,32 @@ namespace BookStore.Application.Services.Catalog
             }
         }
 
+        /// <summary>
+        /// Get most viewed books (placeholder - requires view tracking implementation)
+        /// Currently returns books ordered by stock quantity as a proxy
+        /// </summary>
         public async Task<List<BookDto>> GetMostViewedBooksAsync(int top = 10)
         {
             try
             {
-                var allBooks = await _bookRepository.GetAllAsync();
+                // TODO: Implement proper view tracking
+                // For now, return popular books based on stock
+                var books = await _repository.GetAllAsync();
                 
-                var mostViewed = allBooks
+                return books
                     .Where(b => b.IsAvailable)
-                    .OrderByDescending(b => b.TotalReviews)
-                    .ThenByDescending(b => b.AverageRating)
-                    .ThenBy(b => b.Id)
+                    .OrderByDescending(b => b.StockItems?.Sum(s => s.QuantityOnHand) ?? 0)
                     .Take(top)
+                    .Select(b => b.ToDto())
                     .ToList();
-
-                return mostViewed.Select(b => b.ToDto()).ToList();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error getting most-viewed books: {ex.Message}");
+                Console.WriteLine($"Error getting most viewed books: {ex.Message}");
                 return new List<BookDto>();
             }
         }
 
-        #region Base GenericService overrides
 
         protected override BookDto MapToDto(Book entity) => entity.ToDto();
 
@@ -580,8 +645,6 @@ namespace BookStore.Application.Services.Catalog
         {
             throw new NotImplementedException("Use UpdateAsync instead");
         }
-
-        #endregion
 
         private async Task ValidatePublisherExists(Guid publisherId)
         {
@@ -596,5 +659,43 @@ namespace BookStore.Application.Services.Catalog
             if (bookFormat == null)
                 throw new NotFoundException($"Không tìm thấy định dạng sách với ID {bookFormatId}");
         }
+
+        public async Task<bool> UpdatePriceAsync(Guid bookId, UpdateBookPriceDto dto)
+        {
+            // Kiểm tra book có tồn tại không
+            var book = await _bookRepository.GetByIdAsync(bookId);
+            if (book == null)
+                throw new NotFoundException($"Không tìm thấy sách với ID {bookId}");
+
+            // Tắt tất cả giá cũ đang active (query với AsTracking để EF Core track entities)
+            var allPrices = await _priceRepository.GetAllAsync();
+            var currentPrices = allPrices.Where(p => p.BookId == bookId && p.IsCurrent).ToList();
+            
+            // Chỉ cần set giá trị, không cần gọi Update() vì entities đã được track
+            foreach (var price in currentPrices)
+            {
+                price.IsCurrent = false;
+                price.EffectiveTo = DateTime.UtcNow;
+                // KHÔNG gọi _priceRepository.Update(price) - EF sẽ tự động detect changes
+            }
+
+            // Tạo giá mới
+            var newPrice = new BookStore.Domain.Entities.Pricing___Inventory.Price
+            {
+                Id = Guid.NewGuid(),
+                BookId = bookId,
+                Amount = dto.Price,
+                Currency = "VND",
+                IsCurrent = true,
+                EffectiveFrom = DateTime.UtcNow,
+                EffectiveTo = dto.EffectiveTo
+            };
+
+            await _priceRepository.AddAsync(newPrice);
+            await _priceRepository.SaveChangesAsync();
+
+            return true;
+        }
+
     }
 }

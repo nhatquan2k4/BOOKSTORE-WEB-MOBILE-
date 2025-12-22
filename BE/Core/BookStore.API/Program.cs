@@ -115,9 +115,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.SetIsOriginAllowed(origin => true) 
+        //policy.AllowAnyOrigin()  // ✅ Cho phép tất cả origins (mobile app, web, etc.)
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowAnyMethod();
+        // Note: Không dùng AllowCredentials() khi dùng AllowAnyOrigin()
     });
 });
 

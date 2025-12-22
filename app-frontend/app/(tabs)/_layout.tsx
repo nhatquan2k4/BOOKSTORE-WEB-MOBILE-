@@ -48,6 +48,13 @@ export default function TabLayout() {
           title: 'Settings',
         }}
       />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          href: null, // Ẩn tab này
+        }}
+      />
     </Tabs>
   );
 }

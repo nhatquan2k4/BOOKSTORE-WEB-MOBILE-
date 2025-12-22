@@ -7,6 +7,7 @@ using BookStore.Domain.Entities.Identity;
 
 namespace BookStore.API.Controllers.BookImages
 {
+    [AllowAnonymous]
     [Route("api/books/{bookId:guid}/images")]
     public class BookImagesController : ApiControllerBase
     {
@@ -23,8 +24,8 @@ namespace BookStore.API.Controllers.BookImages
         /// <param name="bookId">ID của book</param>
         /// <returns>Danh sách BookImageDto</returns>
         [HttpGet]
+        [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<BookImageDto>>> GetImagesByBookId(Guid bookId)
         {
             var images = await _bookImageService.GetImagesByBookIdAsync(bookId);
@@ -37,6 +38,7 @@ namespace BookStore.API.Controllers.BookImages
         /// <param name="bookId">ID của book</param>
         /// <returns>BookImageDto hoặc null</returns>
         [HttpGet("cover")]
+        [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<BookImageDto>> GetCoverImage(Guid bookId)
@@ -63,7 +65,7 @@ namespace BookStore.API.Controllers.BookImages
         public async Task<ActionResult<BookImageDto>> UploadAndCreateImage(
             Guid bookId,
             IFormFile file,
-            [FromForm] bool isCover = false,
+            [FromForm] bool isCover = true,
             [FromForm] int displayOrder = 0)
         {
             try
@@ -283,6 +285,7 @@ namespace BookStore.API.Controllers.BookImages
     /// <summary>
     /// Controller riêng cho các operations trên individual image
     /// </summary>
+    [AllowAnonymous]
     [Route("api/images")]
     public class BookImageController : ApiControllerBase
     {

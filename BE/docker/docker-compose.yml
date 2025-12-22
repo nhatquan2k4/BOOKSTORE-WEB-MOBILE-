@@ -84,9 +84,7 @@ services:
       start_period: 10s
 
   bookstore-api:
-    build:
-      context: ../
-      dockerfile: Dockerfile
+    image: NQ.local:5000/bookstore-backend:v98
     container_name: bookstore-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -141,3 +139,5 @@ volumes:
 networks:
   bookstore-network:
     driver: bridge
+
+

@@ -90,6 +90,26 @@ namespace BookStore.Application.Mappers.Catalog.Book
                 PageCount = book.PageCount,
                 IsAvailable = book.IsAvailable,
 
+                // Current Price (active, non-expired)
+                CurrentPrice = book.Prices?
+                    .Where(p => p.IsCurrent
+                                && p.EffectiveFrom <= DateTime.UtcNow
+                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .FirstOrDefault()?.Amount,
+
+                // Discount Price (active price with discount)
+                DiscountPrice = book.Prices?
+                    .Where(p => p.IsCurrent
+                                && p.EffectiveFrom <= DateTime.UtcNow
+                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow)
+                                && p.DiscountId.HasValue)
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .FirstOrDefault()?.Amount,
+
+                // Stock Quantity (sum across all warehouses)
+                StockQuantity = book.StockItems?.Sum(s => s.QuantityOnHand) ?? 0,
+
                 // Publisher - sử dụng PublisherMapper
                 Publisher = book.Publisher?.ToDto()!,
 
@@ -112,25 +132,6 @@ namespace BookStore.Application.Mappers.Catalog.Book
 
                 // Metadata - sử dụng BookMetadataMapper
                 Metadata = book.Metadata?.ToDtoList() ?? new List<BookMetadataDto>(),
-                
-                // Pricing - SAME LOGIC AS BookDto (SINGLE SOURCE OF TRUTH)
-                CurrentPrice = book.Prices?
-                    .Where(p => p.IsCurrent
-                                && p.EffectiveFrom <= DateTime.UtcNow
-                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
-                    .OrderByDescending(p => p.EffectiveFrom)
-                    .FirstOrDefault()?.Amount,
-
-                DiscountPrice = book.Prices?
-                    .Where(p => p.IsCurrent
-                                && p.EffectiveFrom <= DateTime.UtcNow
-                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow)
-                                && p.DiscountId.HasValue)
-                    .OrderByDescending(p => p.EffectiveFrom)
-                    .FirstOrDefault()?.Amount,
-
-                // Stock Quantity (sum across all warehouses)
-                StockQuantity = book.StockItems?.Sum(s => s.QuantityOnHand) ?? 0,
 
                 // Reviews (TODO: Calculate from Reviews when schema is fixed)
                 AverageRating = null,

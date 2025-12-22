@@ -48,6 +48,8 @@ namespace BookStore.Infrastructure.Repository.Catalog
                 .Include(b => b.Metadata)
                 .Include(b => b.Prices)
                 .Include(b => b.StockItems)
+                // Tạm bỏ Include Reviews để tránh lỗi cột không hợp lệ
+                // .Include(b => b.Reviews)
                 .FirstOrDefaultAsync(b => b.Id == id);
         }
 

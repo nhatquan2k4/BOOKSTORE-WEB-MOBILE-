@@ -16,13 +16,6 @@ namespace BookStore.Application.Dtos.Catalog.Book
         public string? Edition { get; set; }
         public int PageCount { get; set; }
         public bool IsAvailable { get; set; }
-        public PublisherDto Publisher { get; set; } = null!;
-        public BookFormatDto? BookFormat { get; set; }
-        public List<AuthorDto> Authors { get; set; } = new();
-        public List<CategoryDto> Categories { get; set; } = new();
-        public List<BookImageDto> Images { get; set; } = new();
-        public List<BookFileDto> Files { get; set; } = new();
-        public List<BookMetadataDto> Metadata { get; set; } = new();
         
         // Pricing
         public decimal? CurrentPrice { get; set; }
@@ -30,6 +23,14 @@ namespace BookStore.Application.Dtos.Catalog.Book
         
         // Stock
         public int? StockQuantity { get; set; }
+        
+        public PublisherDto Publisher { get; set; } = null!;
+        public BookFormatDto? BookFormat { get; set; }
+        public List<AuthorDto> Authors { get; set; } = new();
+        public List<CategoryDto> Categories { get; set; } = new();
+        public List<BookImageDto> Images { get; set; } = new();
+        public List<BookFileDto> Files { get; set; } = new();
+        public List<BookMetadataDto> Metadata { get; set; } = new();
         
         // Review summary
         public double? AverageRating { get; set; }

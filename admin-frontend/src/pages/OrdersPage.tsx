@@ -1,62 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import Table from '../components/common/Table';
+import OrderDetailModal from '../components/common/OrderDetailModal';
+import { orderService } from '../services';
 import type { Order } from '../types';
 
 const OrdersPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('');
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        pageSize: 10,
+        total: 0,
+    });
 
-    const [orders] = useState<Order[]>([
-        {
-            id: 'ORD001',
-            userId: '1',
-            customerName: 'Nguyễn Văn A',
-            items: [
-                { bookId: '1', bookTitle: 'The Great Gatsby', quantity: 2, price: 15.99 },
-                { bookId: '2', bookTitle: 'To Kill a Mockingbird', quantity: 1, price: 18.99 },
-            ],
-            totalAmount: 50.97,
-            status: 'delivered',
-            orderDate: '2024-11-01',
-            deliveryAddress: '123 Đường ABC, Quận 1, TP.HCM',
-        },
-        {
-            id: 'ORD002',
-            userId: '2',
-            customerName: 'Trần Thị B',
-            items: [
-                { bookId: '3', bookTitle: '1984', quantity: 3, price: 14.99 },
-            ],
-            totalAmount: 44.97,
-            status: 'processing',
-            orderDate: '2024-11-15',
-            deliveryAddress: '456 Đường XYZ, Quận 3, TP.HCM',
-        },
-        {
-            id: 'ORD003',
-            userId: '4',
-            customerName: 'Lê Văn C',
-            items: [
-                { bookId: '1', bookTitle: 'The Great Gatsby', quantity: 1, price: 15.99 },
-            ],
-            totalAmount: 15.99,
-            status: 'pending',
-            orderDate: '2024-11-20',
-            deliveryAddress: '789 Đường DEF, Quận 5, TP.HCM',
-        },
-        {
-            id: 'ORD004',
-            userId: '1',
-            customerName: 'Nguyễn Văn A',
-            items: [
-                { bookId: '2', bookTitle: 'To Kill a Mockingbird', quantity: 2, price: 18.99 },
-            ],
-            totalAmount: 37.98,
-            status: 'shipped',
-            orderDate: '2024-11-18',
-            deliveryAddress: '123 Đường ABC, Quận 1, TP.HCM',
-        },
-    ]);
+    useEffect(() => {
+        fetchOrders();
+    }, [pagination.page, statusFilter]);
+
+    const fetchOrders = async () => {
+        try {
+            setLoading(true);
+            const params: any = {
+                page: pagination.page,
+                pageSize: pagination.pageSize,
+            };
+            
+            if (statusFilter) {
+                params.status = statusFilter;
+            }
+
+            const response = await orderService.getAll(params);
+            
+            setOrders(response.data || response.items || []);
+            setPagination(prev => ({
+                ...prev,
+                total: response.total || response.totalCount || 0,
+            }));
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            setOrders([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const getStatusColor = (status: Order['status']) => {
         const colors = {
@@ -64,6 +55,7 @@ const OrdersPage: React.FC = () => {
             processing: 'bg-blue-100 text-blue-800',
             shipped: 'bg-purple-100 text-purple-800',
             delivered: 'bg-green-100 text-green-800',
+            completed: 'bg-green-100 text-green-800',
             cancelled: 'bg-red-100 text-red-800',
         };
         return colors[status];
@@ -75,24 +67,35 @@ const OrdersPage: React.FC = () => {
             processing: 'Đang xử lý',
             shipped: 'Đang giao',
             delivered: 'Đã giao',
+            completed: 'Hoàn thành',
             cancelled: 'Đã hủy',
         };
         return texts[status];
     };
 
     const columns = [
-        { key: 'id', label: 'Mã đơn hàng' },
-        { key: 'customerName', label: 'Khách hàng' },
+        { 
+            key: 'orderNumber', 
+            label: 'Mã đơn hàng',
+            render: (value: string | undefined, row: Order) => value || row.id
+        },
+        { 
+            key: 'customerName', 
+            label: 'Khách hàng',
+            render: (value: string | undefined) => value || 'N/A'
+        },
         {
             key: 'items',
             label: 'Số lượng sản phẩm',
-            render: (items: Order['items']) => items.length,
+            render: (items: Order['items'] | undefined) => items?.length || 0,
         },
         {
             key: 'totalAmount',
             label: 'Tổng tiền',
-            render: (value: number) => (
-                <span className="font-semibold text-green-600">${value.toFixed(2)}</span>
+            render: (value: number | undefined) => (
+                <span className="font-semibold text-green-600">
+                    ${value?.toFixed(2) || '0.00'}
+                </span>
             ),
         },
         {
@@ -104,22 +107,51 @@ const OrdersPage: React.FC = () => {
                 </span>
             ),
         },
-        { key: 'orderDate', label: 'Ngày đặt' },
+        { 
+            key: 'orderDate', 
+            label: 'Ngày đặt',
+            render: (value: string | undefined, row: Order) => {
+                const date = value || row.createdAt;
+                return date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A';
+            }
+        },
     ];
 
-    const handleView = (order: Order) => {
-        console.log('View order:', order);
-        alert(`Chi tiết đơn hàng ${order.id}\n\nKhách hàng: ${order.customerName}\nĐịa chỉ: ${order.deliveryAddress}\n\nSản phẩm:\n${order.items.map(item => `- ${item.bookTitle} x${item.quantity}: $${(item.price * item.quantity).toFixed(2)}`).join('\n')}\n\nTổng: $${order.totalAmount.toFixed(2)}`);
+    const handleView = async (order: Order) => {
+        try {
+            // Fetch full order details
+            const response = await orderService.getById(order.id);
+            setSelectedOrder(response.data || response);
+            setIsModalOpen(true);
+        } catch (error) {
+            console.error('Error fetching order details:', error);
+            // Fallback to showing basic order info
+            setSelectedOrder(order);
+            setIsModalOpen(true);
+        }
     };
 
     const handleEdit = (order: Order) => {
         console.log('Edit order:', order);
+        // Implement edit functionality if needed
+    };
+
+    const handleStatusFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setStatusFilter(e.target.value);
+        setPagination(prev => ({ ...prev, page: 1 }));
     };
 
     const filteredOrders = orders.filter(
-        (order) =>
-            order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            order.customerName.toLowerCase().includes(searchTerm.toLowerCase())
+        (order) => {
+            const searchLower = searchTerm.toLowerCase();
+            const orderNumber = order.orderNumber || order.id || '';
+            const customerName = order.customerName || '';
+            
+            return (
+                orderNumber.toLowerCase().includes(searchLower) ||
+                customerName.toLowerCase().includes(searchLower)
+            );
+        }
     );
 
     return (
@@ -151,7 +183,7 @@ const OrdersPage: React.FC = () => {
                 <div className="bg-white p-4 rounded-lg shadow">
                     <p className="text-gray-500 text-sm">Đã giao</p>
                     <p className="text-2xl font-bold text-green-600">
-                        {orders.filter((o) => o.status === 'delivered').length}
+                        {orders.filter((o) => o.status === 'delivered' || o.status === 'completed').length}
                     </p>
                 </div>
             </div>
@@ -168,29 +200,72 @@ const OrdersPage: React.FC = () => {
                             className="bg-transparent border-none outline-none ml-2 w-full"
                         />
                     </div>
-                    <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select 
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={statusFilter}
+                        onChange={handleStatusFilterChange}
+                    >
                         <option value="">Tất cả trạng thái</option>
                         <option value="pending">Chờ xử lý</option>
                         <option value="processing">Đang xử lý</option>
                         <option value="shipped">Đang giao</option>
                         <option value="delivered">Đã giao</option>
+                        <option value="completed">Hoàn thành</option>
                         <option value="cancelled">Đã hủy</option>
                     </select>
                 </div>
             </div>
 
-            <Table
-                columns={columns}
-                data={filteredOrders}
-                onView={handleView}
-                onEdit={handleEdit}
-            />
+            {loading ? (
+                <div className="flex items-center justify-center h-64 bg-white rounded-lg shadow">
+                    <div className="text-lg text-gray-500">Đang tải dữ liệu...</div>
+                </div>
+            ) : (
+                <>
+                    <Table
+                        columns={columns}
+                        data={filteredOrders}
+                        onView={handleView}
+                        onEdit={handleEdit}
+                    />
 
-            <div className="mt-4 flex justify-between items-center">
-                <p className="text-sm text-gray-600">
-                    Hiển thị {filteredOrders.length} trong tổng số {orders.length} đơn hàng
-                </p>
-            </div>
+                    <div className="mt-4 flex justify-between items-center">
+                        <p className="text-sm text-gray-600">
+                            Hiển thị {filteredOrders.length} trong tổng số {pagination.total} đơn hàng
+                        </p>
+                        {pagination.total > pagination.pageSize && (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                                    disabled={pagination.page === 1}
+                                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                                >
+                                    Trước
+                                </button>
+                                <span className="px-4 py-2">
+                                    Trang {pagination.page} / {Math.ceil(pagination.total / pagination.pageSize)}
+                                </span>
+                                <button
+                                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                                    disabled={pagination.page >= Math.ceil(pagination.total / pagination.pageSize)}
+                                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                                >
+                                    Sau
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </>
+            )}
+
+            <OrderDetailModal
+                order={selectedOrder}
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setSelectedOrder(null);
+                }}
+            />
         </div>
     );
 };

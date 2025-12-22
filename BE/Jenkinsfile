@@ -3,7 +3,7 @@ pipeline {
 
     environment {
 
-        SERVER_IP    = '192.168.0.102'
+        SERVER_HOST  = 'NQ.local'  // mDNS hostname, tự động resolve IP khi đổi WiFi
         
         REMOTE_USER  = 'jenkins' 
         
@@ -12,7 +12,7 @@ pipeline {
         REGISTRY_ID  = 'docker-registry'
 
         // --- CẤU HÌNH DOCKER ---
-        REGISTRY_URL = '192.168.0.102:5000'
+        REGISTRY_URL = 'NQ.local:5000'  // Dùng mDNS cho Registry
         IMAGE_NAME   = 'bookstore-backend'
         IMAGE_TAG    = "v${BUILD_NUMBER}"
         
@@ -50,37 +50,35 @@ pipeline {
             steps {
                 sshagent(credentials: [SSH_CRED_ID]) {
                     script {
-                        echo "--- Bắt đầu Deploy sang ${SERVER_IP} ---"
+                        echo "--- Bắt đầu Deploy sang ${SERVER_HOST} ---"
                         
                         // Lấy user/pass registry để login trên máy Windows
                         withCredentials([usernamePassword(credentialsId: REGISTRY_ID, usernameVariable: 'D_USER', passwordVariable: 'D_PASS')]) {
                             
                             // 1. Login Docker trên Windows
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"echo ${D_PASS} | docker login ${REGISTRY_URL} -u ${D_USER} --password-stdin\""
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"echo ${D_PASS} | docker login ${REGISTRY_URL} -u ${D_USER} --password-stdin\""
 
-                            // 2. Stop & Remove container cũ (Dùng try-catch PowerShell để không lỗi nếu chưa có container)
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"try { docker stop ${IMAGE_NAME}; docker rm ${IMAGE_NAME} } catch {}; echo 'Cleaned old container'\""
+                            // 2. Backup docker-compose.yml hiện tại
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"cd ${COMPOSE_PATH}; Copy-Item docker-compose.yml docker-compose.yml.bak -Force\""
 
-                            // 3. Khởi động Infrastructure (DB, MinIO) bằng Docker Compose
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"cd ${COMPOSE_PATH}; docker compose up -d\""
+                            // 3. Update version trong docker-compose.yml
+                            def composeUpdateCmd = """
+                                cd ${COMPOSE_PATH};
+                                \\\$content = Get-Content docker-compose.yml -Raw;
+                                \\\$content = \\\$content -replace '${REGISTRY_URL}/${IMAGE_NAME}:v\\d+', '${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}';
+                                \\\$content | Set-Content docker-compose.yml;
+                                Write-Host 'Updated docker-compose.yml to version ${IMAGE_TAG}';
+                            """
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"${composeUpdateCmd}\""
 
-                            // 4. Pull Image mới nhất
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""
+                            // 4. Pull image mới từ registry
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"docker pull ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""
 
-                            // 5. Tìm tên Network (PowerShell syntax)
-                            def findNetworkCmd = "docker network ls --format '{{.Name}}' | Where-Object { \\\$_ -like '*bookstore*' } | Select-Object -First 1"
-                            def networkName = sh(script: "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"${findNetworkCmd}\"", returnStdout: true).trim()
-                            
-                            echo "Found Network: '${networkName}'"
-                            if (networkName == "") {
-                                error "Không tìm thấy Docker Network nào có tên chứa 'bookstore'. Hãy kiểm tra lại docker-compose!"
-                            }
+                            // 5. Restart backend service với image mới
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"cd ${COMPOSE_PATH}; docker compose up -d bookstore-api\""
 
-                            // 6. Chạy Container mới
-                            sh """ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} "docker run -d --name ${IMAGE_NAME} --network ${networkName} -e ASPNETCORE_ENVIRONMENT=Development -e 'ConnectionStrings__UsersDb=Server=bookstore-sqlserver;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;TrustServerCertificate=True' -e MinIO__Endpoint=minio:9000 -e MinIO__AccessKey=minioadmin -e MinIO__SecretKey=minioadmin123 -p 3030:8080 ${REGISTRY_URL}/${IMAGE_NAME}:${IMAGE_TAG}\""""
-                            
-                            // 7. Sleep và restart Nginx
-                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} \"Start-Sleep -Seconds 5; docker restart bookstore-nginx; docker ps --filter name=${IMAGE_NAME}\""
+                            // 6. Kiểm tra trạng thái và version
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_HOST} \"docker ps --filter name=bookstore-api --format 'table {{.Names}}\\t{{.Image}}\\t{{.Status}}'\""
                         }
                     }
                 }

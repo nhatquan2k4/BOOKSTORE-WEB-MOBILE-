@@ -59,9 +59,10 @@ public class MinIOService : IMinIOService
 
         await _minioClient.PutObjectAsync(putObjectArgs);
 
-        // Trả về tên file (để lưu vào DB) thay vì Full URL
-        // Frontend sẽ ghép với Endpoint MinIO sau, hoặc dùng GetPresignedUrl
-        return fileName; 
+        // Return relative path only (for ngrok compatibility)
+        // Frontend will prepend MINIO_BASE_URL
+        // MinIO structure: /{bucket}/{fileName} (NO /storage/ prefix!)
+        return $"/{bucket}/{fileName}";
     }
 
     public async Task DeleteFileAsync(string fileName, string? bucketName = null)
