@@ -3,22 +3,36 @@ import { API_ENDPOINTS } from '../constants';
 import type { User } from '../types';
 
 interface UserListResponse {
-    success: boolean;
-    data: User[];
-    total: number;
-    page: number;
-    pageSize: number;
+    success?: boolean;
+    data?: User[];
+    items?: User[];
+    totalCount?: number;
+    total?: number;
+    pageNumber?: number;
+    page?: number;
+    pageSize?: number;
 }
 
 interface UserResponse {
-    success: boolean;
+    success?: boolean;
     data: User;
-    message: string;
+    message?: string;
 }
 
 class UserService {
     async getAll(params?: { page?: number; pageSize?: number; role?: string; status?: string }) {
         const response = await apiClient.get<UserListResponse>(API_ENDPOINTS.USERS.LIST, { params });
+        return response.data;
+    }
+
+    async getPaged(params?: { pageNumber?: number; pageSize?: number; searchTerm?: string }) {
+        const response = await apiClient.get<UserListResponse>(API_ENDPOINTS.USERS.PAGED, { 
+            params: {
+                pageNumber: params?.pageNumber || 1,
+                pageSize: params?.pageSize || 10,
+                searchTerm: params?.searchTerm || undefined,
+            }
+        });
         return response.data;
     }
 

@@ -5,31 +5,25 @@ import {
     ShoppingCart,
     LayoutDashboard,
     Tag,
+    UserCircle,
+    Building2,
     BarChart3,
-    Settings,
-    LogOut
+    Settings
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
     isOpen: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
-    const location = useLocation();
-    const { logout } = useAuth();
-    const navigate = useNavigate();
-
-    const handleLogout = async () => {
-        await logout();
-        navigate('/login');
-    }; const menuItems = [
+    const location = useLocation(); const menuItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
         { icon: BookOpen, label: 'Quản lý sách', path: '/books' },
+        { icon: UserCircle, label: 'Quản lý tác giả', path: '/authors' },
+        { icon: Building2, label: 'Quản lý NXB', path: '/publishers' },
+        { icon: Tag, label: 'Quản lý thể loại', path: '/categories' },
         { icon: Users, label: 'Quản lý người dùng', path: '/users' },
         { icon: ShoppingCart, label: 'Quản lý đơn hàng', path: '/orders' },
-        { icon: Tag, label: 'Quản lý danh mục', path: '/categories' },
         { icon: BarChart3, label: 'Thống kê', path: '/statistics' },
         { icon: Settings, label: 'Cài đặt', path: '/settings' },
     ];
@@ -76,17 +70,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                         ))}
                     </ul>
                 </nav>
-
-                {/* Logout Button */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800">
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors w-full"
-                    >
-                        <LogOut size={20} />
-                        <span>Đăng xuất</span>
-                    </button>
-                </div>
             </aside>
         </>
     );

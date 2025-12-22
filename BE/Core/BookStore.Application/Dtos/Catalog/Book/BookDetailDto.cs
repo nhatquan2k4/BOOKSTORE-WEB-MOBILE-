@@ -16,6 +16,14 @@ namespace BookStore.Application.Dtos.Catalog.Book
         public string? Edition { get; set; }
         public int PageCount { get; set; }
         public bool IsAvailable { get; set; }
+        
+        // Pricing
+        public decimal? CurrentPrice { get; set; }
+        public decimal? DiscountPrice { get; set; }
+        
+        // Stock
+        public int? StockQuantity { get; set; }
+        
         public PublisherDto Publisher { get; set; } = null!;
         public BookFormatDto? BookFormat { get; set; }
         public List<AuthorDto> Authors { get; set; } = new();

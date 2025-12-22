@@ -17,17 +17,18 @@ namespace BookStore.API.Controllers.Category
         }
 
         /// <summary>
-        /// Lấy danh sách tất cả danh mục (hỗ trợ phân trang)
+        /// Lấy danh sách tất cả danh mục với phân trang
         /// </summary>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
+        public async Task<ActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
         {
             var allCategories = await _categoryService.GetAllAsync();
             
-            // Validate pagination parameters
-            if (pageNumber < 1) pageNumber = 1;
-            if (pageSize < 1) pageSize = 50;
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                allCategories = allCategories.Where(c => c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+            }
             
             var totalCount = allCategories.Count();
             var items = allCategories
@@ -38,9 +39,9 @@ namespace BookStore.API.Controllers.Category
             return Ok(new
             {
                 items,
+                totalCount,
                 pageNumber,
-                pageSize,
-                totalCount
+                pageSize
             });
         }
 

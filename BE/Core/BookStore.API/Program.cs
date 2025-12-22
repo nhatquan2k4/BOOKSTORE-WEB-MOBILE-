@@ -160,8 +160,7 @@ builder.Services.AddScoped<IPublisherRepository, PublisherRepository>();
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<IBookFormatRepository, BookFormatRepository>();
 builder.Services.AddScoped<IBookImageRepository, BookImageRepository>();
-// builder.Services.AddScoped<IBookFileRepository, BookFileRepository>();    // Uncomment khi đã tạo repository
-// builder.Services.AddScoped<IBookMetadataRepository, BookMetadataRepository>(); // Uncomment khi đã tạo repository
+builder.Services.AddScoped<IBookMetadataRepository, BookMetadataRepository>();
 
 
 builder.Services.AddScoped<IAuthorService, AuthorService>();

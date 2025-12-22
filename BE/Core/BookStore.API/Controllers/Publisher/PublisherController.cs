@@ -17,14 +17,32 @@ namespace BookStore.API.Controllers.Publisher
         }
 
         /// <summary>
-        /// Lấy danh sách tất cả nhà xuất bản
+        /// Lấy danh sách tất cả nhà xuất bản với phân trang
         /// </summary>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<PublisherDto>>> GetAll()
+        public async Task<ActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
         {
-            var publishers = await _publisherService.GetAllAsync();
-            return Ok(publishers);
+            var allPublishers = await _publisherService.GetAllAsync();
+            
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                allPublishers = allPublishers.Where(p => p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+            }
+            
+            var totalCount = allPublishers.Count();
+            var items = allPublishers
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+            
+            return Ok(new
+            {
+                items,
+                totalCount,
+                pageNumber,
+                pageSize
+            });
         }
 
         /// <summary>
