@@ -43,9 +43,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using BookStore.Infrastructure.Services;
-using BookStore.API.Services;
-using BookStore.API.Hubs;
+// using BookStore.Infrastructure.Services; // Commented out - namespace does not exist
+// using BookStore.API.Services; // Commented out - namespace does not exist
+// using BookStore.API.Hubs; // Commented out - namespace does not exist
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,7 +59,7 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSet
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
     ?? throw new InvalidOperationException("JWT Settings not configured");
 
-builder.Services.AddScoped<ISignalRService, SignalRService>();
+// builder.Services.AddScoped<ISignalRService, SignalRService>(); // Commented out - classes do not exist
 
 // Configure MinIO Settings
 builder.Services.Configure<MinIOSettings>(builder.Configuration.GetSection("MinIO"));
@@ -346,6 +346,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.UseStaticFiles();
 
-app.MapHub<NotificationHub>("/hubs/notifications");
+// app.MapHub<NotificationHub>("/hubs/notifications"); // Commented out - NotificationHub does not exist
 
 app.Run();
