@@ -17,8 +17,11 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { isLoading } = useAuth();
 
+  console.log('[Layout] isLoading:', isLoading);
+
   // Show loading screen while checking auth
   if (isLoading) {
+    console.log('[Layout] Showing loading screen');
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' }}>
         <ActivityIndicator size="large" color={colorScheme === 'dark' ? '#fff' : '#E24A4A'} />
@@ -26,6 +29,7 @@ function RootLayoutNav() {
     );
   }
 
+  console.log('[Layout] Rendering navigation');
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <NotificationProvider>
