@@ -216,30 +216,38 @@ export default function CheckoutScreen() {
             await cartService.clearCart();
             console.log('✅ Cart cleared');
             
-            // 2. Wait after clear
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // 2. Wait after clear (longer delay for backend to process)
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // 3. Add back only selected items
+            // 3. Add back only selected items ONE BY ONE with delays
             for (const item of selectedCartItems) {
               await cartService.addToCart({ 
                 bookId: item.bookId, 
                 quantity: item.quantity 
               });
               console.log(`✅ Added ${item.title} x${item.quantity} to cart`);
+              // Small delay between each add
+              await new Promise(resolve => setTimeout(resolve, 300));
             }
             
-            // 4. Wait longer for backend to process all additions
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // 4. Wait even longer for backend to fully process all additions
+            console.log('⏳ Waiting for backend to process cart updates...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
             console.log('✅ Cart prepared with selected items only');
             
             // 5. Verify cart has items
             const cart = await cartService.getMyCart();
+            console.log('📦 Reloaded cart:', cart);
             if (!cart || !cart.items || cart.items.length === 0) {
               throw new Error('Giỏ hàng trống sau khi chuẩn bị');
             }
             
+            if (cart.items.length !== selectedCartItems.length) {
+              console.warn(`⚠️ Cart item count mismatch: expected ${selectedCartItems.length}, got ${cart.items.length}`);
+            }
+            
             setServerCart(cart);
-            console.log('✅ Server cart verified and reloaded:', cart);
+            console.log('✅ Server cart verified and reloaded with', cart.items.length, 'items');
           } catch (err) {
             console.error('❌ Could not prepare cart for partial checkout:', err);
             throw new Error('Không thể chuẩn bị giỏ hàng');
