@@ -11,8 +11,8 @@
 // ====== LOCAL NETWORK ======
 // Thay IP này bằng IP máy tính của bạn (chạy `ipconfig` để xem)
 // Máy tính và điện thoại phải cùng WiFi
-export const API_BASE_URL = "http://192.168.0.102:5276"; // API backend (IP máy tính của bạn)
-export const MINIO_BASE_URL = "http://192.168.0.102:9000"; // MinIO storage
+export const API_BASE_URL = "https://tautologously-hyperconscious-carolyne.ngrok-free.dev"; // API backend (IP máy tính của bạn)
+export const MINIO_BASE_URL = "https://tautologously-hyperconscious-carolyne.ngrok-free.dev/storage"; // MinIO storage
 
 // ====== NGROK (nếu cần) ======
 // export const API_BASE_URL = "https://tautologously-hyperconscious-carolyne.ngrok-free.dev/api"; 
