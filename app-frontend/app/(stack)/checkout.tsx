@@ -193,31 +193,55 @@ export default function CheckoutScreen() {
         if (selectedCartItems) {
           console.log('🛒 Using selected items from cart:', selectedCartItems);
           
-          // Load server cart to prepare for partial checkout
+          // IMPORTANT: Khi có selected items, clear cart và add lại ONLY selected items
+          // Đây là cách đúng để backend chỉ checkout những items được chọn
           try {
-            const cart = await cartService.getMyCart();
-            if (cart && cart.items) {
+            console.log('🔄 Preparing cart for partial checkout...');
+            
+            // 0. First, get current cart and identify non-selected items
+            const currentCart = await cartService.getMyCart();
+            if (currentCart && currentCart.items && currentCart.items.length > 0) {
               const selectedBookIds = new Set(selectedCartItems.map((item: any) => item.bookId));
-              
-              // Identify non-selected items to save for restoration
-              const nonSelected = cart.items
+              const nonSelected = currentCart.items
                 .filter(item => !selectedBookIds.has(item.bookId))
                 .map(item => ({ bookId: item.bookId, quantity: item.quantity }));
               
-              setNonSelectedItems(nonSelected);
-              console.log('💾 Saved non-selected items for restoration:', nonSelected);
-              
-              // Remove non-selected items from server cart BEFORE checkout
               if (nonSelected.length > 0) {
-                console.log('🗑️ Temporarily removing non-selected items from server cart...');
-                for (const item of nonSelected) {
-                  await cartService.removeFromCart({ bookId: item.bookId });
-                }
-                console.log('✅ Non-selected items removed from server cart');
+                setNonSelectedItems(nonSelected);
+                console.log('💾 Saved non-selected items for later restoration:', nonSelected);
               }
             }
+            
+            // 1. Clear entire cart
+            await cartService.clearCart();
+            console.log('✅ Cart cleared');
+            
+            // 2. Wait after clear
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // 3. Add back only selected items
+            for (const item of selectedCartItems) {
+              await cartService.addToCart({ 
+                bookId: item.bookId, 
+                quantity: item.quantity 
+              });
+              console.log(`✅ Added ${item.title} x${item.quantity} to cart`);
+            }
+            
+            // 4. Wait longer for backend to process all additions
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log('✅ Cart prepared with selected items only');
+            
+            // 5. Verify cart has items
+            const cart = await cartService.getMyCart();
+            if (!cart || !cart.items || cart.items.length === 0) {
+              throw new Error('Giỏ hàng trống sau khi chuẩn bị');
+            }
+            
+            setServerCart(cart);
+            console.log('✅ Server cart verified and reloaded:', cart);
           } catch (err) {
-            console.warn('⚠️ Could not prepare cart for partial checkout:', err);
+            console.error('❌ Could not prepare cart for partial checkout:', err);
             throw new Error('Không thể chuẩn bị giỏ hàng');
           }
         } else {

@@ -27,8 +27,8 @@ namespace BookStore.Application.Services.Checkout
         // Shipping fee mặc định (có thể config từ appsettings)
         private const decimal DEFAULT_SHIPPING_FEE = 30000m; // 30,000 VND
 
-        // Warehouse mặc định - Phahasa Warehouse (Hà Nội)
-        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("08d381e0-b0cf-426f-a5f4-430c63f3a552");
+        // Warehouse mặc định - Khớp với database thực tế (StockItems table)
+        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("11EDB44C-791B-43F1-B69C-56A2E3178425");
 
         public CheckoutService(
             ICartService cartService,
@@ -90,22 +90,29 @@ namespace BookStore.Application.Services.Checkout
             var itemValidations = new List<CheckoutItemValidationDto>();
 
             // Lấy cart
+            _logger.LogInformation($"🛒 Validating checkout for user {userId}");
             var cart = await _cartService.GetActiveCartByUserIdAsync(userId);
 
             if (cart == null || !cart.Items.Any())
             {
+                _logger.LogWarning($"⚠️ Cart is empty for user {userId}");
                 return CheckoutMapper.ToValidationFailure(
                     new List<string> { "Giỏ hàng trống" }
                 );
             }
 
+            _logger.LogInformation($"📦 Found {cart.Items.Count} items in cart");
+
             // Validate từng item
             foreach (var item in cart.Items)
             {
+                _logger.LogInformation($"🔍 Validating item: BookId={item.BookId}, Title='{item.BookTitle}', Qty={item.Quantity}");
+                
                 var book = await _bookRepository.GetByIdAsync(item.BookId);
 
                 if (book == null)
                 {
+                    _logger.LogWarning($"⚠️ Book not found: {item.BookId}");
                     errorMessages.Add($"Sách '{item.BookTitle}' không tồn tại");
                     itemValidations.Add(item.ToItemValidationDto(false, 0, "Sách không tồn tại"));
                     continue;
@@ -475,20 +482,23 @@ namespace BookStore.Application.Services.Checkout
             try
             {
                 // Chỉ lấy stock từ warehouse mặc định (đồng bộ với reserve logic)
+                _logger.LogInformation($"🔍 Checking stock for book {bookId} in warehouse {DEFAULT_WAREHOUSE_ID}");
+                
                 var stockItem = await _stockItemService.GetStockByBookAndWarehouseAsync(bookId, DEFAULT_WAREHOUSE_ID);
 
                 if (stockItem == null)
                 {
-                    _logger.LogWarning($"No stock found for book {bookId} in warehouse {DEFAULT_WAREHOUSE_ID}");
+                    _logger.LogWarning($"⚠️ No stock found for book {bookId} in warehouse {DEFAULT_WAREHOUSE_ID}");
                     return 0;
                 }
 
                 // Trả về available quantity = onHand - reserved
+                _logger.LogInformation($"📦 Stock for book {bookId}: OnHand={stockItem.QuantityOnHand}, Reserved={stockItem.ReservedQuantity}, Available={stockItem.AvailableQuantity}");
                 return stockItem.AvailableQuantity;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error getting available stock for book {bookId}");
+                _logger.LogError(ex, $"❌ Error getting available stock for book {bookId}");
                 return 0;
             }
         }
