@@ -127,12 +127,53 @@ namespace BookStore.API.Controllers.Order
         [HttpPost]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto dto)
         {
-            var userId = GetCurrentUserId();
-            if (dto.UserId != userId && !User.IsInRole("Admin"))
-                return Forbid();
+            try
+            {
+                _logger.LogInformation("[OrdersController] ===== BẮT ĐẦU TẠO ĐƠN HÀNG =====");
+                _logger.LogInformation($"[OrdersController] User from token: {User?.Identity?.Name}");
+                _logger.LogInformation($"[OrdersController] UserId from dto: {dto.UserId}");
+                _logger.LogInformation($"[OrdersController] Number of items: {dto.Items?.Count ?? 0}");
+                
+                if (dto.Items != null)
+                {
+                    foreach (var item in dto.Items)
+                    {
+                        _logger.LogInformation($"[OrdersController] Item: BookId={item.BookId}, Qty={item.Quantity}, Price={item.UnitPrice}");
+                    }
+                }
 
-            var order = await _orderService.CreateOrderAsync(dto);
-            return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, order);
+                var userId = GetCurrentUserId();
+                _logger.LogInformation($"[OrdersController] Current UserId from JWT: {userId}");
+                
+                if (dto.UserId != userId && !User.IsInRole("Admin"))
+                {
+                    _logger.LogWarning($"[OrdersController] Forbidden: dto.UserId ({dto.UserId}) != JWT userId ({userId})");
+                    return Forbid();
+                }
+
+                var order = await _orderService.CreateOrderAsync(dto);
+                
+                _logger.LogInformation($"[OrdersController] ✅ Order created successfully: {order.OrderNumber}");
+                
+                return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, order);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[OrdersController] ❌ Error creating order");
+                _logger.LogError($"[OrdersController] Error message: {ex.Message}");
+                _logger.LogError($"[OrdersController] Stack trace: {ex.StackTrace}");
+                
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError($"[OrdersController] Inner exception: {ex.InnerException.Message}");
+                }
+                
+                return StatusCode(500, new { 
+                    message = ex.Message,
+                    error = "Internal server error",
+                    details = ex.InnerException?.Message
+                });
+            }
         }
 
         // POST: api/orders/from-cart

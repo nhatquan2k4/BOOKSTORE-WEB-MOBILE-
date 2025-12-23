@@ -90,64 +90,98 @@ namespace BookStore.Application.Services.Ordering
 
         public async Task<OrderDto> CreateOrderAsync(CreateOrderDto dto)
         {
-            // Validate items
-            Guard.Against(dto.Items == null || !dto.Items.Any(), "Đơn hàng phải có ít nhất 1 sản phẩm");
-
-            // Create OrderAddress
-            var orderAddress = new OrderAddress
+            try
             {
-                Id = Guid.NewGuid(),
-                RecipientName = dto.Address.RecipientName,
-                PhoneNumber = dto.Address.PhoneNumber,
-                Province = dto.Address.Province,
-                District = dto.Address.District,
-                Ward = dto.Address.Ward,
-                Street = dto.Address.Street,
-                Note = dto.Address.Note
-            };
+                _logger.LogInformation("[OrderService] ===== START CREATE ORDER =====");
+                _logger.LogInformation($"[OrderService] UserId: {dto.UserId}");
+                _logger.LogInformation($"[OrderService] Items count: {dto.Items?.Count ?? 0}");
+                _logger.LogInformation($"[OrderService] Address: {dto.Address?.RecipientName} - {dto.Address?.PhoneNumber}");
+                
+                // Validate items
+                Guard.Against(dto.Items == null || !dto.Items.Any(), "Đơn hàng phải có ít nhất 1 sản phẩm");
 
-            // Calculate total
-            decimal totalAmount = dto.Items!.Sum(item => item.UnitPrice * item.Quantity);
-            decimal discountAmount = 0;
-
-            // Create Order
-            var order = new Order
-            {
-                Id = Guid.NewGuid(),
-                UserId = dto.UserId,
-                OrderNumber = GenerateOrderNumber(),
-                Status = "Pending",
-                TotalAmount = totalAmount,
-                DiscountAmount = discountAmount,
-                CreatedAt = DateTime.UtcNow,
-                AddressId = orderAddress.Id,
-                Address = orderAddress,
-                CouponId = dto.CouponId
-            };
-
-            // Add OrderItems
-            foreach (var itemDto in dto.Items!)
-            {
-                var book = await _bookRepository.GetByIdAsync(itemDto.BookId);
-                Guard.Against(book == null, $"Sách với ID {itemDto.BookId} không tồn tại");
-
-                order.Items.Add(new OrderItem
+                // Create OrderAddress
+                var orderAddress = new OrderAddress
                 {
                     Id = Guid.NewGuid(),
-                    OrderId = order.Id,
-                    BookId = itemDto.BookId,
-                    Quantity = itemDto.Quantity,
-                    UnitPrice = itemDto.UnitPrice
-                });
+                    RecipientName = dto.Address.RecipientName,
+                    PhoneNumber = dto.Address.PhoneNumber,
+                    Province = dto.Address.Province,
+                    District = dto.Address.District,
+                    Ward = dto.Address.Ward,
+                    Street = dto.Address.Street,
+                    Note = dto.Address.Note
+                };
+                
+                _logger.LogInformation($"[OrderService] OrderAddress created: {orderAddress.Id}");
+
+                // Calculate total
+                decimal totalAmount = dto.Items!.Sum(item => item.UnitPrice * item.Quantity);
+                decimal discountAmount = 0;
+
+                // Create Order
+                var order = new Order
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = dto.UserId,
+                    OrderNumber = GenerateOrderNumber(),
+                    Status = "Pending",
+                    TotalAmount = totalAmount,
+                    DiscountAmount = discountAmount,
+                    CreatedAt = DateTime.UtcNow,
+                    AddressId = orderAddress.Id,
+                    Address = orderAddress,
+                    CouponId = dto.CouponId
+                };
+                
+                _logger.LogInformation($"[OrderService] Order created: {order.OrderNumber}, Total: {totalAmount}");
+
+                // Add OrderItems
+                foreach (var itemDto in dto.Items!)
+                {
+                    _logger.LogInformation($"[OrderService] Processing item: BookId={itemDto.BookId}");
+                    
+                    var book = await _bookRepository.GetByIdAsync(itemDto.BookId);
+                    
+                    if (book == null)
+                    {
+                        _logger.LogError($"[OrderService] ❌ Book not found: {itemDto.BookId}");
+                        Guard.Against(true, $"Sách với ID {itemDto.BookId} không tồn tại");
+                    }
+                    
+                    _logger.LogInformation($"[OrderService] ✅ Book found: {book!.Title}");
+
+                    order.Items.Add(new OrderItem
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderId = order.Id,
+                        BookId = itemDto.BookId,
+                        Quantity = itemDto.Quantity,
+                        UnitPrice = itemDto.UnitPrice
+                    });
+                }
+                
+                _logger.LogInformation($"[OrderService] Total OrderItems: {order.Items.Count}");
+
+                // Save to database
+                _logger.LogInformation("[OrderService] Saving to database...");
+                await _orderRepository.AddAsync(order);
+                await _orderRepository.SaveChangesAsync();
+
+                _logger.LogInformation($"[OrderService] ✅✅✅ Order saved successfully: {order.OrderNumber} for user {dto.UserId}");
+
+                return order.ToDto();
             }
-
-            // Save to database
-            await _orderRepository.AddAsync(order);
-            await _orderRepository.SaveChangesAsync();
-
-            _logger.LogInformation($"Order created: {order.OrderNumber} for user {dto.UserId}");
-
-            return order.ToDto();
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[OrderService] ❌❌❌ Error in CreateOrderAsync");
+                _logger.LogError($"[OrderService] Error details: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError($"[OrderService] Inner exception: {ex.InnerException.Message}");
+                }
+                throw; // Re-throw to let controller handle it
+            }
         }
 
         public async Task<OrderDto> CreateOrderFromCartAsync(Guid userId, CreateOrderAddressDto address, Guid? couponId = null)

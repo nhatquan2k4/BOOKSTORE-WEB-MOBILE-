@@ -454,7 +454,7 @@ export default function AllBooksPage() {
             <Button 
               onClick={() => { 
                 setSearchQuery(""); 
-                setSelectedCategory("all"); 
+                setSelectedCategoryId("all"); 
                 setPriceRange("all"); 
                 setCurrentPage(1); 
               }} 

@@ -39,10 +39,10 @@ export const isPhysicalOrder = (order: OrderDto): boolean => {
   }
   
   // Kiểm tra xem có địa chỉ cụ thể không
-  const hasRealAddress = order.address.street && 
+  const hasRealAddress = !!(order.address.street && 
                         order.address.street.trim().length > 5 &&
                         !order.address.street.toLowerCase().includes('digital') &&
-                        !order.address.street.toLowerCase().includes('online');
+                        !order.address.street.toLowerCase().includes('online'));
   
   return hasRealAddress;
 };

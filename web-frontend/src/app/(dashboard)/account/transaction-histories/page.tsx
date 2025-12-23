@@ -91,15 +91,15 @@ export default function TransactionHistoriesPage() {
       try {
         setLoading(true);
         setError(null);
-        const result = await orderService.getMyOrders(1, 100);
+        const result = await orderService.getMyOrders({ pageNumber: 1, pageSize: 100 });
         
         // Map OrderDto to Transaction
         const txns: Transaction[] = result.items.map((order: OrderDto) => ({
           id: order.id,
           date: order.createdAt,
           type: order.status === 'Cancelled' || order.status === 'Refunded' ? 'refund' : 'order',
-          description: `Đơn hàng ${order.id}`,
-          amount: order.status === 'Cancelled' || order.status === 'Refunded' ? order.totalPrice : -order.totalPrice,
+          description: `Đơn hàng ${order.orderNumber}`,
+          amount: order.status === 'Cancelled' || order.status === 'Refunded' ? order.finalAmount : -order.finalAmount,
           status: order.status === 'Delivered' || order.status === 'Completed' ? 'completed' : 
                  order.status === 'Cancelled' || order.status === 'Refunded' ? 'failed' : 'pending',
           orderId: order.id,

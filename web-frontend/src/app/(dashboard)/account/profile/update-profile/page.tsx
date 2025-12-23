@@ -121,7 +121,6 @@ export default function UpdateProfilePage() {
       const payload: UpdateUserProfileDto = {
         fullName: form.fullName,
         phoneNumber: form.phoneNumber,
-        avatarUrl: currentAvatarUrl,
       };
 
       const res = await userProfileService.updateMyProfile(payload);

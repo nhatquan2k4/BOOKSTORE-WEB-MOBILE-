@@ -140,6 +140,27 @@ export default function CheckoutPage() {
     setIsProcessing(true);
     
     try {
+        // --- Validation trước khi gửi ---
+        if (!userId) {
+            alert('Vui lòng đăng nhập để tiếp tục');
+            router.push('/login');
+            setIsProcessing(false);
+            return;
+        }
+
+        if (cartItems.length === 0) {
+            alert('Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi thanh toán.');
+            router.push('/cart');
+            setIsProcessing(false);
+            return;
+        }
+
+        if (!formData.fullName || !formData.phone || !formData.city) {
+            alert('Vui lòng điền đầy đủ thông tin giao hàng (Họ tên, Số điện thoại, Tỉnh/Thành phố)');
+            setIsProcessing(false);
+            return;
+        }
+
         // --- 1. Tạo Payload tạo đơn hàng (PascalCase for .NET backend) ---
         const orderPayload = {
             UserId: userId, // Backend will override this with JWT token user ID
@@ -152,22 +173,34 @@ export default function CheckoutPage() {
                 RecipientName: formData.fullName,
                 PhoneNumber: formData.phone,
                 Province: formData.city,
-                District: formData.district,
-                Ward: formData.ward,
-                Street: formData.address || "Mặc định",
-                Note: formData.note
+                District: formData.district || '',
+                Ward: formData.ward || '',
+                Street: formData.address || "Chưa cung cấp",
+                Note: formData.note || ''
             },
             CouponId: null
         };
 
+        console.log('[CHECKOUT] User ID:', userId);
+        console.log('[CHECKOUT] Số lượng items:', cartItems.length);
+        console.log('[CHECKOUT] Payment method:', paymentMethod);
         console.log('[CHECKOUT] Payload gửi lên backend:', JSON.stringify(orderPayload, null, 2));
+        
+        // Validate BookId format
+        const invalidItems = cartItems.filter(item => !item.bookId || item.bookId.length !== 36);
+        if (invalidItems.length > 0) {
+            console.error('[CHECKOUT] Invalid BookId detected:', invalidItems);
+            alert('Có sản phẩm không hợp lệ trong giỏ hàng. Vui lòng xóa và thêm lại.');
+            setIsProcessing(false);
+            return;
+        }
 
         // --- 2. Gọi API Tạo Đơn Hàng Thật ---
         const createdOrder = await orderService.createOrder(orderPayload);
         console.log('[CHECKOUT] Response từ backend:', createdOrder);
         
         // Lấy thông tin thật từ Server trả về (hỗ trợ nhiều format response)
-        const realOrderId = createdOrder.orderNumber || createdOrder.id || createdOrder.orderId;
+        const realOrderId = createdOrder.orderNumber || createdOrder.id;
         const realTotalAmount = createdOrder.finalAmount || createdOrder.totalAmount || total;
 
         if (!realOrderId) {
@@ -193,7 +226,8 @@ export default function CheckoutPage() {
         }
 
     } catch (error: any) {
-        console.error('[CHECKOUT] Lỗi đặt hàng:', error);
+        console.error('[CHECKOUT] ===== LỖI ĐẶT HÀNG =====');
+        console.error('[CHECKOUT] Error object:', error);
         
         // Log chi tiết error
         if (error && typeof error === 'object') {
@@ -203,6 +237,12 @@ export default function CheckoutPage() {
                 statusCode: error.statusCode || 'N/A',
                 errors: error.errors || null,
                 response: error.response?.data || null,
+                responseStatus: error.response?.status || 'N/A',
+                config: error.config ? {
+                    url: error.config.url,
+                    method: error.config.method,
+                    data: error.config.data
+                } : null,
                 stack: error.stack || 'No stack'
             });
         } else {
@@ -210,14 +250,55 @@ export default function CheckoutPage() {
         }
         
         let errorMessage = 'Không thể tạo đơn hàng. Vui lòng thử lại.';
+        let errorDetails = '';
         
         // Xử lý các loại lỗi khác nhau
-        if (error?.statusCode === 400 && error?.errors) {
+        if (error?.statusCode === 500 || error?.response?.status === 500) {
+            // Internal Server Error
+            errorMessage = 'Lỗi từ máy chủ (500).';
+            
+            const serverError = error?.response?.data?.message || error?.message;
+            if (serverError) {
+                if (serverError.includes('không tồn tại')) {
+                    errorDetails = 'Có sản phẩm trong giỏ hàng không còn tồn tại. Vui lòng kiểm tra lại giỏ hàng.';
+                } else if (serverError.includes('Guid')) {
+                    errorDetails = 'Dữ liệu không hợp lệ. Vui lòng xóa giỏ hàng và thêm lại sản phẩm.';
+                } else {
+                    errorDetails = serverError;
+                }
+            } else {
+                errorDetails = 'Vui lòng liên hệ quản trị viên hoặc thử lại sau.';
+            }
+            
+            // Suggest actions
+            console.warn('[CHECKOUT] 💡 Các giải pháp có thể thử:');
+            console.warn('1. Kiểm tra xem backend có đang chạy không');
+            console.warn('2. Kiểm tra database connection');
+            console.warn('3. Xem backend logs để biết lỗi cụ thể');
+            console.warn('4. Xóa giỏ hàng và thêm lại sản phẩm');
+            console.warn('5. Đăng xuất và đăng nhập lại');
+            
+        } else if (error?.statusCode === 400 && error?.errors) {
             // Validation errors từ backend
             const validationErrors = Object.entries(error.errors)
                 .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
                 .join('\n');
-            errorMessage = `Lỗi dữ liệu:\n${validationErrors}`;
+            errorMessage = 'Lỗi dữ liệu:';
+            errorDetails = validationErrors;
+        } else if (error?.statusCode === 401 || error?.response?.status === 401) {
+            // Unauthorized
+            errorMessage = 'Phiên đăng nhập hết hạn.';
+            errorDetails = 'Vui lòng đăng nhập lại.';
+            setTimeout(() => {
+                router.push('/login');
+            }, 2000);
+        } else if (error?.statusCode === 403 || error?.response?.status === 403) {
+            // Forbidden
+            errorMessage = 'Bạn không có quyền thực hiện hành động này.';
+        } else if (error?.statusCode === 404 || error?.response?.status === 404) {
+            // Not Found
+            errorMessage = 'Không tìm thấy dữ liệu.';
+            errorDetails = 'Một số sản phẩm có thể đã bị xóa. Vui lòng kiểm tra lại giỏ hàng.';
         } else if (error?.response?.data?.message) {
             // Axios error với message từ backend
             errorMessage = error.response.data.message;
@@ -225,7 +306,8 @@ export default function CheckoutPage() {
             errorMessage = error.message;
         }
         
-        alert(errorMessage);
+        const fullMessage = errorDetails ? `${errorMessage}\n\n${errorDetails}` : errorMessage;
+        alert(fullMessage);
         setIsProcessing(false);
     }
   };
