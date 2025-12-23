@@ -145,11 +145,9 @@ namespace BookStore.API.Controllers.Order
                 var userId = GetCurrentUserId();
                 _logger.LogInformation($"[OrdersController] Current UserId from JWT: {userId}");
                 
-                if (dto.UserId != userId && !User.IsInRole("Admin"))
-                {
-                    _logger.LogWarning($"[OrdersController] Forbidden: dto.UserId ({dto.UserId}) != JWT userId ({userId})");
-                    return Forbid();
-                }
+                // Override UserId with JWT token user ID for security
+                dto.UserId = userId;
+                _logger.LogInformation($"[OrdersController] UserId overridden with JWT token userId: {userId}");
 
                 var order = await _orderService.CreateOrderAsync(dto);
                 

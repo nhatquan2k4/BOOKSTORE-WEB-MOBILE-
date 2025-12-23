@@ -64,6 +64,16 @@ export default function CheckoutPage() {
         // Kiểm tra backend có hoạt động không
         console.log('[CHECKOUT] API URL:', process.env.NEXT_PUBLIC_API_URL);
         
+        // Check token
+        const token = localStorage.getItem('accessToken');
+        console.log('[CHECKOUT] Token exists:', !!token);
+        if (!token) {
+          console.error('[CHECKOUT] ⚠️⚠️⚠️ NO TOKEN FOUND - User not logged in!');
+          alert('Vui lòng đăng nhập để tiếp tục');
+          router.push('/login');
+          return;
+        }
+        
         // 1. Get Profile
         try {
           const profileRes: any = await userProfileService.getMyProfile();
