@@ -1,6 +1,5 @@
 using BookStore.Application.Dtos.Payment;
 using BookStore.Application.IService.Payment;
-using BookStore.Application.IService.Ordering; // Sửa: Dùng OrderService thay vì Repository
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -13,58 +12,120 @@ namespace BookStore.API.Controllers.Payment
     public class PaymentController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
-        private readonly IOrderService _orderService; // Sử dụng Service để xử lý logic nghiệp vụ
-        private readonly ILogger<PaymentController> _logger;
 
-        // Cấu hình ngân hàng cho VietQR (Nên đưa vào AppSettings)
-        private const string BANK_ID = "MB"; 
-        private const string ACCOUNT_NO = "2230333906939"; 
-        private const string ACCOUNT_NAME = "HOANG THO TU"; 
-        private const string TEMPLATE = "compact";
-
-        public PaymentController(
-            IPaymentService paymentService, 
-            IOrderService orderService,
-            ILogger<PaymentController> logger)
+        public PaymentController(IPaymentService paymentService)
         {
             _paymentService = paymentService;
-            _orderService = orderService;
-            _logger = logger;
         }
 
-        #region QR Payment (VietQR / SePay)
+        // GET: api/payment/{id}
+        [HttpGet("{id:guid}")]
+        public async Task<IActionResult> GetPaymentById(Guid id)
+        {
+            var payment = await _paymentService.GetPaymentByIdAsync(id);
+            if (payment == null)
+                return NotFound(new { Message = "Không tìm thấy thanh toán" });
+
+            return Ok(payment);
+        }
+
+        // GET: api/payment/order/{orderId}
+        [HttpGet("order/{orderId:guid}")]
+        public async Task<IActionResult> GetPaymentByOrderId(Guid orderId)
+        {
+            var payment = await _paymentService.GetPaymentByOrderIdAsync(orderId);
+            if (payment == null)
+                return NotFound(new { Message = "Không tìm thấy thanh toán cho đơn hàng này" });
+
+            return Ok(payment);
+        }
+
+        // GET: api/payment/transaction/{transactionCode}
+        [HttpGet("transaction/{transactionCode}")]
+        public async Task<IActionResult> GetPaymentByTransactionCode(string transactionCode)
+        {
+            var payment = await _paymentService.GetPaymentByTransactionCodeAsync(transactionCode);
+            if (payment == null)
+                return NotFound(new { Message = "Không tìm thấy thanh toán với mã giao dịch này" });
+
+            return Ok(payment);
+        }
+
+        // GET: api/payment/by-provider
+        [HttpGet("by-provider")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetPaymentsByProvider(
+            [FromQuery] string provider,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var result = await _paymentService.GetPaymentsByProviderAsync(provider, pageNumber, pageSize);
+
+            return Ok(new
+            {
+                Items = result.Items,
+                TotalCount = result.TotalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)result.TotalCount / pageSize)
+            });
+        }
+
+        // GET: api/payment/by-status
+        [HttpGet("by-status")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetPaymentsByStatus(
+            [FromQuery] string status,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var result = await _paymentService.GetPaymentsByStatusAsync(status, pageNumber, pageSize);
+
+            return Ok(new
+            {
+                Items = result.Items,
+                TotalCount = result.TotalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)result.TotalCount / pageSize)
+            });
+        }
 
         // POST: api/payment/qr
         [HttpPost("qr")]
-        [AllowAnonymous] 
-        public IActionResult CreateQRPayment([FromBody] CreateQRRequest request)
+        public IActionResult CreateQRPayment([FromBody] CreateQRPaymentRequestDto dto)
         {
             try
             {
-                if (string.IsNullOrEmpty(request.OrderId) || request.Amount <= 0)
+                // Bank configuration
+                const string accountNumber = "2230333906939";
+                const string accountName = "HOANG THO TU";
+                const string bankCode = "970422"; // MB Bank
+                const string template = "compact";
+
+                // Validate input
+                if (dto.OrderId == Guid.Empty || dto.Amount <= 0)
                 {
                     return BadRequest(new { Message = "Thông tin thanh toán không hợp lệ" });
                 }
 
-                // Generate transfer content: MUA ORD-123...
-                var transferContent = request.Description ?? $"MUA {request.OrderId}";
-                
-                // Encode URL
-                var encodedContent = System.Net.WebUtility.UrlEncode(transferContent);
-                var encodedName = System.Net.WebUtility.UrlEncode(ACCOUNT_NAME);
+                // Generate transfer content
+                var transferContent = dto.Description ?? $"MUA {dto.OrderId}";
 
                 // Create VietQR URL
-                var qrCodeUrl = $"https://img.vietqr.io/image/{BANK_ID}-{ACCOUNT_NO}-{TEMPLATE}.png?amount={request.Amount}&addInfo={encodedContent}&accountName={encodedName}";
+                var qrCodeUrl = $"https://img.vietqr.io/image/{bankCode}-{accountNumber}-{template}.jpg?amount={dto.Amount}&addInfo={Uri.EscapeDataString(transferContent)}&accountName={Uri.EscapeDataString(accountName)}";
 
-                return Ok(new 
+                var response = new CreateQRPaymentResponseDto
                 {
                     Success = true,
                     QrCodeUrl = qrCodeUrl,
-                    OrderId = request.OrderId,
-                    AccountNumber = ACCOUNT_NO,
-                    AccountName = ACCOUNT_NAME,
+                    OrderId = dto.OrderId.ToString(),
+                    AccountNumber = accountNumber,
+                    AccountName = accountName,
                     TransferContent = transferContent
-                });
+                };
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -72,101 +133,7 @@ namespace BookStore.API.Controllers.Payment
             }
         }
 
-        // GET: api/payment/status/{orderId}
-        [HttpGet("status/{orderId}")]
-        [AllowAnonymous] // Cho phép check status không cần login (Frontend polling)
-        public async Task<IActionResult> CheckPaymentStatus(string orderId)
-        {
-            try
-            {
-                // Gọi OrderService để lấy thông tin
-                Guid? guidId = null;
-                if (Guid.TryParse(orderId, out var g)) guidId = g;
-
-                var order = guidId.HasValue 
-                    ? await _orderService.GetOrderByIdAsync(guidId.Value)
-                    : await _orderService.GetOrderByOrderNumberAsync(orderId);
-
-                if (order == null)
-                {
-                    return NotFound(new { Success = false, Message = "Không tìm thấy đơn hàng" });
-                }
-
-                return Ok(new 
-                { 
-                    Success = true, 
-                    Status = order.Status, // Trả về "Pending" hoặc "Paid"
-                    Message = "Lấy trạng thái thành công"
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Success = false, Message = ex.Message });
-            }
-        }
-
-        // --- NEW: API Webhook (Quan trọng để fix lỗi chưa Paid) ---
-        [HttpPost("webhook/sepay")]
-        [AllowAnonymous] // Bắt buộc AllowAnonymous để SePay/Postman gọi được
-        public async Task<IActionResult> SePayWebhook([FromBody] SePayWebhookDto data)
-        {
-            _logger.LogInformation($"[SePay Webhook] Received: {data.Content} - Amount: {data.TransferAmount}");
-
-            try
-            {
-                // 1. Tách mã đơn hàng từ nội dung chuyển khoản
-                // Ví dụ nội dung: "MUA ORD-20251223-123456"
-                string orderIdString = string.Empty;
-
-                var parts = data.Content.Split(' ');
-                foreach (var part in parts)
-                {
-                    // Tìm chuỗi bắt đầu bằng ORD- hoặc là UUID
-                    if (part.StartsWith("ORD-") || part.StartsWith("RENT-") || Guid.TryParse(part, out _))
-                    {
-                        orderIdString = part;
-                        break;
-                    }
-                }
-
-                if (string.IsNullOrEmpty(orderIdString)) orderIdString = data.ReferenceCode; 
-
-                if (!string.IsNullOrEmpty(orderIdString))
-                {
-                    // 2. Gọi Service để update trạng thái thành Paid
-                    await _orderService.ConfirmPaymentAsync(orderIdString, data.TransferAmount);
-                    return Ok(new { success = true, message = "Payment confirmed" });
-                }
-
-                return BadRequest(new { success = false, message = "Cannot find OrderId in content" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing SePay webhook");
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
-        }
-
-        #endregion
-
-        #region Payment Management API (Giữ nguyên logic cũ)
-
-        [HttpGet("{id:guid}")]
-        public async Task<IActionResult> GetPaymentById(Guid id)
-        {
-            var payment = await _paymentService.GetPaymentByIdAsync(id);
-            if (payment == null) return NotFound(new { Message = "Không tìm thấy thanh toán" });
-            return Ok(payment);
-        }
-
-        [HttpGet("order/{orderId:guid}")]
-        public async Task<IActionResult> GetPaymentByOrderId(Guid orderId)
-        {
-            var payment = await _paymentService.GetPaymentByOrderIdAsync(orderId);
-            if (payment == null) return NotFound(new { Message = "Không tìm thấy thanh toán" });
-            return Ok(payment);
-        }
-
+        // POST: api/payment
         [HttpPost]
         public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentDto dto)
         {
@@ -174,34 +141,122 @@ namespace BookStore.API.Controllers.Payment
             return CreatedAtAction(nameof(GetPaymentById), new { id = payment.Id }, payment);
         }
 
-        // ... Các API khác giữ nguyên như cũ, chỉ cần đảm bảo build không lỗi ...
+        // POST: api/payment/for-order/{orderId}
+        [HttpPost("for-order/{orderId:guid}")]
+        public async Task<IActionResult> CreatePaymentForOrder(
+            Guid orderId,
+            [FromBody] CreatePaymentForOrderDto? dto = null)
+        {
+            var provider = dto?.Provider ?? "VietQR";
+            var paymentMethod = dto?.PaymentMethod ?? "Online";
 
-        #endregion
+            var payment = await _paymentService.CreatePaymentForOrderAsync(orderId, provider, paymentMethod);
+            return CreatedAtAction(nameof(GetPaymentById), new { id = payment.Id }, payment);
+        }
+
+        // PUT: api/payment/status
+        [HttpPut("status")]
+        public async Task<IActionResult> UpdatePaymentStatus([FromBody] UpdatePaymentStatusDto dto)
+        {
+            var payment = await _paymentService.UpdatePaymentStatusAsync(dto);
+            return Ok(payment);
+        }
+
+        // POST: api/payment/callback
+        [HttpPost("callback")]
+        [AllowAnonymous] // Payment gateway callbacks don't have user authentication
+        public async Task<IActionResult> ProcessPaymentCallback([FromBody] PaymentCallbackDto dto)
+        {
+            try
+            {
+                var payment = await _paymentService.ProcessPaymentCallbackAsync(dto);
+                return Ok(new { Message = "Xử lý callback thanh toán thành công", Payment = payment });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = "Xử lý callback thanh toán thất bại", Error = ex.Message });
+            }
+        }
+
+        // PUT: api/payment/{id}/mark-success
+        [HttpPut("{id:guid}/mark-success")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> MarkPaymentAsSuccess(Guid id)
+        {
+            await _paymentService.MarkPaymentAsSuccessAsync(id);
+            return Ok(new { Message = "Đánh dấu thanh toán là thành công" });
+        }
+
+        // PUT: api/payment/{id}/mark-failed
+        [HttpPut("{id:guid}/mark-failed")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> MarkPaymentAsFailed(Guid id)
+        {
+            await _paymentService.MarkPaymentAsFailedAsync(id);
+            return Ok(new { Message = "Đánh dấu thanh toán là thất bại" });
+        }
+
+        // GET: api/payment/expired-pending
+        [HttpGet("expired-pending")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetExpiredPendingPayments([FromQuery] int minutesThreshold = 15)
+        {
+            var payments = await _paymentService.GetExpiredPendingPaymentsAsync(minutesThreshold);
+            return Ok(new
+            {
+                ExpiredPayments = payments,
+                Count = payments.Count,
+                ThresholdMinutes = minutesThreshold
+            });
+        }
+
+        // POST: api/payment/cancel-expired
+        [HttpPost("cancel-expired")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CancelExpiredPayments()
+        {
+            await _paymentService.CancelExpiredPaymentsAsync();
+            return Ok(new { Message = "Đã hủy các thanh toán đang chờ hết hạn" });
+        }
+
+        // GET: api/payment/statistics/by-provider
+        [HttpGet("statistics/by-provider")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetPaymentCountByProvider(
+            [FromQuery] DateTime? fromDate = null,
+            [FromQuery] DateTime? toDate = null)
+        {
+            var from = fromDate ?? DateTime.UtcNow.AddMonths(-1);
+            var to = toDate ?? DateTime.UtcNow;
+
+            var counts = await _paymentService.GetPaymentCountByProviderAsync(from, to);
+            return Ok(new
+            {
+                PaymentCounts = counts,
+                FromDate = from,
+                ToDate = to
+            });
+        }
+
+        // GET: api/payment/check-transaction/{transactionCode}
+        [HttpGet("check-transaction/{transactionCode}")]
+        public async Task<IActionResult> CheckTransactionExists(string transactionCode)
+        {
+            var exists = await _paymentService.IsTransactionCodeExistsAsync(transactionCode);
+            return Ok(new { Exists = exists, TransactionCode = transactionCode });
+        }
 
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim)) throw new UnauthorizedAccessException("Người dùng chưa đăng nhập");
-            return Guid.Parse(userIdClaim);
+            return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập"));
         }
     }
 
-    // --- DTO Classes ---
-    public class CreateQRRequest
+    // Helper DTOs for specific endpoints
+    public class CreatePaymentForOrderDto
     {
-        public string OrderId { get; set; } = string.Empty;
-        public decimal Amount { get; set; }
-        public string? Description { get; set; }
-    }
-
-    // DTO để hứng dữ liệu từ Postman/SePay
-    public class SePayWebhookDto
-    {
-        public string Gateway { get; set; } = string.Empty;
-        public string TransactionDate { get; set; } = string.Empty;
-        public string AccountNumber { get; set; } = string.Empty;
-        public decimal TransferAmount { get; set; }
-        public string Content { get; set; } = string.Empty;
-        public string ReferenceCode { get; set; } = string.Empty;
+        public string Provider { get; set; } = "VietQR";
+        public string PaymentMethod { get; set; } = "Online";
     }
 }

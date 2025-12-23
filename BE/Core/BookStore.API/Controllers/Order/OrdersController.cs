@@ -1,7 +1,6 @@
 using BookStore.Application.Dtos.Ordering;
 using BookStore.Application.IService.Ordering;
 using BookStore.Application.IService.Checkout;
-using BookStore.API.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,7 +10,7 @@ namespace BookStore.API.Controllers.Order
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class OrdersController : ApiControllerBase
+    public class OrdersController : ControllerBase
     {
         private readonly IOrderService _orderService;
         private readonly ICheckoutService _checkoutService;
@@ -129,8 +128,8 @@ namespace BookStore.API.Controllers.Order
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto dto)
         {
             var userId = GetCurrentUserId();
-            // Always use authenticated user's ID from JWT token, ignore dto.UserId
-            dto.UserId = userId;
+            if (dto.UserId != userId && !User.IsInRole("Admin"))
+                return Forbid();
 
             var order = await _orderService.CreateOrderAsync(dto);
             return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, order);
@@ -259,6 +258,11 @@ namespace BookStore.API.Controllers.Order
             return Ok(history);
         }
 
+        private Guid GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập"));
+        }
     }
 
     // Helper DTOs
