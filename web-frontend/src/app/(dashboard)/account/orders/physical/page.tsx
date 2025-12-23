@@ -183,7 +183,7 @@ export default function PhysicalOrdersPage() {
                         <div className="text-sm text-gray-600">
                             <p className="font-medium text-gray-900">Địa chỉ nhận hàng:</p>
                             <p>{order.address.recipientName} - {order.address.phoneNumber}</p>
-                            <p>{order.address.fullAddress}</p>
+                            <p>{order.address.addressLine}, {order.address.ward}, {order.address.district}, {order.address.city}</p>
                         </div>
                         
                         <div className="flex gap-2 w-full sm:w-auto">

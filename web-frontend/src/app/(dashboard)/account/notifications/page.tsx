@@ -106,7 +106,7 @@ export default function NotificationsPage() {
         // Transform API data to component format
         // Safely handle undefined or null items
         const items = notifResponse?.items || [];
-        const transformedNotifications: Notification[] = items.map((item) => ({
+        const transformedNotifications: Notification[] = items.map((item: any) => ({
           id: item.id,
           type: (item.type || 'system') as NotificationType,
           title: item.title,
@@ -161,7 +161,8 @@ export default function NotificationsPage() {
 
   const clearAll = async () => {
     try {
-      await notificationService.deleteAllRead();
+      // TODO: Implement deleteAllRead API endpoint
+      // await notificationService.deleteAllRead();
       setNotifications((prev) => prev.filter((n) => !n.isRead));
     } catch (error) {
       console.error('Failed to clear all:', error);

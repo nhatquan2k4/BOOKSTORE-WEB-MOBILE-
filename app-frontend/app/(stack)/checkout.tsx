@@ -272,6 +272,29 @@ export default function CheckoutScreen() {
     try {
       setProcessing(true);
 
+      // CRITICAL: Backend lấy items từ cart database
+      // Nếu "Mua ngay" (không từ cart), phải add vào cart trước
+      if (!fromCart && bookId) {
+        console.log('📦 Adding to cart before checkout:', bookId, 'x', qty);
+        try {
+          // Clear cart cũ để chỉ checkout sản phẩm được chọn
+          await cartService.clearCart();
+          console.log('✅ Cart cleared');
+          
+          // Add item mới vào cart
+          await cartService.addToCart({ bookId, quantity: qty });
+          console.log('✅ Added to cart successfully');
+          
+          // Wait a bit for backend to process
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (cartError: any) {
+          console.error('❌ Failed to add to cart:', cartError);
+          showSnackbar('Không thể thêm vào giỏ hàng', 'error');
+          setProcessing(false);
+          return;
+        }
+      }
+
       // Build address object matching CreateOrderAddressDto
       const checkoutRequest = {
         address: {
@@ -290,10 +313,13 @@ export default function CheckoutScreen() {
       };
 
       console.log('📦 Placing COD order:');
+      console.log('From cart:', fromCart);
       console.log('Selected Address:', JSON.stringify(selectedAddress, null, 2));
       console.log('Request:', JSON.stringify(checkoutRequest, null, 2));
 
       const result = await checkoutService.processCheckout(checkoutRequest);
+      
+      console.log('📦 Checkout result:', JSON.stringify(result, null, 2));
 
   if (result.success) {
         // Prefer in-app snackbar + notification instead of native alert
@@ -306,7 +332,10 @@ export default function CheckoutScreen() {
       }
     } catch (error: any) {
       console.error('❌ Error placing order:', error);
-      showSnackbar(error.message || 'Có lỗi xảy ra khi đặt hàng', 'error');
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      const errorMessage = error.response?.data?.message || error.message || 'Có lỗi xảy ra khi đặt hàng';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setProcessing(false);
     }
@@ -332,6 +361,29 @@ export default function CheckoutScreen() {
 
     try {
       setProcessing(true);
+
+      // CRITICAL: Backend lấy items từ cart database
+      // Nếu "Mua ngay" (không từ cart), phải add vào cart trước
+      if (!fromCart && bookId) {
+        console.log('💳 Adding to cart before checkout:', bookId, 'x', qty);
+        try {
+          // Clear cart cũ để chỉ checkout sản phẩm được chọn
+          await cartService.clearCart();
+          console.log('✅ Cart cleared');
+          
+          // Add item mới vào cart
+          await cartService.addToCart({ bookId, quantity: qty });
+          console.log('✅ Added to cart successfully');
+          
+          // Wait a bit for backend to process
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (cartError: any) {
+          console.error('❌ Failed to add to cart:', cartError);
+          showSnackbar('Không thể thêm vào giỏ hàng', 'error');
+          setProcessing(false);
+          return;
+        }
+      }
 
       // Build address object matching CreateOrderAddressDto
       const checkoutRequest = {
@@ -390,7 +442,10 @@ export default function CheckoutScreen() {
       }
     } catch (error: any) {
       console.error('❌ Error processing payment:', error);
-      showSnackbar(error.message || 'Có lỗi xảy ra khi thanh toán', 'error');
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      const errorMessage = error.response?.data?.message || error.message || 'Có lỗi xảy ra khi thanh toán';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setProcessing(false);
     }

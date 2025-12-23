@@ -26,6 +26,22 @@ interface ContactMethod {
   description: string;
 }
 
+interface Ticket {
+  id: string;
+  subject: string;
+  category: string;
+  status: 'open' | 'in-progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high';
+  createdDate: string;
+  lastUpdate: string;
+  messages?: Array<{
+    id?: string;
+    sender: string;
+    message: string;
+    time: string;
+  }>;
+}
+
 const mockTickets: Ticket[] = [
   {
     id: 'TKT-2024-001',
@@ -584,7 +600,7 @@ export default function CustomerSupportPage() {
               <CardContent className="p-6">
                 {/* Messages */}
                 <div className="space-y-4 mb-6">
-                  {selectedTicket.messages.map((msg, index) => (
+                  {selectedTicket.messages?.map((msg, index) => (
                     <div
                       key={index}
                       className={`flex ${
