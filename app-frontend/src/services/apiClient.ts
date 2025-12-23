@@ -44,7 +44,20 @@ apiClient.interceptors.response.use(
     return response.data;
   },
   async (error: AxiosError) => {
-    console.error('[API Response Error]', error.response?.status, error.message);
+    const url = error.config?.url || '';
+    const status = error.response?.status;
+    
+    // Danh sách endpoints mà 404 là bình thường (không cần log error)
+    const silent404Endpoints = [
+      '/api/UserProfile/addresses/default',
+      '/api/UserProfile/profile',
+    ];
+    
+    const isSilent404 = status === 404 && silent404Endpoints.some(endpoint => url.includes(endpoint));
+    
+    if (!isSilent404) {
+      console.error('[API Response Error]', status, error.message);
+    }
     
     if (error.response) {
       // Server responded with error status
@@ -54,14 +67,16 @@ apiClient.interceptors.response.use(
         case 401:
           // Unauthorized - need to login
           console.log('Unauthorized - API requires authentication');
-          console.log('URL:', error.config?.url);
+          console.log('URL:', url);
           // TODO: Handle logout and redirect
           break;
         case 403:
           console.log('Forbidden - no permission');
           break;
         case 404:
-          console.log('Not found');
+          if (!isSilent404) {
+            console.log('Not found');
+          }
           break;
         case 500:
           console.log('Internal server error');

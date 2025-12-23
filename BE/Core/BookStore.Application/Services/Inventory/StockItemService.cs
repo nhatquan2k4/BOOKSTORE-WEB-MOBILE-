@@ -209,8 +209,8 @@ namespace BookStore.Application.Services.Inventory
         {
             var stock = await _stockItemRepository.GetStockByBookAndWarehouseAsync(bookId, warehouseId);
             Guard.Against(stock == null, "Stock item not found");
-            
-            Guard.Against(stock!.ReservedQuantity < quantity, 
+
+            Guard.Against(stock!.ReservedQuantity < quantity,
                 $"Insufficient reserved quantity. Reserved: {stock.ReservedQuantity}, Requested: {quantity}");
 
             // Use ConfirmSale method instead of Decrease
@@ -229,5 +229,28 @@ namespace BookStore.Application.Services.Inventory
 
             return true;
         }
+
+        public async Task<bool> ReturnStockAsync(Guid bookId, Guid warehouseId, int quantity)
+        {
+            var stock = await _stockItemRepository.GetStockByBookAndWarehouseAsync(bookId, warehouseId);
+            Guard.Against(stock == null, "Stock item not found");
+
+            // Use Return method to return sold stock (refund/cancellation)
+            stock!.Return(quantity);
+            await _stockItemRepository.SaveChangesAsync();
+
+            // Log transaction for returned stock
+            await _transactionRepository.CreateTransactionAsync(
+                warehouseId,
+                bookId,
+                InventoryTransactionType.Inbound,
+                quantity, // Return back to stock
+                null,
+                $"Returned {quantity} items (order cancelled/refund)"
+            );
+
+            return true;
+        }
     }
 }
+

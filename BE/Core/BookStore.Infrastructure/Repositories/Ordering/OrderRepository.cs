@@ -19,7 +19,7 @@ namespace BookStore.Infrastructure.Repositories.Ordering
         public async Task<Order?> GetOrderWithDetailsAsync(Guid orderId)
         {
             return await _dbSet
-                .Include(o => o.Items).ThenInclude(i => i.Book)
+                .Include(o => o.Items).ThenInclude(i => i.Book).ThenInclude(b => b.Images)
                 .Include(o => o.Address)
                 .Include(o => o.PaymentTransaction!).ThenInclude(p => p.Refunds)
                 .Include(o => o.StatusLogs)
@@ -32,7 +32,7 @@ namespace BookStore.Infrastructure.Repositories.Ordering
         public async Task<Order?> GetByOrderNumberAsync(string orderNumber)
         {
             return await _dbSet
-                .Include(o => o.Items).ThenInclude(i => i.Book)
+                .Include(o => o.Items).ThenInclude(i => i.Book).ThenInclude(b => b.Images)
                 .Include(o => o.Address)
                 .Include(o => o.PaymentTransaction)
                 .FirstOrDefaultAsync(o => o.OrderNumber == orderNumber);
@@ -52,7 +52,7 @@ namespace BookStore.Infrastructure.Repositories.Ordering
 
             // Then apply includes, order, and pagination
             return await query
-                .Include(o => o.Items).ThenInclude(i => i.Book)
+                .Include(o => o.Items).ThenInclude(i => i.Book).ThenInclude(b => b.Images)
                 .Include(o => o.Address)
                 .Include(o => o.PaymentTransaction)
                 .OrderByDescending(o => o.CreatedAt)
@@ -77,7 +77,7 @@ namespace BookStore.Infrastructure.Repositories.Ordering
         {
             return await _dbSet
                 .Where(o => o.Status == "Paid")
-                .Include(o => o.Items).ThenInclude(i => i.Book)
+                .Include(o => o.Items).ThenInclude(i => i.Book).ThenInclude(b => b.Images)
                 .Include(o => o.Address)
                 .Include(o => o.User)
                 .OrderBy(o => o.PaidAt)
@@ -128,7 +128,7 @@ namespace BookStore.Infrastructure.Repositories.Ordering
         {
             return await _dbSet
                 .Where(o => o.Status == status)
-                .Include(o => o.Items).ThenInclude(i => i.Book)
+                .Include(o => o.Items).ThenInclude(i => i.Book).ThenInclude(b => b.Images)
                 .Include(o => o.Address)
                 .Include(o => o.User)
                 .OrderByDescending(o => o.CreatedAt)

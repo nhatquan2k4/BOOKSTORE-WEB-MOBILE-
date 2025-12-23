@@ -34,6 +34,7 @@ namespace BookStore.Application.IService.Inventory
         Task<bool> ReserveStockAsync(ReserveStockDto dto);
         Task<bool> ReleaseReservedStockAsync(Guid bookId, Guid warehouseId, int quantity);
         Task<bool> ConfirmSaleAsync(Guid bookId, Guid warehouseId, int quantity);
+        Task<bool> ReturnStockAsync(Guid bookId, Guid warehouseId, int quantity);
     }
 
     public interface IInventoryTransactionService

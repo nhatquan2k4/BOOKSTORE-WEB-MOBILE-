@@ -77,10 +77,18 @@ export default function CartScreen() {
 
   useEffect(() => {
     if (isFocused) {
-      loadServerCart();
+      console.log('🔄 Cart screen focused, reloading cart...');
+      // Clear selections when coming back (e.g., after checkout)
+      setSelectedItems(new Set());
+      // Add small delay to ensure any restore operations from checkout are complete
+      const timer = setTimeout(() => {
+        loadServerCart();
+      }, 100);
       setIsEditing(false);
+      return () => clearTimeout(timer);
     }
   }, [isFocused, loadServerCart]);
+
   // approximate bottom tab height used in BottomTabBar (70) + extra margins
   const tabBarApproxHeight = 90;
   const bottomOffset = insets.bottom + tabBarApproxHeight;
@@ -88,6 +96,23 @@ export default function CartScreen() {
   // Use server cart if available, fallback to local
   const items = serverCart?.items || [];
   const cartEmpty = items.length === 0;
+
+  // Cleanup selectedItems: remove bookIds that no longer exist in cart
+  useEffect(() => {
+    if (items.length > 0 && selectedItems.size > 0) {
+      const validBookIds = new Set(items.map(item => item.bookId));
+      const invalidSelections = Array.from(selectedItems).filter(bookId => !validBookIds.has(bookId));
+      
+      if (invalidSelections.length > 0) {
+        console.log('🧹 Cleaning up invalid selections:', invalidSelections);
+        setSelectedItems(prev => {
+          const next = new Set(prev);
+          invalidSelections.forEach(bookId => next.delete(bookId));
+          return next;
+        });
+      }
+    }
+  }, [items, selectedItems]);
 
   // Helper functions for selection
   const toggleSelect = (bookId: string) => {
@@ -119,7 +144,10 @@ export default function CartScreen() {
   const totalPrice = items.reduce((sum, item) => 
     selectedItems.has(item.bookId) ? sum + (item.bookPrice * item.quantity) : sum, 0
   );
-  const selectedRowCount = Array.from(selectedItems).length;
+  // Only count selected items that still exist in cart
+  const selectedRowCount = Array.from(selectedItems).filter(bookId => 
+    items.some(item => item.bookId === bookId)
+  ).length;
 
   // Update quantity on server
   const updateQuantity = async (bookId: string, newQty: number) => {
@@ -155,18 +183,30 @@ export default function CartScreen() {
     // Get selected items for checkout
     const checkoutItems = items
       .filter(item => selectedItems.has(item.bookId))
-      .map(item => ({
-        bookId: item.bookId,
-        title: item.bookTitle,
-        price: item.bookPrice,
-        quantity: item.quantity,
-        imageUrl: item.imageUrl
-      }));
+      .map(item => {
+        // Get image URL: try item.imageUrl first, then bookImages state, then placeholder
+        let imageUrl = item.imageUrl;
+        if (!imageUrl && bookImages[item.bookId]) {
+          imageUrl = bookImages[item.bookId];
+        }
+        if (!imageUrl) {
+          imageUrl = PLACEHOLDER_IMAGES.DEFAULT_BOOK;
+        }
+        
+        return {
+          bookId: item.bookId,
+          title: item.bookTitle,
+          price: item.bookPrice,
+          quantity: item.quantity,
+          imageUrl: imageUrl
+        };
+      });
 
     console.log('🛒 Proceeding to checkout with items:', checkoutItems);
     
-    // Navigate to checkout with fromCart flag
-    router.push('/(stack)/checkout?fromCart=true');
+    // Navigate to checkout with selected items as JSON
+    const itemsParam = encodeURIComponent(JSON.stringify(checkoutItems));
+    router.push(`/(stack)/checkout?fromCart=true&selectedItems=${itemsParam}`);
   };
 
   // Per-row component to handle slide-to-delete

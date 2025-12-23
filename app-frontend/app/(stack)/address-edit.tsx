@@ -79,18 +79,30 @@ export default function AddressEdit() {
         setIsDefault(address.isDefault);
       } else {
         // Add mode: check if first address
-        const defaultAddr = await addressService.getDefaultAddress();
-        if (!defaultAddr) {
-          // First address: pre-fill from profile
-          const profile = await userProfileService.getMyProfile();
-          if (profile.fullName) setName(profile.fullName);
-          if (profile.phoneNumber) setPhone(profile.phoneNumber);
-          setIsDefault(true); // first address is default
+        try {
+          const defaultAddr = await addressService.getDefaultAddress();
+          if (!defaultAddr) {
+            // First address: pre-fill from profile (if available)
+            try {
+              const profile = await userProfileService.getMyProfile();
+              if (profile?.fullName) setName(profile.fullName);
+              if (profile?.phoneNumber) setPhone(profile.phoneNumber);
+            } catch (profileError) {
+              console.log('⚠️ Could not load profile for pre-fill (not critical):', profileError);
+              // Ignore profile error - user can fill manually
+            }
+            setIsDefault(true); // first address is default
+          }
+        } catch (error) {
+          console.log('⚠️ Could not check default address:', error);
+          // If check fails, assume this might be first address
+          setIsDefault(true);
         }
         // else: not first address, leave fields empty
       }
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('❌ Failed to load data:', error);
+      Alert.alert('Lỗi', 'Không thể tải dữ liệu. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }

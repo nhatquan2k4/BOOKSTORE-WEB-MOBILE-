@@ -31,8 +31,21 @@ export default function CheckoutScreen() {
   const fromCart = params.fromCart === 'true';
   const bookId = params.bookId ? params.bookId.toString() : null;
   const qtyParam = params.qty ? Number(params.qty) : null;
+  
+  // Parse selected items from cart (if provided)
+  const selectedCartItems = useMemo(() => {
+    if (params.selectedItems && typeof params.selectedItems === 'string') {
+      try {
+        return JSON.parse(decodeURIComponent(params.selectedItems));
+      } catch (e) {
+        console.error('Failed to parse selectedItems:', e);
+        return null;
+      }
+    }
+    return null;
+  }, [params.selectedItems]);
 
-  console.log('🛒 Checkout params:', { fromCart, bookId, qty: qtyParam, allParams: params });
+  console.log('🛒 Checkout params:', { fromCart, bookId, qty: qtyParam, selectedItems: selectedCartItems, allParams: params });
 
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -46,8 +59,10 @@ export default function CheckoutScreen() {
   const [paymentInfo, setPaymentInfo] = useState<any>(null);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const [currentTransactionCode, setCurrentTransactionCode] = useState<string | null>(null);
-  // Keep last checkout items to allow restoring cart if user cancels QR
-  const [lastCheckoutItems, setLastCheckoutItems] = React.useState([] as Array<{ bookId: string; quantity: number }>);
+  // Keep non-selected items to restore after successful checkout (when items were only partially selected)
+  const [nonSelectedItems, setNonSelectedItems] = React.useState([] as Array<{ bookId: string; quantity: number }>);
+  // Flag to prevent cleanup effect from restoring when checkout is successful
+  const checkoutSuccessful = useRef(false);
   const qrModalAnim = useRef(new Animated.Value(0)).current;
 
   // Recipient info
@@ -101,7 +116,11 @@ export default function CheckoutScreen() {
 
   // Calculate subtotal based on checkout source
   const calculateSubtotal = () => {
-    if (fromCart && serverCart) {
+    if (fromCart && selectedCartItems) {
+      // Calculate total from selected items only
+      return selectedCartItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+    } else if (fromCart && serverCart) {
+      // Fallback: use entire cart if no selection provided
       return serverCart.totalAmount;
     } else if (book) {
       return book.price * qty;
@@ -115,6 +134,30 @@ export default function CheckoutScreen() {
   useEffect(() => {
     loadData();
   }, [bookId]);
+
+  // Cleanup: Restore non-selected items when leaving checkout screen without completing order
+  useEffect(() => {
+    return () => {
+      // This runs when component unmounts (user goes back)
+      // Only restore if checkout was NOT successful
+      if (nonSelectedItems.length > 0 && !checkoutSuccessful.current) {
+        console.log('🔙 User left checkout without completing, restoring non-selected items:', nonSelectedItems);
+        // Restore items asynchronously (don't block unmount)
+        (async () => {
+          try {
+            for (const item of nonSelectedItems) {
+              await cartService.addToCart({ bookId: item.bookId, quantity: item.quantity });
+            }
+            console.log('✅ Non-selected items restored on exit');
+          } catch (err) {
+            console.error('❌ Failed to restore non-selected items on exit:', err);
+          }
+        })();
+      } else if (checkoutSuccessful.current) {
+        console.log('✅ Checkout successful, skipping cleanup restore');
+      }
+    };
+  }, [nonSelectedItems]);
 
   // Reload addresses when coming back from address selection
   useFocusEffect(
@@ -146,38 +189,71 @@ export default function CheckoutScreen() {
       setLoading(true);
 
       if (fromCart) {
-        // Checkout from cart - load server cart
-        console.log('🛒 Loading server cart for checkout...');
-        try {
-          const cart = await cartService.getMyCart();
-          setServerCart(cart);
-          console.log('✅ Server cart loaded:', cart);
+        // Checkout from cart - check if we have selected items
+        if (selectedCartItems) {
+          console.log('🛒 Using selected items from cart:', selectedCartItems);
           
-          // Fetch images for items that don't have imageUrl
-          if (cart && cart.items) {
-            const imagesToFetch = cart.items.filter(item => !item.imageUrl);
-            if (imagesToFetch.length > 0) {
-              console.log(`🖼️ Fetching images for ${imagesToFetch.length} books in checkout...`);
+          // Load server cart to prepare for partial checkout
+          try {
+            const cart = await cartService.getMyCart();
+            if (cart && cart.items) {
+              const selectedBookIds = new Set(selectedCartItems.map((item: any) => item.bookId));
               
-              const imagePromises = imagesToFetch.map(async (item) => {
-                try {
-                  const coverDto = await bookService.getBookCover(item.bookId);
-                  if (coverDto?.imageUrl) {
-                    setBookImages(prev => ({ ...prev, [item.bookId]: coverDto.imageUrl }));
-                    console.log(`✅ Fetched image for ${item.bookId}`);
-                  }
-                } catch (err) {
-                  console.warn(`⚠️ Could not fetch image for ${item.bookId}`);
-                  setBookImages(prev => ({ ...prev, [item.bookId]: PLACEHOLDER_IMAGES.DEFAULT_BOOK }));
+              // Identify non-selected items to save for restoration
+              const nonSelected = cart.items
+                .filter(item => !selectedBookIds.has(item.bookId))
+                .map(item => ({ bookId: item.bookId, quantity: item.quantity }));
+              
+              setNonSelectedItems(nonSelected);
+              console.log('💾 Saved non-selected items for restoration:', nonSelected);
+              
+              // Remove non-selected items from server cart BEFORE checkout
+              if (nonSelected.length > 0) {
+                console.log('🗑️ Temporarily removing non-selected items from server cart...');
+                for (const item of nonSelected) {
+                  await cartService.removeFromCart({ bookId: item.bookId });
                 }
-              });
-              
-              await Promise.all(imagePromises);
+                console.log('✅ Non-selected items removed from server cart');
+              }
             }
+          } catch (err) {
+            console.warn('⚠️ Could not prepare cart for partial checkout:', err);
+            throw new Error('Không thể chuẩn bị giỏ hàng');
           }
-        } catch (cartErr: any) {
-          console.error('❌ Failed to fetch cart:', cartErr.message);
-          throw new Error('Không thể tải giỏ hàng');
+        } else {
+          // Fallback: load entire cart
+          console.log('🛒 Loading entire server cart for checkout...');
+          try {
+            const cart = await cartService.getMyCart();
+            setServerCart(cart);
+            console.log('✅ Server cart loaded:', cart);
+            
+            // Fetch images for items that don't have imageUrl
+            if (cart && cart.items) {
+              const imagesToFetch = cart.items.filter(item => !item.imageUrl);
+              if (imagesToFetch.length > 0) {
+                console.log(`🖼️ Fetching images for ${imagesToFetch.length} books in checkout...`);
+                
+                const imagePromises = imagesToFetch.map(async (item) => {
+                  try {
+                    const coverDto = await bookService.getBookCover(item.bookId);
+                    if (coverDto?.imageUrl) {
+                      setBookImages(prev => ({ ...prev, [item.bookId]: coverDto.imageUrl }));
+                      console.log(`✅ Fetched image for ${item.bookId}`);
+                    }
+                  } catch (err) {
+                    console.warn(`⚠️ Could not fetch image for ${item.bookId}`);
+                    setBookImages(prev => ({ ...prev, [item.bookId]: PLACEHOLDER_IMAGES.DEFAULT_BOOK }));
+                  }
+                });
+                
+                await Promise.all(imagePromises);
+              }
+            }
+          } catch (cartErr: any) {
+            console.error('❌ Failed to fetch cart:', cartErr.message);
+            throw new Error('Không thể tải giỏ hàng');
+          }
         }
       } else if (bookId) {
         // Buy-now checkout - load single book
@@ -258,15 +334,23 @@ export default function CheckoutScreen() {
       return;
     }
 
-    // Validate: must have either bookId (buy-now) or serverCart (cart checkout)
+    // Validate: must have either bookId (buy-now) or selectedCartItems/serverCart (cart checkout)
     if (!fromCart && !bookId) {
       showSnackbar('Không tìm thấy thông tin sản phẩm', 'error');
       return;
     }
 
-    if (fromCart && (!serverCart || serverCart.items.length === 0)) {
-      showSnackbar('Giỏ hàng trống', 'error');
-      return;
+    // If from cart, check if we have selected items OR server cart
+    if (fromCart) {
+      if (selectedCartItems) {
+        if (selectedCartItems.length === 0) {
+          showSnackbar('Không có sản phẩm nào được chọn', 'error');
+          return;
+        }
+      } else if (!serverCart || serverCart.items.length === 0) {
+        showSnackbar('Giỏ hàng trống', 'error');
+        return;
+      }
     }
 
     try {
@@ -292,16 +376,39 @@ export default function CheckoutScreen() {
       console.log('📦 Placing COD order:');
       console.log('Selected Address:', JSON.stringify(selectedAddress, null, 2));
       console.log('Request:', JSON.stringify(checkoutRequest, null, 2));
+      console.log('From cart?', fromCart, 'Selected items:', selectedCartItems?.length, 'Non-selected:', nonSelectedItems.length);
 
       const result = await checkoutService.processCheckout(checkoutRequest);
+      
+      console.log('📦 Checkout result:', JSON.stringify(result, null, 2));
 
-  if (result.success) {
+      if (result.success) {
+        console.log('✅ Order placed successfully!');
+        // Mark checkout as successful to prevent cleanup effect from restoring
+        checkoutSuccessful.current = true;
+        
+        // Restore non-selected items to cart (since backend clears entire cart)
+        if (nonSelectedItems && nonSelectedItems.length > 0) {
+          console.log('🔄 Restoring non-selected items to cart:', nonSelectedItems);
+          try {
+            for (const item of nonSelectedItems) {
+              await cartService.addToCart({ bookId: item.bookId, quantity: item.quantity });
+            }
+            console.log('✅ Non-selected items restored');
+            // Clear the state to prevent any issues
+            setNonSelectedItems([]);
+          } catch (err) {
+            console.error('❌ Failed to restore non-selected items:', err);
+          }
+        }
+        
         // Prefer in-app snackbar + notification instead of native alert
         showSnackbar(`Đặt hàng thành công — ${result.orderCode}`, 'success');
         addNotification({ type: 'order', title: 'Đặt hàng thành công', message: `Mã: ${result.orderCode}`, orderId: result.orderId });
         // Navigate back after short delay so user sees snackbar
         setTimeout(() => router.back(), 1200);
       } else {
+        console.log('❌ Order failed:', result.message);
         showSnackbar(result.message || 'Không thể đặt hàng. Vui lòng thử lại.', 'error');
       }
     } catch (error: any) {
@@ -319,15 +426,23 @@ export default function CheckoutScreen() {
       return;
     }
 
-    // Validate: must have either bookId (buy-now) or serverCart (cart checkout)
+    // Validate: must have either bookId (buy-now) or selectedCartItems/serverCart (cart checkout)
     if (!fromCart && !bookId) {
       showSnackbar('Không tìm thấy thông tin sản phẩm', 'error');
       return;
     }
 
-    if (fromCart && (!serverCart || serverCart.items.length === 0)) {
-      showSnackbar('Giỏ hàng trống', 'error');
-      return;
+    // If from cart, check if we have selected items OR server cart
+    if (fromCart) {
+      if (selectedCartItems) {
+        if (selectedCartItems.length === 0) {
+          showSnackbar('Không có sản phẩm nào được chọn', 'error');
+          return;
+        }
+      } else if (!serverCart || serverCart.items.length === 0) {
+        showSnackbar('Giỏ hàng trống', 'error');
+        return;
+      }
     }
 
     try {
@@ -360,19 +475,28 @@ export default function CheckoutScreen() {
 
       if (result.success && result.paymentInfo) {
         console.log('✅ Payment info received, showing QR modal');
+        // Mark checkout as successful to prevent cleanup effect from restoring
+        checkoutSuccessful.current = true;
+        
+        // Restore non-selected items to cart (since backend clears entire cart)
+        if (nonSelectedItems && nonSelectedItems.length > 0) {
+          console.log('🔄 Restoring non-selected items to cart:', nonSelectedItems);
+          try {
+            for (const item of nonSelectedItems) {
+              await cartService.addToCart({ bookId: item.bookId, quantity: item.quantity });
+            }
+            console.log('✅ Non-selected items restored');
+            // Clear the state to prevent any issues
+            setNonSelectedItems([]);
+          } catch (err) {
+            console.error('❌ Failed to restore non-selected items:', err);
+          }
+        }
+        
         // Show QR modal
         setPaymentInfo(result.paymentInfo);
         setCurrentOrderId(result.orderId || null);
         setCurrentTransactionCode(result.paymentInfo.transferContent || null); // Save transaction code
-        
-        // Save last checkout items for cart restore if cancelled
-        if (fromCart && serverCart) {
-          setLastCheckoutItems(
-            serverCart.items.map(item => ({ bookId: item.bookId, quantity: item.quantity }))
-          );
-        } else if (bookId) {
-          setLastCheckoutItems([{ bookId: bookId as string, quantity: qty }]);
-        }
         
         setQrModalVisible(true);
         
@@ -448,19 +572,9 @@ export default function CheckoutScreen() {
     }).start(() => {
       setQrModalVisible(false);
       setPaymentInfo(null);
-      // If user cancels QR modal without payment, restore items to backend cart so they can retry
-      if (lastCheckoutItems && lastCheckoutItems.length > 0) {
-        (async () => {
-          try {
-            console.log('🔁 Restoring cart items after QR cancel:', JSON.stringify(lastCheckoutItems));
-            for (const it of lastCheckoutItems) {
-              await cartService.addToCart({ bookId: it.bookId, quantity: it.quantity });
-            }
-          } catch (err) {
-            console.error('❌ Failed to restore cart after QR cancel:', err);
-          }
-        })();
-      }
+      // Note: Do NOT restore items here because order is already created
+      // User can check their order in order history even if they close QR modal
+      // The non-selected items were already restored after processCheckout
       setCurrentOrderId(null);
     });
   };
@@ -496,7 +610,8 @@ export default function CheckoutScreen() {
     );
   }
 
-  if (fromCart && (!serverCart || serverCart.items.length === 0)) {
+  // Check if cart is empty (only if we're checking entire cart, not selected items)
+  if (fromCart && !selectedCartItems && (!serverCart || serverCart.items.length === 0)) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
         <Ionicons name="cart-outline" size={64} color="#FF4757" style={{ marginBottom: 16 }} />
@@ -554,7 +669,37 @@ export default function CheckoutScreen() {
         {/* 2. Product info */}
         <Text style={styles.sectionTitle}>Thông tin sản phẩm</Text>
         <View style={styles.cartCardSmall}>
-          {fromCart && serverCart ? (
+          {fromCart && selectedCartItems ? (
+            <>
+              {selectedCartItems.map((item: any, idx: number) => {
+                // Get image URL with priority: from item > placeholder
+                let imageUrl: string;
+                if (item.imageUrl) {
+                  imageUrl = item.imageUrl.startsWith('http') 
+                    ? item.imageUrl 
+                    : `${MINIO_BASE_URL}${item.imageUrl}`;
+                } else {
+                  imageUrl = PLACEHOLDER_IMAGES.DEFAULT_BOOK;
+                }
+                
+                return (
+                  <View key={idx} style={[styles.cartContentRow, idx > 0 && { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f0f0f0' }]}>
+                    <Image 
+                      source={{ uri: imageUrl }} 
+                      style={styles.cartImage} 
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text numberOfLines={2} style={styles.title}>{item.title}</Text>
+                      <Text style={styles.unitPrice}>{item.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.qtyLabel}>x{item.quantity}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </>
+          ) : fromCart && serverCart ? (
             <>
               {serverCart.items.map((item, idx) => {
                 // Get image URL with priority: backend > fetched > placeholder

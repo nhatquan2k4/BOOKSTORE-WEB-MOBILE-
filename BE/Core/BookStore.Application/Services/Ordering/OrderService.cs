@@ -49,7 +49,7 @@ namespace BookStore.Application.Services.Ordering
             if (!string.IsNullOrEmpty(status))
             {
                 orders = await _orderRepository.GetOrdersByStatusAsync(status, skip, pageSize);
-                totalCount = orders.Count(); 
+                totalCount = orders.Count();
             }
             else
             {
@@ -108,7 +108,7 @@ namespace BookStore.Application.Services.Ordering
 
             // Calculate total
             decimal totalAmount = dto.Items!.Sum(item => item.UnitPrice * item.Quantity);
-            decimal discountAmount = 0; 
+            decimal discountAmount = 0;
 
             // Create Order
             var order = new Order
@@ -161,7 +161,7 @@ namespace BookStore.Application.Services.Ordering
             {
                 BookId = cartItem.BookId,
                 Quantity = cartItem.Quantity,
-                UnitPrice = cartItem.UnitPrice 
+                UnitPrice = cartItem.UnitPrice
             }).ToList();
 
             // Create order
@@ -197,14 +197,21 @@ namespace BookStore.Application.Services.Ordering
             // 2. Tính giá thuê
             decimal rentalPrice = 0;
             if (days == 3) rentalPrice = 10000;
-            else 
+            else
             {
-                decimal percent = days switch { 
-                    7 => 0.05m, 15 => 0.08m, 30 => 0.12m, 60 => 0.20m, 
-                    90 => 0.25m, 180 => 0.35m, 365 => 0.50m, _ => 0 
+                decimal percent = days switch
+                {
+                    7 => 0.05m,
+                    15 => 0.08m,
+                    30 => 0.12m,
+                    60 => 0.20m,
+                    90 => 0.25m,
+                    180 => 0.35m,
+                    365 => 0.50m,
+                    _ => 0
                 };
                 if (percent == 0) throw new UserFriendlyException("Gói thuê không hợp lệ");
-                
+
                 rentalPrice = Math.Round((bookPrice * percent) / 1000) * 1000;
             }
 
@@ -233,11 +240,11 @@ namespace BookStore.Application.Services.Ordering
                 DiscountAmount = 0,
                 // FinalAmount: KHÔNG GÁN (FIX LỖI read-only property)
                 // Nó sẽ tự động tính = TotalAmount - DiscountAmount
-                
+
                 CreatedAt = DateTime.UtcNow,
-                
+
                 // Gán địa chỉ ảo vừa tạo
-                AddressId = dummyAddress.Id, 
+                AddressId = dummyAddress.Id,
                 Address = dummyAddress
             };
 
@@ -274,9 +281,15 @@ namespace BookStore.Application.Services.Ordering
             var order = await _orderRepository.GetByIdAsync(dto.OrderId);
             Guard.Against(order == null, "Đơn hàng không tồn tại");
 
-            Guard.Against(order!.Status != "Pending",
-                "Chỉ có thể hủy đơn hàng đang ở trạng thái Pending"); 
-            
+            // Kiểm tra trạng thái có thể hủy
+            var cancellableStatuses = new[] { "Pending", "Confirmed", "Processing" };
+            Guard.Against(!cancellableStatuses.Contains(order!.Status),
+                $"Không thể hủy đơn hàng ở trạng thái {order!.Status}");
+
+            // Kiểm tra đơn hàng đã thanh toán chưa
+            bool isPaid = order.PaidAt.HasValue;
+            Guard.Against(isPaid, "Không thể hủy đơn hàng đã thanh toán");
+
             await _orderRepository.UpdateOrderStatusAsync(dto.OrderId, "Cancelled", dto.Reason);
             await _orderRepository.SaveChangesAsync();
 
@@ -299,8 +312,8 @@ namespace BookStore.Application.Services.Ordering
             Guard.Against(order == null, "Đơn hàng không tồn tại");
 
             Guard.Against(order!.Status != "Paid",
-                "Chỉ có thể ship đơn hàng đã thanh toán"); 
-            
+                "Chỉ có thể ship đơn hàng đã thanh toán");
+
             await _orderRepository.UpdateOrderStatusAsync(orderId, "Shipped", note ?? "Order shipped");
             await _orderRepository.SaveChangesAsync();
 
@@ -314,8 +327,8 @@ namespace BookStore.Application.Services.Ordering
             Guard.Against(order == null, "Đơn hàng không tồn tại");
 
             Guard.Against(order!.Status != "Shipped",
-                "Chỉ có thể hoàn thành đơn hàng đã được ship"); 
-            
+                "Chỉ có thể hoàn thành đơn hàng đã được ship");
+
             await _orderRepository.UpdateOrderStatusAsync(orderId, "Completed", note ?? "Order completed");
             await _orderRepository.SaveChangesAsync();
 
@@ -363,7 +376,17 @@ namespace BookStore.Application.Services.Ordering
         public async Task<bool> CanCancelOrderAsync(Guid orderId)
         {
             var order = await _orderRepository.GetByIdAsync(orderId);
-            return order != null && order.Status == "Pending";
+            if (order == null)
+                return false;
+
+            // Chỉ cho phép hủy nếu:
+            // 1. Order ở trạng thái Pending, Confirmed, hoặc Processing
+            // 2. Order chưa thanh toán (PaidAt = null)
+            var cancellableStatuses = new[] { "Pending", "Confirmed", "Processing" };
+            bool isInCancellableStatus = cancellableStatuses.Contains(order.Status);
+            bool isNotPaid = !order.PaidAt.HasValue;
+
+            return isInCancellableStatus && isNotPaid;
         }
 
         #endregion

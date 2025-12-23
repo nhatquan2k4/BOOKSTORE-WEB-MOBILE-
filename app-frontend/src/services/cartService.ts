@@ -119,7 +119,8 @@ export const updateCartItemQuantity = async (request: UpdateCartItemRequest): Pr
  */
 export const removeFromCart = async (request: RemoveFromCartRequest): Promise<Cart> => {
   try {
-    const response = await api.post<any>('/api/Cart/remove', request);
+    // Backend uses DELETE method with body
+    const response = await api.delete<any>('/api/Cart/remove', { data: request });
     
     if (response?.data) {
       return response.data as Cart;
@@ -137,7 +138,7 @@ export const removeFromCart = async (request: RemoveFromCartRequest): Promise<Ca
  */
 export const clearCart = async (): Promise<void> => {
   try {
-    await api.post('/api/Cart/clear');
+    await api.delete('/api/Cart/clear');
   } catch (error: any) {
     console.error('Error clearing cart:', error);
     throw error;
