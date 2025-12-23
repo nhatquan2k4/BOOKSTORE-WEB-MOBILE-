@@ -49,11 +49,13 @@ namespace BookStore.Application.Services.Cart
 
         public async Task<CartDto> AddToCartAsync(AddToCartDto dto)
         {
-            // Validate book exists and available
+            // Validate book exists
             var book = await _bookRepository.GetByIdAsync(dto.BookId);
             Guard.Against(book == null, "Sách không tồn tại");
 
-            Guard.Against(book != null && !book.IsAvailable, "Sách hiện không còn hàng");
+            // NOTE: Removed IsAvailable check - stock validation will be done at checkout
+            // This allows users to add books to cart even if temporarily out of stock
+            // Stock availability will be properly validated during checkout process
 
             // Add or update item in cart
             await _cartRepository.AddOrUpdateItemAsync(dto.UserId, dto.BookId, dto.Quantity);
@@ -147,15 +149,9 @@ namespace BookStore.Application.Services.Cart
                 return false;
             }
 
-            // Check if all items are still available
-            foreach (var item in cart.Items)
-            {
-                if (!item.Book.IsAvailable)
-                {
-                    _logger.LogWarning($"Book {item.BookId} in cart is no longer available");
-                    return false;
-                }
-            }
+            // NOTE: Removed IsAvailable check - stock validation should be done by CheckoutService
+            // This method is kept for compatibility but actual validation is done in CheckoutService.ValidateCheckoutAsync
+            // which properly checks actual stock levels from StockItem table
 
             return true;
         }
