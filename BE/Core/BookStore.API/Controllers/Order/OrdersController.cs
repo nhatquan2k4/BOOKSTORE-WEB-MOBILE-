@@ -1,5 +1,6 @@
 using BookStore.Application.Dtos.Ordering;
 using BookStore.Application.IService.Ordering;
+using BookStore.Application.IService.Checkout;
 using BookStore.API.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,13 +14,16 @@ namespace BookStore.API.Controllers.Order
     public class OrdersController : ApiControllerBase
     {
         private readonly IOrderService _orderService;
+        private readonly ICheckoutService _checkoutService;
         private readonly ILogger<OrdersController> _logger;
 
         public OrdersController(
             IOrderService orderService,
+            ICheckoutService checkoutService,
             ILogger<OrdersController> logger)
         {
             _orderService = orderService;
+            _checkoutService = checkoutService;
             _logger = logger;
         }
 
@@ -148,11 +152,11 @@ namespace BookStore.API.Controllers.Order
             var userId = GetCurrentUserId();
             // User Service will calculate price and create order securely
             var order = await _orderService.CreateRentalOrderAsync(userId, dto.BookId, dto.Days);
-            
-            return Ok(new 
-            { 
-                Success = true, 
-                OrderId = order.Id, 
+
+            return Ok(new
+            {
+                Success = true,
+                OrderId = order.Id,
                 OrderNumber = order.OrderNumber,
                 Amount = order.FinalAmount,
                 Message = "Tạo đơn thuê thành công, vui lòng thanh toán"
@@ -173,15 +177,20 @@ namespace BookStore.API.Controllers.Order
             var userId = GetCurrentUserId();
             var isAdmin = User.IsInRole("Admin");
             var order = await _orderService.GetOrderByIdAsync(id);
-            
+
             if (order == null) return NotFound(new { Message = "Không tìm thấy đơn hàng" });
             if (!isAdmin && order.UserId != userId) return Forbid();
 
-            var canCancel = await _orderService.CanCancelOrderAsync(id);
-            if (!canCancel) return BadRequest(new { Message = "Đơn hàng không thể hủy" });
+            // Sử dụng CheckoutService để hủy order (bao gồm cả logic release stock)
+            var success = await _checkoutService.CancelCheckoutAsync(id, userId);
 
-            dto.OrderId = id;
-            var cancelledOrder = await _orderService.CancelOrderAsync(dto);
+            if (!success)
+            {
+                return BadRequest(new { Message = "Không thể hủy đơn hàng (đã thanh toán hoặc đang giao)" });
+            }
+
+            // Lấy lại order đã được cập nhật
+            var cancelledOrder = await _orderService.GetOrderByIdAsync(id);
             return Ok(cancelledOrder);
         }
 
@@ -242,7 +251,7 @@ namespace BookStore.API.Controllers.Order
             var userId = GetCurrentUserId();
             var isAdmin = User.IsInRole("Admin");
             var order = await _orderService.GetOrderByIdAsync(id);
-            
+
             if (order == null) return NotFound(new { Message = "Không tìm thấy đơn hàng" });
             if (!isAdmin && order.UserId != userId) return Forbid();
 

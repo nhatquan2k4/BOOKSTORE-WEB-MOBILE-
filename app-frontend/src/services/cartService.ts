@@ -119,6 +119,7 @@ export const updateCartItemQuantity = async (request: UpdateCartItemRequest): Pr
  */
 export const removeFromCart = async (request: RemoveFromCartRequest): Promise<Cart> => {
   try {
+    // Backend uses DELETE method with body
     const response = await api.delete<any>('/api/Cart/remove', { data: request });
     
     if (response?.data) {

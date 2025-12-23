@@ -385,8 +385,14 @@ namespace BookStore.Application.Services.Ordering
             var order = await _orderRepository.GetByIdAsync(dto.OrderId);
             Guard.Against(order == null, "Đơn hàng không tồn tại");
 
-            Guard.Against(order!.Status != "Pending",
-                "Chỉ có thể hủy đơn hàng đang ở trạng thái Pending");
+            // Kiểm tra trạng thái có thể hủy
+            var cancellableStatuses = new[] { "Pending", "Confirmed", "Processing" };
+            Guard.Against(!cancellableStatuses.Contains(order!.Status),
+                $"Không thể hủy đơn hàng ở trạng thái {order!.Status}");
+
+            // Kiểm tra đơn hàng đã thanh toán chưa
+            bool isPaid = order.PaidAt.HasValue;
+            Guard.Against(isPaid, "Không thể hủy đơn hàng đã thanh toán");
 
             await _orderRepository.UpdateOrderStatusAsync(dto.OrderId, "Cancelled", dto.Reason);
             await _orderRepository.SaveChangesAsync();
@@ -536,7 +542,17 @@ namespace BookStore.Application.Services.Ordering
         public async Task<bool> CanCancelOrderAsync(Guid orderId)
         {
             var order = await _orderRepository.GetByIdAsync(orderId);
-            return order != null && order.Status == "Pending";
+            if (order == null)
+                return false;
+
+            // Chỉ cho phép hủy nếu:
+            // 1. Order ở trạng thái Pending, Confirmed, hoặc Processing
+            // 2. Order chưa thanh toán (PaidAt = null)
+            var cancellableStatuses = new[] { "Pending", "Confirmed", "Processing" };
+            bool isInCancellableStatus = cancellableStatuses.Contains(order.Status);
+            bool isNotPaid = !order.PaidAt.HasValue;
+
+            return isInCancellableStatus && isNotPaid;
         }
 
         private string GenerateOrderNumber()

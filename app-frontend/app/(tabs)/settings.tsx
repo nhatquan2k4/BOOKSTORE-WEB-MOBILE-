@@ -70,8 +70,8 @@ export default function ProfileScreen() {
   ];
 
   const moreSettings = [
-    { id: 1, icon: 'time-outline', label: 'Lịch sử giao dịch', hasArrow: true, onPress: () => console.log('Lịch sử giao dịch') },
-    { id: 2, icon: 'file-tray-full-outline', label: 'Quản lý đơn hàng', hasArrow: true, onPress: () => console.log('Quản lý đơn hàng') },
+    { id: 1, icon: 'receipt-outline', label: 'Đơn hàng của tôi', hasArrow: true, onPress: () => router.push('/(stack)/orders') },
+    { id: 2, icon: 'time-outline', label: 'Lịch sử giao dịch', hasArrow: true, onPress: () => console.log('Lịch sử giao dịch') },
     { id: 3, icon: 'help-circle-outline', label: 'Hỗ trợ/FAQ', hasArrow: true, onPress: () => console.log('Hỗ trợ/FAQ') },
   ];
 

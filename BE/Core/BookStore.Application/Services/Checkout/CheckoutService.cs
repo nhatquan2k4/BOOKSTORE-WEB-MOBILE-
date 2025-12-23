@@ -252,11 +252,19 @@ namespace BookStore.Application.Services.Checkout
 
                     _logger.LogInformation($"Payment created: {payment.TransactionCode}");
 
-                    // 6. Generate payment URL/QR Code (giả lập)
+                    // 6. Nếu là COD, confirm sale ngay (giảm stock luôn)
+                    // Vì COD không có callback thanh toán, nên phải giảm stock ngay khi tạo order
+                    if (dto.PaymentMethod == "COD")
+                    {
+                        await ConfirmStockSaleAsync(order);
+                        _logger.LogInformation($"Stock confirmed for COD order {order.OrderNumber}");
+                    }
+
+                    // 7. Generate payment URL/QR Code (giả lập)
                     var paymentUrl = GeneratePaymentUrl(payment.TransactionCode, payment.Amount);
                     var qrCodeUrl = GenerateQrCodeUrl(payment.TransactionCode, payment.Amount);
 
-                    // 7. Clear cart sau khi checkout thành công
+                    // 8. Clear cart sau khi checkout thành công
                     await _cartService.ClearCartAsync(new ClearCartDto { UserId = dto.UserId });
                     _logger.LogInformation($"Cart cleared for user {dto.UserId}");
 
@@ -317,7 +325,9 @@ namespace BookStore.Application.Services.Checkout
                 Guard.Against(order == null, "Không tìm thấy đơn hàng");
 
                 // Nếu thanh toán thành công, cập nhật order status và confirm stock sale
-                if (callbackDto.Status == "Success" || callbackDto.Status == "Completed")
+                // Accept các format: "Success", "SUCCESS", "Completed"
+                var successStatuses = new[] { "Success", "SUCCESS", "Completed", "COMPLETED" };
+                if (successStatuses.Contains(callbackDto.Status))
                 {
                     // Cập nhật order status
                     await _orderService.ConfirmOrderPaymentAsync(payment.OrderId);
@@ -327,7 +337,8 @@ namespace BookStore.Application.Services.Checkout
                     await ConfirmStockSaleAsync(order!);
                     _logger.LogInformation($"Stock sale confirmed for order {payment.OrderId}");
                 }
-                else if (callbackDto.Status == "Failed" || callbackDto.Status == "Cancelled")
+                else if (callbackDto.Status == "Failed" || callbackDto.Status == "Cancelled" ||
+                         callbackDto.Status == "FAILED" || callbackDto.Status == "CANCELLED")
                 {
                     // Nếu thanh toán thất bại, release reserved stock
                     _logger.LogWarning($"Payment failed for order {payment.OrderId}, releasing stock");
@@ -367,6 +378,10 @@ namespace BookStore.Application.Services.Checkout
                 var canCancel = await _orderService.CanCancelOrderAsync(orderId);
                 Guard.Against(!canCancel, "Không thể hủy đơn hàng này (đã thanh toán hoặc đang giao)");
 
+                // Lấy thông tin order trước khi hủy để release stock
+                var order = await _orderService.GetOrderByIdAsync(orderId);
+                Guard.Against(order == null, "Đơn hàng không tồn tại");
+
                 // Hủy order
                 await _orderService.CancelOrderAsync(new CancelOrderDto
                 {
@@ -374,7 +389,12 @@ namespace BookStore.Application.Services.Checkout
                     Reason = "Hủy bởi người dùng"
                 });
 
-                _logger.LogInformation($"Order {orderId} cancelled by user {userId}");
+                // Release stock về kho
+                // Nếu order chưa thanh toán -> stock đang ở trạng thái reserved
+                // Nếu order đã thanh toán -> stock đã được sold
+                await ReleaseStockForOrderAsync(order!);
+
+                _logger.LogInformation($"Order {orderId} cancelled by user {userId}, stock released");
 
                 return true;
             }
@@ -563,6 +583,60 @@ namespace BookStore.Application.Services.Checkout
                 {
                     _logger.LogError(ex, $"Error confirming sale for book {item.BookId}");
                     // Log nhưng không fail transaction
+                }
+            }
+        }
+
+        /// <summary>
+        /// Release stock khi hủy order
+        /// - Nếu order chưa thanh toán (status = Pending/Confirmed) VÀ không phải COD: Release reserved stock
+        /// - Nếu order đã thanh toán HOẶC là COD (stock đã confirmed): Return sold stock
+        /// </summary>
+        private async Task ReleaseStockForOrderAsync(OrderDto order)
+        {
+            // Kiểm tra xem stock đã được confirmed (sold) chưa
+            // Trường hợp 1: Order đã thanh toán (Online payment SUCCESS)
+            bool isPaid = order.PaidAt.HasValue ||
+                         (order.PaymentTransaction != null &&
+                          (order.PaymentTransaction.Status == "SUCCESS" ||
+                           order.PaymentTransaction.Status == "Success"));
+
+            // Trường hợp 2: Order là COD (stock đã confirmed ngay khi tạo order)
+            bool isCOD = order.PaymentTransaction != null &&
+                        order.PaymentTransaction.PaymentMethod == "COD";
+
+            // Nếu đã paid HOẶC là COD -> stock đã sold -> cần Return
+            bool needReturnStock = isPaid || isCOD;
+
+            foreach (var item in order.Items)
+            {
+                try
+                {
+                    if (needReturnStock)
+                    {
+                        // Order đã sold stock (paid hoặc COD) -> cần Return (hoàn trả)
+                        await _stockItemService.ReturnStockAsync(
+                            item.BookId,
+                            DEFAULT_WAREHOUSE_ID,
+                            item.Quantity
+                        );
+                        _logger.LogInformation($"Returned {item.Quantity} units of book {item.BookId} (order was {(isCOD ? "COD" : "paid")})");
+                    }
+                    else
+                    {
+                        // Order chưa thanh toán (Online pending) -> stock đang reserved -> cần ReleaseReserved
+                        await _stockItemService.ReleaseReservedStockAsync(
+                            item.BookId,
+                            DEFAULT_WAREHOUSE_ID,
+                            item.Quantity
+                        );
+                        _logger.LogInformation($"Released {item.Quantity} reserved units of book {item.BookId}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error releasing stock for book {item.BookId} in cancelled order {order.Id}");
+                    // Continue với các items khác
                 }
             }
         }
