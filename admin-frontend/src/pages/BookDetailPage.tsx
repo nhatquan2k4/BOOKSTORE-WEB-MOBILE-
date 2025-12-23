@@ -26,6 +26,8 @@ const BookDetailPage: React.FC = () => {
         edition: '',
         pageCount: 0,
         publisherId: '',
+        bookFormatId: '',
+        isAvailable: true,
         authorIds: [] as string[],
         categoryIds: [] as string[]
     });
@@ -46,6 +48,14 @@ const BookDetailPage: React.FC = () => {
             setLoading(true);
             setError(null);
             const data = await bookService.getById(bookId);
+            // Debug: log image paths returned from API
+            console.log('Fetched book data (debug):', data);
+            console.log('Fetched book images (debug):', data.images);
+            // Compute cover URL for debug
+            const debugCover = data.images?.find((img: any) => img.isCover)?.imageUrl || data.images?.[0]?.imageUrl;
+            console.log('Computed cover (raw):', debugCover);
+            console.log('Computed cover URL (via getImageUrl):', getImageUrl(debugCover));
+
             setBook(data);
         } catch (err: any) {
             console.error('Error fetching book detail:', err);
@@ -80,6 +90,8 @@ const BookDetailPage: React.FC = () => {
                 edition: book.edition || '',
                 pageCount: book.pageCount,
                 publisherId: book.publisher.id,
+                bookFormatId: book.bookFormat?.id || '',
+                isAvailable: book.isAvailable,
                 authorIds: book.authors.map(a => a.id),
                 categoryIds: book.categories.map(c => c.id)
             });
@@ -153,12 +165,18 @@ const BookDetailPage: React.FC = () => {
         }
         
         try {
-            await bookService.update(book.id, editForm);
+            // Ensure payload contains matching id (backend requires URL id === body id)
+            const payload = { ...editForm, id: book.id } as any;
+            console.debug('Update book payload:', payload);
+            await bookService.update(book.id, payload);
             alert('Cập nhật sách thành công!');
             setShowEditModal(false);
             fetchBookDetail(book.id);
         } catch (err: any) {
-            alert(`Lỗi: ${err.message}`);
+            console.error('Error updating book:', err);
+            console.error('Error response data:', err.response?.data);
+            const msg = err.response?.data?.message || err.response?.data?.details || err.message || 'Lỗi không xác định';
+            alert(`Lỗi: ${msg}`);
         }
     };
 
@@ -295,7 +313,13 @@ const BookDetailPage: React.FC = () => {
                                     alt={book.title}
                                     className="w-full rounded-lg shadow-md object-cover"
                                     onError={(e) => {
-                                        e.currentTarget.src = 'https://via.placeholder.com/400x600?text=No+Image';
+                                        // prevent infinite onError loop if fallback also fails
+                                        // use a local fallback asset that doesn't rely on external DNS
+                                        // and remove the error handler before setting src
+                                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                                        // @ts-ignore
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.src = '/image/anh.svg';
                                     }}
                                 />
                             ) : (
@@ -316,7 +340,12 @@ const BookDetailPage: React.FC = () => {
                                                     alt={`${book.title} - ${image.displayOrder}`}
                                                     className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-75 transition-opacity"
                                                     onError={(e) => {
-                                                        e.currentTarget.src = 'https://via.placeholder.com/100';
+                                                        // avoid repeated failed requests for external placeholder
+                                                        // remove handler and use local small fallback
+                                                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                                                        // @ts-ignore
+                                                        e.currentTarget.onerror = null;
+                                                        e.currentTarget.src = '/image/anh.svg';
                                                     }}
                                                 />
                                                 <button

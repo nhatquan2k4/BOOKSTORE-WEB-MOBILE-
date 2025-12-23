@@ -11,8 +11,8 @@
 // ====== LOCAL NETWORK ======
 // Thay IP này bằng IP máy tính của bạn (chạy `ipconfig` để xem)
 // Máy tính và điện thoại phải cùng WiFi
-export const API_BASE_URL = "https://tautologously-hyperconscious-carolyne.ngrok-free.dev"; // API backend
-export const MINIO_BASE_URL = "https://tautologously-hyperconscious-carolyne.ngrok-free.dev/storage"; // MinIO storage
+export const API_BASE_URL ="https://tautologously-hyperconscious-carolyne.ngrok-free.dev"; // API backend
+export const MINIO_BASE_URL ="https://tautologously-hyperconscious-carolyne.ngrok-free.dev/storage"; // MinIO storage
 
 // ====== NGROK / TUNNEL (Dùng khi không cùng mạng) ======
 // Cách dùng: npm install -g @expo/ngrok
@@ -23,7 +23,7 @@ export const MINIO_BASE_URL = "https://tautologously-hyperconscious-carolyne.ngr
 // Lưu ý: Cần chạy 2 ngrok instances:
 //   Terminal 1: ngrok http 5276
 //   Terminal 2: ngrok http 9000
-
+  
 // Timeout settings
 export const API_TIMEOUT = 30000; // 30 seconds
 
