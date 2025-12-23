@@ -7,7 +7,7 @@ import { userProfileService } from '@/services/user-profile.service';
 import { UserProfile, UpdateUserProfileDto } from '@/types/dtos/userprofile';
 
 // 1. THÊM CẤU HÌNH DOMAIN BACKEND (Giống bên ProfilePage)
-const API_BASE_URL = 'http://localhost:5276'; 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276'; 
 
 interface ProfileFormValues {
   fullName: string;

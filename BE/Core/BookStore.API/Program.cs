@@ -73,10 +73,12 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    var isDevelopment = builder.Environment.IsDevelopment();
+    
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
+        ValidateIssuer = !isDevelopment, // Tắt validation Issuer khi Dev/Docker
+        ValidateAudience = !isDevelopment, // Tắt validation Audience khi Dev/Docker
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings.Issuer,
@@ -85,11 +87,13 @@ builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.Zero
     };
 
-    // ✅ FIX: Allow anonymous endpoints to work even if token validation fails
     options.Events = new JwtBearerEvents
     {
         OnAuthenticationFailed = context =>
         {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning($"Authentication failed: {context.Exception?.Message}");
+            
             // Check if endpoint allows anonymous access
             var endpoint = context.HttpContext.GetEndpoint();
             var allowAnonymous = endpoint?.Metadata?.GetMetadata<Microsoft.AspNetCore.Authorization.IAllowAnonymous>() != null;
@@ -103,6 +107,19 @@ builder.Services.AddAuthentication(options =>
             }
 
             return Task.CompletedTask;
+        },
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            
+            // If the request is for SignalR hub and has token in query
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            
+            return Task.CompletedTask;
         }
     };
 });
@@ -114,11 +131,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.SetIsOriginAllowed(origin => true) 
-        //policy.AllowAnyOrigin()  // ✅ Cho phép tất cả origins (mobile app, web, etc.)
+        policy.SetIsOriginAllowed(origin => true)
               .AllowAnyHeader()
-              .AllowAnyMethod();
-        // Note: Không dùng AllowCredentials() khi dùng AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowCredentials();
+        // Note: Phải dùng SetIsOriginAllowed thay vì AllowAnyOrigin() khi dùng AllowCredentials()
     });
 });
 

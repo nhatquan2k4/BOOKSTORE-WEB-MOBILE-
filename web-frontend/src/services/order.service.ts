@@ -65,10 +65,27 @@ export const orderService = {
    */
   async createOrder(data: any): Promise<OrderDto> {
     try {
+      console.log('[ORDER SERVICE] Calling POST /api/orders with data:', JSON.stringify(data, null, 2));
+      console.log('[ORDER SERVICE] Full URL:', `${BASE_URL}`);
+      
       // POST /api/orders
       const response = await axiosInstance.post<OrderDto>(`${BASE_URL}`, data);
+      
+      console.log('[ORDER SERVICE] Success! Response:', response);
+      console.log('[ORDER SERVICE] Response data:', response.data);
+      console.log('[ORDER SERVICE] Response status:', response.status);
+      
       return response.data;
     } catch (error) {
+      console.error('[ORDER SERVICE] Error caught:', error);
+      if (error && typeof error === 'object') {
+        console.error('[ORDER SERVICE] Error details:', {
+          message: (error as any).message,
+          response: (error as any).response,
+          request: (error as any).request,
+          config: (error as any).config
+        });
+      }
       return handleApiError(error);
     }
   },

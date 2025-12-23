@@ -13,7 +13,7 @@ import type { BookDto, CategoryDto } from "@/types/dtos";
 // ============================================================================
 // CONFIG & HELPERS
 // ============================================================================
-const API_BASE_URL = 'http://localhost:5276';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276';
 
 // Helper: Xử lý ảnh (tránh lỗi 404 localhost)
 const getFullImageUrl = (url?: string | null) => {

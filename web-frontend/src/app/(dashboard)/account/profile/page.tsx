@@ -10,7 +10,7 @@ import { UserProfile } from '@/types/dtos/userprofile';
 
 // --- CẤU HÌNH ĐƯỜNG DẪN BACKEND ---
 // Hãy thay đổi port này đúng với port Backend của bạn (ví dụ 5276, 5000, 7123...)
-const API_BASE_URL = 'http://localhost:5276'; 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276'; 
 
 export default function ProfilePage() {
   const { user, isLoggedIn, isLoading } = useAuth();
