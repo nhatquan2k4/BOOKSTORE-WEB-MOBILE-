@@ -60,6 +60,9 @@ var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSetting
 // Configure MinIO Settings
 builder.Services.Configure<MinIOSettings>(builder.Configuration.GetSection("MinIO"));
 
+// Configure Payment Settings
+builder.Services.Configure<BookStore.API.Settings.PaymentSettings>(builder.Configuration.GetSection("PaymentSettings"));
+
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
 {

@@ -6,31 +6,27 @@ import Image from "next/image";
 import { Breadcrumb } from "@/components/ui";
 import { paymentApi } from "@/lib/api/payment";
 import { cartService } from "@/services/cart.service";
-// 1. IMPORT SIGNALR
-import { HubConnectionBuilder, HubConnection } from "@microsoft/signalr";
+import { HubConnectionBuilder, HubConnection, HttpTransportType, HubConnectionState } from "@microsoft/signalr";
 
+// Component nội dung chính
 function QRPaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Params
+  // --- FIX 1: Lấy trực tiếp từ URL, không dùng useState cho params ---
   const type = searchParams.get("type");
   const bookId = searchParams.get("bookId");
-  const orderIdParam = searchParams.get("orderId");
+  const rawOrderId = searchParams.get("orderId");
+  // Loại bỏ các ký tự lạ nếu có
+  const orderId = rawOrderId ? rawOrderId.trim() : "";
   const amountParam = searchParams.get("amount");
 
   // State
-  const [orderId] = useState(() => orderIdParam || "");
-  const [amount] = useState(() => amountParam || "0");
-
   const [timeLeft, setTimeLeft] = useState(900);
-  const [paymentStatus, setPaymentStatus] = useState<
-    "pending" | "checking" | "success" | "failed" | "expired"
-  >("pending");
+  const [paymentStatus, setPaymentStatus] = useState<"pending" | "checking" | "success" | "failed" | "expired">("pending");
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [isLoadingQR, setIsLoadingQR] = useState(true);
 
-  // Ref để tránh re-render liên tục khi dùng trong effect
   const connectionRef = useRef<HubConnection | null>(null);
 
   const [bankInfo, setBankInfo] = useState({
@@ -41,147 +37,180 @@ function QRPaymentContent() {
 
   const [showCopiedAlert, setShowCopiedAlert] = useState(false);
 
-  // 2. INIT QR CODE
+  // --- FIX 2: Init QR Code an toàn hơn ---
   useEffect(() => {
-    if (!orderId) return;
+    // Nếu chưa có orderId thì chưa làm gì cả
+    if (!orderId) {
+      console.warn("Chưa tìm thấy OrderId trong URL");
+      return;
+    }
 
     const initQR = async () => {
       try {
         setIsLoadingQR(true);
-        const desc = type === "rent" ? `THUE ${bookId}` : `MUA ${orderId}`;
+        console.log("=== CREATING QR CODE ===");
+        console.log("OrderId:", orderId);
+        console.log("Amount:", amountParam);
+        console.log("Type:", type);
+        console.log("BookId:", bookId);
 
-        const data = await paymentApi.createQR({
-          orderId,
-          amount: Number(amount),
+        const desc = type === "rent" ? `THUE ${bookId}` : `MUA ${orderId}`;
+        
+        // Đảm bảo amount là số
+        const amountValue = amountParam ? Number(amountParam) : 0;
+
+        console.log("Request payload:", {
+          orderId: orderId, 
+          amount: amountValue,
           description: desc,
         });
 
-        if (data.success) {
+        const data = await paymentApi.createQR({
+          orderId: orderId, 
+          amount: amountValue,
+          description: desc,
+        });
+
+        console.log("=== API RESPONSE ===");
+        console.log("Full response:", data);
+        console.log("Success:", data.success);
+        console.log("QR Code URL:", data.qrCodeUrl);
+        console.log("Account Number:", data.accountNumber);
+        console.log("Account Name:", data.accountName);
+        console.log("Transfer Content:", data.transferContent);
+
+        if (data && data.success) {
           setQrCodeUrl(data.qrCodeUrl);
           setBankInfo({
             accountNumber: data.accountNumber,
             accountName: data.accountName,
             content: data.transferContent,
           });
+          console.log("✅ QR Code set successfully!");
+        } else {
+            console.error("❌ API trả về lỗi hoặc không thành công:", data);
         }
       } catch (error) {
-        console.error("Init QR error:", error);
+        console.error("❌ Init QR error:", error);
+        if (error instanceof Error) {
+          console.error("Error message:", error.message);
+          console.error("Error stack:", error.stack);
+        }
       } finally {
         setIsLoadingQR(false);
+        console.log("=== QR LOADING COMPLETE ===");
       }
     };
 
     initQR();
-  }, [orderId, amount, type, bookId]);
+  }, [orderId, amountParam, type, bookId]);
 
-  // 3. XỬ LÝ KHI THÀNH CÔNG (Dùng useCallback để SignalR gọi được)
+  // Xử lý khi thành công
   const handleSuccess = useCallback(async () => {
-    if (paymentStatus === "success") return; // Chặn gọi nhiều lần
+    if (paymentStatus === "success") return; 
 
-    // Clear cart nếu là mua hàng
+    console.log("Thanh toán thành công! Đang xử lý chuyển hướng...");
+
     if (type === "buy") {
       try {
         await cartService.clearCart();
       } catch (e) {
-        console.error(e);
+        console.error("Lỗi clear cart:", e);
       }
     }
 
     setPaymentStatus("success");
 
-    // Tự động chuyển trang sau 1.5s
     setTimeout(() => {
-      const successUrl =
-        type === "rent"
+      const successUrl = type === "rent"
           ? `/payment/success?type=rent&bookId=${bookId}&orderId=${orderId}`
           : `/payment/success?type=buy&orderId=${orderId}`;
       router.push(successUrl);
     }, 1500);
   }, [type, bookId, orderId, router, paymentStatus]);
 
-  // 4. KẾT NỐI SIGNALR (REAL-TIME)
+  // --- FIX 3: Kết nối SignalR chuẩn ---
   useEffect(() => {
+    // Chỉ kết nối khi có OrderId và chưa thành công
     if (!orderId || paymentStatus === "success") return;
 
-    // URL Backend Local hoặc Ngrok
+    // Lấy URL từ env hoặc fallback
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276';
-    const HUB_URL = `${API_BASE_URL}/hubs/notifications`;
+    // Đảm bảo không bị double slash //
+    const cleanBaseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const HUB_URL = `${cleanBaseUrl}/hubs/notifications`;
 
-    // Lấy token từ localStorage (nếu có)
-    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    console.log(`Đang kết nối SignalR tới: ${HUB_URL}`);
 
     const connection = new HubConnectionBuilder()
       .withUrl(HUB_URL, {
-        accessTokenFactory: () => token || '', // Gửi token nếu có
+        accessTokenFactory: () => {
+            if (typeof window !== 'undefined') {
+                return localStorage.getItem('accessToken') || '';
+            }
+            return '';
+        },
+        // Nếu gặp lỗi CORS/Negotiation, thử bỏ comment dòng dưới:
+        // skipNegotiation: true,
+        // transport: HttpTransportType.WebSockets
       })
       .withAutomaticReconnect()
       .build();
 
-    connection
-      .start()
+    connection.start()
       .then(() => {
-        console.log("Connected to SignalR NotificationHub");
+        console.log("✅ Đã kết nối SignalR NotificationHub");
         connectionRef.current = connection;
 
-        // Lắng nghe sự kiện từ Backend
         connection.on("ReceivePaymentStatus", (receivedId, status) => {
-          // 1. In ra số liệu thực tế
-          console.log(`[SIGNALR EVENT] Backend bắn sang: "${receivedId}" | Status: "${status}"`);
-          console.log(`[FRONTEND] Đang chờ ID:      "${orderId}"`);
-          console.log(`[TYPE] receivedId type: ${typeof receivedId} | orderId type: ${typeof orderId}`);
-
-          // 2. Chuẩn hóa để so sánh (loại bỏ khoảng trắng và chuyển thành chữ thường)
+          console.log(`🔔 SignalR Event: ID=${receivedId}, Status=${status}`);
+          
           const backendId = String(receivedId).trim().toLowerCase();
           const currentId = String(orderId).trim().toLowerCase();
 
-          console.log(`[NORMALIZED] Backend: "${backendId}" | Frontend: "${currentId}"`);
-
-          // 3. So sánh - hỗ trợ nhiều status từ backend
+          // Các trạng thái chấp nhận là đã thanh toán
           const paidStatuses = ["paid", "completed", "success"];
-          const isPaidStatus = paidStatuses.includes(String(status).toLowerCase());
-
-          if (backendId === currentId && isPaidStatus) {
-            console.log("HAI MÃ KHỚP NHAU & STATUS PAID -> CHUYỂN TRANG!");
+          
+          if (backendId === currentId && paidStatuses.includes(String(status).toLowerCase())) {
+            console.log("MATCH! Chuyển trạng thái success.");
             handleSuccess();
-          } else {
-            console.log(`KHÔNG KHỚP! Backend ID: "${backendId}" | Current: "${currentId}" | Status: "${status}"`);
           }
         });
       })
-      .catch((err) => console.error("SignalR Connection Error: ", err));
+      .catch((err) => console.error("❌ Lỗi kết nối SignalR:", err));
 
     return () => {
-      if (connectionRef.current) {
+      if (connectionRef.current && connectionRef.current.state === HubConnectionState.Connected) {
         connectionRef.current.stop();
       }
     };
   }, [orderId, handleSuccess, paymentStatus]);
 
-  // 5. POLLING DỰ PHÒNG (Giữ lại để chắc chắn 100%)
+  // Polling dự phòng (Backup)
   useEffect(() => {
-    if (!orderId || paymentStatus === "success" || paymentStatus === "expired")
-      return;
+    if (!orderId || paymentStatus === "success" || paymentStatus === "expired") return;
 
     let isMounted = true;
     const checkStatus = async () => {
       try {
-        const res = await paymentApi.checkStatus(orderId);
-        const status = res.status?.toLowerCase();
+        // Chỉ gọi khi orderId hợp lệ
+        if (!orderId) return;
 
-        if (
-          isMounted &&
-          res.success &&
-          ["paid", "completed", "success"].includes(status)
-        ) {
+        const res = await paymentApi.checkStatus(orderId);
+        if (!isMounted) return;
+
+        const status = res.status?.toLowerCase();
+        if (res.success && ["paid", "completed", "success"].includes(status)) {
+          console.log("Polling success!");
           await handleSuccess();
         }
       } catch (error) {
-        // Ignore polling error
+        // Lỗi 404 ở đây là bình thường nếu user chưa thanh toán xong, không cần log error đỏ
+        // console.warn("Polling checking..."); 
       }
     };
 
-    // Poll chậm hơn (5s) vì đã có SignalR
-    const intervalId = setInterval(checkStatus, 5000);
+    const intervalId = setInterval(checkStatus, 3000); // 3 giây check 1 lần
 
     return () => {
       isMounted = false;
@@ -192,138 +221,109 @@ function QRPaymentContent() {
   // Timer Countdown
   useEffect(() => {
     if (paymentStatus !== "pending") return;
-    const timer = setInterval(
-      () => setTimeLeft((t) => (t <= 1 ? 0 : t - 1)),
-      1000
-    );
+    const timer = setInterval(() => setTimeLeft((t) => (t <= 1 ? 0 : t - 1)), 1000);
     return () => clearInterval(timer);
   }, [paymentStatus]);
 
   const formatTime = (s: number) =>
-    `${Math.floor(s / 60)
-      .toString()
-      .padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+    `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   const handleCopy = (text: string) => {
+    if (!text) return;
     navigator.clipboard.writeText(text);
     setShowCopiedAlert(true);
     setTimeout(() => setShowCopiedAlert(false), 2000);
   };
 
+  // --- RENDER UI ---
   if (paymentStatus === "success") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-green-50">
         <div className="text-center p-8 bg-white rounded-2xl shadow-xl animate-in fade-in zoom-in">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-10 h-10 text-green-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
+            <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Thanh toán thành công!
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Thanh toán thành công!</h1>
           <p className="text-gray-600">Đang chuyển hướng...</p>
         </div>
       </div>
     );
   }
 
+  // Nếu không có OrderID, hiện thông báo lỗi thay vì màn hình trắng
+  if (!orderId) {
+    return (
+       <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+             <h2 className="text-xl font-bold text-red-600">Lỗi: Không tìm thấy mã đơn hàng</h2>
+             <button onClick={() => router.push('/')} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
+                Về trang chủ
+             </button>
+          </div>
+       </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
-        <Breadcrumb
-          items={[
-            { label: "Trang chủ", href: "/" },
-            { label: "Thanh toán QR" },
-          ]}
-        />
+        <Breadcrumb items={[{ label: "Trang chủ", href: "/" }, { label: "Thanh toán QR" }]} />
 
         {showCopiedAlert && (
           <div className="fixed top-20 right-4 z-50 animate-fade-in">
-            <div className="bg-green-500 text-white px-4 py-2 rounded shadow">
-              Đã sao chép!
-            </div>
+            <div className="bg-green-500 text-white px-4 py-2 rounded shadow">Đã sao chép!</div>
           </div>
         )}
 
         <div className="mt-8 bg-white rounded-xl shadow-lg overflow-hidden grid grid-cols-1 md:grid-cols-2">
+          {/* Cột trái: QR Code */}
           <div className="p-8 bg-gradient-to-br from-blue-600 to-blue-700 text-white flex flex-col items-center justify-center text-center">
             <h2 className="text-2xl font-bold mb-2">Quét mã để thanh toán</h2>
             <div className="bg-white p-4 rounded-xl shadow-inner mb-6 mt-4">
               {isLoadingQR ? (
-                <div className="w-48 h-48 flex items-center justify-center text-gray-400">
-                  Đang tạo mã...
-                </div>
+                <div className="w-48 h-48 flex items-center justify-center text-gray-400">Đang tạo mã...</div>
               ) : qrCodeUrl ? (
                 <Image
                   src={qrCodeUrl}
-                  alt="QR"
+                  alt="QR Code"
                   width={200}
                   height={200}
                   className="rounded-lg object-contain"
+                  priority // Load ngay lập tức
                 />
               ) : (
-                <div className="w-48 h-48 flex items-center justify-center text-red-500">
-                  Lỗi tạo QR
-                </div>
+                <div className="w-48 h-48 flex items-center justify-center text-red-500">Lỗi tạo QR</div>
               )}
             </div>
             <div className="text-blue-100 mb-2 bg-white/10 px-4 py-2 rounded-full">
-              Hết hạn:{" "}
-              <span className="font-mono font-bold">
-                {formatTime(timeLeft)}
-              </span>
+              Hết hạn: <span className="font-mono font-bold">{formatTime(timeLeft)}</span>
             </div>
-            <p className="text-sm text-blue-200 mt-2 italic">
-              Trang sẽ tự động chuyển khi hoàn tất
-            </p>
+            <p className="text-sm text-blue-200 mt-2 italic">Trang sẽ tự động chuyển khi hoàn tất</p>
           </div>
 
+          {/* Cột phải: Thông tin */}
           <div className="p-8 flex flex-col justify-center">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">
-              Thông tin chuyển khoản
-            </h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-6">Thông tin chuyển khoản</h3>
             <div className="space-y-5">
-              <div
-                className="cursor-pointer"
-                onClick={() => handleCopy(bankInfo.accountNumber)}
-              >
-                <label className="text-xs text-gray-500 uppercase font-semibold">
-                  Số tài khoản
-                </label>
-                <p className="font-mono font-bold text-xl text-blue-600">
+              <div className="cursor-pointer group" onClick={() => handleCopy(bankInfo.accountNumber)}>
+                <label className="text-xs text-gray-500 uppercase font-semibold">Số tài khoản</label>
+                <p className="font-mono font-bold text-xl text-blue-600 group-hover:text-blue-500">
                   {bankInfo.accountNumber || "..."}
                 </p>
               </div>
-              <div
-                className="cursor-pointer"
-                onClick={() => handleCopy(amount.toString())}
-              >
-                <label className="text-xs text-gray-500 uppercase font-semibold">
-                  Số tiền
-                </label>
-                <p className="font-bold text-2xl text-red-600">
-                  {Number(amount).toLocaleString("vi-VN")}₫
+              <div className="cursor-pointer group" onClick={() => handleCopy(amountParam || "")}>
+                <label className="text-xs text-gray-500 uppercase font-semibold">Số tiền</label>
+                <p className="font-bold text-2xl text-red-600 group-hover:text-red-500">
+                  {Number(amountParam).toLocaleString("vi-VN")}₫
                 </p>
               </div>
-              <div
-                className="cursor-pointer"
-                onClick={() => handleCopy(bankInfo.content)}
-              >
+              <div className="cursor-pointer group" onClick={() => handleCopy(bankInfo.content)}>
                 <label className="text-xs text-gray-500 uppercase font-semibold">
                   Nội dung <span className="text-red-500">(Bắt buộc)</span>
                 </label>
-                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg font-mono font-bold text-sm break-all mt-1">
+                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg font-mono font-bold text-sm break-all mt-1 group-hover:bg-yellow-100 transition">
                   {bankInfo.content || "..."}
                 </div>
               </div>
@@ -335,9 +335,10 @@ function QRPaymentContent() {
   );
 }
 
+// Wrapper Suspense bắt buộc cho Next.js khi dùng useSearchParams
 export default function QRPaymentPage() {
   return (
-    <Suspense fallback={<div className="p-10 text-center">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Đang tải trang thanh toán...</div>}>
       <QRPaymentContent />
     </Suspense>
   );
