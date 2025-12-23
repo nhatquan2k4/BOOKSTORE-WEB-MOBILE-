@@ -84,7 +84,7 @@ services:
       start_period: 10s
 
   bookstore-api:
-    image: NQ.local:5000/bookstore-backend:v109
+    image: NQ.local:5000/bookstore-backend:v110
     container_name: bookstore-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Development

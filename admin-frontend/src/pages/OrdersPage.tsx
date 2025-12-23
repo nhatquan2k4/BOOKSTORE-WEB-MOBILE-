@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, CheckCircle, Truck, Package } from 'lucide-react';
 import Table from '../components/common/Table';
 import OrderDetailModal from '../components/common/OrderDetailModal';
 import { orderService } from '../services';
+import orderManagementService from '../services/orderManagementService';
 import type { Order } from '../types';
 
 const OrdersPage: React.FC = () => {
@@ -50,27 +51,75 @@ const OrdersPage: React.FC = () => {
     };
 
     const getStatusColor = (status: Order['status']) => {
-        const colors = {
-            pending: 'bg-yellow-100 text-yellow-800',
-            processing: 'bg-blue-100 text-blue-800',
-            shipped: 'bg-purple-100 text-purple-800',
-            delivered: 'bg-green-100 text-green-800',
-            completed: 'bg-green-100 text-green-800',
-            cancelled: 'bg-red-100 text-red-800',
+        const statusStr = status.toLowerCase();
+        const colors: Record<string, string> = {
+            'pending': 'bg-yellow-100 text-yellow-800',
+            'confirmed': 'bg-blue-100 text-blue-800',
+            'processing': 'bg-blue-100 text-blue-800',
+            'shipping': 'bg-purple-100 text-purple-800',
+            'shipped': 'bg-purple-100 text-purple-800',
+            'delivered': 'bg-green-100 text-green-800',
+            'completed': 'bg-green-100 text-green-800',
+            'cancelled': 'bg-red-100 text-red-800',
         };
-        return colors[status];
+        return colors[statusStr] || 'bg-gray-100 text-gray-800';
     };
 
     const getStatusText = (status: Order['status']) => {
-        const texts = {
-            pending: 'Chờ xử lý',
-            processing: 'Đang xử lý',
-            shipped: 'Đang giao',
-            delivered: 'Đã giao',
-            completed: 'Hoàn thành',
-            cancelled: 'Đã hủy',
+        const statusStr = status.toLowerCase();
+        const texts: Record<string, string> = {
+            'pending': 'Chờ xác nhận',
+            'confirmed': 'Đã xác nhận',
+            'processing': 'Đang xử lý',
+            'shipping': 'Đang giao',
+            'shipped': 'Đang giao',
+            'delivered': 'Đã giao',
+            'completed': 'Hoàn thành',
+            'cancelled': 'Đã hủy',
         };
-        return texts[status];
+        return texts[statusStr] || status;
+    };
+
+    // Hàm xử lý xác nhận đơn hàng
+    const handleConfirmOrder = async (orderId: string) => {
+        if (!confirm('Xác nhận đơn hàng này?')) return;
+        
+        try {
+            await orderManagementService.confirmOrder(orderId);
+            alert('Đơn hàng đã được xác nhận!');
+            fetchOrders(); // Reload danh sách
+        } catch (error) {
+            console.error('Error confirming order:', error);
+            alert('Có lỗi khi xác nhận đơn hàng');
+        }
+    };
+
+    // Hàm xử lý chuyển sang trạng thái đang giao
+    const handleMarkAsShipping = async (orderId: string) => {
+        if (!confirm('Đánh dấu đơn hàng đang giao?')) return;
+        
+        try {
+            await orderManagementService.markAsShipping(orderId);
+            alert('Đơn hàng đã được chuyển sang trạng thái đang giao!');
+            fetchOrders();
+        } catch (error) {
+            console.error('Error updating order:', error);
+            alert('Có lỗi khi cập nhật đơn hàng');
+        }
+    };
+
+    // Hàm xử lý đánh dấu đã giao
+    const handleMarkAsDelivered = async (orderId: string) => {
+        if (!confirm('Xác nhận đơn hàng đã được giao?')) return;
+        
+        try {
+            await orderManagementService.markAsDelivered(orderId);
+            alert('Đơn hàng đã được giao thành công!');
+            fetchOrders();
+        } catch (error) {
+            console.error('Error updating order:', error);
+            alert('Có lỗi khi cập nhật đơn hàng');
+        }
     };
 
     const columns = [
@@ -86,7 +135,7 @@ const OrdersPage: React.FC = () => {
         },
         {
             key: 'items',
-            label: 'Số lượng sản phẩm',
+            label: 'Số lượng SP',
             render: (items: Order['items'] | undefined) => items?.length || 0,
         },
         {
@@ -94,7 +143,7 @@ const OrdersPage: React.FC = () => {
             label: 'Tổng tiền',
             render: (value: number | undefined) => (
                 <span className="font-semibold text-green-600">
-                    ${value?.toFixed(2) || '0.00'}
+                    {value?.toLocaleString('vi-VN')}₫
                 </span>
             ),
         },
@@ -114,6 +163,73 @@ const OrdersPage: React.FC = () => {
                 const date = value || row.createdAt;
                 return date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A';
             }
+        },
+        {
+            key: 'actions',
+            label: 'Hành động',
+            render: (_: any, row: Order) => {
+                const status = row.status.toLowerCase();
+                
+                return (
+                    <div className="flex gap-2">
+                        {/* Button Xác nhận - chỉ hiện khi Pending */}
+                        {status === 'pending' && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleConfirmOrder(row.id);
+                                }}
+                                className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
+                                title="Xác nhận đơn hàng"
+                            >
+                                <CheckCircle size={14} />
+                                <span>Xác nhận</span>
+                            </button>
+                        )}
+                        
+                        {/* Button Giao hàng - chỉ hiện khi Confirmed */}
+                        {status === 'confirmed' && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsShipping(row.id);
+                                }}
+                                className="flex items-center gap-1 px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs"
+                                title="Chuyển sang đang giao"
+                            >
+                                <Truck size={14} />
+                                <span>Giao hàng</span>
+                            </button>
+                        )}
+                        
+                        {/* Button Đã giao - chỉ hiện khi Shipping */}
+                        {status === 'shipping' && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsDelivered(row.id);
+                                }}
+                                className="flex items-center gap-1 px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                title="Xác nhận đã giao"
+                            >
+                                <Package size={14} />
+                                <span>Đã giao</span>
+                            </button>
+                        )}
+                        
+                        {/* Button Xem chi tiết - luôn hiện */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleView(row);
+                            }}
+                            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-xs"
+                        >
+                            Xem
+                        </button>
+                    </div>
+                );
+            },
         },
     ];
 
@@ -163,27 +279,27 @@ const OrdersPage: React.FC = () => {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white p-4 rounded-lg shadow">
-                    <p className="text-gray-500 text-sm">Chờ xử lý</p>
+                    <p className="text-gray-500 text-sm">Chờ xác nhận</p>
                     <p className="text-2xl font-bold text-yellow-600">
-                        {orders.filter((o) => o.status === 'pending').length}
+                        {orders.filter((o) => o.status.toLowerCase() === 'pending').length}
                     </p>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow">
-                    <p className="text-gray-500 text-sm">Đang xử lý</p>
+                    <p className="text-gray-500 text-sm">Đã xác nhận</p>
                     <p className="text-2xl font-bold text-blue-600">
-                        {orders.filter((o) => o.status === 'processing').length}
+                        {orders.filter((o) => o.status.toLowerCase() === 'confirmed').length}
                     </p>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow">
                     <p className="text-gray-500 text-sm">Đang giao</p>
                     <p className="text-2xl font-bold text-purple-600">
-                        {orders.filter((o) => o.status === 'shipped').length}
+                        {orders.filter((o) => o.status.toLowerCase() === 'shipping').length}
                     </p>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow">
                     <p className="text-gray-500 text-sm">Đã giao</p>
                     <p className="text-2xl font-bold text-green-600">
-                        {orders.filter((o) => o.status === 'delivered' || o.status === 'completed').length}
+                        {orders.filter((o) => ['delivered', 'completed'].includes(o.status.toLowerCase())).length}
                     </p>
                 </div>
             </div>
@@ -206,9 +322,9 @@ const OrdersPage: React.FC = () => {
                         onChange={handleStatusFilterChange}
                     >
                         <option value="">Tất cả trạng thái</option>
-                        <option value="pending">Chờ xử lý</option>
-                        <option value="processing">Đang xử lý</option>
-                        <option value="shipped">Đang giao</option>
+                        <option value="pending">Chờ xác nhận</option>
+                        <option value="confirmed">Đã xác nhận</option>
+                        <option value="shipping">Đang giao</option>
                         <option value="delivered">Đã giao</option>
                         <option value="completed">Hoàn thành</option>
                         <option value="cancelled">Đã hủy</option>
