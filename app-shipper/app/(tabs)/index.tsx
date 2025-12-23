@@ -84,6 +84,30 @@ export default function HomeScreen() {
     );
   };
 
+  const handleCompleteDelivery = async (orderId: string, event: any) => {
+    event.stopPropagation();
+    Alert.alert(
+      'Xác nhận giao hàng',
+      'Xác nhận đã giao hàng thành công?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Đã giao',
+          onPress: async () => {
+            try {
+              await shipperOrderService.markAsDelivered(orderId, 'Đơn hàng đã được giao thành công');
+              Alert.alert('Thành công', 'Đã cập nhật trạng thái giao hàng!');
+              loadOrders(); // Reload list
+            } catch (error) {
+              console.error('Error completing delivery:', error);
+              Alert.alert('Lỗi', 'Không thể cập nhật trạng thái');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleOrderPress = (order: ShipperOrder) => {
     router.push({
       pathname: '/(stack)/order-detail',
@@ -212,6 +236,13 @@ export default function HomeScreen() {
               >
                 <Ionicons name="navigate-outline" size={20} color="#2196F3" />
                 <Text style={styles.navigateButtonText}>Chỉ đường</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.completeButton]}
+                onPress={(e) => handleCompleteDelivery(item.id, e)}
+              >
+                <Ionicons name="checkmark-done-circle" size={20} color="#fff" />
+                <Text style={styles.completeButtonText}>Giao thành công</Text>
               </TouchableOpacity>
             </>
           )}
@@ -505,6 +536,14 @@ const styles = StyleSheet.create({
   },
   callButtonText: {
     color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  completeButton: {
+    backgroundColor: '#4CAF50',
+  },
+  completeButtonText: {
+    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
