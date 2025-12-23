@@ -97,6 +97,7 @@ namespace BookStore.API.Controllers.Payment
             });
         }
 
+        // --- ĐOẠN SỬA CHỮA QUAN TRỌNG: CREATE QR ---
         // POST: api/payment/qr
         [HttpPost("qr")]
         public IActionResult CreateQRPayment([FromBody] CreateQRPaymentRequestDto dto)
@@ -104,7 +105,7 @@ namespace BookStore.API.Controllers.Payment
             try
             {
                 Console.WriteLine($"=== CreateQRPayment Called ===");
-                Console.WriteLine($"OrderId: {dto.OrderId}");
+                Console.WriteLine($"OrderId: {dto.OrderId}"); // OrderId giờ là string
                 Console.WriteLine($"Amount: {dto.Amount}");
                 Console.WriteLine($"Description: {dto.Description}");
 
@@ -113,8 +114,8 @@ namespace BookStore.API.Controllers.Payment
                 
                 Console.WriteLine($"Bank Config - Code: {vietQR.BankCode}, Account: {vietQR.AccountNumber}");
 
-                // Validate input
-                if (dto.OrderId == Guid.Empty || dto.Amount <= 0)
+                // Validate input (SỬA: Kiểm tra string null thay vì Guid.Empty)
+                if (string.IsNullOrEmpty(dto.OrderId) || dto.Amount <= 0)
                 {
                     Console.WriteLine($"Validation failed - OrderId: {dto.OrderId}, Amount: {dto.Amount}");
                     return BadRequest(new { Message = "Thông tin thanh toán không hợp lệ" });
@@ -130,7 +131,11 @@ namespace BookStore.API.Controllers.Payment
                 }
 
                 // Generate transfer content
-                var transferContent = dto.Description ?? $"MUA {dto.OrderId}";
+                var transferContent = dto.Description;
+                if (string.IsNullOrEmpty(transferContent))
+                {
+                    transferContent = $"MUA {dto.OrderId}";
+                }
 
                 // Create VietQR URL
                 var qrCodeUrl = $"https://img.vietqr.io/image/{vietQR.BankCode}-{vietQR.AccountNumber}-{vietQR.Template}.jpg?amount={dto.Amount}&addInfo={Uri.EscapeDataString(transferContent)}&accountName={Uri.EscapeDataString(vietQR.AccountName)}";
@@ -139,7 +144,7 @@ namespace BookStore.API.Controllers.Payment
                 {
                     Success = true,
                     QrCodeUrl = qrCodeUrl,
-                    OrderId = dto.OrderId.ToString(),
+                    OrderId = dto.OrderId, // Giữ nguyên string
                     AccountNumber = vietQR.AccountNumber,
                     AccountName = vietQR.AccountName,
                     TransferContent = transferContent
@@ -279,10 +284,28 @@ namespace BookStore.API.Controllers.Payment
         }
     }
 
-    // Helper DTOs for specific endpoints
+    // Helper DTOs
     public class CreatePaymentForOrderDto
     {
         public string Provider { get; set; } = "VietQR";
         public string PaymentMethod { get; set; } = "Online";
+    }
+
+    // --- SỬA DTO: Đổi OrderId thành string ---
+    public class CreateQRPaymentRequestDto
+    {
+        public string OrderId { get; set; } = string.Empty; // Sửa từ Guid thành string
+        public decimal Amount { get; set; }
+        public string? Description { get; set; }
+    }
+
+    public class CreateQRPaymentResponseDto
+    {
+        public bool Success { get; set; }
+        public string QrCodeUrl { get; set; } = string.Empty;
+        public string OrderId { get; set; } = string.Empty; // Sửa từ Guid thành string
+        public string AccountNumber { get; set; } = string.Empty;
+        public string AccountName { get; set; } = string.Empty;
+        public string TransferContent { get; set; } = string.Empty;
     }
 }

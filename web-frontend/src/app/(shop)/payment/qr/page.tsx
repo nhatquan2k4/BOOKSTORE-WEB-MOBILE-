@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Breadcrumb } from "@/components/ui";
 import { paymentApi } from "@/lib/api/payment";
+import { ordersApi } from "@/lib/api/orders";
 import { cartService } from "@/services/cart.service";
 import { HubConnectionBuilder, HubConnection, HttpTransportType, HubConnectionState } from "@microsoft/signalr";
 
@@ -26,6 +27,7 @@ function QRPaymentContent() {
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "checking" | "success" | "failed" | "expired">("pending");
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [isLoadingQR, setIsLoadingQR] = useState(true);
+  const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
 
   const connectionRef = useRef<HubConnection | null>(null);
 
@@ -128,6 +130,26 @@ function QRPaymentContent() {
       router.push(successUrl);
     }, 1500);
   }, [type, bookId, orderId, router, paymentStatus]);
+
+  // Hàm giả lập thanh toán thành công (TEST ONLY)
+  const handleTestPayment = async () => {
+    if (!orderId || isConfirmingPayment) return;
+    
+    try {
+      setIsConfirmingPayment(true);
+      console.log("🧪 [TEST] Confirming payment for order:", orderId);
+      
+      await ordersApi.confirmPayment(orderId);
+      
+      console.log("✅ [TEST] Payment confirmed successfully!");
+      await handleSuccess();
+    } catch (error) {
+      console.error("❌ [TEST] Failed to confirm payment:", error);
+      alert("Lỗi xác nhận thanh toán: " + (error instanceof Error ? error.message : "Unknown error"));
+    } finally {
+      setIsConfirmingPayment(false);
+    }
+  };
 
   // --- FIX 3: Kết nối SignalR chuẩn ---
   useEffect(() => {
@@ -235,6 +257,17 @@ function QRPaymentContent() {
     setTimeout(() => setShowCopiedAlert(false), 2000);
   };
 
+  // Log current state for debugging
+  useEffect(() => {
+    console.log("=== CURRENT STATE ===");
+    console.log("OrderId:", orderId);
+    console.log("Amount:", amountParam);
+    console.log("QR URL:", qrCodeUrl);
+    console.log("Is Loading:", isLoadingQR);
+    console.log("Payment Status:", paymentStatus);
+    console.log("Bank Info:", bankInfo);
+  }, [orderId, amountParam, qrCodeUrl, isLoadingQR, paymentStatus, bankInfo]);
+
   // --- RENDER UI ---
   if (paymentStatus === "success") {
     return (
@@ -285,27 +318,75 @@ function QRPaymentContent() {
               {isLoadingQR ? (
                 <div className="w-48 h-48 flex items-center justify-center text-gray-400">Đang tạo mã...</div>
               ) : qrCodeUrl ? (
-                <Image
-                  src={qrCodeUrl}
-                  alt="QR Code"
-                  width={200}
-                  height={200}
-                  className="rounded-lg object-contain"
-                  priority // Load ngay lập tức
-                />
+                <div className="w-48 h-48 flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={qrCodeUrl}
+                    alt="QR Code"
+                    className="max-w-full max-h-full rounded-lg object-contain"
+                    onError={(e) => {
+                      console.error("❌ QR Image load error:", e);
+                      console.error("Failed URL:", qrCodeUrl);
+                    }}
+                    onLoad={() => {
+                      console.log("✅ QR Image loaded successfully:", qrCodeUrl);
+                    }}
+                  />
+                </div>
               ) : (
-                <div className="w-48 h-48 flex items-center justify-center text-red-500">Lỗi tạo QR</div>
+                <div className="w-48 h-48 flex items-center justify-center text-red-500">
+                  <div className="text-center">
+                    <p className="font-bold">Lỗi tạo QR</p>
+                    <p className="text-xs mt-2">Kiểm tra console</p>
+                  </div>
+                </div>
               )}
             </div>
             <div className="text-blue-100 mb-2 bg-white/10 px-4 py-2 rounded-full">
               Hết hạn: <span className="font-mono font-bold">{formatTime(timeLeft)}</span>
             </div>
             <p className="text-sm text-blue-200 mt-2 italic">Trang sẽ tự động chuyển khi hoàn tất</p>
+            
+            {/* TEST BUTTON - Nút giả lập thanh toán */}
+            <div className="mt-6 w-full">
+              <button
+                onClick={handleTestPayment}
+                disabled={isConfirmingPayment || paymentStatus === "success"}
+                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+              >
+                {isConfirmingPayment ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Đang xác nhận...
+                  </span>
+                ) : (
+                  "🧪 TEST: Đã thanh toán"
+                )}
+              </button>
+              <p className="text-xs text-blue-100 mt-2 text-center">
+                (Nút test - Giả lập thanh toán thành công)
+              </p>
+            </div>
           </div>
 
           {/* Cột phải: Thông tin */}
           <div className="p-8 flex flex-col justify-center">
             <h3 className="text-xl font-bold text-gray-800 mb-6">Thông tin chuyển khoản</h3>
+            
+            {/* Debug Info - Remove in production */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                <p className="font-bold text-yellow-800">Debug Info:</p>
+                <p>OrderId: {orderId || 'N/A'}</p>
+                <p>Amount: {amountParam || 'N/A'}</p>
+                <p>QR URL: {qrCodeUrl ? '✅ Generated' : '❌ Not generated'}</p>
+                <p>Loading: {isLoadingQR ? 'Yes' : 'No'}</p>
+              </div>
+            )}
+            
             <div className="space-y-5">
               <div className="cursor-pointer group" onClick={() => handleCopy(bankInfo.accountNumber)}>
                 <label className="text-xs text-gray-500 uppercase font-semibold">Số tài khoản</label>
