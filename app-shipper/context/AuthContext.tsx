@@ -52,12 +52,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (!user && !inAuthGroup) {
       // Redirect to login if not authenticated
-      router.replace('/(auth)/login');
+      setTimeout(() => router.replace('/(auth)/login'), 0);
     } else if (user && inAuthGroup) {
       // Redirect to home if authenticated and trying to access auth screens
-      router.replace('/(tabs)');
+      setTimeout(() => router.replace('/(tabs)'), 0);
     }
-  }, [user, segments, isLoading]);
+  }, [user, segments, isLoading, router]);
 
   const login = async (email: string, password: string) => {
     try {

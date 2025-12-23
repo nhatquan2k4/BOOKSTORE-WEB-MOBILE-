@@ -302,6 +302,63 @@ namespace BookStore.API.Controllers.Order
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập"));
         }
+
+        // GET: api/orders/available-for-shipping - Shipper lấy danh sách đơn đã xác nhận
+        [HttpGet("available-for-shipping")]
+        [Authorize(Roles = "Shipper,Admin")]
+        public async Task<IActionResult> GetAvailableOrdersForShipping(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 100)
+        {
+            try
+            {
+                // Lấy tất cả đơn có status = "Confirmed" (sẵn sàng giao)
+                var result = await _orderService.GetAllOrdersAsync(pageNumber, pageSize, "Confirmed");
+                
+                return Ok(new
+                {
+                    Items = result.Items,
+                    TotalCount = result.TotalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling((double)result.TotalCount / pageSize)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting available orders for shipping");
+                return StatusCode(500, new { Message = "Lỗi khi lấy danh sách đơn hàng" });
+            }
+        }
+
+        // GET: api/orders/my-shipping-orders - Shipper lấy danh sách đơn đang giao của mình
+        [HttpGet("my-shipping-orders")]
+        [Authorize(Roles = "Shipper,Admin")]
+        public async Task<IActionResult> GetMyShippingOrders(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 100)
+        {
+            try
+            {
+                // TODO: Sau này có thể thêm logic filter theo ShipperId nếu cần
+                // Hiện tại lấy tất cả đơn đang giao (status = "Shipping")
+                var result = await _orderService.GetAllOrdersAsync(pageNumber, pageSize, "Shipping");
+                
+                return Ok(new
+                {
+                    Items = result.Items,
+                    TotalCount = result.TotalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling((double)result.TotalCount / pageSize)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting my shipping orders");
+                return StatusCode(500, new { Message = "Lỗi khi lấy danh sách đơn hàng" });
+            }
+        }
     }
 
     // Helper DTOs

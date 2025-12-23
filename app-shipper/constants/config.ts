@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://192.168.0.101/api',
+  BASE_URL: 'https://tautologously-hyperconscious-carolyne.ngrok-free.dev/api',
   TIMEOUT: 30000, // 30 seconds
 };
 
