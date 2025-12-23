@@ -218,7 +218,7 @@ const BooksPage: React.FC = () => {
                         totalPages={totalPages}
                         totalCount={totalCount}
                         pageSize={pageSize}
-                        itemsCount={filteredBooks.length}
+                        itemsCount={filteredBooks?.length || 0}
                         onPageChange={setCurrentPage}
                         entityName="sách"
                     />

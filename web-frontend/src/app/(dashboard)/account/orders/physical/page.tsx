@@ -96,10 +96,26 @@ export default function PhysicalOrdersPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="max-w-6xl mx-auto px-4 space-y-6">
-        {/* Header */}
+        {/* Header & Navigation Tabs */}
         <div>
-            <h1 className="text-2xl font-bold text-gray-900">Đơn hàng Sách giấy</h1>
-            <p className="text-gray-500">Quản lý các đơn hàng được vận chuyển đến địa chỉ của bạn.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Đơn hàng của tôi</h1>
+            <p className="text-gray-500 mb-4">Quản lý và theo dõi đơn hàng.</p>
+            
+            {/* Tabs */}
+            <div className="flex gap-2 border-b">
+                <button 
+                    onClick={() => router.push('/account/orders/physical')}
+                    className="px-6 py-3 font-medium text-blue-600 border-b-2 border-blue-600"
+                >
+                    Sách giấy
+                </button>
+                <button 
+                    onClick={() => router.push('/account/orders/digital')}
+                    className="px-6 py-3 font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent hover:border-gray-300"
+                >
+                    E-Book
+                </button>
+            </div>
         </div>
 
         {/* Filter Buttons */}
@@ -167,7 +183,7 @@ export default function PhysicalOrdersPage() {
                         <div className="text-sm text-gray-600">
                             <p className="font-medium text-gray-900">Địa chỉ nhận hàng:</p>
                             <p>{order.address.recipientName} - {order.address.phoneNumber}</p>
-                            <p>{order.address.fullAddress}</p>
+                            <p>{order.address.addressLine}, {order.address.ward}, {order.address.district}, {order.address.city}</p>
                         </div>
                         
                         <div className="flex gap-2 w-full sm:w-auto">

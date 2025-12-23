@@ -4,6 +4,9 @@ import Table from '../components/common/Table';
 import Pagination from '../components/common/Pagination';
 import type { Category } from '../types';
 import { categoryService } from '../services';
+import { bookService } from '../services';
+import apiClient from '../utils/apiClient';
+import { API_ENDPOINTS } from '../constants';
 import { useCrudOperations } from '../hooks/useCrudOperations';
 
 const CategoriesPage: React.FC = () => {
@@ -78,8 +81,8 @@ const CategoriesPage: React.FC = () => {
         {
             key: 'bookCount',
             label: 'Số sách',
-            render: (value: number) => (
-                <span className="font-semibold text-blue-600">{value}</span>
+            render: (_value: any, item: Category) => (
+                <span className="font-semibold text-blue-600">{categoryCounts[item.id] ?? 0}</span>
             )
         },
         {
@@ -105,6 +108,55 @@ const CategoriesPage: React.FC = () => {
         handleDelete(category.id, category.name);
     };
 
+    // View books by category
+    const [showBooksModal, setShowBooksModal] = useState(false);
+    const [categoryBooks, setCategoryBooks] = useState<Array<any>>([]);
+    const [booksLoading, setBooksLoading] = useState(false);
+    const [booksError, setBooksError] = useState<string | null>(null);
+    const [selectedCategoryName, setSelectedCategoryName] = useState<string>('');
+    const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+
+    const handleViewBooks = async (category: Category) => {
+        setSelectedCategoryName(category.name || '');
+        setShowBooksModal(true);
+        setBooksLoading(true);
+        setCategoryBooks([]);
+        setBooksError(null);
+        try {
+            const resp = await bookService.getAll({ pageSize: 1000, categoryId: category.id });
+            console.debug('bookService.getAll (category) response:', resp);
+            if (Array.isArray((resp as any).items)) {
+                setCategoryBooks((resp as any).items);
+            } else if (Array.isArray(resp as any)) {
+                setCategoryBooks(resp as any);
+            } else if (Array.isArray((resp as any).data)) {
+                setCategoryBooks((resp as any).data);
+            } else {
+                try {
+                    const raw = await apiClient.get(API_ENDPOINTS.BOOK.GET_BY_CATEGORY(category.id));
+                    console.debug('Fallback raw GET (category) response:', raw);
+                    if (Array.isArray(raw.data)) {
+                        setCategoryBooks(raw.data);
+                    } else if (Array.isArray(raw.data?.data)) {
+                        setCategoryBooks(raw.data.data);
+                    } else if (Array.isArray(raw.data?.items)) {
+                        setCategoryBooks(raw.data.items);
+                    } else {
+                        setCategoryBooks([]);
+                    }
+                } catch (fallbackErr) {
+                    console.error('Fallback fetch error (category):', fallbackErr);
+                    setCategoryBooks([]);
+                }
+            }
+        } catch (err: any) {
+            console.error('Error fetching books for category:', err);
+            setBooksError(err?.message || 'Lỗi khi tải sách');
+        } finally {
+            setBooksLoading(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -128,8 +180,9 @@ const CategoriesPage: React.FC = () => {
                 search: searchTerm || undefined,
             });
         } catch (err: any) {
-            console.error('Error saving category:', err);
-            alert(`Không thể lưu thể loại: ${err.message}`);
+            console.error('Error saving category:', err?.response?.data ?? err);
+            const serverMessage = err?.response?.data?.message || err?.response?.data || err.message || 'Không thể lưu thể loại';
+            alert(`Lỗi khi lưu thể loại: ${typeof serverMessage === 'string' ? serverMessage : JSON.stringify(serverMessage)}`);
         }
     };
 
@@ -140,6 +193,40 @@ const CategoriesPage: React.FC = () => {
     };
 
     const totalPages = Math.ceil(totalCount / pageSize);
+
+    // Fetch book counts for currently loaded categories (for the "Số sách" column)
+    useEffect(() => {
+        let mounted = true;
+        const loadCounts = async () => {
+            if (!categories || categories.length === 0) {
+                setCategoryCounts({});
+                return;
+            }
+            try {
+                const promises = categories.map(async (c) => {
+                    try {
+                        const res = await bookService.getAll({ pageSize: 1, categoryId: c.id });
+                        const total = (res as any)?.totalCount ?? (Array.isArray(res as any) ? (res as any).length : ((res as any)?.data?.totalCount ?? (res as any)?.data?.length ?? 0));
+                        return { id: c.id, count: typeof total === 'number' ? total : 0 };
+                    } catch (e) {
+                        console.error('Error fetching count for category', c.id, e);
+                        return { id: c.id, count: 0 };
+                    }
+                });
+
+                const results = await Promise.all(promises);
+                if (!mounted) return;
+                const map: Record<string, number> = {};
+                results.forEach(r => { map[r.id] = r.count; });
+                setCategoryCounts(map);
+            } finally {
+                // no-op
+            }
+        };
+
+        loadCounts();
+        return () => { mounted = false; };
+    }, [categories]);
 
     // Lọc categories có thể làm parent (loại bỏ chính nó và các con của nó)
     const availableParents = categories.filter(cat => 
@@ -185,6 +272,7 @@ const CategoriesPage: React.FC = () => {
                 <Table
                     columns={columns}
                     data={categories}
+                    onView={handleViewBooks}
                     onEdit={handleEdit}
                     onDelete={handleDeleteCategory}
                     loading={loading}
@@ -267,6 +355,46 @@ const CategoriesPage: React.FC = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* View Books Modal (category) */}
+            {showBooksModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold">Sách của: {selectedCategoryName}</h2>
+                            <button
+                                onClick={() => setShowBooksModal(false)}
+                                className="px-3 py-1 border rounded-lg hover:bg-gray-50"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+
+                        {booksLoading ? (
+                            <div className="py-8 text-center text-gray-500">Đang tải sách...</div>
+                        ) : booksError ? (
+                            <div className="py-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                                {booksError}
+                            </div>
+                        ) : categoryBooks.length === 0 ? (
+                            <div className="py-8 text-center text-gray-500">Không có sách nào.</div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {categoryBooks.map((book) => (
+                                    <div key={book.id} className="border rounded-lg p-4">
+                                        <h3 className="font-semibold text-gray-800">{book.title}</h3>
+                                        <div className="text-sm text-gray-600 mt-2">
+                                            <div><span className="font-medium">ISBN:</span> {book.isbn || 'N/A'}</div>
+                                            <div><span className="font-medium">Năm xuất bản:</span> {book.publicationYear ?? 'N/A'}</div>
+                                            <div><span className="font-medium">Tác giả:</span> {(book.authorNames || []).join(', ') || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

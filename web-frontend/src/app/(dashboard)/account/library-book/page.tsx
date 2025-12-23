@@ -225,7 +225,7 @@ export default function LibraryPage() {
                     
                     {/* Badge trạng thái */}
                     <div className="flex gap-2 mb-3">
-                        <Badge variant="outline" className="text-xs">{book.genre}</Badge>
+                        <Badge className="text-xs">{book.genre}</Badge>
                         {book.daysRemaining <= 3 && book.status === 'reading' && (
                             <Badge variant="warning" className="text-xs text-orange-600 bg-orange-50 border-orange-200">
                                 Hết hạn sau {book.daysRemaining} ngày

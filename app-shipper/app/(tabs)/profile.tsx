@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -10,13 +11,36 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { user, logout } = useAuth();
 
   const handleViewMonthlyDetails = () => {
     router.push('/earnings');
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Đăng xuất',
+      'Bạn có chắc chắn muốn đăng xuất?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Đăng xuất',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error) {
+              Alert.alert('Lỗi', 'Không thể đăng xuất. Vui lòng thử lại');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleMenuPress = (id: number) => {
@@ -69,8 +93,8 @@ export default function ProfileScreen() {
               <View style={styles.onlineIndicator} />
             </View>
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>Nguyễn Văn Shipper</Text>
-              <Text style={styles.userPhone}>0901234567</Text>
+              <Text style={styles.userName}>{user?.fullName || 'Shipper'}</Text>
+              <Text style={styles.userPhone}>{user?.phoneNumber || user?.email || 'N/A'}</Text>
               <View style={styles.ratingContainer}>
                 <Ionicons name="star" size={16} color="#FFD700" />
                 <Text style={styles.rating}>4.9</Text>
@@ -152,7 +176,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="#E24A4A" />
           <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>

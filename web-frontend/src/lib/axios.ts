@@ -9,6 +9,7 @@ const axiosInstance: AxiosInstance = axios.create({
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true', // Skip ngrok warning page
   },
 });
 
@@ -120,22 +121,34 @@ export class ApiError extends Error {
 
 // Handle API Error
 export const handleApiError = (error: any): never => {
+  console.log('[AXIOS] handleApiError called with:', error);
+  
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<ApiErrorResponse>;
+    
+    console.log('[AXIOS] Is AxiosError:', {
+      hasResponse: !!axiosError.response,
+      hasRequest: !!axiosError.request,
+      status: axiosError.response?.status,
+      data: axiosError.response?.data
+    });
     
     if (axiosError.response) {
       // Server responded with error
       const { data, status } = axiosError.response;
       const message = data?.message || data?.error || 'Có lỗi xảy ra từ server';
       
+      console.log('[AXIOS] Throwing ApiError:', { message, status, errors: data?.errors });
       throw new ApiError(message, status, data?.errors);
     } else if (axiosError.request) {
       // Request was made but no response
+      console.log('[AXIOS] No response from server');
       throw new ApiError('Không thể kết nối đến server', 503);
     }
   }
   
   // Unknown error
+  console.log('[AXIOS] Unknown error type');
   throw new ApiError(error.message || 'Có lỗi không xác định xảy ra', 500);
 };
 

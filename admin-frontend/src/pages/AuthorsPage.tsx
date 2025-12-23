@@ -4,12 +4,15 @@ import Table from '../components/common/Table';
 import Pagination from '../components/common/Pagination';
 import type { Author } from '../types';
 import { authorService } from '../services';
+import { bookService } from '../services';
+import apiClient from '../utils/apiClient';
+import { API_ENDPOINTS } from '../constants';
 import { useCrudOperations } from '../hooks/useCrudOperations';
 
 const AuthorsPage: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
-    const [formData, setFormData] = useState({ name: '', avartarUrl: '' });
+    const [formData, setFormData] = useState({ name: '', avatarUrl: '' });
     const pageSize = 10;
 
     const {
@@ -35,7 +38,7 @@ const AuthorsPage: React.FC = () => {
             }
             setShowModal(false);
             setEditingAuthor(null);
-            setFormData({ name: '', avartarUrl: '' });
+            setFormData({ name: '', avatarUrl: '' });
         },
         onError: (action, error) => {
             alert(`Lỗi khi ${action === 'create' ? 'thêm' : action === 'update' ? 'cập nhật' : 'xóa'} tác giả: ${error.message}`);
@@ -54,7 +57,7 @@ const AuthorsPage: React.FC = () => {
     const columns = [
         { key: 'name', label: 'Tên tác giả' },
         {
-            key: 'avartarUrl',
+            key: 'avatarUrl',
             label: 'Avatar',
             render: (value?: string) => (
                 value ? (
@@ -69,17 +72,107 @@ const AuthorsPage: React.FC = () => {
         {
             key: 'bookCount',
             label: 'Số sách',
-            render: (value: number) => (
-                <span className="font-semibold text-blue-600">{value}</span>
+            render: (_value: any, item: Author) => (
+                <span className="font-semibold text-blue-600">{authorCounts[item.id] ?? 0}</span>
             )
         },
     ];
 
     const handleEdit = (author: Author) => {
         setEditingAuthor(author);
-        setFormData({ name: author.name, avartarUrl: author.avartarUrl || '' });
+        // backend/type uses `avartarUrl` (typo) so read that field when editing
+        setFormData({ name: author.name, avatarUrl: (author as any).avartarUrl || '' });
         setShowModal(true);
     };
+
+    // View books by author
+    const [showBooksModal, setShowBooksModal] = useState(false);
+    const [authorBooks, setAuthorBooks] = useState<Array<any>>([]);
+    const [booksLoading, setBooksLoading] = useState(false);
+    const [booksError, setBooksError] = useState<string | null>(null);
+    const [selectedAuthorName, setSelectedAuthorName] = useState<string>('');
+    const [authorCounts, setAuthorCounts] = useState<Record<string, number>>({});
+    const [countsLoading, setCountsLoading] = useState(false);
+
+    const handleViewBooks = async (author: Author) => {
+        setSelectedAuthorName(author.name || '');
+        setShowBooksModal(true);
+        setBooksLoading(true);
+        setAuthorBooks([]);
+        setBooksError(null);
+        try {
+            
+            const resp = await bookService.getAll({ pageSize: 1000, authorId: author.id });
+            console.debug('bookService.getAll response:', resp);
+           
+            if (Array.isArray((resp as any).items)) {
+                setAuthorBooks((resp as any).items);
+            } else if (Array.isArray(resp as any)) {
+                setAuthorBooks(resp as any);
+            } else if (Array.isArray((resp as any).data)) {
+                setAuthorBooks((resp as any).data);
+            } else {
+                
+                try {
+                    const raw = await apiClient.get(API_ENDPOINTS.BOOK.GET_BY_AUTHOR(author.id));
+                    console.debug('Fallback raw GET response:', raw);
+                    if (Array.isArray(raw.data)) {
+                        setAuthorBooks(raw.data);
+                    } else if (Array.isArray(raw.data?.data)) {
+                        setAuthorBooks(raw.data.data);
+                    } else if (Array.isArray(raw.data?.items)) {
+                        setAuthorBooks(raw.data.items);
+                    } else {
+                        setAuthorBooks([]);
+                    }
+                } catch (fallbackErr) {
+                    console.error('Fallback fetch error:', fallbackErr);
+                    setAuthorBooks([]);
+                }
+            }
+        } catch (err: any) {
+            console.error('Error fetching books for author:', err);
+            setBooksError(err?.message || 'Lỗi khi tải sách');
+        } finally {
+            setBooksLoading(false);
+        }
+    };
+
+    // Fetch book counts for currently loaded authors (for the "Số sách" column)
+    useEffect(() => {
+        let mounted = true;
+        const loadCounts = async () => {
+            if (!authors || authors.length === 0) {
+                setAuthorCounts({});
+                return;
+            }
+            setCountsLoading(true);
+            try {
+                const promises = authors.map(async (a) => {
+                    try {
+                        const res = await bookService.getAll({ pageSize: 1, authorId: a.id });
+                        // res may be { items, totalCount } or array — prefer totalCount
+                        const total = (res as any)?.totalCount ?? (Array.isArray(res as any) ? (res as any).length : ((res as any)?.data?.totalCount ?? (res as any)?.data?.length ?? 0));
+                        return { id: a.id, count: typeof total === 'number' ? total : 0 };
+                    } catch (e) {
+                        console.error('Error fetching count for author', a.id, e);
+                        return { id: a.id, count: 0 };
+                    }
+                });
+
+                const results = await Promise.all(promises);
+                if (!mounted) return;
+                const map: Record<string, number> = {};
+                results.forEach(r => { map[r.id] = r.count; });
+                setAuthorCounts(map);
+            } finally {
+                if (mounted) setCountsLoading(false);
+            }
+        };
+
+        loadCounts();
+        return () => { mounted = false; };
+    }, [authors]);
 
     const handleDeleteAuthor = (author: Author) => {
         handleDelete(author.id, author.name);
@@ -88,14 +181,18 @@ const AuthorsPage: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Map UI form field `avatarUrl` to backend's `avartarUrl` (typo in types/api)
+            const basePayload: any = { name: formData.name, avartarUrl: (formData as any).avatarUrl };
             if (editingAuthor) {
-                await authorService.update(editingAuthor.id, formData);
+                // Update endpoint expects body to include `Id` that matches URL
+                const updatePayload = { ...basePayload, id: editingAuthor.id };
+                await authorService.update(editingAuthor.id, updatePayload as any);
             } else {
-                await authorService.create(formData);
+                await authorService.create(basePayload as any);
             }
             setShowModal(false);
             setEditingAuthor(null);
-            setFormData({ name: '', avartarUrl: '' });
+            setFormData({ name: '', avatarUrl: '' });
             fetchAuthors({
                 page: currentPage,
                 pageSize: pageSize,
@@ -109,7 +206,7 @@ const AuthorsPage: React.FC = () => {
 
     const handleAddNew = () => {
         setEditingAuthor(null);
-        setFormData({ name: '', avartarUrl: '' });
+        setFormData({ name: '', avatarUrl: '' });
         setShowModal(true);
     };
 
@@ -154,6 +251,7 @@ const AuthorsPage: React.FC = () => {
                 <Table
                     columns={columns}
                     data={authors}
+                    onView={handleViewBooks}
                     onEdit={handleEdit}
                     onDelete={handleDeleteAuthor}
                     loading={loading}
@@ -198,8 +296,8 @@ const AuthorsPage: React.FC = () => {
                                 </label>
                                 <input
                                     type="url"
-                                    value={formData.avartarUrl}
-                                    onChange={(e) => setFormData({ ...formData, avartarUrl: e.target.value })}
+                                    value={(formData as any).avatarUrl}
+                                    onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="https://example.com/avatar.jpg"
                                 />
@@ -220,6 +318,46 @@ const AuthorsPage: React.FC = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* View Books Modal */}
+            {showBooksModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold">Sách của: {selectedAuthorName}</h2>
+                            <button
+                                onClick={() => setShowBooksModal(false)}
+                                className="px-3 py-1 border rounded-lg hover:bg-gray-50"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+
+                        {booksLoading ? (
+                            <div className="py-8 text-center text-gray-500">Đang tải sách...</div>
+                        ) : booksError ? (
+                            <div className="py-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                                {booksError}
+                            </div>
+                        ) : authorBooks.length === 0 ? (
+                            <div className="py-8 text-center text-gray-500">Không có sách nào.</div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {authorBooks.map((book) => (
+                                    <div key={book.id} className="border rounded-lg p-4">
+                                        <h3 className="font-semibold text-gray-800">{book.title}</h3>
+                                        <div className="text-sm text-gray-600 mt-2">
+                                            <div><span className="font-medium">ISBN:</span> {book.isbn || 'N/A'}</div>
+                                            <div><span className="font-medium">Năm xuất bản:</span> {book.publicationYear ?? 'N/A'}</div>
+                                            <div><span className="font-medium">Nhà xuất bản:</span> {book.publisherName || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
