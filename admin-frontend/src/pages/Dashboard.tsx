@@ -14,12 +14,6 @@ const Dashboard: React.FC = () => {
         totalRevenue: 0,
         revenueChange: 0,
     });
-    const [ordersByStatus, setOrdersByStatus] = useState({
-        pending: 0,
-        processing: 0,
-        shipped: 0,
-        delivered: 0,
-    });
     const [recentOrders, setRecentOrders] = useState<any[]>([]);
     const [topBooks, setTopBooks] = useState<any[]>([]);
 
@@ -77,14 +71,6 @@ const Dashboard: React.FC = () => {
                 ordersChange: orderStats?.percentageChange || 0,
                 totalRevenue: revenue?.totalRevenue || 0,
                 revenueChange: revenue?.percentageChange || 0,
-            });
-
-            // Set orders by status
-            setOrdersByStatus({
-                pending: orderStats?.pendingOrders || 0,
-                processing: orderStats?.processingOrders || 0,
-                shipped: orderStats?.shippedOrders || 0,
-                delivered: orderStats?.completedOrders || 0,
             });
 
             // Set recent orders

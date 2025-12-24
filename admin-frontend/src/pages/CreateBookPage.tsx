@@ -3,11 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, X } from 'lucide-react';
 import { bookService, authorService, publisherService, categoryService, bookImageService } from '../services';
 import type { Author, Publisher, Category, CreateBookDto } from '../types';
-import { useAuth } from '../context/AuthContext';
 
 const CreateBookPage: React.FC = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [authors, setAuthors] = useState<Author[]>([]);
     const [publishers, setPublishers] = useState<Publisher[]>([]);

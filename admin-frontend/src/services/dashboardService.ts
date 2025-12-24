@@ -29,17 +29,6 @@ interface OrderStats {
     percentageChange: number;
 }
 
-interface DashboardStats {
-    totalBooks: number;
-    totalUsers: number;
-    totalOrders: number;
-    totalRevenue: number;
-    booksPercentageChange: number;
-    usersPercentageChange: number;
-    ordersPercentageChange: number;
-    revenuePercentageChange: number;
-}
-
 class DashboardService {
     async getRevenue(from?: Date, to?: Date) {
         const params: any = {};
