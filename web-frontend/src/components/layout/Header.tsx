@@ -15,6 +15,7 @@ import { bookService, cartService, authorService, categoryService } from "@/serv
 import type { BookDto, AuthorDto, CategoryDto } from "@/types/dtos";
 import { matchVietnameseText } from "@/lib/utils/text";
 import { resolveBookPrice, formatPrice } from "@/lib/price";
+import { normalizeImageUrl } from '@/lib/imageUtils';
 
 export function Header() {
   const router = useRouter();
@@ -388,47 +389,60 @@ export function Header() {
                         <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
                           Sách
                         </div>
-                        {searchResults.map((book) => (
-                          <button
-                            key={book.id}
-                            onClick={() => handleBookClick(book.id)}
-                            className="w-full flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-0"
-                          >
-                            <div className="relative w-16 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
-                              <Image
-                                src={book.coverImage || "/image/anh.png"}
-                                alt={book.title}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-gray-900 line-clamp-2 mb-1">
-                                {book.title}
-                              </h4>
-                              <p className="text-sm text-gray-500 mb-2">
-                                {book.authorNames?.join(", ") || "Chưa cập nhật"}
-                              </p>
-                              <div className="flex items-center gap-2">
-                                {(() => {
-                                  const priceInfo = resolveBookPrice(book);
-                                  return (
-                                    <>
-                                      <span className={`font-bold ${priceInfo.hasDiscount ? 'text-red-600' : 'text-gray-900'}`}>
-                                        {formatPrice(priceInfo.finalPrice)}
-                                      </span>
-                                      {priceInfo.hasDiscount && priceInfo.originalPrice && (
-                                        <span className="text-sm text-gray-400 line-through">
-                                          {formatPrice(priceInfo.originalPrice)}
-                                        </span>
-                                      )}
-                                    </>
-                                  );
-                                })()}
+                        {searchResults.map((book) => {
+                          const imageUrl = normalizeImageUrl(book.coverImage);
+                          
+                          return (
+                            <button
+                              key={book.id}
+                              onClick={() => handleBookClick(book.id)}
+                              className="w-full flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-0"
+                            >
+                              <div className="relative w-16 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                                {imageUrl ? (
+                                  <Image
+                                    src={imageUrl}
+                                    alt={book.title}
+                                    fill
+                                    unoptimized
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          </button>
-                        ))}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-gray-900 line-clamp-2 mb-1">
+                                  {book.title}
+                                </h4>
+                                <p className="text-sm text-gray-500 mb-2">
+                                  {book.authorNames?.join(", ") || "Chưa cập nhật"}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  {(() => {
+                                    const priceInfo = resolveBookPrice(book);
+                                    return (
+                                      <>
+                                        <span className={`font-bold ${priceInfo.hasDiscount ? 'text-red-600' : 'text-gray-900'}`}>
+                                          {formatPrice(priceInfo.finalPrice)}
+                                        </span>
+                                        {priceInfo.hasDiscount && priceInfo.originalPrice && (
+                                          <span className="text-sm text-gray-400 line-through">
+                                            {formatPrice(priceInfo.originalPrice)}
+                                          </span>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </>
                     )}
 

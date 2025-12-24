@@ -1,54 +1,23 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  eslint: { ignoreDuringBuilds: true },
   
+  // 1. Cấu hình Proxy để sửa lỗi CORS (Gọi vào /api-backend sẽ chuyển sang Ngrok)
+  async rewrites() {
+    return [
+      {
+        source: '/api-backend/:path*',
+        destination: 'https://tautologously-hyperconscious-carolyne.ngrok-free.dev/api/:path*', 
+      },
+    ];
+  },
+
+  // 2. Cho phép tải ảnh từ Ngrok và Tiki
   images: {
     remotePatterns: [
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '9000',
-        pathname: '/book-images/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '9000',
-        pathname: '/ebook-files/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '9000',
-        pathname: '/user-avatars/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.ngrok-free.app',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.ngrok-free.dev',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'img.vietqr.io',
-        port: '',
-        pathname: '/image/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'salt.tikicdn.com',
-        port: '',
-        pathname: '/**',
-      },
+      { protocol: 'https', hostname: 'tautologously-hyperconscious-carolyne.ngrok-free.dev', port: '', pathname: '/**' },
+      { protocol: 'https', hostname: 'salt.tikicdn.com', port: '', pathname: '/**' },
     ],
   },
 };

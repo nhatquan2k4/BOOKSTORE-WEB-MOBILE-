@@ -1,21 +1,24 @@
+using BookStore.API.BackgroundServices;
 using BookStore.API.Filters;
 using BookStore.API.Middlewares;
-using BookStore.API.BackgroundServices;
 using BookStore.Application.IService;
 using BookStore.Application.IService.Catalog;
+using BookStore.Application.IService.ChatBot;
 using BookStore.Application.IService.Identity.Auth;
 using BookStore.Application.IService.Identity.Email;
 using BookStore.Application.IService.Identity.Permission;
 using BookStore.Application.IService.Identity.Role;
 using BookStore.Application.IService.Identity.User;
 using BookStore.Application.IService.System;
-using BookStore.Application.Services.System;
+using BookStore.Application.Option;
 using BookStore.Application.Services;
 using BookStore.Application.Services.Catalog;
+using BookStore.Application.Services.ChatBot;
 using BookStore.Application.Services.Identity.Auth;
 using BookStore.Application.Services.Identity.Permission;
 using BookStore.Application.Services.Identity.Role;
 using BookStore.Application.Services.Identity.User;
+using BookStore.Application.Services.System;
 using BookStore.Application.Settings;
 using BookStore.Domain.IRepository;
 using BookStore.Domain.IRepository.Cart;
@@ -27,6 +30,7 @@ using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Domain.IRepository.Ordering;
 using BookStore.Domain.IRepository.Payment;
 using BookStore.Infrastructure.Data;
+using BookStore.Infrastructure.Data.Seeders;
 using BookStore.Infrastructure.Repositories.Cart;
 using BookStore.Infrastructure.Repositories.Ordering;
 using BookStore.Infrastructure.Repositories.Payment;
@@ -36,16 +40,12 @@ using BookStore.Infrastructure.Repository.Identity;
 using BookStore.Infrastructure.Repository.Identity.Auth;
 using BookStore.Infrastructure.Repository.Identity.RolePermisson;
 using BookStore.Infrastructure.Repository.Identity.User;
-using BookStore.Infrastructure.Data.Seeders;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-// using BookStore.Infrastructure.Services; // Commented out - namespace does not exist
-// using BookStore.API.Services; // Commented out - namespace does not exist
-// using BookStore.API.Hubs; // Commented out - namespace does not exist
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -228,7 +228,16 @@ builder.Services.AddScoped<BookStore.Application.IService.Analytics.IAuditLogSer
 builder.Services.AddScoped<BookStore.Application.IService.Analytics.IBookViewService, BookStore.Application.Service.Analytics.BookViewService>();
 builder.Services.AddScoped<BookStore.Application.IService.Analytics.IDashboardService, BookStore.Application.Service.Analytics.DashboardService>();
 
-// Event Bus
+//ChatBot
+builder.Services.AddScoped<IChatBotService, ChatBotService>();
+builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+
+// Notification Repository & Service
+builder.Services.AddScoped<BookStore.Domain.IRepository.System.INotificationRepository, BookStore.Infrastructure.Repositories.System.NotificationRepository>();
+builder.Services.AddScoped<BookStore.Application.IService.System.INotificationService, BookStore.Application.Services.System.NotificationService>();
+
+// Event Bus (Singleton because it uses Channel)
+
 builder.Services.AddSingleton<BookStore.Application.Services.System.IEventBus, BookStore.Application.Services.System.InMemoryEventBus>();
 
 // SignalR
@@ -271,6 +280,11 @@ builder.Services.AddSwaggerGen(c =>
     });
     c.OperationFilter<FileUploadOperationFilter>();
 });
+
+
+
+builder.Services.Configure<GeminiOptions>(
+    builder.Configuration.GetSection("Gemini"));
 
 var app = builder.Build();
 
