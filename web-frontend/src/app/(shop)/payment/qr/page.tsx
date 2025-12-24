@@ -459,7 +459,7 @@ function QRPaymentContent() {
         if (orderData) {
             // Ưu tiên lấy finalAmount (giá cuối), nếu không có thì lấy totalAmount
             // Backend có thể trả về key viết hoa hoặc thường tùy cấu hình
-            const realAmount = (orderData as any).finalAmount ?? (orderData as any).totalAmount ?? 0;
+            const realAmount = (orderData as Record<string, unknown>).finalAmount ?? (orderData as Record<string, unknown>).totalAmount ?? 0;
             console.log("💰 Giá gốc từ DB:", realAmount);
             setAmount(realAmount);
             
@@ -518,7 +518,7 @@ function QRPaymentContent() {
 
     // Nếu là đơn mua hàng, xóa giỏ hàng cho chắc
     if (type === "buy") {
-      try { await cartService.clearCart(); } catch (e) {}
+      try { await cartService.clearCart(); } catch { }
     }
 
     setTimeout(() => {
