@@ -153,12 +153,18 @@ const BookDetailPage: React.FC = () => {
         }
         
         try {
-            await bookService.update(book.id, editForm);
+            // Some backends validate that URL id === body.id. Include id to be safe.
+            const payload = { ...editForm, id: book.id } as any;
+            console.debug('Update book payload:', payload);
+            await bookService.update(book.id, payload);
             alert('Cập nhật sách thành công!');
             setShowEditModal(false);
             fetchBookDetail(book.id);
         } catch (err: any) {
-            alert(`Lỗi: ${err.message}`);
+            console.error('Error updating book:', err);
+            console.error('Error response data:', err.response?.data);
+            const msg = err.response?.data?.message || err.response?.data?.details || err.message || 'Lỗi không xác định';
+            alert(`Lỗi: ${msg}`);
         }
     };
 
@@ -295,7 +301,7 @@ const BookDetailPage: React.FC = () => {
                                     alt={book.title}
                                     className="w-full rounded-lg shadow-md object-cover"
                                     onError={(e) => {
-                                        e.currentTarget.src = 'https://via.placeholder.com/400x600?text=No+Image';
+                                        e.currentTarget.src = 'https://placehold.co/600x400?text=No+Image';
                                     }}
                                 />
                             ) : (
@@ -316,7 +322,7 @@ const BookDetailPage: React.FC = () => {
                                                     alt={`${book.title} - ${image.displayOrder}`}
                                                     className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-75 transition-opacity"
                                                     onError={(e) => {
-                                                        e.currentTarget.src = 'https://via.placeholder.com/100';
+                                                        e.currentTarget.src = 'https://placehold.co/100';
                                                     }}
                                                 />
                                                 <button
