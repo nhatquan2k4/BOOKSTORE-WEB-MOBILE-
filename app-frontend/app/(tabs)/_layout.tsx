@@ -27,25 +27,25 @@ export default function TabLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
+          title: 'Tìm Kiếm',
         }}
       />
       <Tabs.Screen
         name="cart"
         options={{
-          title: 'Cart',
+          title: 'Giỏ Hàng',
         }}
       />
       <Tabs.Screen
         name="notification"
         options={{
-          title: 'Notification',
+          title: 'Thông Báo',
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: 'Cài Đặt',
         }}
       />
       <Tabs.Screen

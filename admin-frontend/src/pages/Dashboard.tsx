@@ -137,7 +137,7 @@ const Dashboard: React.FC = () => {
         },
         {
             title: 'Doanh thu',
-            value: `$${(stats.totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            value: `${(stats.totalRevenue || 0).toLocaleString('vi-VN')}₫`,
             change: `${stats.revenueChange >= 0 ? '+' : ''}${(stats.revenueChange || 0).toFixed(1)}%`,
             isPositive: stats.revenueChange >= 0,
             icon: DollarSign,
@@ -225,13 +225,18 @@ const Dashboard: React.FC = () => {
                             <div className="space-y-4">
                                 {recentOrders.map((order) => (
                                     <div key={order.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                                        <div>
+                                        <div className="flex-1">
                                             <p className="font-medium text-gray-800">{order.orderNumber || order.id}</p>
                                             <p className="text-sm text-gray-500">{order.customerName || 'N/A'}</p>
+                                            {order.items && order.items.length > 0 && (
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    {order.items.length} sản phẩm
+                                                </p>
+                                            )}
                                         </div>
-                                        <div className="text-right">
+                                        <div className="text-right ml-4">
                                             <p className="font-semibold text-gray-800">
-                                                ${order.totalAmount?.toFixed(2) || '0.00'}
+                                                {(order.totalAmount || 0).toLocaleString('vi-VN')}₫
                                             </p>
                                             <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(order.status)}`}>
                                                 {getStatusText(order.status)}
@@ -266,7 +271,7 @@ const Dashboard: React.FC = () => {
                                             </div>
                                         </div>
                                         <p className="font-semibold text-green-600">
-                                            ${book.totalRevenue.toFixed(2)}
+                                            {(book.totalRevenue || 0).toLocaleString('vi-VN')}₫
                                         </p>
                                     </div>
                                 ))}

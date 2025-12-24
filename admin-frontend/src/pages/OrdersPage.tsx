@@ -27,7 +27,7 @@ const OrdersPage: React.FC = () => {
         try {
             setLoading(true);
             const params: any = {
-                page: pagination.page,
+                pageNumber: pagination.page,
                 pageSize: pagination.pageSize,
             };
             
@@ -35,9 +35,42 @@ const OrdersPage: React.FC = () => {
                 params.status = statusFilter;
             }
 
+            console.log('Fetching orders with params:', params);
             const response = await orderService.getAll(params);
+            console.log('Orders API response:', response);
             
-            setOrders(response.data || response.items || []);
+            // Fetch detailed info for each order to get customer name
+            const ordersData = response.data || response.items || [];
+            const ordersWithDetails = await Promise.all(
+                ordersData.map(async (order: any) => {
+                    try {
+                        const detailResponse = await orderService.getById(order.id);
+                        const detailedOrder = detailResponse.data || detailResponse;
+                        return {
+                            ...order,
+                            customerName: (detailedOrder as any).address?.recipientName || order.customerName || 'N/A',
+                            items: (detailedOrder as any).items || order.items || [],
+                        } as any;
+                    } catch (err) {
+                        console.error(`Failed to fetch details for order ${order.id}:`, err);
+                        return order;
+                    }
+                })
+            );
+            
+            // Sort orders by date on frontend (newest first) as temporary solution
+            const sortedOrders = ordersWithDetails.sort((a, b) => {
+                const dateA = new Date(a.orderDate || a.createdAt || 0).getTime();
+                const dateB = new Date(b.orderDate || b.createdAt || 0).getTime();
+                return dateB - dateA; // Descending order (newest first)
+            });
+            
+            console.log('Orders sorted by date:', sortedOrders.map(o => ({ 
+                id: o.id, 
+                date: o.orderDate || o.createdAt 
+            })));
+            
+            setOrders(sortedOrders);
             setPagination(prev => ({
                 ...prev,
                 total: response.total || response.totalCount || 0,
@@ -247,11 +280,6 @@ const OrdersPage: React.FC = () => {
         }
     };
 
-    const handleEdit = (order: Order) => {
-        console.log('Edit order:', order);
-        // Implement edit functionality if needed
-    };
-
     const handleStatusFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setStatusFilter(e.target.value);
         setPagination(prev => ({ ...prev, page: 1 }));
@@ -341,8 +369,6 @@ const OrdersPage: React.FC = () => {
                     <Table
                         columns={columns}
                         data={filteredOrders}
-                        onView={handleView}
-                        onEdit={handleEdit}
                     />
 
                     <div className="mt-4 flex justify-between items-center">

@@ -18,10 +18,11 @@ const formatPrice = (price: number) => {
 };
 
 // --- Helper lấy dữ liệu an toàn (Bất chấp hoa thường) ---
-const getSafeValue = (obj: any, keys: string[]) => {
+const getSafeValue = (obj: Record<string, unknown> | null | undefined, keys: string[]): string | undefined => {
     if (!obj) return undefined;
     for (const key of keys) {
-        if (obj[key] !== undefined && obj[key] !== null && obj[key] !== "") return obj[key];
+        const value = obj[key];
+        if (typeof value === 'string' && value.trim() !== '') return value;
     }
     return undefined;
 };
@@ -45,7 +46,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'qr'>('qr');
   const [useDefaultAddress, setUseDefaultAddress] = useState(true);
   const [userId, setUserId] = useState<string>("");
-  const [defaultAddress, setDefaultAddress] = useState<any>(null);
+    const [defaultAddress, setDefaultAddress] = useState<Record<string, unknown> | null>(null);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -70,74 +71,69 @@ export default function CheckoutPage() {
         }
         
         // 1. Get Profile
-        try {
-          const profileRes: any = await userProfileService.getMyProfile();
-          const profile = profileRes.data || profileRes;
-          if (profile) {
-            setUserId(profile.id);
-            setFormData(prev => ({
-              ...prev,
-              fullName: profile.fullName || '',
-              email: profile.email || '',
-              phone: profile.phoneNumber || '',
-            }));
-          }
-        } catch (e) {}
+                try {
+                    const profileRes = await userProfileService.getMyProfile();
+                    // profileRes có thể là { data: UserProfile } hoặc UserProfile
+                    const profile = (profileRes as { data?: { id?: string; fullName?: string; email?: string; phoneNumber?: string } }).data || profileRes;
+                    if (profile && typeof profile === 'object') {
+                        setUserId((profile as { id?: string }).id || '');
+                        setFormData(prev => ({
+                            ...prev,
+                            fullName: (profile as { fullName?: string }).fullName || '',
+                            email: (profile as { email?: string }).email || '',
+                            phone: (profile as { phoneNumber?: string }).phoneNumber || '',
+                        }));
+                    }
+                } catch { }
 
         // 2. Default Address (QUAN TRỌNG: Log để debug)
-        try {
-          const res: any = await addressService.getDefaultAddress();
-          // Xử lý trường hợp API trả về bọc trong data hoặc trả về thẳng
-          const addr = res.data || res;
-          
-          if (addr && (addr.id || addr.Id)) {
-            console.log("✅ Loaded Default Address:", addr);
-            setDefaultAddress(addr);
-            setUseDefaultAddress(true);
-            
-            // Map dữ liệu vào form để hiển thị đẹp (Optional)
-            setFormData(prev => ({
-                ...prev,
-                fullName: getSafeValue(addr, ['recipientName', 'RecipientName']) || prev.fullName,
-                phone: getSafeValue(addr, ['phoneNumber', 'PhoneNumber']) || prev.phone,
-                address: getSafeValue(addr, ['streetAddress', 'StreetAddress', 'street', 'Street']) || '',
-                city: getSafeValue(addr, ['province', 'Province']) || '',
-                district: getSafeValue(addr, ['district', 'District']) || '',
-                ward: getSafeValue(addr, ['ward', 'Ward']) || '',
-            }));
-          } else {
-            console.warn("⚠️ No default address found or invalid structure:", res);
-            setUseDefaultAddress(false);
-          }
-        } catch (e) {
-            console.warn("Lỗi tải địa chỉ mặc định:", e);
-            setUseDefaultAddress(false);
-        }
+                try {
+                    const res = await addressService.getDefaultAddress();
+                    const addr = (res as { data?: Record<string, unknown> }).data || res;
+                    // addr phải là object và có id (string)
+                    if (addr && typeof addr === 'object' && ('id' in addr)) {
+                        console.log("✅ Loaded Default Address:", addr);
+                        setDefaultAddress(addr as Record<string, unknown>);
+                        setUseDefaultAddress(true);
+                        setFormData(prev => ({
+                                ...prev,
+                                fullName: getSafeValue(addr as Record<string, unknown>, ['recipientName', 'RecipientName']) || prev.fullName,
+                                phone: getSafeValue(addr as Record<string, unknown>, ['phoneNumber', 'PhoneNumber']) || prev.phone,
+                                address: getSafeValue(addr as Record<string, unknown>, ['streetAddress', 'StreetAddress', 'street', 'Street']) || '',
+                                city: getSafeValue(addr as Record<string, unknown>, ['province', 'Province']) || '',
+                                district: getSafeValue(addr as Record<string, unknown>, ['district', 'District']) || '',
+                                ward: getSafeValue(addr as Record<string, unknown>, ['ward', 'Ward']) || '',
+                        }));
+                    } else {
+                        console.warn("⚠️ No default address found or invalid structure:", res);
+                        setUseDefaultAddress(false);
+                    }
+                } catch { setUseDefaultAddress(false); }
 
         // 3. Cart
-        const cartRes: any = await cartService.getMyCart();
-        const rawItems = Array.isArray(cartRes) ? cartRes : (cartRes?.items || []);
-        if (rawItems.length > 0) {
-          const enrichedItems: CheckoutItem[] = await Promise.all(
-            rawItems.map(async (item: any) => {
-              try {
-                const bookDetails: any = await bookService.getBookById(item.bookId);
-                const priceInfo = resolveBookPrice(bookDetails);
-                const validImage = normalizeImageUrl(bookDetails.coverImage);
-                return {
-                  id: item.id,
-                  bookId: item.bookId,
-                  title: bookDetails.title,
-                  author: bookDetails.authorNames?.[0] || "Tác giả",
-                  image: validImage, 
-                  price: priceInfo.finalPrice,
-                  quantity: item.quantity,
-                };
-              } catch (e) { return null; }
-            })
-          );
-          setCartItems(enrichedItems.filter((i): i is CheckoutItem => i !== null));
-        }
+                const cartRes = await cartService.getMyCart();
+                const rawItems = Array.isArray(cartRes) ? cartRes : (cartRes as { items?: unknown[] })?.items || [];
+                if (rawItems.length > 0) {
+                    const enrichedItems = await Promise.all(
+                        rawItems.map(async (item) => {
+                            try {
+                                const bookDetails = await bookService.getBookById((item as { bookId: string }).bookId);
+                                const priceInfo = resolveBookPrice(bookDetails);
+                                const validImage = normalizeImageUrl((bookDetails as { coverImage?: string }).coverImage);
+                                return {
+                                    id: (item as { id: string }).id,
+                                    bookId: (item as { bookId: string }).bookId,
+                                    title: (bookDetails as { title?: string }).title || '',
+                                    author: ((bookDetails as { authorNames?: string[] }).authorNames?.[0]) || "Tác giả",
+                                    image: validImage || '',
+                                    price: priceInfo.finalPrice,
+                                    quantity: (item as { quantity: number }).quantity,
+                                };
+                            } catch { return undefined; }
+                        })
+                    );
+                    setCartItems(enrichedItems.filter((i): i is CheckoutItem => !!i));
+                }
       } catch (error) {
         console.error("Lỗi init checkout:", error);
       } finally {
@@ -162,7 +158,15 @@ export default function CheckoutPage() {
     if (cartItems.length === 0) return alert("Giỏ hàng trống");
 
     // 1. Xác định dữ liệu địa chỉ cuối cùng
-    let finalAddressData: any = {};
+        let finalAddressData: {
+            RecipientName?: string;
+            PhoneNumber?: string;
+            Province?: string;
+            District?: string;
+            Ward?: string;
+            Street?: string;
+            Note?: string;
+        } = {};
 
     // Logic lấy dữ liệu an toàn (Fallback từ Default -> Form)
     if (useDefaultAddress && defaultAddress) {
@@ -233,18 +237,11 @@ export default function CheckoutPage() {
         console.log("🚀 Payload gửi đi:", orderPayload);
 
         // 3. Gọi Backend
-        const createdOrder: any = await orderService.createOrder(orderPayload);
+        const createdOrder: { id?: string; orderNumber?: string } = await orderService.createOrder(orderPayload);
         console.log("🔥 Kết quả từ Server:", createdOrder);
 
         // 4. Lấy ID an toàn
-        let realOrderId = null;
-        if (createdOrder) {
-             realOrderId = createdOrder.id || createdOrder.Id || createdOrder.orderId || createdOrder.orderNumber;
-             if (!realOrderId && createdOrder.data) {
-                 realOrderId = createdOrder.data.id || createdOrder.data.Id;
-             }
-        }
-
+        let realOrderId = createdOrder?.id || createdOrder?.orderNumber;
         if (!realOrderId) {
             alert("Tạo đơn thành công nhưng không lấy được mã đơn. Vui lòng kiểm tra lịch sử.");
             router.push('/account/orders');
@@ -259,14 +256,17 @@ export default function CheckoutPage() {
             router.push(`/payment/qr?type=buy&orderId=${realOrderId}`);
         }
 
-    } catch (error: any) {
-        console.error('[CHECKOUT ERROR]', error);
-        let msg = "Lỗi tạo đơn hàng";
-        if (error?.response?.data?.message) msg = error.response.data.message;
-        else if (typeof error?.response?.data === 'string') msg = error.response.data;
-        alert(msg);
-        setIsProcessing(false);
-    }
+        } catch (error) {
+                console.error('[CHECKOUT ERROR]', error);
+                let msg = "Lỗi tạo đơn hàng";
+                if (typeof error === 'object' && error && 'response' in error && typeof (error as any).response?.data?.message === 'string') {
+                    msg = (error as { response: { data: { message: string } } }).response.data.message;
+                } else if (typeof error === 'object' && error && 'response' in error && typeof (error as any).response?.data === 'string') {
+                    msg = (error as { response: { data: string } }).response.data;
+                }
+                alert(msg);
+                setIsProcessing(false);
+        }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
@@ -312,8 +312,8 @@ export default function CheckoutPage() {
                                     {defaultAddress ? (
                                         <p className="text-xs text-gray-500 mt-0.5">
                                             {/* Hiển thị an toàn */}
-                                            {getSafeValue(defaultAddress, ['recipientName', 'RecipientName'])} - {getSafeValue(defaultAddress, ['phoneNumber', 'PhoneNumber'])} <br/>
-                                            {getSafeValue(defaultAddress, ['streetAddress', 'StreetAddress', 'street', 'Street'])}, {getSafeValue(defaultAddress, ['ward', 'Ward'])}, {getSafeValue(defaultAddress, ['district', 'District'])}, {getSafeValue(defaultAddress, ['province', 'Province'])}
+                                            {(getSafeValue(defaultAddress, ['recipientName', 'RecipientName']) || '')} - {(getSafeValue(defaultAddress, ['phoneNumber', 'PhoneNumber']) || '')} <br/>
+                                            {(getSafeValue(defaultAddress, ['streetAddress', 'StreetAddress', 'street', 'Street']) || '')}, {(getSafeValue(defaultAddress, ['ward', 'Ward']) || '')}, {(getSafeValue(defaultAddress, ['district', 'District']) || '')}, {(getSafeValue(defaultAddress, ['province', 'Province']) || '')}
                                         </p>
                                     ) : (
                                         <p className="text-xs text-orange-500 mt-0.5">(Chưa có địa chỉ mặc định)</p>
