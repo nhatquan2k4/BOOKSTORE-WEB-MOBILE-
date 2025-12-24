@@ -33,7 +33,7 @@ export interface OrderDto {
   createdAt: string;
   updatedAt?: string;
   items: OrderItemDto[];
-  address: OrderAddressDto;
+  address?: OrderAddressDto;
   statusLogs: OrderStatusLogDto[];
 }
 
