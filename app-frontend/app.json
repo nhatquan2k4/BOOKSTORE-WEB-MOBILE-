@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "BỜ ÚC BÚC",
-    "slug": "BO-UC-BUC",
+    "slug": "app-frontend",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
