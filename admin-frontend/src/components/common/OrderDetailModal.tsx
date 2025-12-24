@@ -26,14 +26,29 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpen, onCl
     const getStatusText = (status: Order['status']) => {
         const texts = {
             pending: 'Chờ xử lý',
+            confirmed: 'Đã xác nhận',
             processing: 'Đang xử lý',
+            shipping: 'Đang giao',
             shipped: 'Đang giao',
             delivered: 'Đã giao',
             completed: 'Hoàn thành',
             cancelled: 'Đã hủy',
         };
-        return texts[status];
+        return texts[status] || status;
     };
+
+    // Extract address info from order.address object or fallback to top-level fields
+    const address = (order as any).address || {};
+    const recipientName = address.recipientName || order.customerName || 'N/A';
+    const recipientPhone = address.recipientPhone || address.phoneNumber || order.phoneNumber || (order as any).phone || 'N/A';
+    const fullAddress = address.fullAddress 
+        ? `${address.fullAddress}${address.ward ? `, ${address.ward}` : ''}${address.district ? `, ${address.district}` : ''}${address.city ? `, ${address.city}` : ''}`
+        : (order.deliveryAddress || order.shippingAddress || 'N/A');
+
+    // Debug log to see the full order data
+    console.log('Order details:', order);
+    console.log('Address object:', address);
+    console.log('Recipient phone:', recipientPhone);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -88,20 +103,18 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpen, onCl
                     <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="flex items-center gap-2 mb-3">
                             <User size={18} className="text-gray-600" />
-                            <h3 className="font-semibold text-gray-800">Thông tin khách hàng</h3>
+                            <h3 className="font-semibold text-gray-800">Thông tin người nhận</h3>
                         </div>
                         <div className="space-y-2">
                             <p className="text-gray-700">
-                                <span className="font-medium">Tên:</span> {order.customerName || 'N/A'}
+                                <span className="font-medium">Tên người nhận:</span> {recipientName}
                             </p>
-                            {order.phoneNumber && (
+                            <p className="text-gray-700">
+                                <span className="font-medium">Số điện thoại:</span> {recipientPhone}
+                            </p>
+                            {(order as any).email && (
                                 <p className="text-gray-700">
-                                    <span className="font-medium">Số điện thoại:</span> {order.phoneNumber}
-                                </p>
-                            )}
-                            {order.email && (
-                                <p className="text-gray-700">
-                                    <span className="font-medium">Email:</span> {order.email}
+                                    <span className="font-medium">Email:</span> {(order as any).email}
                                 </p>
                             )}
                         </div>
@@ -113,7 +126,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpen, onCl
                             <MapPin size={18} className="text-gray-600" />
                             <h3 className="font-semibold text-gray-800">Địa chỉ giao hàng</h3>
                         </div>
-                        <p className="text-gray-700">{order.deliveryAddress || order.shippingAddress || 'N/A'}</p>
+                        <p className="text-gray-700">{fullAddress}</p>
                     </div>
 
                     {/* Order Items */}
@@ -133,23 +146,34 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpen, onCl
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {order.items?.map((item, index) => (
-                                        <tr key={index} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3">
-                                                <p className="font-medium text-gray-800">{item.bookTitle}</p>
-                                                {item.isbn && (
-                                                    <p className="text-sm text-gray-500">ISBN: {item.isbn}</p>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-center text-gray-700">{item.quantity}</td>
-                                            <td className="px-4 py-3 text-right text-gray-700">
-                                                ${item.price?.toFixed(2) || '0.00'}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-medium text-gray-800">
-                                                ${((item.price || 0) * item.quantity).toFixed(2)}
+                                    {order.items && order.items.length > 0 ? (
+                                        order.items.map((item, index) => {
+                                            const itemData = item as any;
+                                            return (
+                                                <tr key={index} className="hover:bg-gray-50">
+                                                    <td className="px-4 py-3">
+                                                        <p className="font-medium text-gray-800">{itemData.bookTitle || itemData.productName || 'N/A'}</p>
+                                                        {itemData.isbn && (
+                                                            <p className="text-sm text-gray-500">ISBN: {itemData.isbn}</p>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center text-gray-700">{itemData.quantity}</td>
+                                                    <td className="px-4 py-3 text-right text-gray-700">
+                                                        {(itemData.price || itemData.unitPrice || 0).toLocaleString('vi-VN')}₫
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-medium text-gray-800">
+                                                        {((itemData.price || itemData.unitPrice || 0) * itemData.quantity).toLocaleString('vi-VN')}₫
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                                                Không có sản phẩm nào
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -164,32 +188,40 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpen, onCl
                         <div className="space-y-2">
                             <div className="flex justify-between text-gray-700">
                                 <span>Tạm tính:</span>
-                                <span>${(order.subtotal || order.totalAmount)?.toFixed(2) || '0.00'}</span>
+                                <span>{(order.subtotal || order.totalAmount || 0).toLocaleString('vi-VN')}₫</span>
                             </div>
                             {order.shippingFee !== undefined && order.shippingFee > 0 && (
                                 <div className="flex justify-between text-gray-700">
                                     <span>Phí vận chuyển:</span>
-                                    <span>${order.shippingFee.toFixed(2)}</span>
+                                    <span>{order.shippingFee.toLocaleString('vi-VN')}₫</span>
                                 </div>
                             )}
                             {order.discount !== undefined && order.discount > 0 && (
                                 <div className="flex justify-between text-green-600">
                                     <span>Giảm giá:</span>
-                                    <span>-${order.discount.toFixed(2)}</span>
+                                    <span>-{order.discount.toLocaleString('vi-VN')}₫</span>
                                 </div>
                             )}
                             <div className="border-t border-gray-300 pt-2 mt-2">
                                 <div className="flex justify-between text-lg font-bold text-gray-800">
                                     <span>Tổng cộng:</span>
                                     <span className="text-green-600">
-                                        ${order.totalAmount?.toFixed(2) || '0.00'}
+                                        {(order.totalAmount || 0).toLocaleString('vi-VN')}₫
                                     </span>
                                 </div>
                             </div>
                             {order.paymentMethod && (
                                 <div className="flex justify-between text-gray-700 text-sm mt-2">
                                     <span>Phương thức thanh toán:</span>
-                                    <span className="font-medium">{order.paymentMethod}</span>
+                                    <span className="font-medium capitalize">{order.paymentMethod}</span>
+                                </div>
+                            )}
+                            {(order as any).paymentStatus && (
+                                <div className="flex justify-between text-gray-700 text-sm">
+                                    <span>Trạng thái thanh toán:</span>
+                                    <span className="font-medium">
+                                        {(order as any).paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                                    </span>
                                 </div>
                             )}
                         </div>
