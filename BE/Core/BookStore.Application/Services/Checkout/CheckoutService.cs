@@ -46,7 +46,6 @@ namespace BookStore.Application.Services.Checkout
             _logger = logger;
         }
 
-        #region Preview & Validation
 
         public async Task<CheckoutPreviewDto> GetCheckoutPreviewAsync(Guid userId, string? couponCode = null)
         {
@@ -207,9 +206,7 @@ namespace BookStore.Application.Services.Checkout
             return Task.FromResult(isValid);
         }
 
-        #endregion
 
-        #region Process Checkout
 
         public async Task<CheckoutResultDto> ProcessCheckoutAsync(CheckoutRequestDto dto)
         {
@@ -309,9 +306,6 @@ namespace BookStore.Application.Services.Checkout
             return await ProcessCheckoutAsync(checkoutRequest);
         }
 
-        #endregion
-
-        #region Payment Callback & Status
 
         public async Task<CheckoutResultDto> HandlePaymentCallbackAsync(PaymentDto.PaymentCallbackDto callbackDto)
         {
@@ -369,9 +363,6 @@ namespace BookStore.Application.Services.Checkout
             return await _paymentService.GetPaymentByOrderIdAsync(orderId);
         }
 
-        #endregion
-
-        #region Cancel & History
 
         public async Task<bool> CancelCheckoutAsync(Guid orderId, Guid userId)
         {
@@ -446,9 +437,6 @@ namespace BookStore.Application.Services.Checkout
             return (checkoutResults, totalCount);
         }
 
-        #endregion
-
-        #region Helper Methods
 
         /// <summary>
         /// Generate payment URL (giả lập - thực tế cần tích hợp với payment gateway)
@@ -671,6 +659,5 @@ namespace BookStore.Application.Services.Checkout
             };
         }
 
-        #endregion
     }
 }
