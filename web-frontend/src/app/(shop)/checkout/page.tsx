@@ -375,8 +375,12 @@ export default function CheckoutPage() {
                         <div className="space-y-3 mb-4 max-h-60 overflow-y-auto custom-scrollbar pr-1">
                             {cartItems.map(item => (
                                 <div key={item.id} className="flex gap-3 text-sm group">
-                                    <div className="w-12 h-16 relative border rounded flex-shrink-0 overflow-hidden">
-                                        <Image src={item.image} alt="" fill className="object-cover group-hover:scale-105 transition-transform"/>
+                                    <div className="w-12 h-16 relative border rounded flex-shrink-0 overflow-hidden bg-gray-100 flex items-center justify-center">
+                                        {item.image && typeof item.image === 'string' && item.image.trim() !== '' ? (
+                                            <Image src={item.image} alt={item.title || 'Book'} fill className="object-cover group-hover:scale-105 transition-transform"/>
+                                        ) : (
+                                            <span className="text-xs text-gray-400">No Image</span>
+                                        )}
                                     </div>
                                     <div className="flex-1">
                                         <div className="line-clamp-2 font-medium text-gray-800">{item.title}</div>
