@@ -84,8 +84,12 @@ services:
       start_period: 10s
 
   bookstore-api:
-    image: NQ.local:5000/bookstore-backend:v117
+    build:
+      context: ../
+      dockerfile: Dockerfile
     container_name: bookstore-api
+    env_file:
+      - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
@@ -110,6 +114,8 @@ services:
       - EmailSettings__EnableSsl=true
       - EmailSettings__TokenExpirationHours=24
       - EmailSettings__FrontendUrl=http://localhost:3000
+      - Gemini__ApiKey=${GEMINI_API_KEY}
+      - Gemini__ApiSecret=${GEMINI_API_SECRET:-}
     ports:
       - "5276:8080"
     depends_on:
@@ -139,11 +145,3 @@ volumes:
 networks:
   bookstore-network:
     driver: bridge
-
-
-
-
-
-
-
-

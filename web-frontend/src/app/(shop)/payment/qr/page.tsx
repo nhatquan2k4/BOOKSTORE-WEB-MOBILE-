@@ -351,7 +351,7 @@ function QRPaymentContent() {
             <div className="mt-6 w-full">
               <button
                 onClick={handleTestPayment}
-                disabled={isConfirmingPayment || paymentStatus === "success"}
+                disabled={isConfirmingPayment || (paymentStatus as any) === "success"}
                 className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
               >
                 {isConfirmingPayment ? (

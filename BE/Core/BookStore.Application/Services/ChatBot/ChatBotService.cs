@@ -1,6 +1,8 @@
 ﻿using BookStore.Application.IService.ChatBot;
 using BookStore.Domain.Entities.Catalog;
 using BookStore.Domain.IRepository.Catalog;
+using Microsoft.Extensions.Logging;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -10,13 +12,16 @@ namespace BookStore.Application.Services.ChatBot
     {
         private readonly IBookRepository _bookRepo;
         private readonly IGeminiService _geminiService;
+        private readonly ILogger<ChatBotService> _logger;
 
         public ChatBotService(
             IBookRepository bookRepo,
-            IGeminiService geminiService)
+            IGeminiService geminiService,
+            ILogger<ChatBotService> logger)
         {
             _bookRepo = bookRepo;
             _geminiService = geminiService;
+            _logger = logger;
         }
 
         public async Task<string> AskAsync(Guid userId, string message)
@@ -32,6 +37,29 @@ namespace BookStore.Application.Services.ChatBot
             // BƯỚC 2: Gọi Repo với từ khóa đã làm sạch
             var books = (await _bookRepo.SearchAsync(searchKeyword)).ToList();
 
+            // Log fetched books summary (title, price, authors, short desc) — avoid logging full description
+            try
+            {
+                _logger.LogInformation("[ChatBot] Search for '{Keyword}' returned {Count} results", searchKeyword, books.Count);
+                for (int i = 0; i < Math.Min(5, books.Count); i++)
+                {
+                    var b = books[i];
+                    var currentPriceObj = b.Prices?.FirstOrDefault(p => p.IsCurrent);
+                    string priceDisplay = currentPriceObj != null
+                        ? $"{currentPriceObj.Amount:#,##0} {currentPriceObj.Currency}"
+                        : "Liên hệ";
+                    string authors = b.BookAuthors != null && b.BookAuthors.Any()
+                        ? string.Join(", ", b.BookAuthors.Select(x => x.Author.Name))
+                        : "N/A";
+                    var shortDesc = string.IsNullOrEmpty(b.Description) ? "" : (b.Description.Length > 120 ? b.Description.Substring(0, 120) + "..." : b.Description);
+                    _logger.LogInformation("[ChatBot] Book {Index}: {Title} | {Price} | {Authors} | DescPreview={Desc}", i + 1, b.Title, priceDisplay, authors, shortDesc);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[ChatBot] Failed to log fetched books summary");
+            }
+
             // BƯỚC 3: Chiến thuật Fallback (Dự phòng)
             // Nếu search không ra gì, lấy 5 cuốn mới nhất để Bot có cái mà giới thiệu
             bool isFallback = false;
@@ -41,6 +69,27 @@ namespace BookStore.Application.Services.ChatBot
                 // Hàm này ĐÃ CÓ trong Repo của bạn, không cần sửa Repo
                 var latestBooks = await _bookRepo.GetLatestBooksAsync(5);
                 books = latestBooks.ToList();
+                try
+                {
+                    _logger.LogInformation("[ChatBot] Fallback: using latest {Count} books", books.Count);
+                    for (int i = 0; i < Math.Min(5, books.Count); i++)
+                    {
+                        var b = books[i];
+                        var currentPriceObj = b.Prices?.FirstOrDefault(p => p.IsCurrent);
+                        string priceDisplay = currentPriceObj != null
+                            ? $"{currentPriceObj.Amount:#,##0} {currentPriceObj.Currency}"
+                            : "Liên hệ";
+                        string authors = b.BookAuthors != null && b.BookAuthors.Any()
+                            ? string.Join(", ", b.BookAuthors.Select(x => x.Author.Name))
+                            : "N/A";
+                        var shortDesc = string.IsNullOrEmpty(b.Description) ? "" : (b.Description.Length > 120 ? b.Description.Substring(0, 120) + "..." : b.Description);
+                        _logger.LogInformation("[ChatBot][Fallback] Book {Index}: {Title} | {Price} | {Authors} | DescPreview={Desc}", i + 1, b.Title, priceDisplay, authors, shortDesc);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "[ChatBot] Failed to log fallback books summary");
+                }
             }
 
             // BƯỚC 4: Tạo Prompt và gửi cho Gemini

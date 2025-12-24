@@ -1,8 +1,6 @@
 using BookStore.API.BackgroundServices;
 using BookStore.API.Filters;
-using BookStore.API.Hubs;
 using BookStore.API.Middlewares;
-using BookStore.API.Services;
 using BookStore.Application.IService;
 using BookStore.Application.IService.Catalog;
 using BookStore.Application.IService.ChatBot;
@@ -42,7 +40,6 @@ using BookStore.Infrastructure.Repository.Identity;
 using BookStore.Infrastructure.Repository.Identity.Auth;
 using BookStore.Infrastructure.Repository.Identity.RolePermisson;
 using BookStore.Infrastructure.Repository.Identity.User;
-using BookStore.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;

@@ -180,7 +180,7 @@ export default function CheckoutPage() {
 
         // --- 2. Gọi API ---
         console.log("Đang tạo đơn hàng với payload:", orderPayload);
-        const createdOrder = await orderService.createOrder(orderPayload);
+        const createdOrder: any = await orderService.createOrder(orderPayload);
         
         console.log('[DEBUG] Response CreateOrder:', createdOrder);
         
