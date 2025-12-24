@@ -9,11 +9,9 @@ import { Pagination } from "@/components/ui/Pagination";
 import { bookService, categoryService } from "@/services";
 import { BookDto, CategoryDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
-// --- CẤU HÌNH ---
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276';
-
-// --- HELPER 1: Format Giá ---
+// --- HELPER: Format Giá ---
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -30,68 +28,16 @@ const NoImagePlaceholder = () => (
   </div>
 );
 
-// --- COMPONENT: BOOK ITEM THÔNG MINH (Tự tải ảnh có bảo mật) ---
+// --- COMPONENT: BOOK ITEM ---
 const BookItem = ({ book }: { book: BookDto }) => {
   const priceInfo = resolveBookPrice(book);
   
-  // State lưu URL ảnh cuối cùng để hiển thị (Blob URL hoặc Tiki URL)
-  const [displayUrl, setDisplayUrl] = useState<string | null>(null);
-  const [loadingImage, setLoadingImage] = useState(true);
-
-  // Effect: Tự động quyết định cách tải ảnh
-  useEffect(() => {
-    let isMounted = true;
-    const coverInfo = book.coverImage;
-
-    // 1. Nếu là link Tiki/Online (http...) -> Dùng luôn
-    if (coverInfo && coverInfo.startsWith('http')) {
-      setDisplayUrl(coverInfo);
-      setLoadingImage(false);
-      return;
-    }
-
-    // 2. Nếu là ảnh nội bộ (Backend yêu cầu Token) -> Fetch Blob
-    const fetchProtectedImage = async () => {
-      try {
-        // Lấy Token từ localStorage
-        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-        
-        // URL API lấy ảnh cover
-        const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
-        const url = `${baseUrl}/api/books/${book.id}/images/cover`;
-
-        const res = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}` // Gửi kèm Token
-          }
-        });
-
-        if (res.ok) {
-          const blob = await res.blob();
-          const objectUrl = URL.createObjectURL(blob);
-          if (isMounted) setDisplayUrl(objectUrl);
-        } else {
-          if (isMounted) setDisplayUrl(null); 
-        }
-      } catch (error) {
-        console.error("Lỗi tải ảnh:", error);
-        if (isMounted) setDisplayUrl(null);
-      } finally {
-        if (isMounted) setLoadingImage(false);
-      }
-    };
-
-    fetchProtectedImage();
-
-    // Cleanup: Xóa Blob URL khi component unmount
-    return () => {
-      isMounted = false;
-      if (displayUrl && displayUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(displayUrl);
-      }
-    };
-  }, [book.id, book.coverImage]);
-
+  // Debug log
+  console.log('Book coverImage:', book.coverImage);
+  console.log('Normalized URL:', normalizeImageUrl(book.coverImage));
+  
+  const coverUrl = normalizeImageUrl(book.coverImage);
+  
   const authorName = book.authorNames?.[0] || "Tác giả ẩn danh";
   const isBestseller = (book.totalReviews || 0) > 50;
   const stockQuantity = book.stockQuantity ?? 0;
@@ -104,19 +50,14 @@ const BookItem = ({ book }: { book: BookDto }) => {
       {/* Book Cover */}
       <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3 shadow-inner bg-gray-100">
         
-        {loadingImage ? (
-           <div className="w-full h-full flex items-center justify-center bg-gray-100 animate-pulse">
-             <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
-           </div>
-        ) : displayUrl ? (
+        {coverUrl ? (
           <Image
-            src={displayUrl}
+            src={coverUrl}
             alt={book.title}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
-            unoptimized={true} // Quan trọng
-            referrerPolicy="no-referrer"
+            unoptimized
           />
         ) : (
           <NoImagePlaceholder />

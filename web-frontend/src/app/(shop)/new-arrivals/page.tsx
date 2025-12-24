@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 // ============================================================================
 // TYPES
@@ -177,7 +178,7 @@ export default function NewArrivalsPage() {
                 const currentPrice = book.currentPrice || book.discountPrice || 0;
                 const originalPrice = book.currentPrice && book.discountPrice ? book.currentPrice : 0;
                 const discount = calculateDiscount(originalPrice, currentPrice);
-                const imageUrl = book.coverImage && book.coverImage.trim() !== '' ? book.coverImage : null;
+                const imageUrl = normalizeImageUrl(book.coverImage);
                 
                 return (
                 <Link

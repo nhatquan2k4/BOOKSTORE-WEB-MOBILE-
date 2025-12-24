@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Button, Badge, Input, Breadcrumb } from '@/components/ui';
 import { bookService } from '@/services';
 import type { BookDto } from '@/types/dtos';
+import { normalizeImageUrl } from '@/lib/imageUtils';
 
 /**
  * Hàm tính toán giá thuê (DISPLAY ONLY)
@@ -82,7 +83,7 @@ export default function RentPage() {
               id: book.id,
               title: book.title,
               author: book.authorNames?.[0] || "Tác giả không xác định",
-              cover: book.coverImage || "/image/anh.png",
+              cover: normalizeImageUrl(book.coverImage) || "/image/anh.png",
               category: book.categoryNames?.[0] || "Chưa phân loại",
               rating: book.averageRating || 0,
               reviews: book.totalReviews || 0,

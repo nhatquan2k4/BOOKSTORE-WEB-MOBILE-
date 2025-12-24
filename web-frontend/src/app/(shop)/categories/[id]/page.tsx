@@ -9,21 +9,12 @@ import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { bookService, categoryService } from "@/services";
 import type { BookDto, CategoryDto } from "@/types/dtos";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 // ============================================================================
 // CONFIG & HELPERS
 // ============================================================================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276';
 
-// Helper: Xử lý ảnh
-const getFullImageUrl = (url?: string | null) => {
-  if (!url || url.trim() === '') return null;
-  if (url.startsWith('http')) return url;
-  let cleanUrl = url.replace(/\\/g, '/');
-  if (!cleanUrl.startsWith('/')) cleanUrl = `/${cleanUrl}`;
-  const cleanBase = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
-  return `${cleanBase}${cleanUrl}`;
-};
 
 // Helper: Format tiền tệ
 const formatPrice = (price: number) => {
@@ -48,7 +39,7 @@ type BookDisplay = {
   author: string;
   price: number;
   originalPrice?: number;
-  cover: string;
+  cover: string | null;
   rating: number;
   reviewCount: number;
   isBestseller: boolean;

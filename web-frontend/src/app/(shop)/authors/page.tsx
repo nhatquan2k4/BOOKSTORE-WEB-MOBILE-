@@ -7,21 +7,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { authorService } from "@/services";
 import type { AuthorDto } from "@/types/dtos";
-import { Pagination } from "@/components/ui/Pagination"; // Giả sử bạn có component này
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276';
-
-// --- HELPER XỬ LÝ ẢNH ---
-const getFullImageUrl = (url?: string | null) => {
-  if (!url || url.trim() === "") return null;
-  if (url.startsWith('http')) return url;
-  
-  let cleanUrl = url.replace(/\\/g, '/');
-  if (!cleanUrl.startsWith('/')) cleanUrl = `/${cleanUrl}`;
-
-  const cleanBase = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
-  return `${cleanBase}${cleanUrl}`;
-};
+import { Pagination } from "@/components/ui/Pagination";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 // --- PLACEHOLDER ---
 const NoAvatarPlaceholder = () => (

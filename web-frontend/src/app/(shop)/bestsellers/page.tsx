@@ -9,6 +9,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 // ============================================================================
 // TYPES
@@ -64,7 +65,7 @@ export default function BestsellersPage() {
               title: book.title,
               author: book.authorNames?.[0] || "Tác giả không xác định",
               category: book.categoryNames?.[0] || "Chưa phân loại",
-              cover: book.coverImage && book.coverImage.trim() !== '' ? book.coverImage : null,
+              cover: normalizeImageUrl(book.coverImage) || "/image/anh.png",
               rating: book.averageRating || 0,
               reviewCount: book.totalReviews || 0,
               price: priceInfo.finalPrice,

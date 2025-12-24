@@ -13,6 +13,7 @@ import { bookService, cartService, wishlistService, reviewService, commentServic
 import type { BookDetailDto, BookDto } from "@/types/dtos";
 import { useAuth } from "@/contexts";
 import { resolveBookPrice, formatPrice } from "@/lib/price";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 // ============================================================================
 // TYPES (Cập nhật để khớp với logic ghép API)
@@ -377,7 +378,7 @@ export default function BookDetailPage() {
       author: dto.authorNames?.[0] || "Tác giả không xác định",
       price: priceInfo.finalPrice,
       originalPrice: priceInfo.originalPrice,
-      cover: dto.coverImage && dto.coverImage.trim() !== '' ? dto.coverImage : null,
+      cover: normalizeImageUrl(dto.coverImage) || "/image/anh.png",
       rating: dto.averageRating || 0,
       reviews: dto.totalReviews || 0,
       hot: priceInfo.hasDiscount,
@@ -506,9 +507,10 @@ export default function BookDetailPage() {
       weight: parseInt(getMetadataValue("weight", "500")),
       size: `${book.pageCount || 0} trang`,
       language: book.language || "Tiếng Việt",
-      cover: (book.images && book.images.length > 0 ? book.images.find(img => img.isCover)?.imageUrl : null) || 
-             (book.images && book.images.length > 0 ? book.images[0].imageUrl : null) || 
-             "/image/anh.png",
+      cover: normalizeImageUrl(
+        (book.images && book.images.length > 0 ? book.images.find(img => img.isCover)?.imageUrl : null) || 
+        (book.images && book.images.length > 0 ? book.images[0].imageUrl : null)
+      ) || "/image/anh.png",
       description: book.description || "Chưa có mô tả",
       isbn: book.isbn || "",
       edition: book.edition || "",

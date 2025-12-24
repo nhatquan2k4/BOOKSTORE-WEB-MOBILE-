@@ -9,6 +9,7 @@ import { cartService } from "@/services/cart.service";
 import { couponService, CouponDto } from "@/services/coupon.service";
 import { bookService } from "@/services/book.service";
 import { resolveBookPrice, formatPrice } from "@/lib/price";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 // Type nội bộ cho UI
 type CartItemUI = {
@@ -74,9 +75,9 @@ export default function CartPage() {
                 bookId: item.bookId,
                 title: bookDetails.title,
                 author: bookDetails.authors?.[0]?.name || "Đang cập nhật",
-                cover:
-                  bookDetails.images?.find((i: any) => i.isCover)?.imageUrl ||
-                  "/image/anh.png",
+                cover: normalizeImageUrl(
+                  bookDetails.images?.find((i: any) => i.isCover)?.imageUrl
+                ) || "/image/anh.png",
                 price: priceInfo.finalPrice,
                 originalPrice: priceInfo.hasDiscount
                   ? priceInfo.originalPrice

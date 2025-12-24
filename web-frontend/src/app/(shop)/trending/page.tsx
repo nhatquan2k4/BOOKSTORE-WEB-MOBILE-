@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 interface Book {
   id: string;
@@ -58,7 +59,7 @@ export default function TrendingBooksPage() {
               author: book.authorNames?.[0] || "Tác giả không xác định",
               price: priceInfo.finalPrice,
               originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
-              cover: book.coverImage && book.coverImage.trim() !== '' ? book.coverImage : null,
+              cover: normalizeImageUrl(book.coverImage) || "/image/anh.png",
               rating: book.averageRating || 0,
               reviews: book.totalReviews || 0,
               trendScore: 90,

@@ -9,6 +9,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { bookService, categoryService } from "@/services";
 import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 // ============================================================================
 // TYPES
@@ -87,7 +88,7 @@ export default function EconomicsPage() {
               id: book.id,
               title: book.title,
               author: book.authorNames?.[0] || "Tác giả không xác định",
-              cover: book.coverImage && book.coverImage.trim() !== '' ? book.coverImage : null,
+              cover: normalizeImageUrl(book.coverImage) || "/image/anh.png",
               rating: book.averageRating || 4.5,
               reviewCount: book.totalReviews || 0,
               price: priceInfo.finalPrice,

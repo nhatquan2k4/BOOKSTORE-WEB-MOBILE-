@@ -5,8 +5,9 @@
 
 import axiosInstance from './axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276';
-const STORAGE_BASE_URL = `${API_BASE_URL}/storage`;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tautologously-hyperconscious-carolyne.ngrok-free.dev/';
+// MinIO is accessible via localhost:9000 (not through API /storage)
+const STORAGE_BASE_URL = process.env.NEXT_PUBLIC_STORAGE_URL || 'https://tautologously-hyperconscious-carolyne.ngrok-free.dev/storage';
 
 /**
  * Normalize image URL with smart resolution

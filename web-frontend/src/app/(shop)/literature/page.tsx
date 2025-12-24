@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { useBooks, useCategories, type Book } from "@/hooks";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 // ============================================================================
 // TYPES
@@ -206,7 +207,7 @@ export default function LiteraturePage() {
               const currentPrice = book.salePrice || book.price;
               const originalPrice = book.salePrice ? book.price : book.originalPrice;
               const discount = originalPrice ? calculateDiscount(originalPrice, currentPrice) : 0;
-              const imageUrl = book.coverImage && book.coverImage.trim() !== '' ? book.coverImage : null;
+              const imageUrl = normalizeImageUrl(book.coverImage);
               const authors = book.author || '';
 
               return (

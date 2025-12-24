@@ -71,7 +71,7 @@ export default function DiscoverNowPage() {
             id: book.id,
             title: book.title,
             desc: `${book.authorNames?.[0] || "Tác giả không xác định"} - ${book.categoryNames?.[0] || "Sách hay"}`,
-            image: book.coverImage && book.coverImage.trim() !== '' ? book.coverImage : null,
+            image: normalizeImageUrl(book.coverImage),
           }));
           setHeroBooks(transformed);
         }
@@ -100,7 +100,7 @@ export default function DiscoverNowPage() {
               price: priceInfo.finalPrice,
               originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
               rating: book.averageRating || 0,
-              image: book.coverImage && book.coverImage.trim() !== '' ? book.coverImage : null,
+              image: normalizeImageUrl(book.coverImage),
               hot: priceInfo.hasDiscount,
             };
           });
@@ -130,7 +130,7 @@ export default function DiscoverNowPage() {
               author: book.authorNames?.[0] || "Tác giả không xác định",
               price: priceInfo.finalPrice,
               rating: book.averageRating || 0,
-              image: book.coverImage && book.coverImage.trim() !== '' ? book.coverImage : null,
+              image: normalizeImageUrl(book.coverImage),
             };
           });
           setNewArrivals(transformed);
