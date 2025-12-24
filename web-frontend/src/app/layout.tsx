@@ -17,8 +17,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bookstore - Cửa hàng sách trực tuyến",
-  description: "Mua sắm sách online với giá tốt nhất",
+  title: "BỜ ÚC BÚC - Cửa hàng sách trực tuyến",
+  description: "BỜ ÚC BÚC - Mua sắm sách online với giá tốt nhất",
+  icons: {
+    icon: '/image/logo.png',
+    shortcut: '/image/logo.png',
+    apple: '/image/logo.png',
+  },
 };
 
 export const viewport: Viewport = {

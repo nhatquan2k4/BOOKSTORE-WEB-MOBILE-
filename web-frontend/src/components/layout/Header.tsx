@@ -267,7 +267,7 @@ export function Header() {
 
             <div className="hidden sm:block">
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                BookStore
+                BỜ ÚC BÚC
               </h1>
               <p className="text-xs text-gray-500">Đọc sách, mở tương lai</p>
             </div>

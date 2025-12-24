@@ -86,7 +86,7 @@ services:
       start_period: 10s
 
   bookstore-api:
-    image: NQ.local:5000/bookstore-backend:v121
+    image: NQ.local:5000/bookstore-backend:v122
     container_name: bookstore-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -237,7 +237,7 @@ networks:
 #       start_period: 10s
 
 #   bookstore-api:
-#     image: NQ.local:5000/bookstore-backend:v121
+#     image: NQ.local:5000/bookstore-backend:v122
 #     container_name: bookstore-api
 #     environment:
 #       - ASPNETCORE_ENVIRONMENT=Development
@@ -292,6 +292,7 @@ networks:
 # networks:
 #   bookstore-network:
 #     driver: bridge
+
 
 
 
