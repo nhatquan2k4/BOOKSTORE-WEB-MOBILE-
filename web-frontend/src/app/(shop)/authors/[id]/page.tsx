@@ -72,7 +72,7 @@ export default function AuthorDetailPage() {
             
             // Logic đếm số lượng sách (Filter client-side)
             const authorBooks = allBooks.filter((b: BookDto) => 
-                b.authorIds?.includes(authorId) || b.authorNames?.includes(authorData.name)
+                b.authors?.some(author => author.id === authorId) || b.authorNames?.includes(authorData.name)
             );
 
             // Cập nhật state tác giả với số lượng sách chính xác
@@ -81,7 +81,7 @@ export default function AuthorDetailPage() {
                 name: authorData.name,
                 avatar: normalizeImageUrl(authorData.avartarUrl),
                 coverImage: null, 
-                bio: authorData.bio || "Chưa có thông tin giới thiệu về tác giả này.",
+                bio: "Chưa có thông tin giới thiệu về tác giả này.",
                 birthYear: "---",
                 nationality: "Việt Nam",
                 website: "",

@@ -61,7 +61,7 @@ export default function AuthorsPage() {
             avatar: normalizeImageUrl(author.avartarUrl), 
             bookCount: author.bookCount || 0,
             followers: 0, // Backend chưa có field này -> Default 0
-            bio: author.bio || `Tác giả nổi bật của cửa hàng`,
+            bio: `Tác giả nổi bật của cửa hàng`,
             categories: ["Văn học", "Kinh tế"], // Backend chưa trả về -> Mock tạm để hiện UI
           }));
           
@@ -185,7 +185,7 @@ export default function AuthorsPage() {
 
                     <div className="flex flex-wrap gap-2">
                     {author.categories.map((cat) => (
-                        <Badge key={cat} variant="secondary" className="text-xs bg-gray-100 text-gray-600 hover:bg-gray-200">
+                        <Badge key={cat} variant="default" className="text-xs bg-gray-100 text-gray-600 hover:bg-gray-200">
                         {cat}
                         </Badge>
                     ))}

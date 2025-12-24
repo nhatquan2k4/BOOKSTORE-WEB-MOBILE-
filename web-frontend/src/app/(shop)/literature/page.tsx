@@ -207,7 +207,7 @@ export default function LiteraturePage() {
               const currentPrice = book.salePrice || book.price;
               const originalPrice = book.salePrice ? book.price : book.originalPrice;
               const discount = originalPrice ? calculateDiscount(originalPrice, currentPrice) : 0;
-              const imageUrl = normalizeImageUrl(book.coverImage);
+              const imageUrl = normalizeImageUrl(book.cover || book.imageUrl);
               const authors = book.author || '';
 
               return (

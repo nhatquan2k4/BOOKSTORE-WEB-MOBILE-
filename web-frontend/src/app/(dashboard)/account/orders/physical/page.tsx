@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -141,7 +141,8 @@ const checkStatusMatch = (orderStatus: string, tabId: string) => {
     return s === t;
 };
 
-export default function PhysicalOrdersPage() {
+// Separate component that uses useSearchParams
+function PhysicalOrdersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -339,5 +340,23 @@ export default function PhysicalOrdersPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading fallback component
+function OrdersLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function PhysicalOrdersPage() {
+  return (
+    <Suspense fallback={<OrdersLoading />}>
+      <PhysicalOrdersContent />
+    </Suspense>
   );
 }
