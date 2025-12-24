@@ -28,8 +28,8 @@ namespace BookStore.Application.Services.Checkout
         private const decimal DEFAULT_SHIPPING_FEE = 30000m; // 30,000 VND
 
         // Warehouse mặc định - Khớp với database thực tế (StockItems table)
-        // private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("11EDB44C-791B-43F1-B69C-56A2E3178425");
-        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("08d381e0-b0cf-426f-a5f4-430c63f3a552");
+        private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("11EDB44C-791B-43F1-B69C-56A2E3178425");
+        // private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("08d381e0-b0cf-426f-a5f4-430c63f3a552");
 
 
         public CheckoutService(
