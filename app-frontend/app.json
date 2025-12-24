@@ -7,15 +7,14 @@
     "icon": "./assets/images/logo.png",
     "scheme": "appfrontend",
     "userInterfaceStyle": "automatic",
-  // Disable New Architecture (Fabric) unless project is configured for it.
-  "newArchEnabled": false,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
