@@ -80,7 +80,29 @@ const UsersPage: React.FC = () => {
                 searchTerm: searchTerm || undefined,
             });
 
-            setUsers(response.data || response.items || []);
+            console.log('Raw API Response:', response);
+            const usersData = response.data || response.items || [];
+            console.log('Users data:', usersData);
+            
+            // Fetch detailed profile for each user
+            const usersWithProfiles = await Promise.all(
+                usersData.map(async (user: any) => {
+                    try {
+                        const detailResponse = await userService.getById(user.id);
+                        const detailedUser = detailResponse.data || detailResponse;
+                        return {
+                            ...user,
+                            profiles: (detailedUser as any).profiles,
+                            addresses: (detailedUser as any).addresses,
+                        } as any;
+                    } catch (err) {
+                        console.error(`Failed to fetch details for user ${user.id}:`, err);
+                        return user; // Return original user if detail fetch fails
+                    }
+                })
+            );
+            
+            setUsers(usersWithProfiles as any);
             setPagination(prev => ({
                 ...prev,
                 totalCount: response.totalCount || response.total || 0,
@@ -142,9 +164,23 @@ const UsersPage: React.FC = () => {
     }, [editingUser, roles]);
     
     const columns = [
-        { key: 'name', label: 'Họ tên' },
+        { 
+            key: 'name', 
+            label: 'Họ tên',
+            render: (_value: any, user: User) => {
+                const fullName = (user as any).profiles?.fullName || (user as any).fullName || user.name;
+                return <span>{fullName || 'N/A'}</span>;
+            }
+        },
         { key: 'email', label: 'Email' },
-        { key: 'phone', label: 'Số điện thoại' },
+        { 
+            key: 'phone', 
+            label: 'Số điện thoại',
+            render: (_value: any, user: User) => {
+                const phoneNumber = (user as any).profiles?.phoneNumber || (user as any).phoneNumber || user.phone;
+                return <span>{phoneNumber || 'N/A'}</span>;
+            }
+        },
         {
             key: 'roles',
             label: 'Vai trò',
@@ -174,25 +210,7 @@ const UsersPage: React.FC = () => {
                 );
             },
         },
-        {
-            key: 'status',
-            label: 'Trạng thái',
-            render: (value: string) => (
-                <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${value === 'active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                        }`}
-                >
-                    {value === 'active' ? 'Hoạt động' : 'Không hoạt động'}
-                </span>
-            ),
-        },
-        { 
-            key: 'createdAt', 
-            label: 'Ngày tạo',
-            render: (value: string) => value ? new Date(value).toLocaleDateString('vi-VN') : 'N/A'
-        },
+    // status and createdAt columns removed as requested
     ];
 
     const handleEdit = (user: User) => {
@@ -212,11 +230,15 @@ const UsersPage: React.FC = () => {
             else userRoleId = String(firstRole);
         }
 
+        // Extract name and phone from profiles if available
+        const fullName = (user as any).profiles?.fullName || (user as any).fullName || user.name || '';
+        const phoneNumber = (user as any).profiles?.phoneNumber || (user as any).phoneNumber || user.phone || '';
+
         setSelectedRoleId(userRoleId);
         setFormData({
-            name: user.name || '',
+            name: fullName,
             email: user.email || '',
-            phone: user.phone || '',
+            phone: phoneNumber,
             password: '',
             role: user.role || 'customer',
             status: user.status || 'active'
@@ -574,7 +596,9 @@ const UsersPage: React.FC = () => {
                         <div className="space-y-3">
                             <div className="border-b pb-3">
                                 <label className="text-sm font-medium text-gray-500">Họ tên</label>
-                                <p className="text-gray-900 mt-1">{viewingUser.name}</p>
+                                <p className="text-gray-900 mt-1">
+                                    {(viewingUser as any).profiles?.fullName || (viewingUser as any).fullName || viewingUser.name || 'N/A'}
+                                </p>
                             </div>
                             <div className="border-b pb-3">
                                 <label className="text-sm font-medium text-gray-500">Email</label>
@@ -582,46 +606,27 @@ const UsersPage: React.FC = () => {
                             </div>
                             <div className="border-b pb-3">
                                 <label className="text-sm font-medium text-gray-500">Số điện thoại</label>
-                                <p className="text-gray-900 mt-1">{viewingUser.phone || 'N/A'}</p>
+                                <p className="text-gray-900 mt-1">
+                                    {(viewingUser as any).profiles?.phoneNumber || (viewingUser as any).phoneNumber || viewingUser.phone || 'N/A'}
+                                </p>
                             </div>
                             <div className="border-b pb-3">
                                 <label className="text-sm font-medium text-gray-500">Vai trò</label>
                                 <p className="text-gray-900 mt-1">
                                     {((Array.isArray((viewingUser as any).roles) && (viewingUser as any).roles.length > 0) || viewingUser.role) ? (
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {((Array.isArray((viewingUser as any).roles) ? (viewingUser as any).roles : (viewingUser.role ? [viewingUser.role] : [])) as any[]).map((role: any, idx: number) => {
-                                                                const label = roleToLabel(role) || 'Chưa có vai trò';
-                                                                return (
-                                                                    <span
-                                                                        key={idx}
-                                                                        className={`px-3 py-1 rounded-full text-xs font-semibold ${isAdminRole(role) ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}
-                                                                    >
-                                                                        {label}
-                                                                    </span>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    ) : (
-                                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
-                                            Chưa có vai trò
-                                        </span>
+                                        <div className="flex flex-wrap gap-1">
+                                            {(Array.isArray((viewingUser as any).roles) ? (viewingUser as any).roles : (viewingUser.role ? [viewingUser.role] : [])).map((role: any, idx: number) => {
+                                                const label = typeof role === 'string' ? role : (role?.name || role?.roleName || String(role?.id || role));
+                                                return (
+                                                    <span key={idx} className={`px-3 py-1 rounded-full text-xs font-semibold ${String(label).toLowerCase().includes('admin') ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                                                        {label}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">Chưa có vai trò</span>
                                     )}
-                                </p>
-                            </div>
-                            <div className="border-b pb-3">
-                                <label className="text-sm font-medium text-gray-500">Trạng thái</label>
-                                <p className="text-gray-900 mt-1">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                        viewingUser.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                    }`}>
-                                        {viewingUser.status === 'active' ? 'Hoạt động' : 'Không hoạt động'}
-                                    </span>
-                                </p>
-                            </div>
-                            <div className="pb-3">
-                                <label className="text-sm font-medium text-gray-500">Ngày tạo</label>
-                                <p className="text-gray-900 mt-1">
-                                    {viewingUser.createdAt ? new Date(viewingUser.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
                                 </p>
                             </div>
                         </div>
