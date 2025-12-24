@@ -29,6 +29,8 @@ namespace BookStore.Application.Services.Checkout
 
         // Warehouse mặc định - Khớp với database thực tế (StockItems table)
         private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("11EDB44C-791B-43F1-B69C-56A2E3178425");
+        // private static readonly Guid DEFAULT_WAREHOUSE_ID = Guid.Parse("08d381e0-b0cf-426f-a5f4-430c63f3a552");
+
 
         public CheckoutService(
             ICartService cartService,
@@ -46,7 +48,6 @@ namespace BookStore.Application.Services.Checkout
             _logger = logger;
         }
 
-        #region Preview & Validation
 
         public async Task<CheckoutPreviewDto> GetCheckoutPreviewAsync(Guid userId, string? couponCode = null)
         {
@@ -107,7 +108,7 @@ namespace BookStore.Application.Services.Checkout
             foreach (var item in cart.Items)
             {
                 _logger.LogInformation($"🔍 Validating item: BookId={item.BookId}, Title='{item.BookTitle}', Qty={item.Quantity}");
-                
+
                 var book = await _bookRepository.GetByIdAsync(item.BookId);
 
                 if (book == null)
@@ -207,9 +208,7 @@ namespace BookStore.Application.Services.Checkout
             return Task.FromResult(isValid);
         }
 
-        #endregion
 
-        #region Process Checkout
 
         public async Task<CheckoutResultDto> ProcessCheckoutAsync(CheckoutRequestDto dto)
         {
@@ -309,9 +308,6 @@ namespace BookStore.Application.Services.Checkout
             return await ProcessCheckoutAsync(checkoutRequest);
         }
 
-        #endregion
-
-        #region Payment Callback & Status
 
         public async Task<CheckoutResultDto> HandlePaymentCallbackAsync(PaymentDto.PaymentCallbackDto callbackDto)
         {
@@ -369,9 +365,6 @@ namespace BookStore.Application.Services.Checkout
             return await _paymentService.GetPaymentByOrderIdAsync(orderId);
         }
 
-        #endregion
-
-        #region Cancel & History
 
         public async Task<bool> CancelCheckoutAsync(Guid orderId, Guid userId)
         {
@@ -446,9 +439,6 @@ namespace BookStore.Application.Services.Checkout
             return (checkoutResults, totalCount);
         }
 
-        #endregion
-
-        #region Helper Methods
 
         /// <summary>
         /// Generate payment URL (giả lập - thực tế cần tích hợp với payment gateway)
@@ -483,7 +473,7 @@ namespace BookStore.Application.Services.Checkout
             {
                 // Chỉ lấy stock từ warehouse mặc định (đồng bộ với reserve logic)
                 _logger.LogInformation($"🔍 Checking stock for book {bookId} in warehouse {DEFAULT_WAREHOUSE_ID}");
-                
+
                 var stockItem = await _stockItemService.GetStockByBookAndWarehouseAsync(bookId, DEFAULT_WAREHOUSE_ID);
 
                 if (stockItem == null)
@@ -671,6 +661,5 @@ namespace BookStore.Application.Services.Checkout
             };
         }
 
-        #endregion
     }
 }

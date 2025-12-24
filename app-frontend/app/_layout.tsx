@@ -1,13 +1,42 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, LogBox } from 'react-native';
 import 'react-native-reanimated';
+import { useEffect } from 'react';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { CartProvider } from '@/app/providers/CartProvider';
 import { AuthProvider, useAuth } from '@/app/providers/AuthProvider';
 import { NotificationProvider } from '@/app/providers/NotificationProvider';
+
+// Ignore network and API error logs in LogBox
+LogBox.ignoreLogs([
+  'Request failed with status code',
+  'Network request failed',
+  'AxiosError',
+  'API Error',
+  '[API Response Error]',
+]);
+
+// Global error handler to prevent red screen
+const setupGlobalErrorHandlers = () => {
+  // Handle unhandled promise rejections
+  const originalHandler = ErrorUtils.getGlobalHandler();
+  ErrorUtils.setGlobalHandler((error, isFatal) => {
+    // Log to console but don't show red screen for API errors
+    if (error?.message?.includes('Request failed') || 
+        error?.message?.includes('Network request failed') ||
+        error?.message?.includes('AxiosError')) {
+      console.log('[Global Error Handler] API Error caught and suppressed:', error.message);
+      return;
+    }
+    // For other errors, use original handler
+    if (originalHandler) {
+      originalHandler(error, isFatal);
+    }
+  });
+};
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -16,6 +45,11 @@ export const unstable_settings = {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { isLoading } = useAuth();
+
+  // Setup global error handlers on mount
+  useEffect(() => {
+    setupGlobalErrorHandlers();
+  }, []);
 
   console.log('[Layout] isLoading:', isLoading);
 

@@ -50,7 +50,6 @@ export function CategoryItem({
 const styles = StyleSheet.create({
   item: {
     alignItems: 'center',
-    marginRight: 5,
   },
   iconContainer: {
     width: 60,
@@ -68,6 +67,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontWeight: '500',
+    textAlign: 'center',
   },
   textSelected: {
     color: '#333',

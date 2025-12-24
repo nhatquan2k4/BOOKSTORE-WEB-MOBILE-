@@ -57,19 +57,6 @@ const AuthorsPage: React.FC = () => {
     const columns = [
         { key: 'name', label: 'Tên tác giả' },
         {
-            key: 'avatarUrl',
-            label: 'Avatar',
-            render: (value?: string) => (
-                value ? (
-                    <img src={value} alt="Avatar" className="w-10 h-10 rounded-full object-cover" />
-                ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-500 text-xs">No Image</span>
-                    </div>
-                )
-            )
-        },
-        {
             key: 'bookCount',
             label: 'Số sách',
             render: (_value: any, item: Author) => (
@@ -92,7 +79,6 @@ const AuthorsPage: React.FC = () => {
     const [booksError, setBooksError] = useState<string | null>(null);
     const [selectedAuthorName, setSelectedAuthorName] = useState<string>('');
     const [authorCounts, setAuthorCounts] = useState<Record<string, number>>({});
-    const [countsLoading, setCountsLoading] = useState(false);
 
     const handleViewBooks = async (author: Author) => {
         setSelectedAuthorName(author.name || '');
@@ -146,7 +132,6 @@ const AuthorsPage: React.FC = () => {
                 setAuthorCounts({});
                 return;
             }
-            setCountsLoading(true);
             try {
                 const promises = authors.map(async (a) => {
                     try {
@@ -165,8 +150,8 @@ const AuthorsPage: React.FC = () => {
                 const map: Record<string, number> = {};
                 results.forEach(r => { map[r.id] = r.count; });
                 setAuthorCounts(map);
-            } finally {
-                if (mounted) setCountsLoading(false);
+            } catch (err) {
+                console.error('Error loading counts:', err);
             }
         };
 
