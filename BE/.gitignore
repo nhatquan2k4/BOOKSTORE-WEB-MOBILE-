@@ -64,11 +64,6 @@ bld/
 .env.production
 .env.development
 .env.jenkins
-*.env.jenkins
-
-# Jenkins credentials
-create-jenkins-credentials.groovy
-JENKINS_CREDENTIALS_SETUP.md
 
 # Docker volumes
 docker-volumes/

@@ -8,15 +8,20 @@ import { Button, Input } from '@/components/ui';
 import { cartService } from '@/services/cart.service';
 import { bookService } from '@/services/book.service';
 import { userProfileService } from '@/services/user-profile.service';
-import { orderService } from '@/services/order.service'; // Import OrderService
+import { orderService } from '@/services/order.service';
 import { resolveBookPrice } from '@/lib/price';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276';
 
+// --- FIX 4: Hàm xử lý ảnh an toàn, tránh lỗi Image missing src ---
 const getFullImageUrl = (url?: string | null) => {
-  if (!url) return '/image/anh.png';
+  if (!url || url.trim() === "") return '/image/anh.png'; // Ảnh placeholder
   if (url.startsWith('http')) return url;
-  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  // Đảm bảo dấu /
+  const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+  // Nếu API_BASE_URL có / ở cuối thì bỏ đi
+  const cleanBase = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  return `${cleanBase}${cleanUrl}`;
 };
 
 const formatPrice = (price: number) => {
@@ -61,8 +66,13 @@ export default function CheckoutPage() {
       try {
         setLoading(true);
         
-        // Kiểm tra backend có hoạt động không
-        console.log('[CHECKOUT] API URL:', process.env.NEXT_PUBLIC_API_URL);
+        // Check token
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        if (!token) {
+          alert('Vui lòng đăng nhập để tiếp tục');
+          router.push('/login');
+          return;
+        }
         
         // 1. Get Profile
         try {
@@ -78,7 +88,7 @@ export default function CheckoutPage() {
             }));
           }
         } catch (err) { 
-          console.warn("[CHECKOUT] Chưa đăng nhập hoặc không lấy được profile:", err); 
+          console.warn("[CHECKOUT] Không lấy được profile:", err); 
         }
 
         // 2. Get Cart
@@ -91,12 +101,16 @@ export default function CheckoutPage() {
               try {
                 const bookDetails: any = await bookService.getBookById(item.bookId);
                 const priceInfo = resolveBookPrice(bookDetails);
+                
+                // Dùng hàm getFullImageUrl an toàn
+                const validImage = getFullImageUrl(bookDetails.coverImage);
+
                 return {
                   id: item.id,
                   bookId: item.bookId,
                   title: bookDetails.title,
                   author: bookDetails.authorNames?.[0] || "Tác giả ẩn danh",
-                  image: getFullImageUrl(bookDetails.coverImage),
+                  image: validImage, 
                   price: priceInfo.finalPrice,
                   quantity: item.quantity,
                   format: bookDetails.bookFormat?.name || 'Tiêu chuẩn'
@@ -113,7 +127,7 @@ export default function CheckoutPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [router]);
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const shippingFee = subtotal >= 500000 ? 0 : 30000;
@@ -123,8 +137,6 @@ export default function CheckoutPage() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-
-
 
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
@@ -140,9 +152,15 @@ export default function CheckoutPage() {
     setIsProcessing(true);
     
     try {
-        // --- 1. Tạo Payload tạo đơn hàng (PascalCase for .NET backend) ---
+        if (!userId) {
+            alert('Lỗi: Không tìm thấy thông tin user. Vui lòng đăng nhập lại.');
+            router.push('/login');
+            return;
+        }
+
+        // --- 1. Payload ---
         const orderPayload = {
-            UserId: userId, // Backend will override this with JWT token user ID
+            UserId: userId,
             Items: cartItems.map(item => ({
                 BookId: item.bookId,
                 Quantity: item.quantity,
@@ -152,80 +170,78 @@ export default function CheckoutPage() {
                 RecipientName: formData.fullName,
                 PhoneNumber: formData.phone,
                 Province: formData.city,
-                District: formData.district,
-                Ward: formData.ward,
-                Street: formData.address || "Mặc định",
-                Note: formData.note
+                District: formData.district || '',
+                Ward: formData.ward || '',
+                Street: formData.address || "Chưa cung cấp",
+                Note: formData.note || ''
             },
             CouponId: null
         };
 
-        console.log('[CHECKOUT] Payload gửi lên backend:', JSON.stringify(orderPayload, null, 2));
-
-        // --- 2. Gọi API Tạo Đơn Hàng Thật ---
+        // --- 2. Gọi API ---
+        console.log("Đang tạo đơn hàng với payload:", orderPayload);
         const createdOrder = await orderService.createOrder(orderPayload);
-        console.log('[CHECKOUT] Response từ backend:', createdOrder);
         
-        // Lấy thông tin thật từ Server trả về (hỗ trợ nhiều format response)
-        const realOrderId = createdOrder.orderNumber || createdOrder.id || createdOrder.orderId;
-        const realTotalAmount = createdOrder.finalAmount || createdOrder.totalAmount || total;
+        console.log('[DEBUG] Response CreateOrder:', createdOrder);
+        
+        // --- FIX 5: Logic trích xuất Order ID cực mạnh (chấp nhận mọi format) ---
+        // Backend có thể trả về: { id: "..." } hoặc { orderNumber: "..." } hoặc { data: { ... } }
+        // Hoặc PascalCase: { Id: "..." }, { OrderNumber: "..." }
+        
+        let realOrderId = null;
+        let realTotalAmount = total;
 
-        if (!realOrderId) {
-            throw new Error('Backend không trả về mã đơn hàng (orderNumber)');
+        // Helper check object
+        const findId = (obj: any) => obj?.orderNumber || obj?.OrderNumber || obj?.id || obj?.Id;
+        const findAmount = (obj: any) => obj?.finalAmount || obj?.FinalAmount || obj?.totalAmount || obj?.TotalAmount;
+
+        // Check level 1
+        realOrderId = findId(createdOrder);
+        if (findAmount(createdOrder)) realTotalAmount = findAmount(createdOrder);
+
+        // Check level 2 (nếu response bọc trong data)
+        if (!realOrderId && createdOrder.data) {
+             realOrderId = findId(createdOrder.data);
+             if (findAmount(createdOrder.data)) realTotalAmount = findAmount(createdOrder.data);
         }
 
-        console.log('[CHECKOUT] Order ID:', realOrderId, '| Amount:', realTotalAmount);
+        // Nếu vẫn không thấy
+        if (!realOrderId) {
+             console.error("CRITICAL ERROR: Không tìm thấy Order ID trong response", createdOrder);
+             alert("Tạo đơn hàng thành công nhưng không lấy được mã đơn hàng. Vui lòng kiểm tra lịch sử đơn hàng.");
+             router.push('/account/orders');
+             return;
+        }
+
+        console.log('=> ID Đơn hàng lấy được:', realOrderId);
 
         if (paymentMethod === 'cod') {
             await cartService.clearCart();
             setShowSuccessModal(true);
             setIsProcessing(false);
         } else {
-            // --- 3. Chuyển hướng sang trang QR với OrderNumber THẬT ---
+            // --- 3. Chuyển hướng sang trang QR ---
             const query = new URLSearchParams({
                 type: 'buy',
-                orderId: realOrderId, // Mã đơn hàng thật (quan trọng cho SePay)
+                orderId: realOrderId, // Chắc chắn có giá trị
                 amount: realTotalAmount.toString(),
             });
 
-            console.log('[CHECKOUT] Redirect to QR page with:', query.toString());
+            console.log('Redirecting to QR:', `/payment/qr?${query.toString()}`);
             router.push(`/payment/qr?${query.toString()}`);
         }
 
     } catch (error: any) {
-        console.error('[CHECKOUT] Lỗi đặt hàng:', error);
+        console.error('[CHECKOUT ERROR]', error);
         
-        // Log chi tiết error
-        if (error && typeof error === 'object') {
-            console.error('[CHECKOUT] Error details:', {
-                message: error.message || 'No message',
-                name: error.name || 'Unknown',
-                statusCode: error.statusCode || 'N/A',
-                errors: error.errors || null,
-                response: error.response?.data || null,
-                stack: error.stack || 'No stack'
-            });
-        } else {
-            console.error('[CHECKOUT] Raw error:', error);
-        }
-        
-        let errorMessage = 'Không thể tạo đơn hàng. Vui lòng thử lại.';
-        
-        // Xử lý các loại lỗi khác nhau
-        if (error?.statusCode === 400 && error?.errors) {
-            // Validation errors từ backend
-            const validationErrors = Object.entries(error.errors)
-                .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
-                .join('\n');
-            errorMessage = `Lỗi dữ liệu:\n${validationErrors}`;
-        } else if (error?.response?.data?.message) {
-            // Axios error với message từ backend
+        let errorMessage = 'Không thể tạo đơn hàng.';
+        if (error?.response?.data?.message) {
             errorMessage = error.response.data.message;
         } else if (error?.message) {
             errorMessage = error.message;
         }
         
-        alert(errorMessage);
+        alert(`Lỗi: ${errorMessage}`);
         setIsProcessing(false);
     }
   };
@@ -240,7 +256,6 @@ export default function CheckoutPage() {
           <Link href="/cart" className="hover:text-blue-600"> Giỏ hàng</Link> / 
           <span className="font-medium text-gray-800">Thanh toán</span>
         </nav>
-
 
         {cartItems.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-xl shadow-sm">
@@ -285,7 +300,11 @@ export default function CheckoutPage() {
                         </label>
                         <label className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer ${paymentMethod === 'qr' ? 'border-blue-500 bg-blue-50' : ''}`}>
                             <input type="radio" name="payment" checked={paymentMethod === 'qr'} onChange={() => setPaymentMethod('qr')} />
-                            <span>Chuyển khoản Ngân hàng (VietQR)</span>
+                            <div className="flex items-center gap-2">
+                                <span>Chuyển khoản Ngân hàng (VietQR)</span>
+                                {/* Badge gợi ý */}
+                                <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-bold">Khuyên dùng</span>
+                            </div>
                         </label>
                     </div>
                 </div>
@@ -295,10 +314,17 @@ export default function CheckoutPage() {
             <div className="lg:col-span-1">
                 <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200 sticky top-8">
                     <h2 className="text-xl font-bold mb-4">Đơn hàng</h2>
-                    <div className="space-y-3 mb-4 max-h-80 overflow-y-auto">
+                    <div className="space-y-3 mb-4 max-h-80 overflow-y-auto pr-2">
                         {cartItems.map(item => (
-                            <div key={item.id} className="flex justify-between text-sm">
-                                <span className="truncate w-2/3">{item.title} (x{item.quantity})</span>
+                            <div key={item.id} className="flex gap-3 text-sm mb-2">
+                                {/* Hiển thị ảnh nhỏ trong summary */}
+                                <div className="relative w-12 h-16 flex-shrink-0 border rounded overflow-hidden">
+                                   <Image src={item.image} alt="" fill className="object-cover"/>
+                                </div>
+                                <div className="flex-1">
+                                   <div className="font-medium truncate">{item.title}</div>
+                                   <div className="text-gray-500">x{item.quantity}</div>
+                                </div>
                                 <span className="font-semibold">{formatPrice(item.price * item.quantity)}</span>
                             </div>
                         ))}
@@ -308,7 +334,7 @@ export default function CheckoutPage() {
                         <div className="flex justify-between"><span>Phí ship</span><span>{formatPrice(shippingFee)}</span></div>
                         <div className="flex justify-between text-xl font-bold text-red-600 mt-2"><span>Tổng cộng</span><span>{formatPrice(total)}</span></div>
                     </div>
-                    <Button onClick={handlePlaceOrder} loading={isProcessing} className="w-full mt-6 py-3 text-lg font-bold bg-blue-600 text-white">
+                    <Button onClick={handlePlaceOrder} loading={isProcessing} className="w-full mt-6 py-3 text-lg font-bold bg-blue-600 text-white hover:bg-blue-700 transition">
                         {paymentMethod === 'cod' ? 'Đặt hàng' : 'Thanh toán ngay'}
                     </Button>
                 </div>
@@ -319,9 +345,12 @@ export default function CheckoutPage() {
 
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-8 rounded-2xl text-center shadow-2xl">
+            <div className="bg-white p-8 rounded-2xl text-center shadow-2xl animate-in fade-in zoom-in">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                     <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                </div>
                 <h3 className="text-2xl font-bold text-green-600 mb-2">Đặt hàng thành công!</h3>
-                <p className="mb-6">Cảm ơn bạn đã mua sách.</p>
+                <p className="mb-6 text-gray-600">Cảm ơn bạn đã mua sách.</p>
                 <Button onClick={() => router.push('/account/orders')}>Xem đơn hàng</Button>
             </div>
         </div>

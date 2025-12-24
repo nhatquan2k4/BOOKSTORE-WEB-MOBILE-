@@ -203,7 +203,7 @@ export function useNotifications() {
         // Transform API data to component format
         // Safely handle undefined or null items
         const items = response?.items || [];
-        const transformedNotifications: NotificationItem[] = items.map((item) => ({
+        const transformedNotifications: NotificationItem[] = items.map((item: any) => ({
           id: item.id,
           title: item.title,
           message: item.message,
@@ -247,7 +247,8 @@ export function useNotifications() {
 
   const clearAll = async () => {
     try {
-      await notificationService.deleteAllRead();
+      // TODO: Backend chưa có API deleteAllRead
+      // await notificationService.deleteAllRead();
       setNotifications((prev) => prev.filter((n) => !n.isRead));
     } catch (error) {
       console.error('Failed to clear all:', error);

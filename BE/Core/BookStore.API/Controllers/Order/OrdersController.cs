@@ -1,7 +1,6 @@
 using BookStore.Application.Dtos.Ordering;
 using BookStore.Application.IService.Ordering;
 using BookStore.Application.IService.Checkout;
-using BookStore.API.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,7 +10,7 @@ namespace BookStore.API.Controllers.Order
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class OrdersController : ApiControllerBase
+    public class OrdersController : ControllerBase
     {
         private readonly IOrderService _orderService;
         private readonly ICheckoutService _checkoutService;
@@ -128,12 +127,51 @@ namespace BookStore.API.Controllers.Order
         [HttpPost]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto dto)
         {
-            var userId = GetCurrentUserId();
-            // Always use authenticated user's ID from JWT token, ignore dto.UserId
-            dto.UserId = userId;
+            try
+            {
+                _logger.LogInformation("[OrdersController] ===== BẮT ĐẦU TẠO ĐƠN HÀNG =====");
+                _logger.LogInformation($"[OrdersController] User from token: {User?.Identity?.Name}");
+                _logger.LogInformation($"[OrdersController] UserId from dto: {dto.UserId}");
+                _logger.LogInformation($"[OrdersController] Number of items: {dto.Items?.Count ?? 0}");
+                
+                if (dto.Items != null)
+                {
+                    foreach (var item in dto.Items)
+                    {
+                        _logger.LogInformation($"[OrdersController] Item: BookId={item.BookId}, Qty={item.Quantity}, Price={item.UnitPrice}");
+                    }
+                }
 
-            var order = await _orderService.CreateOrderAsync(dto);
-            return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, order);
+                var userId = GetCurrentUserId();
+                _logger.LogInformation($"[OrdersController] Current UserId from JWT: {userId}");
+                
+                // Override UserId with JWT token user ID for security
+                dto.UserId = userId;
+                _logger.LogInformation($"[OrdersController] UserId overridden with JWT token userId: {userId}");
+
+                var order = await _orderService.CreateOrderAsync(dto);
+                
+                _logger.LogInformation($"[OrdersController] ✅ Order created successfully: {order.OrderNumber}");
+                
+                return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, order);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[OrdersController] ❌ Error creating order");
+                _logger.LogError($"[OrdersController] Error message: {ex.Message}");
+                _logger.LogError($"[OrdersController] Stack trace: {ex.StackTrace}");
+                
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError($"[OrdersController] Inner exception: {ex.InnerException.Message}");
+                }
+                
+                return StatusCode(500, new { 
+                    message = ex.Message,
+                    error = "Internal server error",
+                    details = ex.InnerException?.Message
+                });
+            }
         }
 
         // POST: api/orders/from-cart
@@ -259,6 +297,68 @@ namespace BookStore.API.Controllers.Order
             return Ok(history);
         }
 
+        private Guid GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập"));
+        }
+
+        // GET: api/orders/available-for-shipping - Shipper lấy danh sách đơn đã xác nhận
+        [HttpGet("available-for-shipping")]
+        [Authorize(Roles = "Shipper,Admin")]
+        public async Task<IActionResult> GetAvailableOrdersForShipping(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 100)
+        {
+            try
+            {
+                // Lấy tất cả đơn có status = "Confirmed" (sẵn sàng giao)
+                var result = await _orderService.GetAllOrdersAsync(pageNumber, pageSize, "Confirmed");
+                
+                return Ok(new
+                {
+                    Items = result.Items,
+                    TotalCount = result.TotalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling((double)result.TotalCount / pageSize)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting available orders for shipping");
+                return StatusCode(500, new { Message = "Lỗi khi lấy danh sách đơn hàng" });
+            }
+        }
+
+        // GET: api/orders/my-shipping-orders - Shipper lấy danh sách đơn đang giao của mình
+        [HttpGet("my-shipping-orders")]
+        [Authorize(Roles = "Shipper,Admin")]
+        public async Task<IActionResult> GetMyShippingOrders(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 100)
+        {
+            try
+            {
+                // TODO: Sau này có thể thêm logic filter theo ShipperId nếu cần
+                // Hiện tại lấy tất cả đơn đang giao (status = "Shipping")
+                var result = await _orderService.GetAllOrdersAsync(pageNumber, pageSize, "Shipping");
+                
+                return Ok(new
+                {
+                    Items = result.Items,
+                    TotalCount = result.TotalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling((double)result.TotalCount / pageSize)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting my shipping orders");
+                return StatusCode(500, new { Message = "Lỗi khi lấy danh sách đơn hàng" });
+            }
+        }
     }
 
     // Helper DTOs

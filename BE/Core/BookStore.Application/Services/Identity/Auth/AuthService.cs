@@ -6,9 +6,6 @@ using BookStore.Domain.IRepository.Identity.User;
 using BookStore.Domain.IRepository.Identity.RolePermisson;
 using Microsoft.Extensions.Options;
 using BookStore.Application.IService.Identity.Email;
-using BookStore.Application.IService.System;
-using BookStore.Application.Dtos.System.Notification;
-using IdentityEmailService = BookStore.Application.IService.Identity.Email.IEmailService;
 
 namespace BookStore.Application.Services.Identity.Auth
 {
@@ -20,8 +17,7 @@ namespace BookStore.Application.Services.Identity.Auth
         private readonly ITokenService _tokenService;
         private readonly IEmailVerificationService _emailVerificationService;
         private readonly IPasswordResetService _passwordResetService;
-        private readonly IdentityEmailService _emailService;
-        private readonly INotificationService _notificationService;
+        private readonly IEmailService _emailService;
         private readonly JwtSettings _jwtSettings;
         private readonly EmailSettings _emailSettings;
 
@@ -32,8 +28,7 @@ namespace BookStore.Application.Services.Identity.Auth
             ITokenService tokenService,
             IEmailVerificationService emailVerificationService,
             IPasswordResetService passwordResetService,
-            IdentityEmailService emailService,
-            INotificationService notificationService,
+            IEmailService emailService,
             IOptions<JwtSettings> jwtSettings,
             IOptions<EmailSettings> emailSettings)
         {
@@ -44,7 +39,6 @@ namespace BookStore.Application.Services.Identity.Auth
             _emailVerificationService = emailVerificationService;
             _passwordResetService = passwordResetService;
             _emailService = emailService;
-            _notificationService = notificationService;
             _jwtSettings = jwtSettings.Value;
             _emailSettings = emailSettings.Value;
         }
@@ -77,20 +71,6 @@ namespace BookStore.Application.Services.Identity.Auth
 
             var accessTokenExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
             var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
-
-            // ✅ Tạo notification chào mừng khi đăng nhập
-            try
-            {
-                await _notificationService.CreateNotificationAsync(new CreateNotificationDto
-                {
-                    UserId = user.Id,
-                    Title = "Đăng nhập thành công",
-                    Message = $"Chào mừng bạn quay lại! Bạn đã đăng nhập vào hệ thống lúc {DateTime.Now:dd/MM/yyyy HH:mm}",
-                    Type = "system",
-                    Link = null
-                });
-            }
-            catch { /* Không làm fail login nếu notification lỗi */ }
 
             return user.ToLoginResponseDto(accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt);
         }
@@ -141,20 +121,6 @@ namespace BookStore.Application.Services.Identity.Auth
 
             var accessTokenExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
             var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
-
-            // ✅ Tạo notification chào mừng user mới
-            try
-            {
-                await _notificationService.CreateNotificationAsync(new CreateNotificationDto
-                {
-                    UserId = user.Id,
-                    Title = "Chào mừng bạn đến với BookStore!",
-                    Message = "Cảm ơn bạn đã đăng ký tài khoản. Hãy xác thực email để sử dụng đầy đủ tính năng.",
-                    Type = "system",
-                    Link = "/account/profile"
-                });
-            }
-            catch { /* Không làm fail register nếu notification lỗi */ }
 
             return user.ToLoginResponseDto(accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt);
         }

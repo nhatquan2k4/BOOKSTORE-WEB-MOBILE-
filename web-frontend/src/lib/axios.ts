@@ -19,8 +19,16 @@ axiosInstance.interceptors.request.use(
     // Get token from localStorage or cookie
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
     
+    console.log('[AXIOS INTERCEPTOR] Token exists:', !!token);
+    console.log('[AXIOS INTERCEPTOR] Token value:', token ? `${token.substring(0, 30)}...` : 'null');
+    console.log('[AXIOS INTERCEPTOR] Request URL:', config.url);
+    console.log('[AXIOS INTERCEPTOR] Request method:', config.method);
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('[AXIOS INTERCEPTOR] Authorization header set');
+    } else {
+      console.warn('[AXIOS INTERCEPTOR] ⚠️ NO TOKEN FOUND - Request will fail with 401/403!');
     }
     
     return config;

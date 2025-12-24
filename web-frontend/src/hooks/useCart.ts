@@ -46,7 +46,6 @@ export function useCart(userId?: string) {
       const cartDto = await cartService.addToCart({
         bookId: request.bookId,
         quantity: request.quantity,
-        userId: userId,
       });
       const updatedCart = convertCartDto(cartDto);
       setCart(updatedCart);

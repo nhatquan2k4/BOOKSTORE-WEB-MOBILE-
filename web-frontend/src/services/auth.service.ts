@@ -82,7 +82,7 @@ class AuthService {
 
       // Backend returns: { Success, Message, Data: { AccessToken, RefreshToken, User, ... } }
       const apiResponse = response.data;
-      const loginData = apiResponse.Data || apiResponse.data || apiResponse;
+      const loginData = (apiResponse as any).Data || apiResponse.data || apiResponse;
       
       if (!loginData || (!loginData.AccessToken && !loginData.accessToken)) {
         throw new Error('Invalid response from server: ' + JSON.stringify(apiResponse));
@@ -160,7 +160,7 @@ class AuthService {
 
       // Backend returns: { Success, Message, Data: { AccessToken, RefreshToken, User, ... } }
       const apiResponse = response.data;
-      const loginData = apiResponse.Data || apiResponse.data || apiResponse;
+      const loginData = (apiResponse as any).Data || apiResponse.data || apiResponse;
       
       if (!loginData || (!loginData.AccessToken && !loginData.accessToken)) {
         throw new Error('Invalid response from server: ' + JSON.stringify(apiResponse));

@@ -39,11 +39,12 @@ export default function RentDetailPage() {
         const data = await bookService.getBookById(id);
         setBook(data);
 
-        // Tự động chọn gói Phổ biến hoặc gói đầu tiên từ API trả về
-        if (data?.rentalPlans && data.rentalPlans.length > 0) {
-            const popularPlan = data.rentalPlans.find(p => p.isPopular);
-            setSelectedPlanId(popularPlan ? popularPlan.id : data.rentalPlans[0].id);
-        }
+        // TODO: Tự động chọn gói Phổ biến hoặc gói đầu tiên từ API trả về
+        // Tạm thời comment vì BookDetailDto không có rentalPlans
+        // if (data?.rentalPlans && data.rentalPlans.length > 0) {
+        //     const popularPlan = data.rentalPlans.find(p => p.isPopular);
+        //     setSelectedPlanId(popularPlan ? popularPlan.id : data.rentalPlans[0].id);
+        // }
       } catch (error) {
         console.error("Error fetching book detail:", error);
       } finally {
@@ -64,7 +65,7 @@ export default function RentDetailPage() {
     publishYear: book.publicationYear,
     pages: book.pageCount,
     language: book.language,
-    format: book.bookFormat?.name || 'ePub, PDF',
+    format: book.bookFormat?.formatType || 'ePub, PDF',
     size: '2.5 MB', // Backend chưa có field này, để tạm
     isbn: book.isbn,
     category: book.categories?.[0]?.name || "Chưa phân loại",
@@ -74,8 +75,16 @@ export default function RentDetailPage() {
     description: book.description || "Chưa có mô tả",
     features: STATIC_FEATURES,
     purchasePrice: book.currentPrice,
-    // QUAN TRỌNG: Lấy rentalPlans trực tiếp từ API, không tính toán lại
-    rentalPlans: book.rentalPlans || [] 
+    // QUAN TRỌNG: TODO - Backend chưa trả về rentalPlans, để tạm array rỗng
+    rentalPlans: [] as Array<{ 
+      id: number; 
+      name: string; 
+      price: number; 
+      duration: number; 
+      isPopular?: boolean;
+      durationLabel?: string;
+      savingsPercentage?: number;
+    }> // book.rentalPlans || []
   } : null;
 
   // Tìm gói đang chọn
@@ -91,7 +100,7 @@ export default function RentDetailPage() {
         // Gọi API tạo đơn hàng (Secure)
         const result = await orderService.createRentalOrder({
             bookId: book.id,
-            days: currentPlan.days
+            days: currentPlan.duration
         });
 
         if (result.success) {
@@ -286,7 +295,7 @@ export default function RentDetailPage() {
                             <div className="flex items-center justify-between w-full">
                               <div className="text-left">
                                 <div className="font-semibold text-gray-900">{plan.durationLabel}</div>
-                                {plan.savingsPercentage > 0 && (
+                                {(plan.savingsPercentage || 0) > 0 && (
                                   <div className="text-xs text-green-600 font-medium">Tiết kiệm {plan.savingsPercentage}%</div>
                                 )}
                               </div>

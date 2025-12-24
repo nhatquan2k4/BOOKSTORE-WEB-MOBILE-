@@ -25,7 +25,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Khởi tạo: kiểm tra token khi app start
   useEffect(() => {
-    checkAuthStatus();
+    // Thêm timeout protection để tránh bị stuck
+    const timeoutId = setTimeout(() => {
+      console.log('[Auth] ⚠️ Auth check timeout - forcing loading to false');
+      setIsLoading(false);
+    }, 10000); // 10 giây timeout
+
+    checkAuthStatus().finally(() => {
+      clearTimeout(timeoutId);
+    });
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Navigation guard: redirect dựa trên auth state
@@ -58,31 +68,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Kiểm tra trạng thái authentication khi app khởi động
    */
   async function checkAuthStatus() {
+    console.log('[Auth] 🔍 Checking auth status...');
     try {
       const tokens = await loadTokens();
+      console.log('[Auth] Token loaded:', !!tokens);
       
       if (!tokens) {
+        console.log('[Auth] ❌ No tokens found');
         setIsLoading(false);
         return;
       }
 
       // Kiểm tra access token còn hạn không
       if (!isTokenExpired(tokens.accessTokenExpiresAt)) {
+        console.log('[Auth] ✅ Access token is valid');
         // Token còn hạn -> load user info
         const userResult = await authService.getCurrentUser();
         if (userResult.ok && userResult.data) {
+          console.log('[Auth] ✅ User loaded:', userResult.data.email);
           setUser(userResult.data);
           setIsAuthenticated(true);
         } else {
+          console.log('[Auth] ❌ Failed to load user');
           await clearTokens();
         }
       } else if (tokens.refreshToken && !isTokenExpired(tokens.refreshTokenExpiresAt)) {
+        console.log('[Auth] 🔄 Refreshing token...');
         // Access token hết hạn nhưng refresh token còn -> refresh
         const refreshResult = await authService.refreshToken({ 
           refreshToken: tokens.refreshToken 
         });
         
         if (refreshResult.ok && refreshResult.data) {
+          console.log('[Auth] ✅ Token refreshed');
           await saveTokens({
             accessToken: refreshResult.data.accessToken,
             refreshToken: refreshResult.data.refreshToken,
@@ -92,20 +110,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           const userResult = await authService.getCurrentUser();
           if (userResult.ok && userResult.data) {
+            console.log('[Auth] ✅ User loaded after refresh');
             setUser(userResult.data);
             setIsAuthenticated(true);
           }
         } else {
+          console.log('[Auth] ❌ Token refresh failed');
           await clearTokens();
         }
       } else {
+        console.log('[Auth] ❌ All tokens expired');
         // Cả 2 token đều hết hạn
         await clearTokens();
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('[Auth] 💥 Auth check failed:', error);
       await clearTokens();
     } finally {
+      console.log('[Auth] ✅ Setting isLoading = false');
       setIsLoading(false);
     }
   }

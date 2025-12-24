@@ -26,6 +26,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCart } from '@/app/providers/CartProvider';
+import { useAuth } from '@/app/providers/AuthProvider';
 
 const { width } = Dimensions.get('window');
 const COVER_WIDTH = 220;
@@ -35,6 +36,7 @@ export default function BookDetail() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const scrollViewRef = useRef<ScrollView>(null);
+  const { isAuthenticated } = useAuth();
   
   const [isFavorite, setIsFavorite] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -97,6 +99,20 @@ export default function BookDetail() {
   };
 
   const confirmBuy = async () => {
+    // Check authentication first
+    if (!isAuthenticated) {
+      Alert.alert(
+        'Chưa đăng nhập',
+        'Vui lòng đăng nhập để mua hàng',
+        [
+          { text: 'Hủy', style: 'cancel' },
+          { text: 'Đăng nhập', onPress: () => router.push('/login') },
+        ]
+      );
+      closeBuySheet();
+      return;
+    }
+
     try {
       // Add to cart API first so backend can process checkout
       console.log('🛒 Adding to cart before checkout:', book.id, buyQty);

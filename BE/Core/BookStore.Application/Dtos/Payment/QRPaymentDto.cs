@@ -2,7 +2,7 @@ namespace BookStore.Application.Dtos.Payment
 {
     public class CreateQRPaymentRequestDto
     {
-        public Guid OrderId { get; set; }
+        public string OrderId { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public string? Description { get; set; }
     }

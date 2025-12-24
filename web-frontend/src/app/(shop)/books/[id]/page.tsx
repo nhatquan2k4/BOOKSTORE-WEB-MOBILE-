@@ -430,7 +430,8 @@ export default function BookDetailPage() {
       try {
           // Giả sử API: reviewService.getBookReviews(id, page, size) trả về { reviews, totalCount }
           const res = await reviewService.getBookReviews(id, 1, 20); 
-          const mappedReviews: Review[] = res.reviews.map((r: any) => ({
+          const reviewList = (res as any).reviews || res.items || [];
+          const mappedReviews: Review[] = reviewList.map((r: any) => ({
               id: r.id,
               author: r.userName || "Người dùng", // Mapping từ C# ReviewDto
               text: r.content,
@@ -457,7 +458,8 @@ export default function BookDetailPage() {
           // Lưu ý: C# Service GetBookCommentsAsync trả về comment phẳng (flat), cần xử lý UI
           // Ở đây giả định UI CommentTree hỗ trợ nesting nếu bạn build cây từ flat list
           // Hoặc API trả về cây. Tạm thời map trực tiếp.
-          const mappedComments: CommentItem[] = res.comments.map((c: any) => ({
+          const commentList = (res as any).comments || res.items || [];
+          const mappedComments: CommentItem[] = commentList.map((c: any) => ({
               id: c.id,
               author: c.userName || "Người dùng",
               content: c.content,
@@ -522,8 +524,7 @@ export default function BookDetailPage() {
 
     try {
         // Gọi API: reviewService.createReview
-        await reviewService.createReview({
-            bookId: id,
+        await reviewService.createReview(id, {
             rating: newReviewRating,
             title: "Đánh giá sách", // C# CreateReviewDto yêu cầu Title
             content: text
