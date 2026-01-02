@@ -1,25 +1,27 @@
-﻿using BookStore.Application.IService.ChatBot;
-using BookStore.Domain.Entities.Catalog;
-using BookStore.Domain.IRepository.Catalog;
+﻿using BookStore.Application.DTOs.ChatBot;
+using BookStore.Application.IService.ChatBot;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace BookStore.Application.Services.ChatBot
 {
     public class ChatBotService : IChatBotService
     {
-        private readonly IBookRepository _bookRepo;
+        private readonly IBookDataCacheService _cacheService;
         private readonly IGeminiService _geminiService;
         private readonly ILogger<ChatBotService> _logger;
 
         public ChatBotService(
-            IBookRepository bookRepo,
+            IBookDataCacheService cacheService,
             IGeminiService geminiService,
             ILogger<ChatBotService> logger)
         {
-            _bookRepo = bookRepo;
+            _cacheService = cacheService;
             _geminiService = geminiService;
             _logger = logger;
         }
@@ -29,30 +31,34 @@ namespace BookStore.Application.Services.ChatBot
             if (string.IsNullOrWhiteSpace(message))
                 return "Bạn cần hỏi gì về sách?";
 
-            // BƯỚC 1: Xử lý từ khóa (QUAN TRỌNG)
-            // Vì không được sửa Repo, ta phải sửa input đầu vào cho sạch.
-            // Cách đơn giản nhất: Xóa các từ nối thông dụng tiếng Việt.
+            // Kiểm tra cache đã được load chưa
+            if (!_cacheService.IsCacheLoaded())
+            {
+                _logger.LogWarning("[ChatBot] Cache is not loaded yet. Waiting for cache initialization...");
+                return "Hệ thống đang khởi động, vui lòng thử lại sau vài giây.";
+            }
+
+            // BƯỚC 1: Xử lý từ khóa
             string searchKeyword = CleanMessageToKeyword(message);
 
-            // BƯỚC 2: Gọi Repo với từ khóa đã làm sạch
-            var books = (await _bookRepo.SearchAsync(searchKeyword)).ToList();
+            // BƯỚC 2: Tìm kiếm trong cache thay vì DB
+            var books = _cacheService.SearchBooks(searchKeyword);
 
-            // Log fetched books summary (title, price, authors, short desc) — avoid logging full description
+            // Log fetched books summary
             try
             {
-                _logger.LogInformation("[ChatBot] Search for '{Keyword}' returned {Count} results", searchKeyword, books.Count);
+                _logger.LogInformation("[ChatBot] Search for '{Keyword}' returned {Count} results from cache", searchKeyword, books.Count);
                 for (int i = 0; i < Math.Min(5, books.Count); i++)
                 {
                     var b = books[i];
-                    var currentPriceObj = b.Prices?.FirstOrDefault(p => p.IsCurrent);
-                    string priceDisplay = currentPriceObj != null
-                        ? $"{currentPriceObj.Amount:#,##0} {currentPriceObj.Currency}"
+                    string priceDisplay = b.Price.HasValue
+                        ? $"{b.Price.Value:#,##0} {b.Currency}"
                         : "Liên hệ";
-                    string authors = b.BookAuthors != null && b.BookAuthors.Any()
-                        ? string.Join(", ", b.BookAuthors.Select(x => x.Author.Name))
-                        : "N/A";
-                    var shortDesc = string.IsNullOrEmpty(b.Description) ? "" : (b.Description.Length > 120 ? b.Description.Substring(0, 120) + "..." : b.Description);
-                    _logger.LogInformation("[ChatBot] Book {Index}: {Title} | {Price} | {Authors} | DescPreview={Desc}", i + 1, b.Title, priceDisplay, authors, shortDesc);
+                    string authors = b.Authors.Any() ? string.Join(", ", b.Authors) : "N/A";
+                    var shortDesc = string.IsNullOrEmpty(b.Description) ? "" : 
+                        (b.Description.Length > 120 ? b.Description.Substring(0, 120) + "..." : b.Description);
+                    _logger.LogInformation("[ChatBot] Book {Index}: {Title} | {Price} | {Authors} | DescPreview={Desc}", 
+                        i + 1, b.Title, priceDisplay, authors, shortDesc);
                 }
             }
             catch (Exception ex)
@@ -60,30 +66,29 @@ namespace BookStore.Application.Services.ChatBot
                 _logger.LogWarning(ex, "[ChatBot] Failed to log fetched books summary");
             }
 
-            // BƯỚC 3: Chiến thuật Fallback (Dự phòng)
-            // Nếu search không ra gì, lấy 5 cuốn mới nhất để Bot có cái mà giới thiệu
+            // BƯỚC 3: Chiến thuật Fallback
             bool isFallback = false;
             if (!books.Any())
             {
                 isFallback = true;
-                // Hàm này ĐÃ CÓ trong Repo của bạn, không cần sửa Repo
-                var latestBooks = await _bookRepo.GetLatestBooksAsync(5);
-                books = latestBooks.ToList();
+                // Lấy 10 cuốn mới nhất từ cache (sắp xếp theo title hoặc có thể thêm CreatedDate vào DTO)
+                var allBooks = _cacheService.GetAllBooks();
+                books = allBooks.OrderByDescending(b => b.Title).Take(10).ToList();
+                
                 try
                 {
                     _logger.LogInformation("[ChatBot] Fallback: using latest {Count} books", books.Count);
                     for (int i = 0; i < Math.Min(5, books.Count); i++)
                     {
                         var b = books[i];
-                        var currentPriceObj = b.Prices?.FirstOrDefault(p => p.IsCurrent);
-                        string priceDisplay = currentPriceObj != null
-                            ? $"{currentPriceObj.Amount:#,##0} {currentPriceObj.Currency}"
+                        string priceDisplay = b.Price.HasValue
+                            ? $"{b.Price.Value:#,##0} {b.Currency}"
                             : "Liên hệ";
-                        string authors = b.BookAuthors != null && b.BookAuthors.Any()
-                            ? string.Join(", ", b.BookAuthors.Select(x => x.Author.Name))
-                            : "N/A";
-                        var shortDesc = string.IsNullOrEmpty(b.Description) ? "" : (b.Description.Length > 120 ? b.Description.Substring(0, 120) + "..." : b.Description);
-                        _logger.LogInformation("[ChatBot][Fallback] Book {Index}: {Title} | {Price} | {Authors} | DescPreview={Desc}", i + 1, b.Title, priceDisplay, authors, shortDesc);
+                        string authors = b.Authors.Any() ? string.Join(", ", b.Authors) : "N/A";
+                        var shortDesc = string.IsNullOrEmpty(b.Description) ? "" : 
+                            (b.Description.Length > 120 ? b.Description.Substring(0, 120) + "..." : b.Description);
+                        _logger.LogInformation("[ChatBot][Fallback] Book {Index}: {Title} | {Price} | {Authors} | DescPreview={Desc}", 
+                            i + 1, b.Title, priceDisplay, authors, shortDesc);
                     }
                 }
                 catch (Exception ex)
@@ -93,9 +98,10 @@ namespace BookStore.Application.Services.ChatBot
             }
 
             // BƯỚC 4: Tạo Prompt và gửi cho Gemini
-            // Ta chỉ lấy tối đa 5 cuốn để tiết kiệm token
-            var finalBookList = books.Take(5).ToList();
-            var prompt = BuildPrompt(finalBookList, message, isFallback);
+            // Lấy tối đa 10 cuốn (tăng từ 5) vì giờ có cache nhanh hơn
+            var finalBookList = books.Take(10).ToList();
+            var categories = _cacheService.GetAllCategories();
+            var prompt = BuildPrompt(finalBookList, categories, message, isFallback);
 
             return await _geminiService.AskAsync(prompt);
         }
@@ -124,7 +130,7 @@ namespace BookStore.Application.Services.ChatBot
             return keyword.Trim();
         }
 
-        private static string BuildPrompt(List<Book> books, string userQuestion, bool isFallback)
+        private static string BuildPrompt(List<CachedBookDto> books, List<CachedCategoryDto> categories, string userQuestion, bool isFallback)
         {
             var sb = new StringBuilder();
 
@@ -132,14 +138,25 @@ namespace BookStore.Application.Services.ChatBot
             sb.AppendLine("Nhiệm vụ: Trả lời câu hỏi khách hàng một cách tự nhiên, thân thiện.");
 
             sb.AppendLine("\nQUY TẮC:");
-            sb.AppendLine("1. Dựa vào [DỮ LIỆU SÁCH] bên dưới để trả lời.");
-            sb.AppendLine("2. Nếu có sách phù hợp, hãy giới thiệu tên, giá và mô tả ngắn.");
+            sb.AppendLine("1. Dựa vào [DỮ LIỆU SÁCH] và [THỂ LOẠI] bên dưới để trả lời.");
+            sb.AppendLine("2. Nếu có sách phù hợp, hãy giới thiệu tên, giá, tác giả và mô tả ngắn.");
+            sb.AppendLine("3. Nếu khách hỏi về thể loại, hãy gợi ý các sách thuộc thể loại đó.");
 
             if (isFallback)
             {
-                sb.AppendLine("3. QUAN TRỌNG: Hiện tại hệ thống KHÔNG tìm thấy đúng sách khách yêu cầu trong danh sách.");
-                sb.AppendLine("4. Hãy xin lỗi khéo léo và gợi ý khách tham khảo các sách 'Mới Nhất' bên dưới.");
-                sb.AppendLine("5. Tuyệt đối KHÔNG bịa ra thông tin sách không có trong list.");
+                sb.AppendLine("4. QUAN TRỌNG: Hiện tại hệ thống KHÔNG tìm thấy đúng sách khách yêu cầu trong danh sách.");
+                sb.AppendLine("5. Hãy xin lỗi khéo léo và gợi ý khách tham khảo các sách bên dưới.");
+                sb.AppendLine("6. Tuyệt đối KHÔNG bịa ra thông tin sách không có trong list.");
+            }
+
+            // Thêm thông tin thể loại
+            sb.AppendLine("\n[THỂ LOẠI CÓ SẴN]:");
+            if (categories.Any())
+            {
+                foreach (var cat in categories.Take(20)) // Lấy top 20 thể loại
+                {
+                    sb.AppendLine($"- {cat.Name} ({cat.BookCount} sách)");
+                }
             }
 
             sb.AppendLine("\n[DỮ LIỆU SÁCH]:");
@@ -152,29 +169,37 @@ namespace BookStore.Application.Services.ChatBot
                 int i = 1;
                 foreach (var b in books)
                 {
-                    // --- SỬA LỖI TẠI ĐÂY ---
-                    // 1. Tìm giá hiện hành (IsCurrent = true)
-                    // 2. Dùng thuộc tính .Amount thay vì .Value
-                    var currentPriceObj = b.Prices?.FirstOrDefault(p => p.IsCurrent);
-
-                    string priceDisplay = currentPriceObj != null
-                        ? $"{currentPriceObj.Amount:#,##0} {currentPriceObj.Currency}" // Ví dụ: 50,000 VND
+                    string priceDisplay = b.Price.HasValue
+                        ? $"{b.Price.Value:#,##0} {b.Currency}"
                         : "Liên hệ";
-                    // -----------------------
 
-                    // Lấy tác giả
-                    string authors = b.BookAuthors != null && b.BookAuthors.Any()
-                        ? string.Join(", ", b.BookAuthors.Select(x => x.Author.Name))
-                        : "N/A";
+                    string authors = b.Authors.Any() ? string.Join(", ", b.Authors) : "N/A";
+                    string categoriesText = b.Categories.Any() ? string.Join(", ", b.Categories) : "N/A";
 
-                    sb.AppendLine($"{i}. {b.Title} | Giá: {priceDisplay} | Tác giả: {authors}");
+                    sb.AppendLine($"{i}. {b.Title}");
+                    sb.AppendLine($"   - Giá: {priceDisplay}");
+                    sb.AppendLine($"   - Tác giả: {authors}");
+                    sb.AppendLine($"   - Thể loại: {categoriesText}");
+                    
+                    if (!string.IsNullOrEmpty(b.Publisher))
+                        sb.AppendLine($"   - Nhà xuất bản: {b.Publisher}");
+                    
+                    if (b.PublicationYear.HasValue)
+                        sb.AppendLine($"   - Năm xuất bản: {b.PublicationYear}");
+                    
+                    if (b.StockQuantity > 0)
+                        sb.AppendLine($"   - Còn hàng: {b.StockQuantity} cuốn");
+                    else
+                        sb.AppendLine($"   - Tình trạng: Hết hàng");
+
                     if (!string.IsNullOrEmpty(b.Description))
                     {
-                        string shortDesc = b.Description.Length > 100
-                            ? b.Description.Substring(0, 100) + "..."
+                        string shortDesc = b.Description.Length > 150
+                            ? b.Description.Substring(0, 150) + "..."
                             : b.Description;
-                        sb.AppendLine($"   Mô tả: {shortDesc}");
+                        sb.AppendLine($"   - Mô tả: {shortDesc}");
                     }
+                    sb.AppendLine();
                     i++;
                 }
             }

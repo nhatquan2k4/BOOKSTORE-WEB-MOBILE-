@@ -229,6 +229,7 @@ builder.Services.AddScoped<BookStore.Application.IService.Analytics.IBookViewSer
 builder.Services.AddScoped<BookStore.Application.IService.Analytics.IDashboardService, BookStore.Application.Service.Analytics.DashboardService>();
 
 //ChatBot
+builder.Services.AddSingleton<IBookDataCacheService, BookDataCacheService>(); // Singleton để cache được chia sẻ giữa các request
 builder.Services.AddScoped<IChatBotService, ChatBotService>();
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 
@@ -245,6 +246,7 @@ builder.Services.AddSignalR();
 
 // Background Service
 builder.Services.AddHostedService<BookStore.API.BackgroundServices.NotificationBackgroundService>();
+builder.Services.AddHostedService<BookStore.API.BackgroundServices.BookCacheInitializerService>();
 
 // Rental
 builder.Services.AddScoped<BookStore.Domain.IRepository.Rental.IRentalPlanRepository, BookStore.Infrastructure.Repositories.Rental.RentalPlanRepository>();
