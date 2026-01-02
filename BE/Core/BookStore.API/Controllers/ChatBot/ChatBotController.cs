@@ -11,9 +11,14 @@ namespace BookStore.API.Controllers.ChatBot
     public class ChatBotController : ControllerBase
     {
         private readonly IChatBotService _chatBotService;
-        public ChatBotController(IChatBotService chatBotService)
+        private readonly IBookDataCacheService _cacheService;
+
+        public ChatBotController(
+            IChatBotService chatBotService,
+            IBookDataCacheService cacheService)
         {
             _chatBotService = chatBotService;
+            _cacheService = cacheService;
         }
 
         [HttpPost("ask")]
@@ -23,6 +28,36 @@ namespace BookStore.API.Controllers.ChatBot
             var userId = Guid.NewGuid();
             var answer = await _chatBotService.AskAsync(userId, request.Message);
             return Ok(answer);
+        }
+
+        /// <summary>
+        /// Refresh book data cache manually
+        /// </summary>
+        [HttpPost("cache/refresh")]
+        [Authorize(Roles = "Admin")] // Chỉ admin mới được refresh cache
+        public async Task<IActionResult> RefreshCacheAsync()
+        {
+            await _cacheService.RefreshCacheAsync();
+            return Ok(new { message = "Cache refreshed successfully" });
+        }
+
+        /// <summary>
+        /// Get cache status
+        /// </summary>
+        [HttpGet("cache/status")]
+        [AllowAnonymous]
+        public IActionResult GetCacheStatus()
+        {
+            var isLoaded = _cacheService.IsCacheLoaded();
+            var bookCount = isLoaded ? _cacheService.GetAllBooks().Count : 0;
+            var categoryCount = isLoaded ? _cacheService.GetAllCategories().Count : 0;
+
+            return Ok(new
+            {
+                isCacheLoaded = isLoaded,
+                bookCount = bookCount,
+                categoryCount = categoryCount
+            });
         }
     }
 }
