@@ -4,6 +4,7 @@ using BookStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookStore.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260102151108_MoveWishlistToCatalogSchema")]
+    partial class MoveWishlistToCatalogSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -703,35 +706,26 @@ namespace BookStore.Infrastructure.Data.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("ExpiryDate")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsUsed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
+                        .HasColumnType("bit");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExpiryDate");
-
-                    b.HasIndex("Token");
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("EmailVerificationTokens", "identity");
+                    b.ToTable("EmailVerificationTokens");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Identity.PasswordResetToken", b =>
@@ -741,35 +735,26 @@ namespace BookStore.Infrastructure.Data.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("ExpiryDate")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsUsed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
+                        .HasColumnType("bit");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExpiryDate");
-
-                    b.HasIndex("Token");
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("PasswordResetTokens", "identity");
+                    b.ToTable("PasswordResetTokens");
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Identity.Permission", b =>
@@ -1452,7 +1437,7 @@ namespace BookStore.Infrastructure.Data.Migrations
                     b.HasIndex("WarehouseId", "BookId")
                         .IsUnique();
 
-                    b.ToTable("StockItems", "inventory");
+                    b.ToTable("StockItems", (string)null);
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.Coupon", b =>
@@ -1575,7 +1560,7 @@ namespace BookStore.Infrastructure.Data.Migrations
 
                     b.HasIndex("WarehouseId", "BookId", "CreatedAt");
 
-                    b.ToTable("InventoryTransactions", "inventory");
+                    b.ToTable("InventoryTransactions", (string)null);
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Pricing___Inventory.Price", b =>
@@ -1655,7 +1640,7 @@ namespace BookStore.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Warehouses", "inventory");
+                    b.ToTable("Warehouses", (string)null);
                 });
 
             modelBuilder.Entity("BookStore.Domain.Entities.Rental.BookRental", b =>

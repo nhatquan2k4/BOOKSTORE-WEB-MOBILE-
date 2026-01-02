@@ -1,0 +1,174 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: bookstore-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Password123
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "YourStrong@Password123" -Q "SELECT 1" -C || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: bookstore-sqlserver-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    command: >
+      /bin/bash -c "
+      sleep 5;
+      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -C -Q \"
+      IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'BookStore')
+      CREATE DATABASE BookStore;\";
+      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -C -Q \"
+      IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = 'bookstoreUser')
+      CREATE LOGIN bookstoreUser WITH PASSWORD = 'BookstorePass1@', CHECK_POLICY = OFF;\";
+      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -d BookStore -C -Q \"
+      IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = 'bookstoreUser')
+      CREATE USER bookstoreUser FOR LOGIN bookstoreUser;\";
+      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -d BookStore -C -Q \"ALTER ROLE db_owner ADD MEMBER bookstoreUser;\";
+      echo 'Database initialization completed!';
+      "
+
+  minio:
+    image: minio/minio:latest
+    container_name: bookstore-minio
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - bookstore-network
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: bookstore-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin123;
+      mc mb myminio/book-images --ignore-existing;
+      mc mb myminio/ebook-files --ignore-existing;
+      mc mb myminio/user-avatars --ignore-existing;
+      mc anonymous set download myminio/book-images;
+      mc anonymous set download myminio/ebook-files;
+      mc anonymous set download myminio/user-avatars;
+      echo 'MinIO buckets created successfully!';
+      "
+
+  nginx:
+    image: nginx:alpine
+    container_name: bookstore-nginx
+    ports:
+      - "8081:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - minio
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  bookstore-api:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    container_name: bookstore-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__UsersDb=Server=sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True;Encrypt=False
+      - JwtSettings__SecretKey=YourSuperSecretKeyForJWTTokenGenerationMustBeAtLeast32CharactersLong
+      - JwtSettings__Issuer=BookStoreAPI
+      - JwtSettings__Audience=BookStoreClient
+      - JwtSettings__AccessTokenExpirationMinutes=60
+      - JwtSettings__RefreshTokenExpirationDays=30
+      - MinIO__Endpoint=minio:9000
+      - MinIO__PublicEndpoint=http://localhost:9000
+      - MinIO__AccessKey=minioadmin
+      - MinIO__SecretKey=minioadmin123
+      - MinIO__BucketName=book-images
+      - MinIO__UseSSL=false
+      - EmailSettings__SmtpHost=smtp.gmail.com
+      - EmailSettings__SmtpPort=587
+      - EmailSettings__SmtpUsername=quangtraan20004@gmail.com
+      - EmailSettings__SmtpPassword=xnuo kvlu berx kklm
+      - EmailSettings__FromEmail=quangtraan20004@gmail.com
+      - EmailSettings__FromName=BookStore
+      - EmailSettings__EnableSsl=true
+      - EmailSettings__TokenExpirationHours=24
+      - EmailSettings__FrontendUrl=http://localhost:3000
+      - Gemini__ApiKey=${GEMINI_API_KEY}
+      - Gemini__Model=gemini-2.5-flash
+      - Gemini__TimeoutSeconds=60
+      - Gemini__MaxTokens=2048
+      - Gemini__Enabled=true
+    ports:
+      - "5276:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      sqlserver-init:
+        condition: service_completed_successfully
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  sqlserver_data:
+    driver: local
+  minio_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  bookstore-network:
+    driver: bridge
