@@ -8,14 +8,18 @@ import * as cartService from '@/src/services/cartService';
 import bookService from '@/src/services/bookService';
 import { API_BASE_URL, MINIO_BASE_URL } from '@/src/config/api';
 import { PLACEHOLDER_IMAGES } from '@/src/constants/placeholders';
+import type { Cart, CartItem } from '@/src/types/cart';
+import { useTheme } from '@/context/ThemeContext';
+import { StatusBar } from 'expo-status-bar';
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { items: localItems, removeFromCart: removeFromLocalCart, clearCart: clearLocalCart } = useCart();
+  const { theme, isDarkMode } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [serverCart, setServerCart] = useState<cartService.Cart | null>(null);
+  const [serverCart, setServerCart] = useState<Cart | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [bookImages, setBookImages] = useState<Record<string, string>>({});
   const isFocused = useIsFocused();
@@ -210,7 +214,7 @@ export default function CartScreen() {
   };
 
   // Per-row component to handle slide-to-delete
-  const CartRow: React.FC<{ item: cartService.CartItem }> = ({ item }) => {
+  const CartRow: React.FC<{ item: CartItem }> = ({ item }) => {
     const isSelected = selectedItems.has(item.bookId);
     
     // Try to get image from: 1) backend imageUrl, 2) fetched image map, 3) placeholder
@@ -247,20 +251,20 @@ export default function CartScreen() {
     };
 
     return (
-      <View style={styles.cartCard}>
+      <View style={[styles.cartCard, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.cardTopBar}>
-          <Text style={styles.cardTopTitle}>Bờ Úc Búc</Text>
+          <Text style={[styles.cardTopTitle, { color: theme.text }]}>Bờ Úc Búc</Text>
           <View style={{ flex: 1 }} />
           <TouchableOpacity style={styles.cardTopEdit} onPress={() => (open ? closeRow() : openRow())}>
-            <Text style={styles.editText}>Sửa</Text>
+            <Text style={[styles.editText, { color: theme.primary }]}>Sửa</Text>
           </TouchableOpacity>
         </View>
 
         <View style={{ position: 'relative' }}>
-          <Animated.View style={[styles.cardContentBox, { transform: [{ translateX: translate }] }]}> 
+          <Animated.View style={[styles.cardContentBox, { backgroundColor: theme.cardBackground, transform: [{ translateX: translate }] }]}> 
             <TouchableOpacity onPress={() => router.push(`/(stack)/book-detail?id=${item.bookId}`)} activeOpacity={0.75} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <TouchableOpacity onPress={() => toggleSelect(item.bookId)} style={styles.checkboxButton}>
-                <View style={[styles.checkbox, isSelected ? styles.checkboxSelected : {}]}>
+                <View style={[styles.checkbox, { borderColor: theme.border }, isSelected ? { ...styles.checkboxSelected, backgroundColor: theme.primary, borderColor: theme.primary } : {}]}>
                   {isSelected && <Text style={styles.checkboxTick}>✓</Text>}
                 </View>
               </TouchableOpacity>
@@ -272,24 +276,24 @@ export default function CartScreen() {
                   defaultSource={require('@/assets/images/react-logo.png')}
                 />
               ) : (
-                <View style={[styles.cartImage, { backgroundColor: '#eee', alignItems: 'center', justifyContent: 'center' }]}>
-                  <Text style={{ fontSize: 10, color: '#999' }}>📚</Text>
+                <View style={[styles.cartImage, { backgroundColor: isDarkMode ? '#2A2A2A' : '#eee', alignItems: 'center', justifyContent: 'center' }]}>
+                  <Text style={{ fontSize: 10, color: theme.textTertiary }}>📚</Text>
                 </View>
               )}
 
               <View style={styles.cartInfo}>
-                <Text numberOfLines={2} style={styles.cartTitle}>{item.bookTitle}</Text>
-                <Text style={styles.unitPrice}>{item.bookPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
+                <Text numberOfLines={2} style={[styles.cartTitle, { color: theme.text }]}>{item.bookTitle}</Text>
+                <Text style={[styles.unitPrice, { color: theme.textSecondary }]}>{item.bookPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
               </View>
             </TouchableOpacity>
 
             <View style={styles.qtyWrap}>
-              <TouchableOpacity style={styles.stepBtn} onPress={() => updateQuantity(item.bookId, item.quantity - 1)}>
-                <Text style={styles.stepText}>−</Text>
+              <TouchableOpacity style={[styles.stepBtn, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0' }]} onPress={() => updateQuantity(item.bookId, item.quantity - 1)}>
+                <Text style={[styles.stepText, { color: theme.text }]}>−</Text>
               </TouchableOpacity>
-              <Text style={styles.qtyText}>{item.quantity}</Text>
-              <TouchableOpacity style={styles.stepBtn} onPress={() => updateQuantity(item.bookId, item.quantity + 1)}>
-                <Text style={styles.stepText}>+</Text>
+              <Text style={[styles.qtyText, { color: theme.text }]}>{item.quantity}</Text>
+              <TouchableOpacity style={[styles.stepBtn, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0' }]} onPress={() => updateQuantity(item.bookId, item.quantity + 1)}>
+                <Text style={[styles.stepText, { color: theme.text }]}>+</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -303,7 +307,7 @@ export default function CartScreen() {
             ]}
             pointerEvents={open ? 'auto' : 'none'}
           >
-            <TouchableOpacity style={styles.rowDeleteBtn} onPress={() => removeItem(item.bookId)}>
+            <TouchableOpacity style={[styles.rowDeleteBtn, { backgroundColor: theme.error }]} onPress={() => removeItem(item.bookId)}>
               <Text style={styles.rowDeleteText}>Xóa</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -313,24 +317,25 @@ export default function CartScreen() {
   };
 
   return (
-  <SafeAreaView style={[styles.container, { paddingBottom: bottomOffset + 12 }]}>
-      <View style={styles.header}>
-        <Text style={styles.titleCentered}>Giỏ hàng</Text>
+  <SafeAreaView style={[styles.container, { paddingBottom: bottomOffset + 12, backgroundColor: theme.background }]}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
+        <Text style={[styles.titleCentered, { color: theme.text }]}>Giỏ hàng</Text>
         {items.length > 0 && (
           <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditing((v) => !v)}>
-            <Text style={styles.editText}>{isEditing ? 'Hủy' : 'Sửa'}</Text>
+            <Text style={[styles.editText, { color: theme.primary }]}>{isEditing ? 'Hủy' : 'Sửa'}</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {loading ? (
         <View style={styles.emptyState}>
-          <ActivityIndicator size="large" color="#D5CCB3" />
-          <Text style={[styles.emptyText, { marginTop: 16 }]}>Đang tải giỏ hàng...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.emptyText, { marginTop: 16, color: theme.textSecondary }]}>Đang tải giỏ hàng...</Text>
         </View>
       ) : cartEmpty ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>Giỏ hàng của bạn đang trống.</Text>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Giỏ hàng của bạn đang trống.</Text>
           {/* <TouchableOpacity 
             onPress={loadServerCart}
             style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#D5CCB3', borderRadius: 8 }}
@@ -350,33 +355,33 @@ export default function CartScreen() {
       )}
 
       {items.length > 0 && selectedCount === 0 && !isEditing && (
-        <View style={styles.helperRow}>
-          <Text style={styles.helperText}>Chưa có sản phẩm được chọn để thanh toán. Vui lòng đánh dấu các sản phẩm.</Text>
+        <View style={[styles.helperRow, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFF7E6' }]}>
+          <Text style={[styles.helperText, { color: isDarkMode ? theme.textSecondary : '#7A6A3D' }]}>Chưa có sản phẩm được chọn để thanh toán. Vui lòng đánh dấu các sản phẩm.</Text>
         </View>
       )}
 
       {items.length > 0 && (
-        <View style={[styles.bottomBar, { bottom: bottomOffset, position: 'absolute', left: 0, right: 0, zIndex: 30 }] }>
+        <View style={[styles.bottomBar, { bottom: bottomOffset, position: 'absolute', left: 0, right: 0, zIndex: 30, backgroundColor: theme.cardBackground, borderTopColor: theme.border }] }>
           <TouchableOpacity
             style={styles.selectAll}
             onPress={() => selectAll(!isAllSelected)}
           >
-            <View style={[styles.checkbox, isAllSelected ? styles.checkboxSelected : {}]}>
+            <View style={[styles.checkbox, { borderColor: theme.border }, isAllSelected ? { ...styles.checkboxSelected, backgroundColor: theme.primary, borderColor: theme.primary } : {}]}>
               {isAllSelected && <Text style={styles.checkboxTick}>✓</Text>}
             </View>
-            <Text style={styles.selectAllText}>Tất cả</Text>
+            <Text style={[styles.selectAllText, { color: theme.text }]}>Tất cả</Text>
           </TouchableOpacity>
 
           {!isEditing && (
             <View style={styles.priceWrap}>
-              <Text style={styles.totalLabel}>Tổng:</Text>
-              <Text style={styles.totalPrice}>{totalPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
+              <Text style={[styles.totalLabel, { color: theme.textSecondary }]}>Tổng:</Text>
+              <Text style={[styles.totalPrice, { color: theme.text }]}>{totalPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
             </View>
           )}
 
           {isEditing ? (
             <TouchableOpacity
-              style={styles.deleteBtn}
+              style={[styles.deleteBtn, { borderColor: theme.error, backgroundColor: theme.cardBackground }]}
               onPress={async () => {
                 const toDelete = Array.from(selectedItems);
                 for (const bookId of toDelete) {
@@ -384,11 +389,11 @@ export default function CartScreen() {
                 }
               }}
             >
-              <Text style={styles.deleteBtnText}>Xóa</Text>
+              <Text style={[styles.deleteBtnText, { color: theme.error }]}>Xóa</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity 
-              style={[styles.buyBtn, selectedRowCount === 0 && { opacity: 0.5 }]} 
+              style={[styles.buyBtn, { backgroundColor: theme.primary }, selectedRowCount === 0 && { opacity: 0.5 }]} 
               onPress={handleCheckout}
               disabled={selectedRowCount === 0}
             >

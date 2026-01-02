@@ -9,6 +9,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { CartProvider } from '@/app/providers/CartProvider';
 import { AuthProvider, useAuth } from '@/app/providers/AuthProvider';
 import { NotificationProvider } from '@/app/providers/NotificationProvider';
+import { ThemeProvider as CustomThemeProvider } from '@/context/ThemeContext';
 
 // Ignore network and API error logs in LogBox
 LogBox.ignoreLogs([
@@ -88,7 +89,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <CustomThemeProvider>
+        <RootLayoutNav />
+      </CustomThemeProvider>
     </AuthProvider>
   );
 }

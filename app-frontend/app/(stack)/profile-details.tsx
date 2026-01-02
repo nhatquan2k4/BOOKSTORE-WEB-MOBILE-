@@ -4,14 +4,18 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import userProfileService, { UserProfile, UpdateUserProfileDto } from '@/src/services/userProfileService';
+import userProfileService from '@/src/services/userProfileService';
+import type { UserProfile, UpdateUserProfileDto } from '@/src/types/userProfile';
 import avatarStore from '@/src/utils/avatarStore';
 import { TextInput, Modal } from 'react-native';
+import { useTheme } from '@/context/ThemeContext';
+import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
 
 export default function ProfileDetails() {
   const router = useRouter();
+  const { theme, isDarkMode } = useTheme();
   
   // State
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -166,9 +170,10 @@ export default function ProfileDetails() {
   // Show loading
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#d2b48c" />
-        <Text style={{ marginTop: 10, color: '#666' }}>Đang tải...</Text>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }]}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={{ marginTop: 10, color: theme.textSecondary }}>Đang tải...</Text>
       </View>
     );
   }
@@ -176,27 +181,29 @@ export default function ProfileDetails() {
   // Show error if no profile
   if (!profile) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
-        <Ionicons name="alert-circle-outline" size={64} color="#FF4757" />
-        <Text style={{ fontSize: 18, fontWeight: '600', marginTop: 20 }}>Không tìm thấy thông tin</Text>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: theme.background }]}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <Ionicons name="alert-circle-outline" size={64} color={theme.error} />
+        <Text style={{ fontSize: 18, fontWeight: '600', marginTop: 20, color: theme.text }}>Không tìm thấy thông tin</Text>
         <TouchableOpacity onPress={fetchProfile} style={{ marginTop: 20 }}>
-          <Text style={{ color: '#d2b48c', fontWeight: '600' }}>Thử lại</Text>
+          <Text style={{ color: theme.primary, fontWeight: '600' }}>Thử lại</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      <View style={{ backgroundColor: '#f0ede4' }}>  
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={{ paddingBottom: 40 }}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      <View style={{ backgroundColor: theme.headerBackground }}>  
         <TouchableOpacity style={styles.back} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#333" />
+          <Ionicons name="chevron-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.headerWrapper}>
           <Svg width={width} height={180} style={styles.wave} viewBox="0 0 1440 320">
-            <Path fill="#f0ede4" d="M0,128L30,133.3C60,139,120,149,180,170.7C240,192,300,224,360,240C420,256,480,256,540,250.7C600,245,660,235,720,208C780,181,840,139,900,149.3C960,160,1020,224,1080,245.3C1140,267,1200,245,1260,229.3C1320,213,1380,203,1410,197.3L1440,192L1440,0L1410,0C1380,0,1320,0,1260,0C1200,0,1140,0,1080,0C1020,0,960,0,900,0C840,0,780,0,720,0C660,0,600,0,540,0C480,0,420,0,360,0C300,0,240,0,180,0C120,0,60,0,30,0L0,0Z" />
+            <Path fill={theme.headerBackground} d="M0,128L30,133.3C60,139,120,149,180,170.7C240,192,300,224,360,240C420,256,480,256,540,250.7C600,245,660,235,720,208C780,181,840,139,900,149.3C960,160,1020,224,1080,245.3C1140,267,1200,245,1260,229.3C1320,213,1380,203,1410,197.3L1440,192L1440,0L1410,0C1380,0,1320,0,1260,0C1200,0,1140,0,1080,0C1020,0,960,0,900,0C840,0,780,0,720,0C660,0,600,0,540,0C480,0,420,0,360,0C300,0,240,0,180,0C120,0,60,0,30,0L0,0Z" />
           </Svg>
-          <Text style={styles.title}>Hồ sơ của tôi</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Hồ sơ của tôi</Text>
 
           <TouchableOpacity 
             style={styles.avatarWrap} 
@@ -210,8 +217,8 @@ export default function ProfileDetails() {
             ) : avatar ? (
               <Image source={avatar} style={styles.avatarImage} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitials}>{profile?.fullName ? profile.fullName.split(' ').map(n => n[0]).slice(-2).join('') : 'U'}</Text>
+              <View style={[styles.avatarPlaceholder, { backgroundColor: isDarkMode ? '#2A2A2A' : '#f5f5f5', borderColor: theme.border }]}>
+                <Text style={[styles.avatarInitials, { color: theme.textSecondary }]}>{profile?.fullName ? profile.fullName.split(' ').map(n => n[0]).slice(-2).join('') : 'U'}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -220,31 +227,31 @@ export default function ProfileDetails() {
 
   {/* (system gallery used on avatar tap) */}
 
-      <View style={styles.card}>
-        <View style={styles.row}>
-          <Text style={styles.label}>Tên</Text>
-          <Text style={styles.value}>{profile.fullName || 'Chưa cập nhật'}</Text>
+      <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
+        <View style={[styles.row, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>Tên</Text>
+          <Text style={[styles.value, { color: theme.text }]}>{profile.fullName || 'Chưa cập nhật'}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Bio</Text>
-          <Text style={styles.value}>{profile.bio || 'Chưa có giới thiệu'}</Text>
+        <View style={[styles.row, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>Bio</Text>
+          <Text style={[styles.value, { color: theme.text }]}>{profile.bio || 'Chưa có giới thiệu'}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Giới tính</Text>
-          <Text style={styles.value}>{profile.gender || 'Chưa cập nhật'}</Text>
+        <View style={[styles.row, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>Giới tính</Text>
+          <Text style={[styles.value, { color: theme.text }]}>{profile.gender || 'Chưa cập nhật'}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Ngày sinh</Text>
-          <Text style={styles.value}>{formatDate(profile.dateOfBirth)}</Text>
+        <View style={[styles.row, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>Ngày sinh</Text>
+          <Text style={[styles.value, { color: theme.text }]}>{formatDate(profile.dateOfBirth)}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Điện thoại</Text>
-          <Text style={styles.value}>{profile.phoneNumber || 'Chưa cập nhật'}</Text>
+        <View style={[styles.row, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>Điện thoại</Text>
+          <Text style={[styles.value, { color: theme.text }]}>{profile.phoneNumber || 'Chưa cập nhật'}</Text>
         </View>
         {/* Email không có trong UserProfile, cần lấy từ User identity nếu cần */}
       </View>
       <View style={styles.footerAction}>
-        <TouchableOpacity style={styles.editProfileBtn} onPress={openEdit} activeOpacity={0.85}>
+        <TouchableOpacity style={[styles.editProfileBtn, { backgroundColor: theme.primary }]} onPress={openEdit} activeOpacity={0.85}>
           <View style={styles.editBtnContent}>
             <Ionicons name="create-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
             <Text style={styles.editProfileBtnText}>Sửa hồ sơ</Text>
@@ -255,30 +262,30 @@ export default function ProfileDetails() {
       {/* Edit Modal */}
       <Modal visible={editing} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Sửa hồ sơ</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBackground }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Sửa hồ sơ</Text>
             <ScrollView>
-              <Text style={{ marginBottom: 6 }}>Họ và tên</Text>
-              <TextInput value={form.fullName} onChangeText={(t) => setForm({ ...form, fullName: t })} style={styles.input} />
+              <Text style={{ marginBottom: 6, color: theme.text }}>Họ và tên</Text>
+              <TextInput value={form.fullName} onChangeText={(t) => setForm({ ...form, fullName: t })} style={[styles.input, { backgroundColor: theme.inputBackground, borderColor: theme.border, color: theme.text }]} placeholderTextColor={theme.textTertiary} />
 
-              <Text style={{ marginTop: 10, marginBottom: 6 }}>Bio</Text>
-              <TextInput value={form.bio} onChangeText={(t) => setForm({ ...form, bio: t })} style={[styles.input, { height: 80 }]} multiline />
+              <Text style={{ marginTop: 10, marginBottom: 6, color: theme.text }}>Bio</Text>
+              <TextInput value={form.bio} onChangeText={(t) => setForm({ ...form, bio: t })} style={[styles.input, { height: 80, backgroundColor: theme.inputBackground, borderColor: theme.border, color: theme.text }]} multiline placeholderTextColor={theme.textTertiary} />
 
-              <Text style={{ marginTop: 10, marginBottom: 6 }}>Giới tính</Text>
-              <TextInput value={form.gender} onChangeText={(t) => setForm({ ...form, gender: t })} style={styles.input} />
+              <Text style={{ marginTop: 10, marginBottom: 6, color: theme.text }}>Giới tính</Text>
+              <TextInput value={form.gender} onChangeText={(t) => setForm({ ...form, gender: t })} style={[styles.input, { backgroundColor: theme.inputBackground, borderColor: theme.border, color: theme.text }]} placeholderTextColor={theme.textTertiary} />
 
-              <Text style={{ marginTop: 10, marginBottom: 6 }}>Ngày sinh (YYYY-MM-DD)</Text>
-              <TextInput value={form.dateOfBirth} onChangeText={(t) => setForm({ ...form, dateOfBirth: t })} style={styles.input} />
+              <Text style={{ marginTop: 10, marginBottom: 6, color: theme.text }}>Ngày sinh (YYYY-MM-DD)</Text>
+              <TextInput value={form.dateOfBirth} onChangeText={(t) => setForm({ ...form, dateOfBirth: t })} style={[styles.input, { backgroundColor: theme.inputBackground, borderColor: theme.border, color: theme.text }]} placeholderTextColor={theme.textTertiary} />
 
-              <Text style={{ marginTop: 10, marginBottom: 6 }}>Số điện thoại</Text>
-              <TextInput value={form.phoneNumber} onChangeText={(t) => setForm({ ...form, phoneNumber: t })} style={styles.input} keyboardType="phone-pad" />
+              <Text style={{ marginTop: 10, marginBottom: 6, color: theme.text }}>Số điện thoại</Text>
+              <TextInput value={form.phoneNumber} onChangeText={(t) => setForm({ ...form, phoneNumber: t })} style={[styles.input, { backgroundColor: theme.inputBackground, borderColor: theme.border, color: theme.text }]} keyboardType="phone-pad" placeholderTextColor={theme.textTertiary} />
 
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 14 }}>
                 <TouchableOpacity onPress={() => setEditing(false)} style={{ marginRight: 12 }}>
-                  <Text style={{ color: '#777' }}>Huỷ</Text>
+                  <Text style={{ color: theme.textSecondary }}>Huỷ</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={saveProfile} disabled={saving}>
-                  <Text style={{ color: '#d2b48c', fontWeight: '700' }}>{saving ? 'Đang lưu...' : 'Lưu'}</Text>
+                  <Text style={{ color: theme.primary, fontWeight: '700' }}>{saving ? 'Đang lưu...' : 'Lưu'}</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -291,7 +298,7 @@ export default function ProfileDetails() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  headerWrapper: { height: 140, backgroundColor: '#fff', alignItems: 'center', marginTop: 180, zIndex: 2 },
+  headerWrapper: { height: 10, backgroundColor: '#fff', alignItems: 'center', marginTop: 180, zIndex: 2 },
   wave: { position: 'absolute', width: width, height: 140, top: -45, left: 0, zIndex: 0 },
   back: { position: 'absolute', top: 36, left: 12, zIndex: 10, padding: 6, backgroundColor: 'transparent' },
   title: { marginTop: -70, fontSize: 25, fontWeight: '700', color: '#111', zIndex: 5 },
@@ -300,7 +307,7 @@ const styles = StyleSheet.create({
   avatarText: { color: '#fff', fontSize: 18, fontWeight: '700' },
   avatarPlaceholder: { width: 130, height: 130, borderRadius: 70, backgroundColor: '#f5f5f5', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#eee' },
   avatarInitials: { color: '#777', fontSize: 24, fontWeight: '700' },
-  card: { marginTop: 48, marginHorizontal: 16, backgroundColor: '#fff', borderRadius: 12, padding: 12, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 1 }, shadowRadius: 3 },
+  card: { marginTop: 170, marginHorizontal: 16, backgroundColor: '#fff', borderRadius: 12, padding: 12, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 1 }, shadowRadius: 3 },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   label: { color: '#777', fontSize: 14 },
   value: { color: '#333', fontSize: 15, maxWidth: '65%', textAlign: 'right' },

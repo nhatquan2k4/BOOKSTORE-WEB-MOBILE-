@@ -1,4 +1,5 @@
 import { api } from './apiClient';
+import { API_ENDPOINTS } from '../config/api';
 
 const parseAmount = (raw: any): number | null => {
   if (raw == null) return null;
@@ -23,7 +24,7 @@ const priceService = {
   async getPriceByBookId(bookId: string) {
     try {
       // api.get already unwraps response.data, so raw is the actual response
-      const raw = await api.get(`/api/Prices/book/${bookId}`) as any;
+      const raw = await api.get(API_ENDPOINTS.PRICES.BY_BOOK_ID(bookId)) as any;
       
       console.log('💰 [Price API] Response for book', bookId, ':', raw);
       

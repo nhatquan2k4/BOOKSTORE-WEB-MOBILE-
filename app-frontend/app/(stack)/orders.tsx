@@ -11,9 +11,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import orderService, { Order } from '@/src/services/orderService';
+import orderService from '@/src/services/orderService';
+import type { Order } from '@/src/types/order';
 import { MINIO_BASE_URL } from '@/src/config/api';
 import { PLACEHOLDER_IMAGES } from '@/src/constants/placeholders';
+import { useTheme } from '@/context/ThemeContext';
+import { StatusBar } from 'expo-status-bar';
 
 // Small local component: Image with fallback on error
 function ImageWithFallback({ uri, style }: { uri?: string; style?: any }) {
@@ -64,6 +67,7 @@ const PAYMENT_STATUS_LABELS: Record<string, string> = {
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const { theme, isDarkMode } = useTheme();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -152,14 +156,14 @@ export default function OrdersScreen() {
 
     return (
       <TouchableOpacity
-        style={styles.orderCard}
+        style={[styles.orderCard, { backgroundColor: theme.cardBackground }]}
         onPress={() => router.push(`/(stack)/order-detail?id=${item.id}`)}
       >
         {/* Header */}
-        <View style={styles.orderHeader}>
+        <View style={[styles.orderHeader, { borderBottomColor: theme.border }]}>
           <View style={styles.orderHeaderLeft}>
-            <Ionicons name="receipt-outline" size={18} color="#666" />
-            <Text style={styles.orderNumber}>{item.orderNumber}</Text>
+            <Ionicons name="receipt-outline" size={18} color={theme.textSecondary} />
+            <Text style={[styles.orderNumber, { color: theme.text }]}>{item.orderNumber}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: `${statusColor}20` }]}>
             <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
@@ -188,38 +192,38 @@ export default function OrdersScreen() {
               <View key={orderItem.id} style={styles.itemRow}>
                 <ImageWithFallback uri={orderItem.bookImageUrl} style={styles.itemImage} />
                 <View style={styles.itemInfo}>
-                  <Text numberOfLines={2} style={styles.itemTitle}>
+                  <Text numberOfLines={2} style={[styles.itemTitle, { color: theme.text }]}>
                     {orderItem.bookTitle || 'Sản phẩm'}
                   </Text>
-                  <Text style={styles.itemQuantity}>x{orderItem.quantity || 1}</Text>
+                  <Text style={[styles.itemQuantity, { color: theme.textSecondary }]}>x{orderItem.quantity || 1}</Text>
                 </View>
-                <Text style={styles.itemPrice}>
+                <Text style={[styles.itemPrice, { color: theme.text }]}>
                   {(orderItem.unitPrice || 0).toLocaleString('vi-VN')}₫
                 </Text>
               </View>
             );
           })}
           {item.items.length > 2 && (
-            <Text style={styles.moreItems}>+{item.items.length - 2} sản phẩm khác</Text>
+            <Text style={[styles.moreItems, { color: theme.textSecondary }]}>+{item.items.length - 2} sản phẩm khác</Text>
           )}
         </View>
 
         {/* Footer */}
-        <View style={styles.orderFooter}>
+        <View style={[styles.orderFooter, { borderTopColor: theme.border }]}>
           <View>
-            <Text style={styles.paymentMethodLabel}>
+            <Text style={[styles.paymentMethodLabel, { color: theme.text }]}>
               {paymentMethod === 'Online' ? 'Online' : paymentMethod === 'COD' ? 'COD' : paymentMethod}
             </Text>
-            <Text style={styles.paymentStatusLabel}>
+            <Text style={[styles.paymentStatusLabel, { color: theme.textSecondary }]}>
               {paymentStatusLabel}
             </Text>
-            <Text style={styles.orderDate}>
+            <Text style={[styles.orderDate, { color: theme.textTertiary }]}>
               {new Date(item.createdAt).toLocaleDateString('vi-VN')}
             </Text>
           </View>
           <View style={styles.totalContainer}>
-            <Text style={styles.totalLabel}>Tổng tiền:</Text>
-            <Text style={styles.totalAmount}>
+            <Text style={[styles.totalLabel, { color: theme.textSecondary }]}>Tổng tiền:</Text>
+            <Text style={[styles.totalAmount, { color: theme.primary }]}>
               {(item.finalAmount || 0).toLocaleString('vi-VN')}₫
             </Text>
           </View>
@@ -229,18 +233,19 @@ export default function OrdersScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Đơn hàng của tôi</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Đơn hàng của tôi</Text>
         <View style={styles.placeholder} />
       </View>
 
       {/* Tabs */}
-      <View style={styles.tabsContainer}>
+      <View style={[styles.tabsContainer, { backgroundColor: theme.cardBackground, borderBottomColor: theme.border }]}>
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -248,11 +253,11 @@ export default function OrdersScreen() {
           keyExtractor={(item) => item.key}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[styles.tab, selectedTab === item.key && styles.tabActive]}
+              style={[styles.tab, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F5F5F5' }, selectedTab === item.key && { backgroundColor: theme.primary }]}
               onPress={() => setSelectedTab(item.key)}
             >
               <Text
-                style={[styles.tabText, selectedTab === item.key && styles.tabTextActive]}
+                style={[styles.tabText, { color: theme.textSecondary }, selectedTab === item.key && styles.tabTextActive]}
               >
                 {item.label}
               </Text>
@@ -265,13 +270,13 @@ export default function OrdersScreen() {
       {/* Orders List */}
       {loading && orders.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#D5CCB3" />
-          <Text style={styles.loadingText}>Đang tải đơn hàng...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Đang tải đơn hàng...</Text>
         </View>
       ) : orders.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="receipt-outline" size={80} color="#DDD" />
-          <Text style={styles.emptyText}>Chưa có đơn hàng nào</Text>
+          <Ionicons name="receipt-outline" size={80} color={theme.border} />
+          <Text style={[styles.emptyText, { color: theme.textTertiary }]}>Chưa có đơn hàng nào</Text>
         </View>
       ) : (
         <FlatList
@@ -286,7 +291,7 @@ export default function OrdersScreen() {
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             loading && orders.length > 0 ? (
-              <ActivityIndicator size="small" color="#D5CCB3" style={{ marginVertical: 20 }} />
+              <ActivityIndicator size="small" color={theme.primary} style={{ marginVertical: 20 }} />
             ) : null
           }
         />

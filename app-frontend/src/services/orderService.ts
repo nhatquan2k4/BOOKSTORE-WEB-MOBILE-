@@ -1,82 +1,14 @@
 import apiClient from './apiClient';
-
-export interface OrderAddress {
-  recipientName: string;
-  phoneNumber: string;
-  province: string;
-  district: string;
-  ward: string;
-  street: string;
-  note?: string;
-}
-
-export interface OrderItem {
-  id: string;
-  orderId: string;
-  bookId: string;
-  bookTitle: string;
-  bookIsbn: string;
-  bookImageUrl?: string;
-  quantity: number;
-  unitPrice: number;
-  subtotal: number;
-}
-
-export interface PaymentTransaction {
-  id: string;
-  orderId: string;
-  provider: string;
-  transactionCode: string;
-  paymentMethod: string;
-  amount: number;
-  status: string;
-  createdAt: string;
-  paidAt: string | null;
-}
-
-export interface Order {
-  id: string;
-  orderNumber: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  status: string;
-  totalAmount: number;
-  shippingFee?: number;
-  discountAmount: number;
-  finalAmount: number;
-  address: OrderAddress;
-  items: OrderItem[];
-  createdAt: string;
-  paidAt: string | null;
-  completedAt: string | null;
-  cancelledAt: string | null;
-  paymentTransaction?: PaymentTransaction;
-  couponCode?: string | null;
-  note?: string;
-  cancelReason?: string;
-}
-
-export interface OrderListResponse {
-  items: Order[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
-  totalPages: number;
-}
-
-export interface OrderStatusHistory {
-  id: string;
-  orderId: string;
-  status: string;
-  note?: string;
-  changedAt: string;
-  changedBy?: string;
-}
-
-export interface CancelOrderRequest {
-  reason: string;
-}
+import { API_ENDPOINTS } from '../config/api';
+import type {
+  OrderAddress,
+  OrderItem,
+  PaymentTransaction,
+  Order,
+  OrderListResponse,
+  OrderStatusHistory,
+  CancelOrderRequest,
+} from '../types/order';
 
 const orderService = {
   // Get my orders with pagination and filtering
@@ -90,27 +22,27 @@ const orderService = {
     if (params?.pageNumber) queryParams.append('pageNumber', params.pageNumber.toString());
     if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
 
-    return await apiClient.get(`/api/orders/my-orders?${queryParams.toString()}`);
+    return await apiClient.get(`${API_ENDPOINTS.ORDERS.MY_ORDERS}?${queryParams.toString()}`);
   },
 
   // Get order by ID
   async getOrderById(orderId: string): Promise<Order> {
-    return await apiClient.get(`/api/orders/${orderId}`);
+    return await apiClient.get(API_ENDPOINTS.ORDERS.GET_BY_ID(orderId));
   },
 
   // Get order by order number
   async getOrderByOrderNumber(orderNumber: string): Promise<Order> {
-    return await apiClient.get(`/api/orders/order-number/${orderNumber}`);
+    return await apiClient.get(API_ENDPOINTS.ORDERS.GET_BY_ORDER_NUMBER(orderNumber));
   },
 
   // Get order status history
   async getOrderStatusHistory(orderId: string): Promise<OrderStatusHistory[]> {
-    return await apiClient.get(`/api/orders/${orderId}/status-history`);
+    return await apiClient.get(API_ENDPOINTS.ORDERS.STATUS_HISTORY(orderId));
   },
 
   // Cancel order
   async cancelOrder(orderId: string, reason: string): Promise<Order> {
-    return await apiClient.put(`/api/orders/${orderId}/cancel`, { reason });
+    return await apiClient.put(API_ENDPOINTS.ORDERS.CANCEL(orderId), { reason });
   },
 
   // Check if order can be cancelled
@@ -132,7 +64,7 @@ const orderService = {
     amount: number;
     message: string;
   }> {
-    return await apiClient.post('/api/orders/rental', {
+    return await apiClient.post(API_ENDPOINTS.ORDERS.CREATE_RENTAL, {
       bookId,
       days,
     });

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "BỜ ÚC BÚC",
-    "slug": "app-frontend",
+    "slug": "bo-uc-buc",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
@@ -48,7 +48,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "56a6e791-8dea-403e-bf66-d83de148baa0"
+        "projectId": "dbdf88fd-c6d7-496b-baa9-3f98e2183426"
       }
     }
   }

@@ -28,6 +28,7 @@ export default function TabLayout() {
         name="search"
         options={{
           title: 'Tìm Kiếm',
+          href: null, // Ẩn tab này
         }}
       />
       <Tabs.Screen

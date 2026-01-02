@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import { API_BASE_URL, API_TIMEOUT, API_ENDPOINTS } from '@/src/config/api';
 // Use centralized token storage (SecureStore) to keep storage consistent with AuthProvider
 import { saveTokens, loadTokens, clearTokens } from '@/src/services/tokenStorage';
 import {
@@ -17,7 +18,6 @@ import {
   ServiceResult,
   UserInfo,
 } from '@/src/types/auth';
-import { API_BASE_URL, API_TIMEOUT } from '@/src/config/api';
 
 // Token storage helpers are imported from tokenStorage.ts (SecureStore)
 
@@ -119,7 +119,7 @@ class AuthService {
   async login(data: LoginRequest): Promise<ServiceResult<LoginResponse>> {
     try {
       const response = await this.api.post<ApiResponse<LoginResponse>>(
-        '/api/Auth/login',
+        API_ENDPOINTS.AUTH.LOGIN,
         data
       );
 
@@ -152,7 +152,7 @@ class AuthService {
   async register(data: RegisterRequest): Promise<ServiceResult<RegisterResponse>> {
     try {
       const response = await this.api.post<ApiResponse<RegisterResponse>>(
-        '/api/Auth/register',
+        API_ENDPOINTS.AUTH.REGISTER,
         data
       );
 
@@ -179,7 +179,7 @@ class AuthService {
   async refreshToken(data: RefreshTokenRequest): Promise<ServiceResult<RefreshTokenResponse>> {
     try {
       const response = await this.api.post<ApiResponse<RefreshTokenResponse>>(
-        '/api/Auth/refresh-token',
+        API_ENDPOINTS.AUTH.REFRESH,
         data
       );
 
@@ -275,7 +275,7 @@ class AuthService {
   async verifyEmail(data: VerifyEmailRequest): Promise<ServiceResult> {
     try {
       const response = await this.api.post<ApiResponse>(
-        '/api/EmailVerification/verify',
+        API_ENDPOINTS.EMAIL_VERIFICATION.VERIFY,
         data
       );
 
@@ -294,7 +294,7 @@ class AuthService {
   async resendVerificationEmail(data: ResendVerificationRequest): Promise<ServiceResult> {
     try {
       const response = await this.api.post<ApiResponse>(
-        '/api/EmailVerification/resend',
+        API_ENDPOINTS.EMAIL_VERIFICATION.RESEND,
         data
       );
 

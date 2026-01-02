@@ -1,17 +1,20 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, Modal, Animated } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useCart } from '@/app/providers/CartProvider';
 import { useNotifications } from '@/app/providers/NotificationProvider';
 import { Ionicons } from '@expo/vector-icons';
 import bookService from '@/src/services/bookService';
-import addressService, { Address } from '@/src/services/addressService';
+import addressService from '@/src/services/addressService';
+import type { Address } from '@/src/types/address';
 import userProfileService from '@/src/services/userProfileService';
 import checkoutService from '@/src/services/checkoutService';
 import * as cartService from '@/src/services/cartService';
 import { toDisplayBookDetail } from '@/src/types/book';
 import { PLACEHOLDER_IMAGES } from '@/src/constants/placeholders';
 import { API_BASE_URL, MINIO_BASE_URL } from '@/src/config/api';
+import { useTheme } from '@/context/ThemeContext';
 
 type PaymentMethod = 'COD' | 'EWALLET';
 
@@ -19,6 +22,7 @@ export default function CheckoutScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
   const { addNotification } = useNotifications();
+  const { theme, isDarkMode } = useTheme();
 
   // Local snackbar for transient in-page messages (better UX than Alert.alert)
   const [snackbar, setSnackbar] = useState<{ message: string; type?: 'info'|'error'|'success' } | null>(null);
@@ -51,7 +55,7 @@ export default function CheckoutScreen() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [book, setBook] = useState<any>(null);
-  const [serverCart, setServerCart] = useState<cartService.Cart | null>(null);
+  const [serverCart, setServerCart] = useState<any>(null);
   const [bookImages, setBookImages] = useState<Record<string, string>>({});
 
   // QR Payment Modal
@@ -63,6 +67,10 @@ export default function CheckoutScreen() {
   const [nonSelectedItems, setNonSelectedItems] = React.useState([] as Array<{ bookId: string; quantity: number }>);
   // Flag to prevent cleanup effect from restoring when checkout is successful
   const checkoutSuccessful = useRef(false);
+  // Track if this is a "buy now" flow (need to clear cart on exit if not completed)
+  const isBuyNowFlow = useRef(false);
+  // Track cart state before buy-now to restore on cancel
+  const cartBeforeBuyNow = useRef<Array<{ bookId: string; quantity: number }>>([]);
   const qrModalAnim = useRef(new Animated.Value(0)).current;
 
   // Recipient info
@@ -140,24 +148,41 @@ export default function CheckoutScreen() {
     return () => {
       // This runs when component unmounts (user goes back)
       // Only restore if checkout was NOT successful
-      if (nonSelectedItems.length > 0 && !checkoutSuccessful.current) {
-        console.log('🔙 User left checkout without completing, restoring non-selected items:', nonSelectedItems);
-        // Restore items asynchronously (don't block unmount)
-        (async () => {
-          try {
-            for (const item of nonSelectedItems) {
-              await cartService.addToCart({ bookId: item.bookId, quantity: item.quantity });
+      if (!checkoutSuccessful.current) {
+        console.log('🔙 User left checkout without completing');
+        
+        // For "buy now" flow: Remove the buy-now item from cart
+        if (!fromCart && bookId) {
+          console.log('� Buy now flow cancelled - restoring original cart');
+          (async () => {
+            try {
+              await cartService.removeFromCart({ bookId });
+              console.log('Buy-now item removed from cart');
+            } catch (err) {
+              console.error('Failed to remove buy-now item:', err);
             }
-            console.log('✅ Non-selected items restored on exit');
-          } catch (err) {
-            console.error('❌ Failed to restore non-selected items on exit:', err);
-          }
-        })();
-      } else if (checkoutSuccessful.current) {
-        console.log('✅ Checkout successful, skipping cleanup restore');
+          })();
+        }
+        
+        // For partial cart checkout: Restore non-selected items
+        if (nonSelectedItems.length > 0) {
+          console.log('🔄 Restoring non-selected items:', nonSelectedItems);
+          (async () => {
+            try {
+              for (const item of nonSelectedItems) {
+                await cartService.addToCart({ bookId: item.bookId, quantity: item.quantity });
+              }
+              console.log('✅ Non-selected items restored');
+            } catch (err) {
+              console.error('❌ Failed to restore non-selected items:', err);
+            }
+          })();
+        }
+      } else {
+        console.log('✅ Checkout successful, skipping cleanup');
       }
     };
-  }, [nonSelectedItems]);
+  }, [nonSelectedItems, bookId, fromCart]);
 
   // Reload addresses when coming back from address selection
   useFocusEffect(
@@ -391,8 +416,20 @@ export default function CheckoutScreen() {
       // CRITICAL: Backend lấy items từ cart database
       // Nếu "Mua ngay" (không từ cart), phải add vào cart trước
       if (!fromCart && bookId) {
-        console.log('📦 Adding to cart before checkout:', bookId, 'x', qty);
+        console.log('📦 Buy Now flow - adding to cart before checkout:', bookId, 'x', qty);
+        isBuyNowFlow.current = true; // Mark as buy-now flow for cleanup
+        
         try {
+          // Save current cart before clearing (to restore if user cancels)
+          const existingCart = await cartService.getMyCart();
+          if (existingCart && existingCart.items && existingCart.items.length > 0) {
+            cartBeforeBuyNow.current = existingCart.items.map(item => ({
+              bookId: item.bookId,
+              quantity: item.quantity
+            }));
+            console.log('💾 Saved existing cart before buy-now:', cartBeforeBuyNow.current);
+          }
+          
           // Clear cart cũ để chỉ checkout sản phẩm được chọn
           await cartService.clearCart();
           console.log('✅ Cart cleared');
@@ -510,8 +547,20 @@ export default function CheckoutScreen() {
       // CRITICAL: Backend lấy items từ cart database
       // Nếu "Mua ngay" (không từ cart), phải add vào cart trước
       if (!fromCart && bookId) {
-        console.log('💳 Adding to cart before checkout:', bookId, 'x', qty);
+        console.log('💳 Buy Now flow - adding to cart before online payment:', bookId, 'x', qty);
+        isBuyNowFlow.current = true; // Mark as buy-now flow for cleanup
+        
         try {
+          // Save current cart before clearing (to restore if user cancels)
+          const existingCart = await cartService.getMyCart();
+          if (existingCart && existingCart.items && existingCart.items.length > 0) {
+            cartBeforeBuyNow.current = existingCart.items.map(item => ({
+              bookId: item.bookId,
+              quantity: item.quantity
+            }));
+            console.log('💾 Saved existing cart before buy-now:', cartBeforeBuyNow.current);
+          }
+          
           // Clear cart cũ để chỉ checkout sản phẩm được chọn
           await cartService.clearCart();
           console.log('✅ Cart cleared');
@@ -673,9 +722,10 @@ export default function CheckoutScreen() {
   // Show loading state
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#FF4757" />
-        <Text style={{ marginTop: 12, color: '#666' }}>Đang tải...</Text>
+      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={{ marginTop: 12, color: theme.textSecondary }}>Đang tải...</Text>
       </View>
     );
   }
@@ -683,12 +733,13 @@ export default function CheckoutScreen() {
   // Show error if no book in buy-now mode or no cart in cart mode
   if (!fromCart && !book) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
-        <Ionicons name="alert-circle-outline" size={64} color="#FF4757" style={{ marginBottom: 16 }} />
-        <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 12 }}>
+      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <Ionicons name="alert-circle-outline" size={64} color={theme.error} style={{ marginBottom: 16 }} />
+        <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text, marginBottom: 12 }}>
           Không tìm thấy sản phẩm
         </Text>
-        <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: '#FF4757', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20 }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: theme.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20 }}>
           <Text style={{ color: '#fff', fontWeight: '600' }}>Quay lại</Text>
         </TouchableOpacity>
       </View>
@@ -698,12 +749,13 @@ export default function CheckoutScreen() {
   // Check if cart is empty (only if we're checking entire cart, not selected items)
   if (fromCart && !selectedCartItems && (!serverCart || serverCart.items.length === 0)) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
-        <Ionicons name="cart-outline" size={64} color="#FF4757" style={{ marginBottom: 16 }} />
-        <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 12 }}>
+      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <Ionicons name="cart-outline" size={64} color={theme.primary} style={{ marginBottom: 16 }} />
+        <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text, marginBottom: 12 }}>
           Giỏ hàng trống
         </Text>
-        <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: '#FF4757', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20 }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: theme.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20 }}>
           <Text style={{ color: '#fff', fontWeight: '600' }}>Quay lại</Text>
         </TouchableOpacity>
       </View>
@@ -711,49 +763,50 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.headerRow}>
           <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={22} color="#333" />
+            <Ionicons name="arrow-back" size={22} color={theme.text} />
           </TouchableOpacity>
-          <Text style={styles.header}>Thanh toán</Text>
+          <Text style={[styles.header, { color: theme.text }]}>Thanh toán</Text>
           <View style={{ width: 36 }} />
         </View>
 
         {/* 1. Recipient info */}
-        <Text style={styles.sectionTitle}>Thông tin người nhận</Text>
-        <TouchableOpacity style={styles.addressCard} onPress={handleChangeAddress}>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Thông tin người nhận</Text>
+        <TouchableOpacity style={[styles.addressCard, { backgroundColor: theme.cardBackground }]} onPress={handleChangeAddress}>
           {selectedAddress ? (
             <>
               <View style={styles.addressHeader}>
-                <Text style={styles.addressName}>
-                  {name} <Text style={styles.addressPhone}>| {phone}</Text>
+                <Text style={[styles.addressName, { color: theme.text }]}>
+                  {name} <Text style={[styles.addressPhone, { color: theme.textSecondary }]}>| {phone}</Text>
                 </Text>
               </View>
-              <Text style={styles.addressDetail}>
+              <Text style={[styles.addressDetail, { color: theme.textSecondary }]}>
                 {address}
               </Text>
               {selectedAddress.isDefault && (
-                <View style={styles.defaultBadge}>
-                  <Text style={styles.defaultBadgeText}>Mặc định</Text>
+                <View style={[styles.defaultBadge, { backgroundColor: isDarkMode ? 'rgba(255, 90, 60, 0.2)' : '#FFF0F0' }]}>
+                  <Text style={[styles.defaultBadgeText, { color: theme.primary }]}>Mặc định</Text>
                 </View>
               )}
             </>
           ) : (
             <View style={styles.emptyAddress}>
-              <Ionicons name="add-circle-outline" size={24} color="#FF4757" />
-              <Text style={styles.emptyAddressText}>Thêm địa chỉ giao hàng</Text>
+              <Ionicons name="add-circle-outline" size={24} color={theme.primary} />
+              <Text style={[styles.emptyAddressText, { color: theme.primary }]}>Thêm địa chỉ giao hàng</Text>
             </View>
           )}
           <View style={styles.chevronIcon}>
-            <Ionicons name="chevron-forward" size={20} color="#999" />
+            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
           </View>
         </TouchableOpacity>
 
         {/* 2. Product info */}
-        <Text style={styles.sectionTitle}>Thông tin sản phẩm</Text>
-        <View style={styles.cartCardSmall}>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Thông tin sản phẩm</Text>
+        <View style={[styles.cartCardSmall, { backgroundColor: theme.cardBackground }]}>
           {fromCart && selectedCartItems ? (
             <>
               {selectedCartItems.map((item: any, idx: number) => {
@@ -768,17 +821,17 @@ export default function CheckoutScreen() {
                 }
                 
                 return (
-                  <View key={idx} style={[styles.cartContentRow, idx > 0 && { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f0f0f0' }]}>
+                  <View key={idx} style={[styles.cartContentRow, idx > 0 && { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.border }]}>
                     <Image 
                       source={{ uri: imageUrl }} 
                       style={styles.cartImage} 
                     />
                     <View style={{ flex: 1 }}>
-                      <Text numberOfLines={2} style={styles.title}>{item.title}</Text>
-                      <Text style={styles.unitPrice}>{item.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
+                      <Text numberOfLines={2} style={[styles.title, { color: theme.text }]}>{item.title}</Text>
+                      <Text style={[styles.unitPrice, { color: theme.textSecondary }]}>{item.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={styles.qtyLabel}>x{item.quantity}</Text>
+                      <Text style={[styles.qtyLabel, { color: theme.text }]}>x{item.quantity}</Text>
                     </View>
                   </View>
                 );
@@ -802,17 +855,17 @@ export default function CheckoutScreen() {
                 }
                 
                 return (
-                  <View key={idx} style={[styles.cartContentRow, idx > 0 && { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f0f0f0' }]}>
+                  <View key={idx} style={[styles.cartContentRow, idx > 0 && { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.border }]}>
                     <Image 
                       source={{ uri: imageUrl }} 
                       style={styles.cartImage} 
                     />
                     <View style={{ flex: 1 }}>
-                      <Text numberOfLines={2} style={styles.title}>{item.bookTitle}</Text>
-                      <Text style={styles.unitPrice}>{item.bookPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
+                      <Text numberOfLines={2} style={[styles.title, { color: theme.text }]}>{item.bookTitle}</Text>
+                      <Text style={[styles.unitPrice, { color: theme.textSecondary }]}>{item.bookPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={styles.qtyLabel}>x{item.quantity}</Text>
+                      <Text style={[styles.qtyLabel, { color: theme.text }]}>x{item.quantity}</Text>
                     </View>
                   </View>
                 );
@@ -823,75 +876,81 @@ export default function CheckoutScreen() {
               <View style={styles.cartContentRow}>
                 <Image source={{ uri: book.cover }} style={styles.cartImage} />
                 <View style={{ flex: 1 }}>
-                  <Text numberOfLines={2} style={styles.title}>{book.title}</Text>
-                  <Text style={styles.unitPrice}>{book.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
+                  <Text numberOfLines={2} style={[styles.title, { color: theme.text }]}>{book.title}</Text>
+                  <Text style={[styles.unitPrice, { color: theme.textSecondary }]}>{book.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={styles.qtyLabel}>x{qty}</Text>
+                  <Text style={[styles.qtyLabel, { color: theme.text }]}>x{qty}</Text>
                 </View>
               </View>
             </>
           ) : (
-            <Text>Không có sản phẩm</Text>
+            <Text style={{ color: theme.textSecondary }}>Không có sản phẩm</Text>
           )}
         </View>
 
         {/* 3. Voucher */}
-        <Text style={styles.sectionTitle}>Mã giảm giá</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Mã giảm giá</Text>
         <View style={styles.cardRow}>
-          <TextInput placeholder="Nhập mã khuyến mãi" value={voucherCode} onChangeText={setVoucherCode} style={[styles.input, { flex: 1 }]} />
-          <TouchableOpacity style={styles.applyBtn} onPress={applyVoucher}>
+          <TextInput 
+            placeholder="Nhập mã khuyến mãi" 
+            placeholderTextColor={theme.textTertiary}
+            value={voucherCode} 
+            onChangeText={setVoucherCode} 
+            style={[styles.input, { flex: 1, borderColor: theme.border, backgroundColor: theme.inputBackground, color: theme.text }]} 
+          />
+          <TouchableOpacity style={[styles.applyBtn, { backgroundColor: theme.primary }]} onPress={applyVoucher}>
             <Text style={styles.applyText}>Áp dụng</Text>
           </TouchableOpacity>
         </View>
         {appliedVoucher && (
-          <Text style={styles.voucherApplied}>Đã áp dụng: {appliedVoucher}</Text>
+          <Text style={[styles.voucherApplied, { color: theme.success }]}>Đã áp dụng: {appliedVoucher}</Text>
         )}
 
         {/* 4. Shipping method */}
-        <Text style={styles.sectionTitle}>Phương thức vận chuyển</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Phương thức vận chuyển</Text>
         <View style={styles.shippingMethodContainer}>
           <TouchableOpacity 
-            style={[styles.shippingMethodCard, shippingMethod === 'STANDARD' && styles.shippingMethodActive]} 
+            style={[styles.shippingMethodCard, { backgroundColor: theme.cardBackground, borderColor: shippingMethod === 'STANDARD' ? theme.primary : theme.border }, shippingMethod === 'STANDARD' && { backgroundColor: isDarkMode ? 'rgba(255, 71, 87, 0.1)' : '#FFF5F5' }]} 
             onPress={() => setShippingMethod('STANDARD')}
           >
             <View style={styles.shippingMethodHeader}>
-              <View style={styles.radioOuter}>
-                {shippingMethod === 'STANDARD' && <View style={styles.radioInner} />}
+              <View style={[styles.radioOuter, { borderColor: shippingMethod === 'STANDARD' ? theme.primary : theme.border }]}>
+                {shippingMethod === 'STANDARD' && <View style={[styles.radioInner, { backgroundColor: theme.primary }]} />}
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.shippingMethodTitle, shippingMethod === 'STANDARD' && styles.shippingMethodTitleActive]}>
+                <Text style={[styles.shippingMethodTitle, { color: theme.text }, shippingMethod === 'STANDARD' && { color: theme.primary }]}>
                   Giao hàng nhanh
                 </Text>
-                <Text style={styles.shippingMethodDesc}>Nhận hàng trong 3-5 ngày</Text>
+                <Text style={[styles.shippingMethodDesc, { color: theme.textTertiary }]}>Nhận hàng trong 3-5 ngày</Text>
               </View>
-              <Text style={[styles.shippingMethodPrice, shippingMethod === 'STANDARD' && styles.shippingMethodPriceActive]}>
+              <Text style={[styles.shippingMethodPrice, { color: theme.text }, shippingMethod === 'STANDARD' && { color: theme.primary }]}>
                 30.000₫
               </Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.shippingMethodCard, shippingMethod === 'EXPRESS' && styles.shippingMethodActive]} 
+            style={[styles.shippingMethodCard, { backgroundColor: theme.cardBackground, borderColor: shippingMethod === 'EXPRESS' ? theme.primary : theme.border }, shippingMethod === 'EXPRESS' && { backgroundColor: isDarkMode ? 'rgba(255, 71, 87, 0.1)' : '#FFF5F5' }]} 
             onPress={() => setShippingMethod('EXPRESS')}
           >
             <View style={styles.shippingMethodHeader}>
-              <View style={styles.radioOuter}>
-                {shippingMethod === 'EXPRESS' && <View style={styles.radioInner} />}
+              <View style={[styles.radioOuter, { borderColor: shippingMethod === 'EXPRESS' ? theme.primary : theme.border }]}>
+                {shippingMethod === 'EXPRESS' && <View style={[styles.radioInner, { backgroundColor: theme.primary }]} />}
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={[styles.shippingMethodTitle, shippingMethod === 'EXPRESS' && styles.shippingMethodTitleActive]}>
+                  <Text style={[styles.shippingMethodTitle, { color: theme.text }, shippingMethod === 'EXPRESS' && { color: theme.primary }]}>
                     Giao hàng hỏa tốc
                   </Text>
-                  <View style={styles.expressBadge}>
-                    <Ionicons name="flash" size={12} color="#FF4757" />
-                    <Text style={styles.expressBadgeText}>Nhanh</Text>
+                  <View style={[styles.expressBadge, { backgroundColor: isDarkMode ? 'rgba(255, 71, 87, 0.2)' : '#FFE8EB' }]}>
+                    <Ionicons name="flash" size={12} color={theme.primary} />
+                    <Text style={[styles.expressBadgeText, { color: theme.primary }]}>Nhanh</Text>
                   </View>
                 </View>
-                <Text style={styles.shippingMethodDesc}>Nhận hàng trong 24 giờ</Text>
+                <Text style={[styles.shippingMethodDesc, { color: theme.textTertiary }]}>Nhận hàng trong 24 giờ</Text>
               </View>
-              <Text style={[styles.shippingMethodPrice, shippingMethod === 'EXPRESS' && styles.shippingMethodPriceActive]}>
+              <Text style={[styles.shippingMethodPrice, { color: theme.text }, shippingMethod === 'EXPRESS' && { color: theme.primary }]}>
                 50.000₫
               </Text>
             </View>
@@ -899,38 +958,44 @@ export default function CheckoutScreen() {
         </View>
 
         {/* 5. Payment method */}
-        <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Phương thức thanh toán</Text>
         <View style={styles.cardRowSmall}>
-          <TouchableOpacity style={[styles.methodBtn, paymentMethod === 'COD' ? styles.methodActive : null]} onPress={() => setPaymentMethod('COD')}>
-            <Text style={paymentMethod === 'COD' ? styles.methodTextActive : styles.methodText}>Thanh toán khi nhận hàng</Text>
+          <TouchableOpacity 
+            style={[styles.methodBtn, { backgroundColor: theme.cardBackground, borderColor: paymentMethod === 'COD' ? theme.primary : theme.border }, paymentMethod === 'COD' && { backgroundColor: isDarkMode ? 'rgba(255, 71, 87, 0.1)' : '#FFF0F0' }]} 
+            onPress={() => setPaymentMethod('COD')}
+          >
+            <Text style={[styles.methodText, { color: theme.text }, paymentMethod === 'COD' && { color: theme.primary, fontWeight: '700' }]}>Thanh toán khi nhận hàng</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.methodBtn, paymentMethod === 'EWALLET' ? styles.methodActive : null]} onPress={() => setPaymentMethod('EWALLET')}>
-            <Text style={paymentMethod === 'EWALLET' ? styles.methodTextActive : styles.methodText}>Thanh toán qua ví</Text>
+          <TouchableOpacity 
+            style={[styles.methodBtn, { backgroundColor: theme.cardBackground, borderColor: paymentMethod === 'EWALLET' ? theme.primary : theme.border }, paymentMethod === 'EWALLET' && { backgroundColor: isDarkMode ? 'rgba(255, 71, 87, 0.1)' : '#FFF0F0' }]} 
+            onPress={() => setPaymentMethod('EWALLET')}
+          >
+            <Text style={[styles.methodText, { color: theme.text }, paymentMethod === 'EWALLET' && { color: theme.primary, fontWeight: '700' }]}>Thanh toán qua ví</Text>
           </TouchableOpacity>
         </View>
 
         {/* 6. Payment details */}
-        <Text style={styles.sectionTitle}>Chi tiết thanh toán</Text>
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryRow}><Text>Tổng tiền hàng</Text><Text>{subtotal.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>
-          <View style={styles.summaryRow}><Text>Tổng tiền phí vận chuyển</Text><Text>{shipping.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>
-          {discountOnShipping > 0 && <View style={styles.summaryRow}><Text>Giảm giá phí vận chuyển</Text><Text>-{discountOnShipping.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>}
-          {discountOnProduct > 0 && <View style={styles.summaryRow}><Text>Giảm giá tiền hàng</Text><Text>-{discountOnProduct.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>}
-          <View style={[styles.summaryRow, styles.summaryTotal]}><Text style={styles.totalLabel}>Tổng thanh toán</Text><Text style={styles.totalValue}>{totalPayment.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Chi tiết thanh toán</Text>
+        <View style={[styles.summaryCard, { backgroundColor: theme.cardBackground }]}>
+          <View style={styles.summaryRow}><Text style={{ color: theme.text }}>Tổng tiền hàng</Text><Text style={{ color: theme.text }}>{subtotal.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>
+          <View style={styles.summaryRow}><Text style={{ color: theme.text }}>Tổng tiền phí vận chuyển</Text><Text style={{ color: theme.text }}>{shipping.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>
+          {discountOnShipping > 0 && <View style={styles.summaryRow}><Text style={{ color: theme.text }}>Giảm giá phí vận chuyển</Text><Text style={{ color: theme.success }}>-{discountOnShipping.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>}
+          {discountOnProduct > 0 && <View style={styles.summaryRow}><Text style={{ color: theme.text }}>Giảm giá tiền hàng</Text><Text style={{ color: theme.success }}>-{discountOnProduct.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>}
+          <View style={[styles.summaryRow, styles.summaryTotal, { borderTopColor: theme.border }]}><Text style={[styles.totalLabel, { color: theme.text }]}>Tổng thanh toán</Text><Text style={[styles.totalValue, { color: theme.primary }]}>{totalPayment.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text></View>
         </View>
 
         <View style={{ height: 120 }} />
       </ScrollView>
 
       {/* Bottom action bar */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { backgroundColor: theme.cardBackground }]}>
         <View>
-          <Text style={styles.smallLabel}>Tổng cộng</Text>
-          <Text style={styles.bottomTotal}>{totalPayment.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
+          <Text style={[styles.smallLabel, { color: theme.textSecondary }]}>Tổng cộng</Text>
+          <Text style={[styles.bottomTotal, { color: theme.primary }]}>{totalPayment.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
         </View>
         {paymentMethod === 'COD' ? (
           <TouchableOpacity 
-            style={[styles.placeOrderBtn, processing && styles.btnDisabled]} 
+            style={[styles.placeOrderBtn, { backgroundColor: theme.success }, processing && styles.btnDisabled]} 
             onPress={handlePlaceOrder}
             disabled={processing}
           >
@@ -942,7 +1007,7 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity 
-            style={[styles.payNowBtn, processing && styles.btnDisabled]} 
+            style={[styles.payNowBtn, { backgroundColor: theme.primary }, processing && styles.btnDisabled]} 
             onPress={handlePayNow}
             disabled={processing}
           >
@@ -958,44 +1023,44 @@ export default function CheckoutScreen() {
       {/* QR Payment Modal */}
       <Modal visible={qrModalVisible} transparent animationType="none" onRequestClose={closeQrModal}>
         <View style={styles.modalOverlay}>
-          <Animated.View style={[styles.qrModalCard, { transform: [{ scale: qrModalAnim }], opacity: qrModalAnim }]}>
-            <TouchableOpacity style={styles.closeModalBtn} onPress={closeQrModal}>
-              <Ionicons name="close" size={24} color="#666" />
+          <Animated.View style={[styles.qrModalCard, { backgroundColor: theme.cardBackground, transform: [{ scale: qrModalAnim }], opacity: qrModalAnim }]}>
+            <TouchableOpacity style={[styles.closeModalBtn, { backgroundColor: isDarkMode ? '#2A2A2A' : '#f5f5f5' }]} onPress={closeQrModal}>
+              <Ionicons name="close" size={24} color={theme.textSecondary} />
             </TouchableOpacity>
 
-            <Text style={styles.qrModalTitle}>Quét mã QR để thanh toán</Text>
+            <Text style={[styles.qrModalTitle, { color: theme.text }]}>Quét mã QR để thanh toán</Text>
             
             {paymentInfo?.qrCodeUrl ? (
-              <View style={styles.qrCodeContainer}>
+              <View style={[styles.qrCodeContainer, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F8F8F8' }]}>
                 <Image source={{ uri: paymentInfo.qrCodeUrl }} style={styles.qrCodeImage} />
               </View>
             ) : (
-              <View style={styles.qrCodePlaceholder}>
-                <Ionicons name="qr-code-outline" size={150} color="#DDD" />
+              <View style={[styles.qrCodePlaceholder, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F8F8F8' }]}>
+                <Ionicons name="qr-code-outline" size={150} color={theme.border} />
               </View>
             )}
 
-            <View style={styles.paymentDetails}>
-              <Text style={styles.paymentLabel}>Ngân hàng</Text>
-              <Text style={styles.paymentValue}>{paymentInfo?.bankName || 'VietQR Bank'}</Text>
+            <View style={[styles.paymentDetails, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F8F8F8' }]}>
+              <Text style={[styles.paymentLabel, { color: theme.textSecondary }]}>Ngân hàng</Text>
+              <Text style={[styles.paymentValue, { color: theme.text }]}>{paymentInfo?.bankName || 'VietQR Bank'}</Text>
               
-              <Text style={styles.paymentLabel}>Số tài khoản</Text>
-              <Text style={styles.paymentValue}>{paymentInfo?.accountNumber || '0123456789'}</Text>
+              <Text style={[styles.paymentLabel, { color: theme.textSecondary }]}>Số tài khoản</Text>
+              <Text style={[styles.paymentValue, { color: theme.text }]}>{paymentInfo?.accountNumber || '0123456789'}</Text>
               
-              <Text style={styles.paymentLabel}>Chủ tài khoản</Text>
-              <Text style={styles.paymentValue}>{paymentInfo?.accountName || 'BOOKSTORE'}</Text>
+              <Text style={[styles.paymentLabel, { color: theme.textSecondary }]}>Chủ tài khoản</Text>
+              <Text style={[styles.paymentValue, { color: theme.text }]}>{paymentInfo?.accountName || 'BOOKSTORE'}</Text>
               
-              <Text style={styles.paymentLabel}>Nội dung chuyển khoản</Text>
-              <Text style={styles.paymentValue}>{paymentInfo?.transferContent || `DH${Date.now()}`}</Text>
+              <Text style={[styles.paymentLabel, { color: theme.textSecondary }]}>Nội dung chuyển khoản</Text>
+              <Text style={[styles.paymentValue, { color: theme.text }]}>{paymentInfo?.transferContent || `DH${Date.now()}`}</Text>
               
-              <View style={styles.amountRow}>
-                <Text style={styles.paymentLabel}>Số tiền</Text>
-                <Text style={styles.amountValue}>{(paymentInfo?.amount || totalPayment).toLocaleString('vi-VN')}₫</Text>
+              <View style={[styles.amountRow, { borderTopColor: theme.border }]}>
+                <Text style={[styles.paymentLabel, { color: theme.textSecondary }]}>Số tiền</Text>
+                <Text style={[styles.amountValue, { color: theme.primary }]}>{(paymentInfo?.amount || totalPayment).toLocaleString('vi-VN')}₫</Text>
               </View>
             </View>
 
             <TouchableOpacity 
-              style={[styles.confirmPaymentBtn, processing && styles.btnDisabled]}
+              style={[styles.confirmPaymentBtn, { backgroundColor: theme.success }, processing && styles.btnDisabled]}
               onPress={handlePaymentSuccess}
               disabled={processing}
             >
@@ -1009,7 +1074,7 @@ export default function CheckoutScreen() {
               )}
             </TouchableOpacity>
 
-            <Text style={styles.qrModalNote}>
+            <Text style={[styles.qrModalNote, { color: theme.textTertiary }]}>
               * Nút "Đã thanh toán" để giả lập callback từ cổng thanh toán
             </Text>
           </Animated.View>
@@ -1018,7 +1083,7 @@ export default function CheckoutScreen() {
 
       {/* Snackbar (in-app) */}
       {snackbar && (
-        <View style={[styles.snackbar, snackbar.type === 'error' ? styles.snackbarError : snackbar.type === 'success' ? styles.snackbarSuccess : styles.snackbarInfo]}>
+        <View style={[styles.snackbar, snackbar.type === 'error' ? { backgroundColor: theme.error } : snackbar.type === 'success' ? { backgroundColor: theme.success } : { backgroundColor: theme.primary }]}>
           <Text style={styles.snackbarText}>{snackbar.message}</Text>
         </View>
       )}
@@ -1027,87 +1092,87 @@ export default function CheckoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 },
   content: { padding: 16, paddingBottom: 32 },
   header: { fontSize: 22, fontWeight: '700', marginBottom: 12, marginTop: 50 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   backIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { fontSize: 14, color: '#666', marginTop: 8, marginBottom: 8 },
-  card: { backgroundColor: '#fff', padding: 12, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3, marginBottom: 12 },
-  addressCard: { backgroundColor: '#fff', padding: 14, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3, marginBottom: 12, position: 'relative' },
+  sectionTitle: { fontSize: 14, marginTop: 8, marginBottom: 8 },
+  card: { padding: 12, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3, marginBottom: 12 },
+  addressCard: { padding: 14, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3, marginBottom: 12, position: 'relative' },
   addressHeader: { marginBottom: 8 },
-  addressName: { fontSize: 16, fontWeight: '700', color: '#333' },
-  addressPhone: { fontSize: 14, fontWeight: '500', color: '#666' },
-  addressDetail: { fontSize: 14, color: '#666', lineHeight: 20, marginBottom: 8 },
-  defaultBadge: { alignSelf: 'flex-start', backgroundColor: '#FFF0F0', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginTop: 4 },
-  defaultBadgeText: { color: '#ff5a3c', fontSize: 12, fontWeight: '600' },
+  addressName: { fontSize: 16, fontWeight: '700' },
+  addressPhone: { fontSize: 14, fontWeight: '500' },
+  addressDetail: { fontSize: 14, lineHeight: 20, marginBottom: 8 },
+  defaultBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginTop: 4 },
+  defaultBadgeText: { fontSize: 12, fontWeight: '600' },
   chevronIcon: { position: 'absolute', right: 14, top: '50%', marginTop: -10 },
   emptyAddress: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  emptyAddressText: { fontSize: 15, color: '#FF4757', marginLeft: 8, fontWeight: '500' },
+  emptyAddressText: { fontSize: 15, marginLeft: 8, fontWeight: '500' },
   infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
-  cartCardSmall: { backgroundColor: '#fff', padding: 12, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3, marginBottom: 12 },
+  cartCardSmall: { padding: 12, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3, marginBottom: 12 },
   cartContentRow: { flexDirection: 'row', alignItems: 'center' },
   cartImage: { width: 64, height: 88, borderRadius: 8, marginRight: 12, backgroundColor: '#f0f0f0' },
-  unitPrice: { fontSize: 12, color: '#666', marginTop: 4 },
-  qtyLabel: { fontSize: 14, color: '#333', fontWeight: '600' },
+  unitPrice: { fontSize: 12, marginTop: 4 },
+  qtyLabel: { fontSize: 14, fontWeight: '600' },
   qtyWrap: { flexDirection: 'row', alignItems: 'center' },
   stepBtn: { width: 28, height: 28, borderRadius: 6, backgroundColor: '#F0F0F0', alignItems: 'center', justifyContent: 'center' },
   stepText: { fontSize: 18, lineHeight: 18, fontWeight: '600' },
   qtyText: { marginHorizontal: 8, minWidth: 20, textAlign: 'center' },
-  cardRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 8, borderRadius: 10, marginBottom: 8 },
+  cardRow: { flexDirection: 'row', alignItems: 'center', padding: 8, borderRadius: 10, marginBottom: 8 },
   cardRowSmall: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#EEE', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 8 },
-  applyBtn: { backgroundColor: '#1976d2', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, marginLeft: 8 },
+  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 8 },
+  applyBtn: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, marginLeft: 8 },
   applyText: { color: '#fff', fontWeight: '700' },
-  voucherApplied: { color: '#2CB47B', marginBottom: 8 },
+  voucherApplied: { marginBottom: 8 },
   shippingMethodContainer: { gap: 10, marginBottom: 12 },
-  shippingMethodCard: { backgroundColor: '#fff', padding: 14, borderRadius: 10, borderWidth: 2, borderColor: '#EEE' },
-  shippingMethodActive: { borderColor: '#FF4757', backgroundColor: '#FFF5F5' },
+  shippingMethodCard: { padding: 14, borderRadius: 10, borderWidth: 2 },
+  shippingMethodActive: {},
   shippingMethodHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#DDD', alignItems: 'center', justifyContent: 'center' },
-  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF4757' },
-  shippingMethodTitle: { fontSize: 15, fontWeight: '600', color: '#333', marginBottom: 2 },
-  shippingMethodTitleActive: { color: '#FF4757' },
-  shippingMethodDesc: { fontSize: 13, color: '#999' },
-  shippingMethodPrice: { fontSize: 15, fontWeight: '700', color: '#333' },
-  shippingMethodPriceActive: { color: '#FF4757' },
-  expressBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFE8EB', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 6 },
-  expressBadgeText: { fontSize: 11, color: '#FF4757', fontWeight: '600', marginLeft: 2 },
+  radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  radioInner: { width: 10, height: 10, borderRadius: 5 },
+  shippingMethodTitle: { fontSize: 15, fontWeight: '600', marginBottom: 2 },
+  shippingMethodTitleActive: {},
+  shippingMethodDesc: { fontSize: 13 },
+  shippingMethodPrice: { fontSize: 15, fontWeight: '700' },
+  shippingMethodPriceActive: {},
+  expressBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 6 },
+  expressBadgeText: { fontSize: 11, fontWeight: '600', marginLeft: 2 },
   title: { fontSize: 16, fontWeight: '700' },
-  author: { color: '#666', marginBottom: 8 },
-  price: { fontSize: 16, fontWeight: '700', color: '#FF4757' },
-  methodBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: '#EEE', alignItems: 'center' },
-  methodActive: { borderColor: '#FF4757', backgroundColor: '#FFF0F0' },
-  methodText: { color: '#333' },
-  methodTextActive: { color: '#FF4757', fontWeight: '700' },
-  summaryCard: { backgroundColor: '#fff', padding: 12, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3 },
+  author: { marginBottom: 8 },
+  price: { fontSize: 16, fontWeight: '700' },
+  methodBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, alignItems: 'center' },
+  methodActive: {},
+  methodText: {},
+  methodTextActive: {},
+  summaryCard: { padding: 12, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  summaryTotal: { borderTopWidth: 1, borderTopColor: '#F0F0F0', marginTop: 8, paddingTop: 8 },
+  summaryTotal: { marginTop: 8, paddingTop: 8, borderTopWidth: 1 },
   totalLabel: { fontSize: 16, fontWeight: '700' },
-  totalValue: { fontSize: 16, fontWeight: '700', color: '#FF4757' },
-  bottomBar: { position: 'absolute', left: 12, right: 12, bottom: 12, backgroundColor: '#fff', padding: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: '#000', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 6 },
-  smallLabel: { fontSize: 12, color: '#666' },
-  bottomTotal: { fontSize: 18, fontWeight: '700', color: '#FF4757' },
-  placeOrderBtn: { backgroundColor: '#2CB47B', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8, minWidth: 120, alignItems: 'center' },
+  totalValue: { fontSize: 16, fontWeight: '700' },
+  bottomBar: { position: 'absolute', left: 12, right: 12, bottom: 12, padding: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: '#000', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 6 },
+  smallLabel: { fontSize: 12 },
+  bottomTotal: { fontSize: 18, fontWeight: '700' },
+  placeOrderBtn: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8, minWidth: 120, alignItems: 'center' },
   placeOrderText: { color: '#fff', fontWeight: '700' },
-  payNowBtn: { backgroundColor: '#FF4757', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8, minWidth: 120, alignItems: 'center' },
+  payNowBtn: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8, minWidth: 120, alignItems: 'center' },
   payNowText: { color: '#fff', fontWeight: '700' },
   btnDisabled: { opacity: 0.6 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  qrModalCard: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '100%', maxWidth: 400, maxHeight: '90%' },
-  closeModalBtn: { position: 'absolute', right: 12, top: 12, zIndex: 10, width: 32, height: 32, borderRadius: 16, backgroundColor: '#f5f5f5', alignItems: 'center', justifyContent: 'center' },
-  qrModalTitle: { fontSize: 20, fontWeight: '700', color: '#333', textAlign: 'center', marginBottom: 20 },
-  qrCodeContainer: { alignItems: 'center', marginBottom: 20, padding: 10, backgroundColor: '#F8F8F8', borderRadius: 12 },
+  qrModalCard: { borderRadius: 16, padding: 20, width: '100%', maxWidth: 400, maxHeight: '90%' },
+  closeModalBtn: { position: 'absolute', right: 12, top: 12, zIndex: 10, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  qrModalTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 20 },
+  qrCodeContainer: { alignItems: 'center', marginBottom: 20, padding: 10, borderRadius: 12 },
   qrCodeImage: { width: 250, height: 250, borderRadius: 8 },
-  qrCodePlaceholder: { alignItems: 'center', justifyContent: 'center', height: 250, backgroundColor: '#F8F8F8', borderRadius: 12, marginBottom: 20 },
-  paymentDetails: { backgroundColor: '#F8F8F8', borderRadius: 12, padding: 16, marginBottom: 16 },
-  paymentLabel: { fontSize: 13, color: '#666', marginTop: 8, marginBottom: 4 },
-  paymentValue: { fontSize: 15, fontWeight: '600', color: '#333' },
-  amountRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E0E0E0' },
-  amountValue: { fontSize: 20, fontWeight: '700', color: '#FF4757' },
-  confirmPaymentBtn: { backgroundColor: '#2CB47B', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 10, gap: 8, marginBottom: 12 },
+  qrCodePlaceholder: { alignItems: 'center', justifyContent: 'center', height: 250, borderRadius: 12, marginBottom: 20 },
+  paymentDetails: { borderRadius: 12, padding: 16, marginBottom: 16 },
+  paymentLabel: { fontSize: 13, marginTop: 8, marginBottom: 4 },
+  paymentValue: { fontSize: 15, fontWeight: '600' },
+  amountRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1 },
+  amountValue: { fontSize: 20, fontWeight: '700' },
+  confirmPaymentBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 10, gap: 8, marginBottom: 12 },
   confirmPaymentText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  qrModalNote: { fontSize: 12, color: '#999', textAlign: 'center', fontStyle: 'italic' },
+  qrModalNote: { fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
   snackbar: { 
     position: 'absolute', 
     left: 0, 
@@ -1123,7 +1188,7 @@ const styles = StyleSheet.create({
     elevation: 3 
   },
   snackbarText: { color: '#fff', fontWeight: '500' },
-  snackbarError: { backgroundColor: '#FF4757' },
-  snackbarSuccess: { backgroundColor: '#2CB47B' },
-  snackbarInfo: { backgroundColor: '#1976d2' },
+  snackbarError: {},
+  snackbarSuccess: {},
+  snackbarInfo: {},
 });

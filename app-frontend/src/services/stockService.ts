@@ -1,15 +1,7 @@
 // Stock Service - API calls for inventory/stock management
 import { api } from './apiClient';
-
-export interface StockItem {
-  bookId: string;
-  warehouseId: string;
-  quantityOnHand: number;
-  reservedQuantity: number;
-  reorderPoint: number;
-  reorderQuantity: number;
-  lastRestockDate?: string;
-}
+import { API_ENDPOINTS } from '../config/api';
+import type { StockItem, StockAvailability } from '../types/stock';
 
 /**
  * Get stock information by book ID
@@ -18,7 +10,7 @@ export interface StockItem {
  */
 export const getStockByBookId = async (bookId: string): Promise<StockItem[] | null> => {
   try {
-    const response = await api.get<any>(`/api/StockItems/book/${bookId}`);
+    const response = await api.get<any>(API_ENDPOINTS.STOCK.BY_BOOK_ID(bookId));
     
     console.log('📦 Stock API response type:', typeof response);
     console.log('📦 Response is array?', Array.isArray(response));
@@ -97,16 +89,9 @@ export const checkStockAvailability = async (
   bookId: string,
   warehouseId: string,
   quantity: number
-): Promise<{
-  available: boolean;
-  quantityOnHand: number;
-  reservedQuantity: number;
-  availableQuantity: number;
-  requestedQuantity: number;
-  message: string;
-}> => {
+): Promise<StockAvailability> => {
   try {
-    const response = await api.get<any>('/api/StockItems/check-availability', {
+    const response = await api.get<any>(API_ENDPOINTS.STOCK.CHECK_AVAILABILITY, {
       params: { bookId, warehouseId, quantity }
     });
     return response;

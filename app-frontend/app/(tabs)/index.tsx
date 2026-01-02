@@ -7,6 +7,7 @@ import * as React from 'react';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import bookService from '@/src/services/bookService';
 import categoryService from '@/src/services/categoryService';
+import authorService from '@/src/services/authorService';
 import type { Book } from '@/src/types/book';
 import { toDisplayBook } from '@/src/types/book';
 import { PLACEHOLDER_IMAGES } from '@/src/constants/placeholders';
@@ -21,9 +22,20 @@ import {
   View,
   RefreshControl,
   useWindowDimensions,
+  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useTheme } from '@/context/ThemeContext';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = 160;
+const HORIZONTAL_PADDING = 20;
+
+// Calculate spacing to make cards evenly spaced
+const availableWidth = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2);
+const CARD_SPACING = (availableWidth - (CARD_WIDTH * 2)) / 3; // 3 gaps: left, middle, right
 
 // Icon mapping for categories
 const categoryIcons: Record<string, string> = {
@@ -70,26 +82,53 @@ export default function HomeScreen() {
   const isFocused = useIsFocused();
   const scrollRef = useRef<ScrollView>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // null = "All"
+  const { theme, isDarkMode } = useTheme();
   
   // State for API data
   const [categories, setCategories] = useState<any[]>([]);
-  const [allBooks, setAllBooks] = useState<any[]>([]); // Store all books
   const [booksData, setBooksData] = useState<any[]>([]); // For single category view
   const [booksByCategory, setBooksByCategory] = useState<Record<string, any[]>>({}); // For "All" view
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const { width: screenWidth } = useWindowDimensions();
+  
+  // Pagination state
+  const [currentCategoryPage, setCurrentCategoryPage] = useState(1); // For "All" view - load categories page by page
+  const [currentBookPage, setCurrentBookPage] = useState(1); // For single category - load books page by page
+  const [hasMoreCategories, setHasMoreCategories] = useState(true);
+  const [hasMoreBooks, setHasMoreBooks] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const BOOKS_PER_PAGE = 20; // Load 20 books at a time for single category
+  const CATEGORIES_PER_PAGE = 5; // Load 5 categories at a time for "All" view
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{
+    books: any[];
+    authors: any[];
+    categories: any[];
+  }>({ books: [], authors: [], categories: [] });
+  const [isSearching, setIsSearching] = useState(false);
+  const [isTyping, setIsTyping] = useState(false); // Track if user is typing
+  const searchTimeoutRef = useRef<any>(null);
 
   // Fetch categories and books from API
   useEffect(() => {
     fetchCategoriesAndBooks();
   }, []);
 
-  // Fetch books when category changes
+  // Fetch books when category changes - Reset pagination
   useEffect(() => {
     if (categories.length > 0 && selectedCategory !== null) {
-      fetchBooksByCategory();
+      setCurrentBookPage(1);
+      setHasMoreBooks(true);
+      setBooksData([]); // Clear old data
+      fetchBooksByCategory(1, true); // true = reset data
+    } else if (selectedCategory === null && categories.length > 0) {
+      // Reset to "All" view
+      setCurrentCategoryPage(1);
+      setHasMoreCategories(true);
     }
   }, [selectedCategory]);
 
@@ -221,31 +260,129 @@ export default function HomeScreen() {
 
   const fetchAllBooks = async (categoriesToOrganize: any[], existingBooks?: any[]) => {
     try {
-      setLoading(true);
+      if (currentCategoryPage === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
       
-      let booksToProcess;
+      // Get categories for current page
+      const startIdx = (currentCategoryPage - 1) * CATEGORIES_PER_PAGE;
+      const endIdx = startIdx + CATEGORIES_PER_PAGE;
+      const categoriesForThisPage = categoriesToOrganize.slice(startIdx, endIdx);
       
-      if (existingBooks) {
-        // Use existing books if provided
-        booksToProcess = existingBooks;
-      } else {
-        // Fetch all books at once (increase page size to get more books)
-        const booksResponse = await bookService.getBooks({
-          pageNumber: 1,
-          pageSize: 100, // Get more books
-          sortBy: 'averageRating',
-          sortDescending: true,
-        }).catch((err) => {
-          console.error('[All Books] API Error:', err);
-          return { items: [], total: 0, page: 1, pageSize: 100, totalPages: 0 };
-        });
-        booksToProcess = booksResponse.items;
+      // Check if there are more categories to load
+      setHasMoreCategories(endIdx < categoriesToOrganize.length);
+      
+      console.log(`[Debug] Loading categories page ${currentCategoryPage}: ${categoriesForThisPage.map(c => c.name).join(', ')}`);
+      
+      // Fetch books for each category (10 books per category)
+      const categoryBooksMap: Record<string, any[]> = currentCategoryPage === 1 ? {} : { ...booksByCategory };
+      
+      for (const category of categoriesForThisPage) {
+        try {
+          // Fetch books for this category
+          const booksResponse = await bookService.getBooks({
+            pageNumber: 1,
+            pageSize: 10,
+            categoryId: category.id,
+            sortBy: 'averageRating',
+            sortDescending: true,
+          }).catch((err) => {
+            console.error(`[Category ${category.name}] API Error:`, err);
+            return { items: [], total: 0, pageNumber: 1, pageSize: 10, totalPages: 0 };
+          });
+          
+          if (booksResponse.items.length > 0) {
+            // Convert books to display format with cover images
+            const booksWithCovers = await Promise.all(
+              booksResponse.items.map(async (book: Book) => {
+                try {
+                  const coverDto = await bookService.getBookCover(book.id);
+                  const resolvedCover = coverDto?.imageUrl || PLACEHOLDER_IMAGES.DEFAULT_BOOK;
+
+                  return {
+                    ...toDisplayBook(book),
+                    guid: book.id,
+                    cover: resolvedCover,
+                    categoryNames: (book as any).categoryNames || [],
+                  };
+                } catch (imgErr) {
+                  console.error(`Error fetching cover for book ${book.id}:`, imgErr);
+                  return {
+                    ...toDisplayBook(book),
+                    guid: book.id,
+                    cover: PLACEHOLDER_IMAGES.DEFAULT_BOOK,
+                    categoryNames: (book as any).categoryNames || [],
+                  };
+                }
+              })
+            );
+            
+            categoryBooksMap[category.id] = booksWithCovers;
+            console.log(`[Debug] Category "${category.name}" loaded ${booksWithCovers.length} books`);
+          }
+        } catch (err) {
+          console.error(`[Category ${category.name}] Error:`, err);
+        }
       }
       
-      // Convert to display format and add cover images
+      setBooksByCategory(categoryBooksMap);
+      
+      if (Object.keys(categoryBooksMap).length === 0 && currentCategoryPage === 1) {
+        setError('Không có sách nào.');
+      }
+    } catch (err: any) {
+      console.error('[Fetch All Books] Unexpected error:', err);
+      setError('Không thể tải danh sách sách. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const fetchBooksByCategory = async (page: number = 1, reset: boolean = false) => {
+    try {
+      if (reset) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      setError(null);
+      
+      const categoryId = selectedCategory;
+      
+      // Find category name
+      const category = categories.find(c => c.id === categoryId);
+      if (!category) {
+        setError('Không tìm thấy thể loại.');
+        return;
+      }
+      
+      // Fetch books from API by category ID
+      const booksResponse = await bookService.getBooks({
+        pageNumber: page,
+        pageSize: BOOKS_PER_PAGE,
+        categoryId: categoryId || undefined,
+        sortBy: 'averageRating',
+        sortDescending: true,
+      }).catch((err) => {
+        console.error('[Books by Category] API Error:', err);
+        return { items: [], total: 0, pageNumber: page, pageSize: BOOKS_PER_PAGE, totalPages: 0 };
+      });
+      
+      // Check if there are more pages
+      const pageNum = (booksResponse as any).pageNumber || (booksResponse as any).page || page;
+      const totalPages = booksResponse.totalPages || 1;
+      setHasMoreBooks(pageNum < totalPages);
+      
+      console.log(`[Debug] Fetched ${booksResponse.items.length} books for category "${category.name}" (page ${page}/${totalPages})`);
+      
+      // Convert books to display format with cover images
       const booksWithCovers = await Promise.all(
-        booksToProcess.map(async (book: Book) => {
+        booksResponse.items.map(async (book: Book) => {
           try {
             const coverDto = await bookService.getBookCover(book.id);
             const resolvedCover = coverDto?.imageUrl || PLACEHOLDER_IMAGES.DEFAULT_BOOK;
@@ -254,7 +391,7 @@ export default function HomeScreen() {
               ...toDisplayBook(book),
               guid: book.id,
               cover: resolvedCover,
-              categoryNames: (book as any).categoryNames || [], // Keep category names
+              categoryNames: (book as any).categoryNames || [],
             };
           } catch (imgErr) {
             console.error(`Error fetching cover for book ${book.id}:`, imgErr);
@@ -268,80 +405,39 @@ export default function HomeScreen() {
         })
       );
       
-      setAllBooks(booksWithCovers);
-      
-      // Debug: Log all unique category names from books
-      const allCategoryNames = new Set<string>();
-      booksWithCovers.forEach(book => {
-        book.categoryNames?.forEach((name: string) => allCategoryNames.add(name));
-      });
-      console.log('[Debug] All category names from books:', Array.from(allCategoryNames));
-      console.log('[Debug] Category names from API:', categoriesToOrganize.map(c => c.name));
-      
-      // Organize books by category
-      const categoryBooksMap: Record<string, any[]> = {};
-      
-      categoriesToOrganize.forEach((category) => {
-        // Filter books that belong to this category
-        const booksInCategory = booksWithCovers.filter((book) => 
-          book.categoryNames?.includes(category.name)
-        ).slice(0, 10); // Limit to 10 books per category
-        
-        console.log(`[Debug] Category "${category.name}" has ${booksInCategory.length} books`);
-        
-        if (booksInCategory.length > 0) {
-          categoryBooksMap[category.id] = booksInCategory;
-        }
-      });
-      
-      setBooksByCategory(categoryBooksMap);
-      
-      if (booksWithCovers.length === 0) {
-        setError('Không có sách nào.');
-      }
-    } catch (err: any) {
-      console.error('[Fetch All Books] Unexpected error:', err);
-      setError('Không thể tải danh sách sách. Vui lòng thử lại sau.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const fetchBooksByCategory = async (categoryId: string | null = selectedCategory) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Find category name
-      const category = categories.find(c => c.id === categoryId);
-      if (!category) {
-        setError('Không tìm thấy thể loại.');
-        return;
+      if (reset) {
+        setBooksData(booksWithCovers);
+      } else {
+        setBooksData(prev => [...prev, ...booksWithCovers]);
       }
       
-      // Filter books from allBooks by category name
-      const booksInCategory = allBooks.filter((book) => 
-        book.categoryNames?.includes(category.name)
-      );
-      
-      setBooksData(booksInCategory);
-      
-      if (booksInCategory.length === 0) {
+      if (booksWithCovers.length === 0 && page === 1) {
         setError('Không có sách nào trong thể loại này.');
       }
     } catch (err: any) {
       console.error('[Fetch Books by Category] Unexpected error:', err);
       setError('Không thể tải danh sách sách. Vui lòng thử lại sau.');
-      setBooksData([]);
+      if (reset) {
+        setBooksData([]);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    
+    if (selectedCategory === null) {
+      setCurrentCategoryPage(1);
+      setHasMoreCategories(true);
+    } else {
+      setCurrentBookPage(1);
+      setHasMoreBooks(true);
+    }
+    
     if (categories.length === 0) {
       fetchCategoriesAndBooks();
     } else {
@@ -350,41 +446,210 @@ export default function HomeScreen() {
         const realCategories = categories.filter(c => c.id !== null);
         fetchAllBooks(realCategories);
       } else {
-        // Refresh single category (re-filter from existing data)
-        fetchBooksByCategory();
+        // Refresh single category
+        fetchBooksByCategory(1, true);
       }
     }
-  }, [categories, selectedCategory, allBooks]);
+  }, [categories, selectedCategory]);
 
   const handleCategoryPress = (categoryId: string | null) => {
     setSelectedCategory(categoryId);
     
-    // If switching to a specific category and data not loaded yet
-    if (categoryId !== null) {
-      fetchBooksByCategory(categoryId);
+    if (categoryId === null) {
+      // Switch to "All" view
+      setCurrentCategoryPage(1);
+      setHasMoreCategories(true);
+    } else {
+      // Switch to single category
+      setCurrentBookPage(1);
+      setHasMoreBooks(true);
+      setBooksData([]); // Clear old data
+      fetchBooksByCategory(1, true);
     }
+  };
+
+  // Load more books/categories when scrolling
+  const loadMoreBooks = () => {
+    if (loadingMore) return;
+    
+    if (selectedCategory === null) {
+      // Load more categories for "All" view
+      if (!hasMoreCategories) return;
+      const nextPage = currentCategoryPage + 1;
+      setCurrentCategoryPage(nextPage);
+      const realCategories = categories.filter(c => c.id !== null);
+      fetchAllBooks(realCategories);
+    } else {
+      // Load more books for single category
+      if (!hasMoreBooks) return;
+      const nextPage = currentBookPage + 1;
+      setCurrentBookPage(nextPage);
+      fetchBooksByCategory(nextPage, false);
+    }
+  };
+
+  // Handle scroll event to detect when user reaches bottom
+  const handleScroll = (event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20; // Trigger load more when 20px from bottom
+    
+    if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
+      loadMoreBooks();
+    }
+  };
+
+  const handleViewAllCategory = (categoryId: string, categoryName: string) => {
+    console.log('[Navigation] View all category:', { categoryId, categoryName });
+    router.push(`/(stack)/category-books?categoryId=${categoryId}&categoryName=${encodeURIComponent(categoryName)}`);
   };
 
   const handleBookPress = (bookId: string | number) => {
     const idToUse = (bookId as any)?.guid ? (bookId as any).guid : bookId;
+    console.log('[Navigation] Book pressed:', { bookId, idToUse });
     router.push(`/(stack)/book-detail?id=${idToUse}`);
   };
+
+  // Search handler with debounce (2 seconds)
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // If search query is empty, clear results
+    if (text.trim() === '') {
+      setSearchResults({ books: [], authors: [], categories: [] });
+      setIsSearching(false);
+      setIsTyping(false);
+      return;
+    }
+    
+    // User is typing, show "Đang nhập..." message
+    setIsTyping(true);
+    
+    // Set timeout for 2 seconds
+    searchTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false); // User stopped typing
+      performSearch(text);
+    }, 2000); // 2 seconds delay
+  };
+
+  // Perform actual search for books, authors, and categories
+  const performSearch = async (query: string) => {
+    if (!query.trim()) return;
+    
+    try {
+      setIsSearching(true);
+      console.log('[Search] Searching for:', query);
+      
+      const queryLower = query.toLowerCase().trim();
+      
+      // Search books and authors from API in parallel
+      const [books, authors] = await Promise.all([
+        bookService.searchBooks(query, 50).catch(err => {
+          console.error('[Search Books] Error:', err);
+          return [];
+        }),
+        authorService.searchAuthors(query).catch(err => {
+          console.error('[Search Authors] Error:', err);
+          return [];
+        }),
+      ]);
+      
+      // Filter categories from existing categories list (faster than API call)
+      const matchingCategories = categories.filter(cat => 
+        cat.id !== null && // Exclude "All" category
+        cat.name.toLowerCase().includes(queryLower)
+      );
+      
+      // Use books from direct search
+      const allFoundBooks = books;
+      
+      // Convert books to display format with cover images
+      const booksWithCovers = await Promise.all(
+        allFoundBooks.map(async (book: any) => {
+          // If book already has display format from allBooks
+          if (book.cover && book.guid) {
+            return book;
+          }
+          
+          // Convert from API format
+          const displayBook = toDisplayBook(book as Book);
+          try {
+            const images = await bookService.getBookImages(book.id);
+            if (images && images.length > 0) {
+              displayBook.cover = images[0].imageUrl;
+            }
+          } catch (err) {
+            // Use default placeholder
+            displayBook.cover = PLACEHOLDER_IMAGES.DEFAULT_BOOK;
+          }
+          // Add guid for navigation
+          return {
+            ...displayBook,
+            guid: book.id, // Important: Add guid for handleBookPress
+          };
+        })
+      );
+      
+      setSearchResults({
+        books: booksWithCovers,
+        authors: authors,
+        categories: matchingCategories,
+      });
+      
+      console.log('[Search] Found:', {
+        books: booksWithCovers.length,
+        authors: authors.length,
+        categories: matchingCategories.length,
+      });
+    } catch (err: any) {
+      console.error('[Search] Unexpected error:', err);
+      setSearchResults({ books: [], authors: [], categories: [] });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults({ books: [], authors: [], categories: [] });
+    setIsSearching(false);
+    setIsTyping(false);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Get selected category name for title
   const selectedCategoryName = categories.find(c => c.id === selectedCategory)?.name || 'All';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Top banner image inserted above StatusBar/header */}
       {/* <Image
         source={{ uri: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&q=80&auto=format&fit=crop' }}
         style={styles.topBanner}
         resizeMode="cover"
       /> */}
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} translucent backgroundColor="transparent" />
       <ScrollView 
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={400}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -416,22 +681,181 @@ export default function HomeScreen() {
         </View>
 
         {/* Search Bar - Below header, above white content */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="#999" style={styles.searchIcon} />
+        <View style={[styles.searchContainer, { backgroundColor: theme.cardBackground }]}>
+          <Ionicons name="search-outline" size={20} color={theme.textTertiary} style={styles.searchIcon} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: theme.text }]}
             placeholder="Tìm kiếm sách, tác giả..."
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textTertiary}
+            value={searchQuery}
+            onChangeText={handleSearchChange}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={20} color={theme.textTertiary} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="options-outline" size={20} color="#706e6eff" />
+            <Ionicons name="options-outline" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
 
         {/* White Content Area with curved top - All content from Categories down */}
-        <View style={styles.whiteContentArea}>
-          {/* Categories */}
-          <View style={styles.categoriesSection}>
+        <View style={[styles.whiteContentArea, { backgroundColor: theme.background }]}>
+          {/* Show search results if searching or has results */}
+          {(isTyping || isSearching || 
+            searchResults.books.length > 0 || 
+            searchResults.authors.length > 0 || 
+            searchResults.categories.length > 0 || 
+            (searchQuery.trim() && !isSearching && !isTyping)) && (
+            <View style={styles.section}>
+              <SectionHeader 
+                title={isTyping || isSearching ? 'Đang tìm kiếm...' : `Kết quả tìm kiếm`}
+                onViewAll={() => {}}
+              />
+              {isTyping ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: '#999' }}>Đang nhập...</Text>
+                </View>
+              ) : isSearching ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#4ECDC4" />
+                  <Text style={{ color: theme.textTertiary, marginTop: 10 }}>Đang tìm kiếm...</Text>
+                </View>
+              ) : (searchResults.books.length > 0 || searchResults.authors.length > 0 || searchResults.categories.length > 0) ? (
+                <View style={{ paddingBottom: 20 }}>
+                  {/* Books Results */}
+                  {searchResults.books.length > 0 && (
+                    <View style={{ marginBottom: 20 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', paddingHorizontal: 20, marginBottom: 10 }}>
+                        Sách liên quan
+                      </Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.booksScroll}
+                      >
+                        {searchResults.books.map((book) => (
+                          <BookCard 
+                            key={book.id} 
+                            {...book}
+                            onPress={() => handleBookPress(book.guid || book.id)} 
+                          />
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  {/* Authors Results */}
+                  {searchResults.authors.length > 0 && (
+                    <View style={{ marginBottom: 20, paddingHorizontal: 20 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 10 }}>
+                        Tác giả
+                      </Text>
+                      {searchResults.authors.map((author) => (
+                        <TouchableOpacity
+                          key={author.id}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            padding: 12,
+                            backgroundColor: '#fff',
+                            borderRadius: 12,
+                            marginBottom: 8,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 2,
+                            elevation: 2,
+                          }}
+                          onPress={() => {
+                            // Navigate to author books or author detail
+                            console.log('[Navigation] Author pressed:', author.id);
+                            // TODO: Add author detail screen
+                          }}
+                        >
+                          <View style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            backgroundColor: '#4ECDC4',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: 12,
+                          }}>
+                            <Ionicons name="person" size={20} color="#fff" />
+                          </View>
+                          <Text style={{ fontSize: 15, fontWeight: '500', color: '#333', flex: 1 }}>
+                            {author.name}
+                          </Text>
+                          <Ionicons name="chevron-forward" size={20} color="#999" />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Categories Results */}
+                  {searchResults.categories.length > 0 && (
+                    <View style={{ marginBottom: 20, paddingHorizontal: 20 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 10 }}>
+                        Thể loại ({searchResults.categories.length})
+                      </Text>
+                      {searchResults.categories.map((category) => (
+                        <TouchableOpacity
+                          key={category.id}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            padding: 12,
+                            backgroundColor: '#fff',
+                            borderRadius: 12,
+                            marginBottom: 8,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 2,
+                            elevation: 2,
+                          }}
+                          onPress={() => {
+                            // Navigate to category books
+                            handleViewAllCategory(category.id, category.name);
+                            clearSearch(); // Clear search after navigation
+                          }}
+                        >
+                          <View style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            backgroundColor: '#FF6B9D',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: 12,
+                          }}>
+                            <Ionicons name="bookmarks" size={20} color="#fff" />
+                          </View>
+                          <Text style={{ fontSize: 15, fontWeight: '500', color: '#333', flex: 1 }}>
+                            {category.name}
+                          </Text>
+                          <Ionicons name="chevron-forward" size={20} color="#999" />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ) : searchQuery.trim() && !isSearching && !isTyping ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Ionicons name="search-outline" size={64} color={theme.textTertiary} />
+                  <Text style={{ color: theme.textTertiary, marginTop: 10 }}>Không tìm thấy kết quả nào</Text>
+                </View>
+              ) : null}
+            </View>
+          )}
+          
+          {/* Only show categories and books when not searching */}
+          {!searchQuery.trim() && (
+            <>
+              {/* Categories */}
+              <View style={styles.categoriesSection}>
             <ScrollView 
               horizontal 
               showsHorizontalScrollIndicator={false}
@@ -459,14 +883,16 @@ export default function HomeScreen() {
           {selectedCategory === null ? (
             // "All" view - Show multiple sections by category
             <>
-              {loading ? (
-                <Text style={{ padding: 20, textAlign: 'center', color: '#666' }}>
-                  Đang tải sách...
-                </Text>
+              {loading && currentCategoryPage === 1 ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#4ECDC4" />
+                  <Text style={{ color: theme.textSecondary, marginTop: 10 }}>Đang tải sách...</Text>
+                </View>
               ) : error ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>
-                  <Text style={{ color: '#FF4757', marginBottom: 10 }}>{error}</Text>
+                  <Text style={{ color: theme.error, marginBottom: 10 }}>{error}</Text>
                   <TouchableOpacity onPress={() => {
+                    setCurrentCategoryPage(1);
                     const realCategories = categories.filter(c => c.id !== null);
                     fetchAllBooks(realCategories);
                   }}>
@@ -474,7 +900,7 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 </View>
               ) : Object.keys(booksByCategory).length === 0 ? (
-                <Text style={{ padding: 20, textAlign: 'center', color: '#999' }}>
+                <Text style={{ padding: 20, textAlign: 'center', color: theme.textTertiary }}>
                   Không có sách nào
                 </Text>
               ) : (
@@ -483,7 +909,7 @@ export default function HomeScreen() {
                     <View key={category.id} style={styles.section}>
                       <SectionHeader 
                         title={category.name} 
-                        onViewAll={() => handleCategoryPress(category.id)} 
+                        onViewAll={() => handleViewAllCategory(category.id, category.name)} 
                       />
                       <ScrollView 
                         horizontal 
@@ -500,52 +926,86 @@ export default function HomeScreen() {
                       </ScrollView>
                     </View>
                   ))}
+                  
+                  {/* Loading More Indicator for All view */}
+                  {loadingMore && (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                      <ActivityIndicator size="small" color="#4ECDC4" />
+                      <Text style={{ color: theme.textTertiary, marginTop: 8 }}>Đang tải thêm thể loại...</Text>
+                    </View>
+                  )}
+                  
+                  {/* No More Categories */}
+                  {/* {!hasMoreCategories && Object.keys(booksByCategory).length > 0 && (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                      <Text style={{ color: '#999' }}>Đã tải hết các thể loại</Text>
+                    </View>
+                  )} */}
                 </>
               )}
             </>
           ) : (
-            // Single category view
+            // Single category view - Grid layout (vertical)
             <View style={styles.section}>
-              <SectionHeader 
-                title={selectedCategoryName} 
-                onViewAll={() => {}} 
-              />
+              <View style={{ paddingHorizontal: 20, marginBottom: 15 }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.text }}>
+                  {selectedCategoryName}
+                </Text>
+              </View>
               
               {loading ? (
-                <Text style={{ padding: 20, textAlign: 'center', color: '#666' }}>
-                  Đang tải sách...
-                </Text>
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#4ECDC4" />
+                  <Text style={{ color: theme.textSecondary, marginTop: 10 }}>Đang tải sách...</Text>
+                </View>
               ) : error ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>
-                  <Text style={{ color: '#FF4757', marginBottom: 10 }}>{error}</Text>
-                  <TouchableOpacity onPress={() => fetchBooksByCategory()}>
+                  <Text style={{ color: theme.error, marginBottom: 10 }}>{error}</Text>
+                  <TouchableOpacity onPress={() => fetchBooksByCategory(1, true)}>
                     <Text style={{ color: '#4ECDC4', fontWeight: '600' }}>Thử lại</Text>
                   </TouchableOpacity>
                 </View>
               ) : booksData.length === 0 ? (
-                <Text style={{ padding: 20, textAlign: 'center', color: '#999' }}>
+                <Text style={{ padding: 20, textAlign: 'center', color: theme.textTertiary }}>
                   Không có sách nào
                 </Text>
               ) : (
-                <ScrollView 
-                  horizontal 
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.booksScroll}
-                >
-                  {booksData.map((book) => (
-                    <BookCard 
-                      key={book.id} 
-                      {...book} 
-                      onPress={() => handleBookPress(book.guid || book.id)} 
-                    />
-                  ))}
-                </ScrollView>
+                <>
+                  {/* Grid layout for books */}
+                  <View style={styles.booksGrid}>
+                    {booksData.map((book) => (
+                      <View key={book.id} style={styles.bookGridItem}>
+                        <BookCard 
+                          {...book} 
+                          onPress={() => handleBookPress(book.guid || book.id)} 
+                        />
+                      </View>
+                    ))}
+                  </View>
+                  
+                  {/* Loading More Indicator */}
+                  {loadingMore && (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                      <ActivityIndicator size="small" color="#4ECDC4" />
+                      <Text style={{ color: theme.textTertiary, marginTop: 8 }}>Đang tải thêm...</Text>
+                    </View>
+                  )}
+                  
+                  {/* No More Books */}
+                  {!hasMoreBooks && booksData.length > 0 && (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                      <Text style={{ color: theme.textTertiary }}> </Text>
+                    </View>
+                  )}
+                </>
               )}
             </View>
           )}
 
-        {/* Padding bottom để tránh bị che bởi tab bar */}
-        <View style={{ height: 100 }} />
+          {/* Padding bottom để tránh bị che bởi tab bar */}
+          <View style={{ height: 100 }} />
+            </>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -647,6 +1107,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+  clearButton: {
+    padding: 8,
+    marginRight: 5,
+  },
   filterButton: {
     padding: 8,
     borderRadius: 8,
@@ -658,6 +1122,16 @@ const styles = StyleSheet.create({
   booksScroll: {
     paddingHorizontal: 20,
     gap: 20,
+  },
+  booksGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: HORIZONTAL_PADDING,
+    justifyContent: 'space-between',
+  },
+  bookGridItem: {
+    width: CARD_WIDTH,
+    marginBottom: 20,
   },
   categoriesSection: {
     marginBottom: 25,

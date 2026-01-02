@@ -27,6 +27,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCart } from '@/app/providers/CartProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { useTheme } from '@/context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const COVER_WIDTH = 220;
@@ -37,6 +38,7 @@ export default function BookDetail() {
   const params = useLocalSearchParams();
   const scrollViewRef = useRef<ScrollView>(null);
   const { isAuthenticated } = useAuth();
+  const { theme, isDarkMode } = useTheme();
   
   const [isFavorite, setIsFavorite] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -216,9 +218,9 @@ export default function BookDetail() {
   // Show loading state
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-        <Text style={{ fontSize: 16, color: '#666' }}>Đang tải thông tin sách...</Text>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }]}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
+        <Text style={{ fontSize: 16, color: theme.textSecondary }}>Đang tải thông tin sách...</Text>
       </View>
     );
   }
@@ -226,21 +228,21 @@ export default function BookDetail() {
   // Show error or no book
   if (!book || error) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-        <Ionicons name="alert-circle-outline" size={64} color="#FF4757" style={{ marginBottom: 20 }} />
-        <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 10 }}>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: theme.background }]}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
+        <Ionicons name="alert-circle-outline" size={64} color={theme.error} style={{ marginBottom: 20 }} />
+        <Text style={{ fontSize: 18, fontWeight: '600', color: theme.text, marginBottom: 10 }}>
           Không tìm thấy sách
         </Text>
         {error && (
-          <Text style={{ fontSize: 14, color: '#999', textAlign: 'center', marginBottom: 20 }}>
+          <Text style={{ fontSize: 14, color: theme.textSecondary, textAlign: 'center', marginBottom: 20 }}>
             {error}
           </Text>
         )}
         <TouchableOpacity 
           onPress={() => router.back()} 
           style={{ 
-            backgroundColor: '#FF4757', 
+            backgroundColor: theme.error, 
             paddingHorizontal: 24, 
             paddingVertical: 12, 
             borderRadius: 20,
@@ -266,25 +268,25 @@ export default function BookDetail() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Curved Background */}
-        <View style={styles.headerBackground}>
+        <View style={[styles.headerBackground, { backgroundColor: theme.headerBackground }]}>
           {/* Header Buttons */}
           <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-            <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color="#333" />
+            <TouchableOpacity style={[styles.headerButton, { backgroundColor: theme.cardBackground }]} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.headerButton}
+              style={[styles.headerButton, { backgroundColor: theme.cardBackground }]}
               onPress={() => setIsFavorite(!isFavorite)}
             >
               <Ionicons 
                 name={isFavorite ? "heart" : "heart-outline"} 
                 size={24} 
-                color={isFavorite ? "#FF4757" : "#333"} 
+                color={isFavorite ? theme.error : theme.text} 
               />
             </TouchableOpacity>
           </View>
@@ -330,49 +332,49 @@ export default function BookDetail() {
         </View>
 
         {/* Book Info Card */}
-        <View style={styles.infoCard}>
+        <View style={[styles.infoCard, { backgroundColor: theme.cardBackground }]}>
           <View style={styles.titlePriceRow}>
             <View style={styles.titleContainer}>
-              <Text style={styles.title}>{book.title}</Text>
-              <Text style={styles.author}>bởi {book.author}</Text>
+              <Text style={[styles.title, { color: theme.text }]}>{book.title}</Text>
+              <Text style={[styles.author, { color: theme.textSecondary }]}>bởi {book.author}</Text>
             </View>
             {book.price && book.price > 0 ? (
-              <Text style={styles.price}>{book.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
+              <Text style={[styles.price, { color: theme.primary }]}>{book.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</Text>
             ) : (
-              <Text style={[styles.price, { fontSize: 14, color: '#999' }]}>Liên hệ</Text>
+              <Text style={[styles.price, { fontSize: 14, color: theme.textSecondary }]}>Liên hệ</Text>
             )}
           </View>
 
           {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{book.pages}</Text>
-              <Text style={styles.statLabel}>Trang</Text>
+              <Text style={[styles.statNumber, { color: theme.text }]}>{book.pages}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Trang</Text>
             </View>
-            <View style={styles.statDivider} />
+            <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
             <View style={styles.statItem}>
               <View style={styles.ratingRow}>
                 <Ionicons name="star" size={16} color="#FFB800" />
-                <Text style={styles.statNumber}>{book.rating}</Text>
+                <Text style={[styles.statNumber, { color: theme.text }]}>{book.rating}</Text>
               </View>
-              <Text style={styles.statLabel}>Sao</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Sao</Text>
             </View>
-            <View style={styles.statDivider} />
+            <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{book.language}</Text>
-              <Text style={styles.statLabel}>Ngôn ngữ</Text>
+              <Text style={[styles.statNumber, { color: theme.text }]}>{book.language}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Ngôn ngữ</Text>
             </View>
           </View>
 
           {/* Description */}
           <View style={styles.descriptionSection}>
-            <Text style={styles.descriptionTitle}>Mô tả</Text>
-            <Text style={styles.description} numberOfLines={showFullDescription ? undefined : 3}>
+            <Text style={[styles.descriptionTitle, { color: theme.text }]}>Mô tả</Text>
+            <Text style={[styles.description, { color: theme.textSecondary }]} numberOfLines={showFullDescription ? undefined : 3}>
               {book.description}
             </Text>
             {!showFullDescription && (
               <TouchableOpacity onPress={() => setShowFullDescription(true)}>
-                <Text style={styles.readMore}>Xem thêm...</Text>
+                <Text style={[styles.readMore, { color: theme.primary }]}>Xem thêm...</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -382,9 +384,9 @@ export default function BookDetail() {
       </ScrollView>
 
       {/* Bottom Button */}
-      <View style={[styles.bottomButton, { paddingBottom: insets.bottom + 16 }]}>
+      <View style={[styles.bottomButton, { paddingBottom: insets.bottom + 16, backgroundColor: theme.background }]}>
         <TouchableOpacity
-          style={styles.addToCartButton}
+          style={[styles.addToCartButton, { backgroundColor: theme.cardBackground }]}
           onPress={async () => {
             try {
               // Add to server cart instead of local cart
@@ -404,12 +406,12 @@ export default function BookDetail() {
             }
           }}
         >
-          <Ionicons name="bag-outline" size={24} color="#FF4757" />
+          <Ionicons name="bag-outline" size={24} color={theme.error} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.rentButton} onPress={() => setRentModalVisible(true)}>
-          <Text style={styles.rentButtonText}>Thuê</Text>
+        <TouchableOpacity style={[styles.rentButton, { borderColor: theme.primary, backgroundColor: theme.cardBackground }]} onPress={() => setRentModalVisible(true)}>
+          <Text style={[styles.rentButtonText, { color: theme.primary }]}>Thuê </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.buyButton} onPress={handleBuyNow}>
+        <TouchableOpacity style={[styles.buyButton, { backgroundColor: theme.primary }]} onPress={handleBuyNow}>
           <Text style={styles.buyButtonText}>Mua Ngay</Text>
         </TouchableOpacity>
       </View>
@@ -672,7 +674,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#2e3134ff',
     borderRadius: 16,
     paddingVertical: 16,
     marginBottom: 20,
@@ -722,7 +724,7 @@ const styles = StyleSheet.create({
   },
   bottomButton: {
     position: 'absolute',
-    bottom: 0,
+    bottom: -10,
     left: 0,
     right: 0,
     backgroundColor: '#fff',

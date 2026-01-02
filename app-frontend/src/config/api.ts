@@ -12,12 +12,12 @@
 // Thay IP này bằng IP máy tính của bạn (chạy `ipconfig` để xem)
 // Máy tính và điện thoại phải cùng WiFi
 
-// export const API_BASE_URL = "http://192.168.1.252:5276"; // API backend (IP máy tính của bạn)
-// export const MINIO_BASE_URL = "http://192.168.1.252:9000"; // MinIO storage
+export const API_BASE_URL = "http://192.168.1.243:5276"; // API backend (IP máy tính của bạn)
+export const MINIO_BASE_URL = "http://192.168.1.243:9000"; // MinIO storage
 
 //====== NGROK (nếu cần) ======
-export const API_BASE_URL = "https://tautologously-hyperconscious-carolyne.ngrok-free.dev"; 
-export const MINIO_BASE_URL = "https://tautologously-hyperconscious-carolyne.ngrok-free.dev/storage";
+// export const API_BASE_URL = "https://tautologously-hyperconscious-carolyne.ngrok-free.dev"; 
+// export const MINIO_BASE_URL = "https://tautologously-hyperconscious-carolyne.ngrok-free.dev/storage";
 
 // ====== NGROK / TUNNEL (Dùng khi không cùng mạng) ======
 // Cách dùng: npm install -g @expo/ngrok
@@ -49,6 +49,14 @@ export const API_ENDPOINTS = {
   CATEGORIES: {
     LIST: '/api/Category',
     GET_BY_ID: (id: string) => `/api/Category/${id}`,
+    SEARCH: '/api/Category/search',
+  },
+  
+  // Authors
+  AUTHORS: {
+    LIST: '/api/Author',
+    GET_BY_ID: (id: string) => `/api/Author/${id}`,
+    SEARCH: '/api/Author/search',
   },
   
   // Book Images
@@ -62,5 +70,63 @@ export const API_ENDPOINTS = {
     LOGIN: '/api/Auth/login',
     REGISTER: '/api/Auth/register',
     REFRESH: '/api/Auth/refresh-token',
+  },
+  
+  // Cart
+  CART: {
+    GET: '/api/Cart',
+    ADD: '/api/Cart/add',
+    UPDATE_QUANTITY: '/api/Cart/update-quantity',
+    REMOVE: '/api/Cart/remove',
+    CLEAR: '/api/Cart/clear',
+    COUNT: '/api/Cart/count',
+    TOTAL: '/api/Cart/total',
+  },
+  
+  // User Profile
+  USER_PROFILE: {
+    GET: '/api/UserProfile/profile',
+    UPDATE: '/api/UserProfile/profile',
+    UPLOAD_AVATAR: '/api/UserProfile/profile/avatar',
+    DELETE_AVATAR: '/api/UserProfile/profile/avatar',
+    ADDRESSES: '/api/UserProfile/addresses',
+    ADDRESS_BY_ID: (id: string) => `/api/UserProfile/addresses/${id}`,
+    DEFAULT_ADDRESS: '/api/UserProfile/addresses/default',
+    SET_DEFAULT_ADDRESS: (id: string) => `/api/UserProfile/addresses/${id}/set-default`,
+  },
+  
+  // Orders
+  ORDERS: {
+    MY_ORDERS: '/api/orders/my-orders',
+    GET_BY_ID: (id: string) => `/api/orders/${id}`,
+    GET_BY_ORDER_NUMBER: (orderNumber: string) => `/api/orders/order-number/${orderNumber}`,
+    STATUS_HISTORY: (id: string) => `/api/orders/${id}/status-history`,
+    CANCEL: (id: string) => `/api/orders/${id}/cancel`,
+    CREATE_RENTAL: '/api/orders/rental',
+  },
+  
+  // Checkout
+  CHECKOUT: {
+    PROCESS: '/api/Checkout/process',
+    PAYMENT_CALLBACK: '/api/Checkout/payment-callback',
+    PAYMENT_STATUS: (orderId: string) => `/api/Checkout/payment-status/${orderId}`,
+    PREVIEW: '/api/Checkout/preview',
+  },
+  
+  // Prices
+  PRICES: {
+    BY_BOOK_ID: (bookId: string) => `/api/Prices/book/${bookId}`,
+  },
+  
+  // Stock
+  STOCK: {
+    BY_BOOK_ID: (bookId: string) => `/api/StockItems/book/${bookId}`,
+    CHECK_AVAILABILITY: '/api/StockItems/check-availability',
+  },
+  
+  // Email Verification
+  EMAIL_VERIFICATION: {
+    VERIFY: '/api/EmailVerification/verify',
+    RESEND: '/api/EmailVerification/resend',
   },
 };

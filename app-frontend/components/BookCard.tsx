@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '@/context/ThemeContext';
 
 interface BookCardProps {
   id: number;
@@ -11,8 +12,10 @@ interface BookCardProps {
 }
 
 export function BookCard({ title, author, cover, color = '#9B8FC5', onPress }: BookCardProps) {
+  const { theme } = useTheme();
+  
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
+    <TouchableOpacity style={[styles.card, { backgroundColor: theme.bookCardBackground }]} onPress={onPress}>
       <View style={[styles.cover, { backgroundColor: color }]}>
         <Image 
           source={{ uri: cover }} 
@@ -20,10 +23,10 @@ export function BookCard({ title, author, cover, color = '#9B8FC5', onPress }: B
           resizeMode="cover"
         />
       </View>
-      <Text style={styles.title} numberOfLines={2}>
+      <Text style={[styles.title, { color: theme.text }]} numberOfLines={2}>
         {title}
       </Text>
-      <Text style={styles.author} numberOfLines={1}>
+      <Text style={[styles.author, { color: theme.textSecondary }]} numberOfLines={1}>
         {author}
       </Text>
     </TouchableOpacity>

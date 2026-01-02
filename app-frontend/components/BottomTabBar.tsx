@@ -4,8 +4,8 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  // Filter out routes we want to hide from the tab bar (e.g. "explore")
-  const visibleRoutes = state.routes.filter((r) => r.name !== 'explore');
+  // Filter out routes we want to hide from the tab bar (e.g. "explore", "search")
+  const visibleRoutes = state.routes.filter((r) => r.name !== 'explore' && r.name !== 'search');
 
   // Animation values for each visible tab
   const animatedValues = useRef(
@@ -91,9 +91,15 @@ export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           // Prepare dynamic ranges for only visible tabs
         }
         {(() => {
-          const colors = ['#4A90E2', '#E24A4A', '#E24AA5', '#7FB85E', '#A54AE2'].slice(0, visibleRoutes.length);
+          const colors = ['#4A90E2', '#E24A4A', '#E24AA5', '#7FB85E'].slice(0, visibleRoutes.length);
           const inputRange = visibleRoutes.map((_, i) => i);
-          const leftOutput = visibleRoutes.map((_, i) => `${7 + i * 20}%`);
+          // Tính toán vị trí chính xác cho 4 tabs
+          // Chia đều không gian: 100% / 4 tabs = 25% mỗi tab, centered
+          const leftOutput = visibleRoutes.map((_, i) => {
+            const tabWidth = 100 / visibleRoutes.length; // 25% cho 4 tabs
+            const centerOffset = tabWidth / 2 - 2.5; // Điều chỉnh để căn giữa glow
+            return `${i * tabWidth + centerOffset}%`;
+          });
 
           return (
             <Animated.View
@@ -161,20 +167,16 @@ export function BottomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             tabColor = '#4A90E2';
           }
           if (index === 1) {
-            iconName = isFocused ? 'search' : 'search-outline';
+            iconName = isFocused ? 'cart' : 'cart-outline';
             tabColor = '#E24A4A';
           }
           if (index === 2) {
-            iconName = isFocused ? 'cart' : 'cart-outline';
+            iconName = isFocused ? 'notifications' : 'notifications-outline';
             tabColor = '#E24AA5';
           }
           if (index === 3) {
-            iconName = isFocused ? 'notifications' : 'notifications-outline';
-            tabColor = '#7FB85E';
-          }
-          if (index === 4) {
             iconName = isFocused ? 'person' : 'person-outline';
-            tabColor = '#A54AE2';
+            tabColor = '#7FB85E';
           }
 
           // Hiệu ứng nổi lên khi được chọn

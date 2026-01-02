@@ -3,11 +3,14 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Pressable, Keyboar
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { authService } from '@/src/services/authService';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { theme, isDarkMode } = useTheme();
   
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -82,18 +85,19 @@ export default function ChangePasswordScreen() {
 
   return (
     <Pressable style={{ flex: 1 }} onPress={() => Keyboard.dismiss()}>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: theme.background }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Đổi mật khẩu</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Đổi mật khẩu</Text>
           <View style={styles.placeholder} />
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.description}>
+          <Text style={[styles.description, { color: theme.textSecondary }]}>
             Nhập mật khẩu hiện tại và mật khẩu mới để thay đổi
           </Text>
 
@@ -101,12 +105,12 @@ export default function ChangePasswordScreen() {
 
           {/* Old Password */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mật khẩu hiện tại</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Mật khẩu hiện tại</Text>
             <View style={styles.passwordInput}>
               <TextInput 
-                style={styles.input} 
+                style={[styles.input, { backgroundColor: theme.inputBackground, borderColor: theme.border, color: theme.text }]} 
                 placeholder="Nhập mật khẩu hiện tại" 
-                placeholderTextColor="#bbb" 
+                placeholderTextColor={theme.textTertiary} 
                 secureTextEntry={!showOldPassword}
                 value={oldPassword}
                 onChangeText={(text) => {
@@ -123,7 +127,7 @@ export default function ChangePasswordScreen() {
                 <Ionicons 
                   name={showOldPassword ? "eye-off-outline" : "eye-outline"} 
                   size={22} 
-                  color="#999" 
+                  color={theme.textSecondary} 
                 />
               </TouchableOpacity>
             </View>
@@ -131,12 +135,12 @@ export default function ChangePasswordScreen() {
 
           {/* New Password */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mật khẩu mới</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Mật khẩu mới</Text>
             <View style={styles.passwordInput}>
               <TextInput 
-                style={styles.input} 
+                style={[styles.input, { backgroundColor: theme.inputBackground, borderColor: theme.border, color: theme.text }]} 
                 placeholder="Nhập mật khẩu mới" 
-                placeholderTextColor="#bbb" 
+                placeholderTextColor={theme.textTertiary} 
                 secureTextEntry={!showNewPassword}
                 value={newPassword}
                 onChangeText={(text) => {
@@ -153,21 +157,21 @@ export default function ChangePasswordScreen() {
                 <Ionicons 
                   name={showNewPassword ? "eye-off-outline" : "eye-outline"} 
                   size={22} 
-                  color="#999" 
+                  color={theme.textSecondary} 
                 />
               </TouchableOpacity>
             </View>
-            <Text style={styles.hint}>Ít nhất 6 ký tự</Text>
+            <Text style={[styles.hint, { color: theme.textTertiary }]}>Ít nhất 6 ký tự</Text>
           </View>
 
           {/* Confirm Password */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Xác nhận mật khẩu mới</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Xác nhận mật khẩu mới</Text>
             <View style={styles.passwordInput}>
               <TextInput 
-                style={styles.input} 
+                style={[styles.input, { backgroundColor: theme.inputBackground, borderColor: theme.border, color: theme.text }]} 
                 placeholder="Nhập lại mật khẩu mới" 
-                placeholderTextColor="#bbb" 
+                placeholderTextColor={theme.textTertiary} 
                 secureTextEntry={!showConfirmPassword}
                 value={confirmPassword}
                 onChangeText={(text) => {
@@ -185,7 +189,7 @@ export default function ChangePasswordScreen() {
                 <Ionicons 
                   name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
                   size={22} 
-                  color="#999" 
+                  color={theme.textSecondary} 
                 />
               </TouchableOpacity>
             </View>
@@ -193,7 +197,7 @@ export default function ChangePasswordScreen() {
 
           {/* Submit Button */}
           <TouchableOpacity 
-            style={[styles.button, isLoading && styles.buttonDisabled]} 
+            style={[styles.button, { backgroundColor: theme.primary }, isLoading && styles.buttonDisabled]} 
             onPress={handleChangePassword}
             disabled={isLoading}
           >
@@ -208,11 +212,11 @@ export default function ChangePasswordScreen() {
           </TouchableOpacity>
 
           {/* Security Tips */}
-          <View style={styles.tipsContainer}>
-            <Text style={styles.tipsTitle}>💡 Gợi ý bảo mật:</Text>
-            <Text style={styles.tipItem}>• Sử dụng mật khẩu mạnh với chữ, số và ký tự đặc biệt</Text>
-            <Text style={styles.tipItem}>• Không sử dụng mật khẩu giống với các tài khoản khác</Text>
-            <Text style={styles.tipItem}>• Thay đổi mật khẩu định kỳ để bảo vệ tài khoản</Text>
+          <View style={[styles.tipsContainer, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
+            <Text style={[styles.tipsTitle, { color: theme.text }]}>💡 Gợi ý bảo mật:</Text>
+            <Text style={[styles.tipItem, { color: theme.textSecondary }]}>• Sử dụng mật khẩu mạnh với chữ, số và ký tự đặc biệt</Text>
+            <Text style={[styles.tipItem, { color: theme.textSecondary }]}>• Không sử dụng mật khẩu giống với các tài khoản khác</Text>
+            <Text style={[styles.tipItem, { color: theme.textSecondary }]}>• Thay đổi mật khẩu định kỳ để bảo vệ tài khoản</Text>
           </View>
         </View>
       </ScrollView>
@@ -223,7 +227,6 @@ export default function ChangePasswordScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#f0ede4' 
   },
   header: {
     flexDirection: 'row',
@@ -231,7 +234,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#f0ede4',
   },
   backBtn: {
     padding: 8,
@@ -239,7 +241,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 25,
     fontWeight: '700',
-    color: '#333',
   },
   placeholder: {
     width: 40,
@@ -250,7 +251,6 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -260,7 +260,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   passwordInput: {
@@ -269,13 +268,11 @@ const styles = StyleSheet.create({
   input: { 
     width: '100%', 
     height: 50, 
-    backgroundColor: '#fff', 
     borderRadius: 12, 
     paddingHorizontal: 16,
     paddingRight: 50,
     fontSize: 15,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   eyeIcon: {
     position: 'absolute',
@@ -285,14 +282,12 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontSize: 12,
-    color: '#999',
     marginTop: 6,
   },
   button: { 
     marginTop: 12, 
     width: '100%', 
     height: 52, 
-    backgroundColor: '#d2b48c', 
     borderRadius: 12, 
     alignItems: 'center', 
     justifyContent: 'center',
@@ -322,21 +317,17 @@ const styles = StyleSheet.create({
   },
   tipsContainer: {
     marginTop: 32,
-    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   tipsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 12,
   },
   tipItem: {
     fontSize: 13,
-    color: '#666',
     marginBottom: 8,
     lineHeight: 20,
   },
