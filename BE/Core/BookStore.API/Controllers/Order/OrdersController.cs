@@ -240,6 +240,26 @@ namespace BookStore.API.Controllers.Order
             return Ok(order);
         }
 
+        // New endpoint for users to confirm their own payment (for testing/development)
+        [HttpPut("my-order/{orderNumber}/confirm-payment")]
+        public async Task<IActionResult> ConfirmMyPayment(string orderNumber)
+        {
+            var userId = GetCurrentUserId();
+            
+            // Get order by order number
+            var order = await _orderService.GetOrderByOrderNumberAsync(orderNumber);
+            if (order == null)
+                return NotFound(new { Message = "Không tìm thấy đơn hàng" });
+
+            // Check if user owns this order
+            if (order.UserId != userId)
+                return Forbid();
+
+            // Confirm payment
+            var confirmedOrder = await _orderService.ConfirmOrderPaymentAsync(order.Id);
+            return Ok(confirmedOrder);
+        }
+
         [HttpPut("{id:guid}/ship")]
         [Authorize(Roles = "Admin,Shipper")]
         public async Task<IActionResult> ShipOrder(Guid id, [FromBody] ShipOrderDto? dto = null)

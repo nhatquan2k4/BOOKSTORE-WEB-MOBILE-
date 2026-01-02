@@ -44,9 +44,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                     } lg:translate-x-0`}
             >
                 {/* Logo */}
-                <div className="h-16 flex items-center justify-center border-b border-gray-800">
-                    <BookOpen className="mr-2" size={28} />
-                    <h1 className="text-xl font-bold">BookStore Admin</h1>
+                <div className="h-16 flex items-center justify-center gap-3 border-b border-gray-800 px-4">
+                    <img 
+                        src="/logo.png" 
+                        alt="BỜ ÚC BÚC Logo" 
+                        className="w-10 h-10 object-contain"
+                    />
+                    <h1 className="text-xl font-bold">BỜ ÚC BÚC</h1>
                 </div>
 
                 {/* Menu Items */}

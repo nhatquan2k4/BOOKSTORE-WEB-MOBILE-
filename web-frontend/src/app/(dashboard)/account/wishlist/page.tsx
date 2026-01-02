@@ -338,7 +338,7 @@ export default function WishlistPage() {
                         
                         <Button 
                             className="w-full" 
-                            size="lg" 
+                            size="sm" 
                             onClick={addAllToCart} 
                             // Fix Logic: Disabled nếu đang load HOẶC không có sách HOẶC tất cả sách đều hết hàng
                             disabled={loadingAll || wishlistBooks.length === 0 || !hasAnyStock}

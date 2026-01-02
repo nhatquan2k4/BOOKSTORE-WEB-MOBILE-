@@ -9,6 +9,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 type Book = {
   id: string;
@@ -65,7 +66,7 @@ export default function DesignBooksPage() {
               subcategory: "all",
               price: priceInfo.finalPrice,
               originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
-              cover: book.coverImage || "/image/anh.png",
+              cover: normalizeImageUrl(book.coverImage) || "/image/anh.png",
               rating: book.averageRating || 0,
               reviewCount: book.totalReviews || 0,
               stock: book.stockQuantity || 0,

@@ -9,18 +9,12 @@ import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { bookService, categoryService } from "@/services";
 import type { BookDto, CategoryDto } from "@/types/dtos";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 // ============================================================================
 // CONFIG & HELPERS
 // ============================================================================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276';
 
-// Helper: Xử lý ảnh (tránh lỗi 404 localhost)
-const getFullImageUrl = (url?: string | null) => {
-  if (!url) return '/image/anh.png';
-  if (url.startsWith('http')) return url;
-  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
-};
 
 // Helper: Format tiền tệ
 const formatPrice = (price: number) => {
@@ -45,7 +39,7 @@ type BookDisplay = {
   author: string;
   price: number;
   originalPrice?: number;
-  cover: string;
+  cover: string | null;
   rating: number;
   reviewCount: number;
   isBestseller: boolean;
@@ -126,7 +120,7 @@ export default function CategoryDetailPage() {
               id: book.id,
               title: book.title,
               author: book.authorNames?.[0] || "Tác giả không xác định",
-              cover: getFullImageUrl(book.coverImage),
+              cover: normalizeImageUrl(book.coverImage),
               rating: book.averageRating || 0,
               reviewCount: book.totalReviews || 0,
               price: finalPrice, // Sử dụng giá đã check kỹ
@@ -275,14 +269,22 @@ export default function CategoryDetailPage() {
               >
                 {/* Book Cover */}
                 <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3 shadow-inner">
-                  <Image
-                    src={book.cover}
-                    alt={book.title}
-                    fill
-                    sizes="(max-width: 768px) 50vw, 25vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/image/anh.png'; }}
-                  />
+                  {book.cover ? (
+                    <Image
+                      src={book.cover}
+                      alt={book.title}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
 
                   {/* Badges Container */}
                   <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">

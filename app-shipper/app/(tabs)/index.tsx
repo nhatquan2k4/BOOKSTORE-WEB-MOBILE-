@@ -189,7 +189,7 @@ export default function HomeScreen() {
         <View style={styles.orderDetails}>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Sản phẩm:</Text>
-            <Text style={styles.detailValue}>{item.items.length} món</Text>
+            <Text style={styles.detailValue}>{item.items.length} Quyển</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Tổng tiền:</Text>

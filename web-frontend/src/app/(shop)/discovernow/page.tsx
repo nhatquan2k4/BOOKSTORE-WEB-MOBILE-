@@ -8,12 +8,23 @@ import { Button } from "@/components/ui/Button";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
+import { normalizeImageUrl } from '@/lib/imageUtils';
+
+// --- COMPONENT: Khung xám thay thế khi không có ảnh ---
+const NoImagePlaceholder = ({ dark = false }: { dark?: boolean }) => (
+  <div className={`w-full h-full flex flex-col items-center justify-center ${dark ? 'bg-slate-800 text-slate-500' : 'bg-gray-100 text-gray-400'}`}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+    </svg>
+    <span className="text-[10px] mt-1 font-medium">No Cover</span>
+  </div>
+);
 
 interface HeroBook {
   id: string;
   title: string;
   desc: string;
-  image: string;
+  image: string | null;
 }
 
 interface TrendingBook {
@@ -23,7 +34,7 @@ interface TrendingBook {
   price: number;
   originalPrice?: number;
   rating: number;
-  image: string;
+  image: string | null;
   hot: boolean;
 }
 
@@ -33,7 +44,7 @@ interface NewArrival {
   author: string;
   price: number;
   rating: number;
-  image: string;
+  image: string | null;
 }
 
 export default function DiscoverNowPage() {
@@ -60,7 +71,7 @@ export default function DiscoverNowPage() {
             id: book.id,
             title: book.title,
             desc: `${book.authorNames?.[0] || "Tác giả không xác định"} - ${book.categoryNames?.[0] || "Sách hay"}`,
-            image: book.coverImage || "/image/anh.png",
+            image: normalizeImageUrl(book.coverImage),
           }));
           setHeroBooks(transformed);
         }
@@ -89,7 +100,7 @@ export default function DiscoverNowPage() {
               price: priceInfo.finalPrice,
               originalPrice: priceInfo.hasDiscount ? priceInfo.originalPrice : undefined,
               rating: book.averageRating || 0,
-              image: book.coverImage || "/image/anh.png",
+              image: normalizeImageUrl(book.coverImage),
               hot: priceInfo.hasDiscount,
             };
           });
@@ -119,7 +130,7 @@ export default function DiscoverNowPage() {
               author: book.authorNames?.[0] || "Tác giả không xác định",
               price: priceInfo.finalPrice,
               rating: book.averageRating || 0,
-              image: book.coverImage || "/image/anh.png",
+              image: normalizeImageUrl(book.coverImage),
             };
           });
           setNewArrivals(transformed);
@@ -196,125 +207,141 @@ export default function DiscoverNowPage() {
                   {heroBooks[activeHero]?.desc}
                 </p>
 
-            <div className="flex gap-3 items-center">
-              <Link
-                href={`/discovernow/${heroBooks[activeHero]?.id || 1}`}
-                className="inline-flex items-center justify-center gap-2 font-semibold rounded-full transition-all bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-5 py-2.5"
-              >
-                Khám phá ngay
-              </Link>
-              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
-                  />
-                </svg>
-                Thêm vào yêu thích
-              </Button>
-            </div>
-          </div>
-
-          {/* right */}
-          <div className="md:w-1/2 relative h-[400px] md:h-[420px] w-full">
-            {heroBooks.map((book, index) => {
-              const offset = index - activeHero;
-              const isActive = index === activeHero;
-              return (
-                <div
-                  key={book.id}
-                  className="absolute top-4 right-0 w-[260px] h-[360px] md:w-[280px] md:h-[380px] rounded-3xl overflow-hidden bg-slate-700/30 border border-white/10 shadow-2xl backdrop-blur"
-                  style={{
-                    transform: `translateX(${offset * -110}px) translateY(${
-                      Math.abs(offset) * 14
-                    }px) scale(${1 - Math.abs(offset) * 0.04})`,
-                    opacity: Math.abs(offset) > 2 ? 0 : 1,
-                    zIndex: 40 - Math.abs(offset),
-                    transition: "all 0.35s ease",
-                  }}
-                >
-                  <div className="relative w-full h-full">
-                    <Image src={book.image} alt={book.title} fill className="object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/0 to-transparent" />
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <p className="text-xs text-white/60 mb-1">Sách ngoại văn</p>
-                      <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-2">
-                        {book.title}
-                      </h3>
-                      <p className="text-[10px] text-white/50 line-clamp-2">{book.desc}</p>
-                    </div>
-                  </div>
-                  {isActive && (
-                    <div className="absolute top-3 left-3 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold text-slate-950">
-                      Đang nổi bật
-                    </div>
-                  )}
+                <div className="flex gap-3 items-center">
+                  <Link
+                    href={`/discovernow/${heroBooks[activeHero]?.id || 1}`}
+                    className="inline-flex items-center justify-center gap-2 font-semibold rounded-full transition-all bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-5 py-2.5"
+                  >
+                    Khám phá ngay
+                  </Link>
+                  <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                      />
+                    </svg>
+                    Thêm vào yêu thích
+                  </Button>
                 </div>
-              );
-            })}
+              </div>
 
-            {/* arrows */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-3">
-              <button
-                onClick={handlePrevHero}
-                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
-                aria-label="Previous"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m15 18-6-6 6-6" />
-                </svg>
-              </button>
-              <button
-                onClick={handleNextHero}
-                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
-                aria-label="Next"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
-              </button>
-            </div>
+              {/* right */}
+              <div className="md:w-1/2 relative h-[400px] md:h-[420px] w-full">
+                {heroBooks.map((book, index) => {
+                  const offset = index - activeHero;
+                  const isActive = index === activeHero;
+                  
+                  // Lấy URL ảnh an toàn
+                  const imageUrl = normalizeImageUrl(book.image);
 
-            {/* dots */}
-            <div className="absolute bottom-2 right-0 flex gap-2">
-              {heroBooks.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveHero(idx)}
-                  className={`h-1.5 rounded-full transition-all ${
-                    idx === activeHero ? "w-6 bg-white" : "w-2 bg-white/40"
-                  }`}
-                  aria-label={`Chuyển tới slide ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </div>
+                  return (
+                    <div
+                      key={book.id}
+                      className="absolute top-4 right-0 w-[260px] h-[360px] md:w-[280px] md:h-[380px] rounded-3xl overflow-hidden bg-slate-700/30 border border-white/10 shadow-2xl backdrop-blur"
+                      style={{
+                        transform: `translateX(${offset * -110}px) translateY(${
+                          Math.abs(offset) * 14
+                        }px) scale(${1 - Math.abs(offset) * 0.04})`,
+                        opacity: Math.abs(offset) > 2 ? 0 : 1,
+                        zIndex: 40 - Math.abs(offset),
+                        transition: "all 0.35s ease",
+                      }}
+                    >
+                      <div className="relative w-full h-full">
+                        {/* FIX: Render ảnh có điều kiện */}
+                        {imageUrl ? (
+                            <Image 
+                                src={imageUrl} 
+                                alt={book.title} 
+                                fill 
+                                className="object-cover" 
+                                unoptimized // Quan trọng
+                            />
+                        ) : (
+                            <NoImagePlaceholder dark={true} />
+                        )}
+                        
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/0 to-transparent" />
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <p className="text-xs text-white/60 mb-1">Sách ngoại văn</p>
+                          <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-2">
+                            {book.title}
+                          </h3>
+                          <p className="text-[10px] text-white/50 line-clamp-2">{book.desc}</p>
+                        </div>
+                      </div>
+                      {isActive && (
+                        <div className="absolute top-3 left-3 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold text-slate-950">
+                          Đang nổi bật
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* arrows */}
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+                  <button
+                    onClick={handlePrevHero}
+                    className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
+                    aria-label="Previous"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m15 18-6-6 6-6" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={handleNextHero}
+                    className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center border border-white/10"
+                    aria-label="Next"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* dots */}
+                <div className="absolute bottom-2 right-0 flex gap-2">
+                  {heroBooks.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveHero(idx)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === activeHero ? "w-6 bg-white" : "w-2 bg-white/40"
+                      }`}
+                      aria-label={`Chuyển tới slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
             </>
           ) : null}
         </div>
@@ -359,6 +386,9 @@ export default function DiscoverNowPage() {
                   book.originalPrice && book.originalPrice > book.price
                     ? Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)
                     : null;
+                
+                // Lấy URL ảnh an toàn
+                const imageUrl = normalizeImageUrl(book.image);
 
                 return (
                 <Link
@@ -367,13 +397,20 @@ export default function DiscoverNowPage() {
                   className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
                 >
                   <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
-                    <Image
-                      src={book.image}
-                      alt={book.title}
-                      fill
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    {/* FIX: Render ảnh có điều kiện */}
+                    {imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        alt={book.title}
+                        fill
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        unoptimized // Quan trọng
+                      />
+                    ) : (
+                      <NoImagePlaceholder />
+                    )}
+
                     {book.hot && (
                       <Badge className="absolute top-2 right-2 text-xs bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold shadow-lg animate-pulse">
                         <svg
@@ -460,20 +497,31 @@ export default function DiscoverNowPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {newArrivals.map((book) => (
+              {newArrivals.map((book) => {
+                // Lấy URL ảnh an toàn
+                const imageUrl = normalizeImageUrl(book.image);
+
+                return (
                 <Link
                   key={book.id}
                   href={`/books/${book.id}`}
                   className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg group"
                 >
                 <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
-                  <Image
-                    src={book.image}
-                    alt={book.title}
-                    fill
-                    sizes="(max-width: 768px) 50vw, 25vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
+                  {/* FIX: Render ảnh có điều kiện */}
+                  {imageUrl ? (
+                    <Image
+                      src={imageUrl}
+                      alt={book.title}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      unoptimized // Quan trọng
+                    />
+                  ) : (
+                    <NoImagePlaceholder />
+                  )}
+                  
                   <Badge className="absolute top-2 right-2 text-xs bg-green-500 text-white font-semibold shadow-lg">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -504,7 +552,8 @@ export default function DiscoverNowPage() {
                   </Badge>
                 </div>
                 </Link>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>

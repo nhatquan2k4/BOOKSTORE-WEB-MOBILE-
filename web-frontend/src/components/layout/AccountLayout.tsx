@@ -203,7 +203,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                       </svg>
                       <span>Sách giấy</span>
                     </button>
-                    <button
+                    {/* <button
                       onClick={() => go("/account/orders/digital")}
                       className={`w-full flex items-center gap-2 px-2 py-2 text-sm rounded-md ${
                         isActive("/account/orders/digital")
@@ -225,7 +225,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                         />
                       </svg>
                       <span>e-Book</span>
-                    </button>
+                    </button> */}
                   </div>
                 )}
 

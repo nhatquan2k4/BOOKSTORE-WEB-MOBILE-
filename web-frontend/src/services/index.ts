@@ -47,6 +47,9 @@ export * from './roles.service';
 export * from './users.service';
 export * from './user-profile.service';
 
+// Chatbot services
+export * from './chatbot.service';
+
 // Shipping services
 export * from './shipments.service';
 export * from './shippers.service';

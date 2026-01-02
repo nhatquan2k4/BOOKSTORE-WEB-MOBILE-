@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "app-frontend",
-    "slug": "app-frontend",
+    "name": "SHIPPER",
+    "slug": "shipper",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "appfrontend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -17,7 +17,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
@@ -25,9 +25,10 @@
       "predictiveBackGestureEnabled": false,
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyDxYourGoogleMapsAPIKeyHere"
+          "apiKey": ""
         }
-      }
+      },
+      "package": "com.anonymous.appfrontend"
     },
     "web": {
       "output": "static",
@@ -51,6 +52,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "googleMapsApiKey": "",
+      "router": {},
+      "eas": {
+        "projectId": "a0760975-c6a7-4be7-a0b9-34d833de0b46"
+      }
     }
   }
 }

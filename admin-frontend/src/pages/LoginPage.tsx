@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { BookOpen, Lock, Mail } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -40,12 +41,10 @@ const LoginPage = () => {
                 {/* Logo Section */}
                 <div className="text-center mb-8">
                     <div className="flex justify-center items-center gap-3 mb-4">
-                        <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <BookOpen className="text-white" size={28} />
-                        </div>
-                        <h1 className="text-3xl font-bold text-white">BookStore Admin</h1>
+                    <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center p-2 shadow-lg">
+                        <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
                     </div>
-                    <p className="text-gray-400">Đăng nhập để quản lý hệ thống</p>
+                    <h1 className="text-3xl font-bold text-white">Trang Quản trị</h1>
                 </div>
 
                 {/* Login Form */}
@@ -60,7 +59,7 @@ const LoginPage = () => {
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
                                 Email
                             </label>
                             <div className="relative">
@@ -76,18 +75,25 @@ const LoginPage = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
                                 Mật khẩu
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                                 <input
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
                             </div>
                         </div>
 
@@ -132,6 +138,7 @@ const LoginPage = () => {
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     );
 };

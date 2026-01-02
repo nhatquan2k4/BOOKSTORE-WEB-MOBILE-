@@ -8,19 +8,7 @@ import { Badge, Button } from "@/components/ui";
 import { bookService, categoryService } from "@/services";
 import type { BookDto, CategoryDto } from "@/types/dtos";
 import { resolveBookPrice, formatPrice } from "@/lib/price";
-
-// Helper format tiền
-const formatVnd = (price: number) =>
-  new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(price);
-
-// Helper tính % giảm giá
-const calculateDiscount = (original: number, current: number) => {
-  if (original <= 0 || current <= 0 || current >= original) return 0;
-  return Math.round(((original - current) / original) * 100);
-};
+import { normalizeImageUrl, getBookCoverUrl } from "@/lib/imageUtils";
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -37,6 +25,9 @@ export default function HomePage() {
   const [popularBooksData, setPopularBooksData] = useState<BookDto[]>([]);
   const [categoriesData, setCategoriesData] = useState<CategoryDto[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Book cover URLs state - fetched separately like app-frontend
+  const [bookCovers, setBookCovers] = useState<Record<string, string | null>>({});
 
   // Carousel logic for featured books
   const featuredRef = useRef<HTMLDivElement>(null);
@@ -68,6 +59,33 @@ export default function HomePage() {
         setCategoriesData(categoriesRes?.items || []);
         
         console.log("State updated - Featured:", featuredRes?.length, "Popular:", popularRes?.length, "Categories:", categoriesRes?.items?.length);
+        
+        // Fetch cover images for all books like app-frontend does
+        const allBooks = [
+          ...(Array.isArray(featuredRes) ? featuredRes : []),
+          ...(Array.isArray(popularRes) ? popularRes : [])
+        ];
+        
+        // Fetch covers in parallel
+        const coverPromises = allBooks.map(async (book) => {
+          try {
+            const coverUrl = await getBookCoverUrl(book.id);
+            return { bookId: book.id, coverUrl };
+          } catch (error) {
+            console.error(`Failed to fetch cover for book ${book.id}:`, error);
+            return { bookId: book.id, coverUrl: null };
+          }
+        });
+        
+        const coverResults = await Promise.all(coverPromises);
+        const coversMap: Record<string, string | null> = {};
+        coverResults.forEach(({ bookId, coverUrl }) => {
+          coversMap[bookId] = coverUrl;
+        });
+        
+        setBookCovers(coversMap);
+        console.log("Book covers fetched:", Object.keys(coversMap).length);
+        
       } catch (error) {
         console.error("Error fetching home page data:", error);
       } finally {
@@ -468,7 +486,10 @@ export default function HomePage() {
               ) : (
                 displayFeaturedBooks.map((book) => {
                   const priceInfo = resolveBookPrice(book);
-                  const bookCover = book.coverImage || "/image/anh.png";
+                  
+                  // --- LẤY ẢNH TỪ COVER API GIỐNG APP-FRONTEND ---
+                  const bookCover = bookCovers[book.id] || null;
+                  
                   const bookAuthor = book.authorNames && book.authorNames.length > 0 ? book.authorNames.join(", ") : "Chưa cập nhật";
                   const bookRating = book.averageRating ?? 0;
                   const bookReviews = book.totalReviews ?? 0;
@@ -480,15 +501,35 @@ export default function HomePage() {
                       className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
                                  border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
                     >
-                      {/* Ảnh sách full khung */}
+                      {/* Ảnh sách full khung hoặc placeholder */}
                       <div className="relative w-full aspect-[4/5]">
-                        <Image
-                          src={bookCover}
-                          alt={book.title}
-                          fill
-                          sizes="260px"
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+                        {bookCover ? (
+                          <Image
+                            src={bookCover}
+                            alt={book.title}
+                            fill
+                            sizes="260px"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-16 w-16 text-gray-400"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </div>
+                        )}
 
                         {/* Badge level + mới 2024 giống mẫu */}
                         {book.isAvailable && (
@@ -659,7 +700,10 @@ export default function HomePage() {
               ) : (
                 displayPopularBooks.map((book) => {
                   const priceInfo = resolveBookPrice(book);
-                  const bookCover = book.coverImage || "/image/anh.png";
+                  
+                  // --- LẤY ẢNH TỪ COVER API GIỐNG APP-FRONTEND ---
+                  const bookCover = bookCovers[book.id] || null;
+                  
                   const bookAuthor = book.authorNames && book.authorNames.length > 0 ? book.authorNames.join(", ") : "Chưa cập nhật";
                   const bookRating = book.averageRating ?? 0;
                   const bookReviews = book.totalReviews ?? 0;
@@ -671,15 +715,35 @@ export default function HomePage() {
                       className="flex w-[260px] min-w-[260px] flex-col rounded-2xl bg-white shadow-[0_10px_25px_rgba(15,23,42,0.08)]
                                  border border-pink-50 overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(15,23,42,0.16)] group"
                     >
-                      {/* Ảnh sách */}
+                      {/* Ảnh sách hoặc placeholder */}
                       <div className="relative w-full aspect-[4/5]">
-                        <Image
-                          src={bookCover}
-                          alt={book.title}
-                          fill
-                          sizes="260px"
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+                        {bookCover ? (
+                          <Image
+                            src={bookCover}
+                            alt={book.title}
+                            fill
+                            sizes="260px"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-16 w-16 text-gray-400"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </div>
+                        )}
 
                         <div className="absolute top-2 right-2">
                           <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow">
@@ -886,7 +950,7 @@ export default function HomePage() {
             </Badge>
           </div>
 
-          <Link href="/rental">
+          <Link href="/rent">
             <Button
               variant="primary"
               size="lg"

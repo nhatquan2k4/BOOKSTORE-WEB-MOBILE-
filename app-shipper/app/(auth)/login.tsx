@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
@@ -70,9 +71,13 @@ export default function LoginScreen() {
         {/* Logo Section */}
         <View style={styles.logoSection}>
           <View style={styles.logoContainer}>
-            <Ionicons name="bicycle" size={60} color="#0a7ea4" />
+            <Image 
+              source={require('@/assets/images/logo.png')} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
-          <Text style={styles.title}>BOOKSTORE SHIPPER</Text>
+          <Text style={styles.title}>Shipper BỜ ÚC BÚC</Text>
           <Text style={styles.subtitle}>Đăng nhập để bắt đầu giao hàng</Text>
         </View>
 
@@ -180,10 +185,15 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#e6f5f8',
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
+    padding: 10,
+  },
+  logo: {
+    width: '100%',
+    height: '100%',
   },
   title: {
     fontSize: 24,

@@ -1,0 +1,25 @@
+
+> web-frontend@0.1.0 build
+> next build --turbopack
+
+   ▲ Next.js 15.5.7 (Turbopack)
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Finished writing to disk in 480ms
+ ✓ Compiled successfully in 7.9s
+   Skipping linting
+   Checking validity of types ...
+Failed to compile.
+
+./src/app/(shop)/payment/qr/page.tsx:349:50
+Type error: This comparison appears to be unintentional because the types '"expired" | "pending" | "failed" | "checking"' and '"success"' have no overlap.
+
+[0m [90m 347 |[39m               [33m<[39m[33mbutton[39m
+ [90m 348 |[39m                 onClick[33m=[39m{handleTestPayment}
+[31m[1m>[22m[39m[90m 349 |[39m                 disabled[33m=[39m{isConfirmingPayment [33m||[39m paymentStatus [33m===[39m [32m"success"[39m}
+ [90m     |[39m                                                  [31m[1m^[22m[39m
+ [90m 350 |[39m                 className[33m=[39m[32m"w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed"[39m
+ [90m 351 |[39m               [33m>[39m
+ [90m 352 |[39m                 {isConfirmingPayment [33m?[39m ([0m
+Next.js build worker exited with code: 1 and signal: null
