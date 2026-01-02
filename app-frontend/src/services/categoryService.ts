@@ -1,28 +1,7 @@
 // Category Service - API calls for categories
 import { api } from './apiClient';
 import { API_ENDPOINTS } from '../config/api';
-
-export interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface CategoryListResponse {
-  items: Category[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
-
-export interface GetCategoriesParams {
-  pageNumber?: number;
-  pageSize?: number;
-  searchTerm?: string;
-}
+import type { Category, CategoryListResponse, GetCategoriesParams } from '../types/category';
 
 /**
  * Get list of all categories
@@ -50,7 +29,23 @@ export const getCategoryById = async (id: string): Promise<Category> => {
   }
 };
 
+/**
+ * Search categories by name
+ */
+export const searchCategories = async (searchTerm: string): Promise<Category[]> => {
+  try {
+    const response = await api.get<Category[]>(API_ENDPOINTS.CATEGORIES.SEARCH, {
+      params: { searchTerm },
+    });
+    return response;
+  } catch (error) {
+    console.error('Error searching categories:', error);
+    throw error;
+  }
+};
+
 export default {
   getCategories,
   getCategoryById,
+  searchCategories,
 };

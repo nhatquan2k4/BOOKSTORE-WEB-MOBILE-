@@ -43,10 +43,10 @@ export const getBookById = async (id: string): Promise<BookDetail> => {
 /**
  * Search books by keyword
  */
-export const searchBooks = async (keyword: string, params?: GetBooksParams): Promise<BookListResponse> => {
+export const searchBooks = async (searchTerm: string, top: number = 50): Promise<Book[]> => {
   try {
-    const response = await api.get<BookListResponse>(API_ENDPOINTS.BOOKS.SEARCH, {
-      params: { ...params, keyword },
+    const response = await api.get<Book[]>(API_ENDPOINTS.BOOKS.SEARCH, {
+      params: { searchTerm, top },
     });
     return response;
   } catch (error) {

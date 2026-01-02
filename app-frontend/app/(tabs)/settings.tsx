@@ -7,14 +7,14 @@ import userProfileService from '@/src/services/userProfileService';
 import { useEffect } from 'react';
 import { useState } from 'react';
 import avatarStore from '@/src/utils/avatarStore';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function ProfileScreen() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const router = useRouter();
   const { logout, user } = useAuth();
+  const { theme, isDarkMode, setDarkMode } = useTheme();
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,15 +76,15 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Cài Đặt</Text>
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Cài Đặt</Text>
         <View style={styles.placeholder} />
       </View>
 
       {/* User Profile Card */}
-      <TouchableOpacity style={styles.profileCard}>
+      <TouchableOpacity style={[styles.profileCard, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.profileLeft}>
           <View style={styles.avatarContainer}>
             {avatarUri ? (
@@ -94,48 +94,49 @@ export default function ProfileScreen() {
             )}
           </View>
           <View>
-            <Text style={styles.userName}>{user?.userName || 'Người dùng'}</Text>
-            <Text style={styles.userRole}>{user?.email || 'Thành viên'}</Text>
+            <Text style={[styles.userName, { color: theme.text }]}>{user?.userName || 'Người dùng'}</Text>
+            <Text style={[styles.userRole, { color: theme.textTertiary }]}>{user?.email || 'Thành viên'}</Text>
           </View>
         </View>
       </TouchableOpacity>
 
       {/* Other Settings Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Các thiết lập</Text>
-        <View style={styles.settingsGroup}>
+        <Text style={[styles.sectionTitle, { color: theme.textTertiary }]}>Các thiết lập</Text>
+        <View style={[styles.settingsGroup, { backgroundColor: theme.cardBackground }]}>
           {otherSettings.map((item, index) => (
             <TouchableOpacity
               key={item.id}
               style={[
                 styles.settingItem,
+                { borderBottomColor: theme.border },
                 index === otherSettings.length - 1 && styles.settingItemLast,
               ]}
               onPress={item.onPress}
             >
               <View style={styles.settingLeft}>
                 <View style={styles.iconContainer}>
-                  <Ionicons name={item.icon as any} size={20} color="#333" />
+                  <Ionicons name={item.icon as any} size={20} color={theme.text} />
                 </View>
-                <Text style={styles.settingLabel}>{item.label}</Text>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>{item.label}</Text>
               </View>
               {item.hasArrow && (
-                <Ionicons name="chevron-forward" size={20} color="#999" />
+                <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
               )}
             </TouchableOpacity>
           ))}
           
           {/* Dark Mode Toggle */}
-          <View style={[styles.settingItem, styles.settingItemLast]}>
+          <View style={[styles.settingItem, styles.settingItemLast, { borderBottomColor: theme.border }]}>
             <View style={styles.settingLeft}>
               <View style={styles.iconContainer}>
-                <Ionicons name="moon-outline" size={20} color="#333" />
+                <Ionicons name="moon-outline" size={20} color={theme.text} />
               </View>
-              <Text style={styles.settingLabel}>Chế độ tối</Text>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>Chế độ tối</Text>
             </View>
             <Switch
               value={isDarkMode}
-              onValueChange={setIsDarkMode}
+              onValueChange={setDarkMode}
               trackColor={{ false: '#ddd', true: '#4CAF50' }}
               thumbColor={isDarkMode ? '#fff' : '#f4f3f4'}
             />
@@ -147,24 +148,25 @@ export default function ProfileScreen() {
 
       {/* More Settings Section */}
       <View style={styles.section}>
-        <View style={styles.settingsGroup}>
+        <View style={[styles.settingsGroup, { backgroundColor: theme.cardBackground }]}>
           {moreSettings.map((item, index) => (
             <TouchableOpacity
               key={item.id}
               style={[
                 styles.settingItem,
+                { borderBottomColor: theme.border },
                 index === moreSettings.length - 1 && styles.settingItemLast,
               ]}
               onPress={item.onPress}
             >
               <View style={styles.settingLeft}>
                 <View style={styles.iconContainer}>
-                  <Ionicons name={item.icon as any} size={20} color="#333" />
+                  <Ionicons name={item.icon as any} size={20} color={theme.text} />
                 </View>
-                <Text style={styles.settingLabel}>{item.label}</Text>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>{item.label}</Text>
               </View>
               {item.hasArrow && (
-                <Ionicons name="chevron-forward" size={20} color="#999" />
+                <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
               )}
             </TouchableOpacity>
           ))}
@@ -173,7 +175,11 @@ export default function ProfileScreen() {
 
       {/* Logout Button */}
       <TouchableOpacity 
-        style={[styles.deactivateButton, isLoggingOut && styles.deactivateButtonDisabled]} 
+        style={[
+          styles.deactivateButton, 
+          { backgroundColor: theme.cardBackground },
+          isLoggingOut && styles.deactivateButtonDisabled
+        ]} 
         onPress={handleLogout}
         disabled={isLoggingOut}
       >

@@ -1,35 +1,13 @@
 // Cart Service - API calls for shopping cart
 import { api } from './apiClient';
-
-export interface AddToCartRequest {
-  bookId: string;
-  quantity: number;
-}
-
-export interface UpdateCartItemRequest {
-  bookId: string;
-  quantity: number;
-}
-
-export interface RemoveFromCartRequest {
-  bookId: string;
-}
-
-export interface CartItem {
-  bookId: string;
-  bookTitle: string;
-  bookPrice: number;
-  quantity: number;
-  imageUrl?: string;
-}
-
-export interface Cart {
-  id: string;
-  userId: string;
-  items: CartItem[];
-  totalAmount: number;
-  itemCount: number;
-}
+import { API_ENDPOINTS } from '../config/api';
+import type {
+  AddToCartRequest,
+  UpdateCartItemRequest,
+  RemoveFromCartRequest,
+  CartItem,
+  Cart,
+} from '../types/cart';
 
 /**
  * Get current user's cart
@@ -37,7 +15,7 @@ export interface Cart {
 export const getMyCart = async (): Promise<Cart | null> => {
   try {
     console.log('🛒 Fetching cart from API...');
-    const response = await api.get<any>('/api/Cart');
+    const response = await api.get<any>(API_ENDPOINTS.CART.GET);
     
     console.log('📦 Cart API response:', JSON.stringify(response, null, 2));
     
@@ -75,7 +53,7 @@ export const getMyCart = async (): Promise<Cart | null> => {
 export const addToCart = async (request: AddToCartRequest): Promise<Cart> => {
   try {
     console.log('🛒 Adding to cart:', JSON.stringify(request, null, 2));
-    const response = await api.post<any>('/api/Cart/add', request);
+    const response = await api.post<any>(API_ENDPOINTS.CART.ADD, request);
     
     console.log('📦 Add to cart response:', JSON.stringify(response, null, 2));
     
@@ -101,7 +79,7 @@ export const addToCart = async (request: AddToCartRequest): Promise<Cart> => {
  */
 export const updateCartItemQuantity = async (request: UpdateCartItemRequest): Promise<Cart> => {
   try {
-    const response = await api.put<any>('/api/Cart/update-quantity', request);
+    const response = await api.put<any>(API_ENDPOINTS.CART.UPDATE_QUANTITY, request);
     
     if (response?.data) {
       return response.data as Cart;
@@ -120,7 +98,7 @@ export const updateCartItemQuantity = async (request: UpdateCartItemRequest): Pr
 export const removeFromCart = async (request: RemoveFromCartRequest): Promise<Cart> => {
   try {
     // Backend uses DELETE method with body
-    const response = await api.delete<any>('/api/Cart/remove', { data: request });
+    const response = await api.delete<any>(API_ENDPOINTS.CART.REMOVE, { data: request });
     
     if (response?.data) {
       return response.data as Cart;
@@ -138,7 +116,7 @@ export const removeFromCart = async (request: RemoveFromCartRequest): Promise<Ca
  */
 export const clearCart = async (): Promise<void> => {
   try {
-    await api.delete('/api/Cart/clear');
+    await api.delete(API_ENDPOINTS.CART.CLEAR);
   } catch (error: any) {
     console.error('Error clearing cart:', error);
     throw error;
@@ -150,7 +128,7 @@ export const clearCart = async (): Promise<void> => {
  */
 export const getCartItemCount = async (): Promise<number> => {
   try {
-    const response = await api.get<any>('/api/Cart/count');
+    const response = await api.get<any>(API_ENDPOINTS.CART.COUNT);
     
     if (response?.itemCount !== undefined) {
       return response.itemCount;
@@ -170,7 +148,7 @@ export const getCartItemCount = async (): Promise<number> => {
  */
 export const getCartTotal = async (): Promise<number> => {
   try {
-    const response = await api.get<any>('/api/Cart/total');
+    const response = await api.get<any>(API_ENDPOINTS.CART.TOTAL);
     
     if (response?.totalAmount !== undefined) {
       return response.totalAmount;

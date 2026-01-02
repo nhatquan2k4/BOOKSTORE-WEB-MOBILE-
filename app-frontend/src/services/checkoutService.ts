@@ -1,55 +1,19 @@
 // Checkout Service - API calls for checkout process
 import { api } from './apiClient';
-
-export interface CheckoutAddress {
-  recipientName: string;
-  phoneNumber: string;
-  province: string;
-  district: string;
-  ward: string;
-  street: string;
-  note?: string;
-}
-
-export interface CheckoutRequest {
-  userId?: string; // Will be set by backend
-  address: CheckoutAddress;
-  couponCode?: string;
-  paymentMethod: string; // "Online" or "COD"
-  provider?: string; // "VietQR", etc
-  note?: string;
-}
-
-export interface CheckoutResult {
-  success: boolean;
-  message: string;
-  orderId?: string;
-  orderCode?: string;
-  totalAmount?: number;
-  paymentInfo?: {
-    qrCodeUrl?: string;
-    bankName?: string;
-    accountNumber?: string;
-    accountName?: string;
-    transferContent?: string;
-    amount?: number;
-  };
-}
-
-export interface PaymentCallback {
-  transactionCode: string;
-  orderId: string;
-  amount: number;
-  status: 'SUCCESS' | 'FAILED';
-  message?: string;
-}
+import { API_ENDPOINTS } from '../config/api';
+import type {
+  CheckoutAddress,
+  CheckoutRequest,
+  CheckoutResult,
+  PaymentCallback,
+} from '../types/checkout';
 
 /**
  * Process checkout - create order and payment
  */
 export const processCheckout = async (request: CheckoutRequest): Promise<CheckoutResult> => {
   try {
-    const response = await api.post<any>('/api/Checkout/process', request);
+    const response = await api.post<any>(API_ENDPOINTS.CHECKOUT.PROCESS, request);
     
     console.log('🔄 Processing checkout response...');
     
@@ -96,7 +60,7 @@ export const processCheckout = async (request: CheckoutRequest): Promise<Checkou
  */
 export const handlePaymentCallback = async (callback: PaymentCallback): Promise<any> => {
   try {
-    const response = await api.post<any>('/api/Checkout/payment-callback', callback);
+    const response = await api.post<any>(API_ENDPOINTS.CHECKOUT.PAYMENT_CALLBACK, callback);
     return response;
   } catch (error: any) {
     console.error('Error handling payment callback:', error);
@@ -109,7 +73,7 @@ export const handlePaymentCallback = async (callback: PaymentCallback): Promise<
  */
 export const getPaymentStatus = async (orderId: string): Promise<any> => {
   try {
-    const response = await api.get<any>(`/api/Checkout/payment-status/${orderId}`);
+    const response = await api.get<any>(API_ENDPOINTS.CHECKOUT.PAYMENT_STATUS(orderId));
     return response;
   } catch (error: any) {
     console.error('Error getting payment status:', error);
@@ -122,7 +86,7 @@ export const getPaymentStatus = async (orderId: string): Promise<any> => {
  */
 export const getCheckoutPreview = async (couponCode?: string): Promise<any> => {
   try {
-    const response = await api.get<any>('/api/Checkout/preview', {
+    const response = await api.get<any>(API_ENDPOINTS.CHECKOUT.PREVIEW, {
       params: { couponCode }
     });
     return response;

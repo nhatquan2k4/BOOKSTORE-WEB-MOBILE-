@@ -1,34 +1,13 @@
 import { api } from './apiClient';
-import { API_BASE_URL, MINIO_BASE_URL } from '@/src/config/api';
-
-export interface UserProfile {
-  id: string;
-  userId: string;
-  fullName: string;
-  bio?: string;
-  gender?: string;
-  dateOfBirth?: string;
-  phoneNumber?: string;
-  avatarUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface UpdateUserProfileDto {
-  fullName?: string;
-  bio?: string;
-  gender?: string;
-  dateOfBirth?: string;
-  phoneNumber?: string;
-  avatarUrl?: string;
-}
+import { API_BASE_URL, MINIO_BASE_URL, API_ENDPOINTS } from '@/src/config/api';
+import type { UserProfile, UpdateUserProfileDto } from '../types/userProfile';
 
 /**
  * Lấy thông tin profile của user hiện tại
  */
 export const getMyProfile = async (): Promise<UserProfile> => {
   try {
-    const response = await api.get<{ success: boolean; data: UserProfile }>('/api/UserProfile/profile');
+    const response = await api.get<{ success: boolean; data: UserProfile }>(API_ENDPOINTS.USER_PROFILE.GET);
     const profile = response.data;
 
     // Smart URL resolution: Handle both relative paths and full URLs
@@ -66,7 +45,7 @@ export const getMyProfile = async (): Promise<UserProfile> => {
 export const updateMyProfile = async (dto: UpdateUserProfileDto): Promise<UserProfile> => {
   try {
     const response = await api.put<{ success: boolean; message: string; data: UserProfile }>(
-      '/api/UserProfile/profile',
+      API_ENDPOINTS.USER_PROFILE.UPDATE,
       dto
     );
     return response.data;
@@ -101,7 +80,7 @@ export const uploadAvatar = async (fileUri: string): Promise<string> => {
       success: boolean;
       message: string;
       data: { avatarUrl: string; fileName: string; size: number };
-    }>('/api/UserProfile/profile/avatar', formData, {
+    }>(API_ENDPOINTS.USER_PROFILE.UPLOAD_AVATAR, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -141,7 +120,7 @@ export const uploadAvatar = async (fileUri: string): Promise<string> => {
  */
 export const deleteAvatar = async (): Promise<void> => {
   try {
-    await api.delete('/api/UserProfile/profile/avatar');
+    await api.delete(API_ENDPOINTS.USER_PROFILE.DELETE_AVATAR);
   } catch (error) {
     console.error('Error deleting avatar:', error);
     throw error;

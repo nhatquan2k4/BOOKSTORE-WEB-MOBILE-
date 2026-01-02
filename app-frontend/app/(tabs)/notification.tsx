@@ -4,11 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotifications } from '@/app/providers/NotificationProvider';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
+import { StatusBar } from 'expo-status-bar';
 
 export default function NotificationScreen() {
   const insets = useSafeAreaInsets();
   const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotifications();
   const router = useRouter();
+  const { theme, isDarkMode } = useTheme();
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -37,30 +40,31 @@ export default function NotificationScreen() {
   };
 
   return (
-    <View style={styles.screen}>
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <Text style={styles.headerTitle}>Thông Báo</Text>
+    <View style={[styles.screen, { backgroundColor: theme.background }]}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: theme.headerBackground }]}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Thông Báo</Text>
         {unreadCount > 0 && (
-          <TouchableOpacity onPress={markAllAsRead} style={styles.markAllBtn}>
-            <Text style={styles.markAllText}>Đánh dấu đã đọc</Text>
+          <TouchableOpacity onPress={markAllAsRead} style={[styles.markAllBtn, { backgroundColor: theme.cardBackground }]}>
+            <Text style={[styles.markAllText, { color: theme.primary }]}>Đánh dấu đã đọc</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {notifications.length === 0 ? (
         <View style={styles.contentWrapper}>
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
             <View style={styles.iconWrap}>
-              <View style={styles.iconCircle}>
-                <Ionicons name="notifications-outline" size={90} color="#2CB47B" />
+              <View style={[styles.iconCircle, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0EDE4' }]}>
+                <Ionicons name="notifications-outline" size={90} color={theme.primary} />
               </View>
-              <View style={styles.plusBadge}>
+              <View style={[styles.plusBadge, { backgroundColor: theme.primary }]}>
                 <Ionicons name="add" size={14} color="#fff" />
               </View>
             </View>
 
-            <Text style={styles.cardTitle}>Chưa có thông báo nào</Text>
-            <Text style={styles.cardSubtitle}>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Chưa có thông báo nào</Text>
+            <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
               Các thông báo về đơn hàng, khuyến mãi hoặc tin mới từ cửa hàng sẽ được hiển thị ở đây. 
               Hãy mua sách hoặc theo dõi chương trình khuyến mãi để nhận cập nhật.
             </Text>
@@ -71,21 +75,29 @@ export default function NotificationScreen() {
           {notifications.map((notif) => (
             <TouchableOpacity
               key={notif.id}
-              style={[styles.notifCard, !notif.read && styles.notifCardUnread]}
+              style={[
+                styles.notifCard, 
+                { backgroundColor: theme.cardBackground },
+                !notif.read && { 
+                  backgroundColor: isDarkMode ? '#2A2A1A' : '#FFF9F0', 
+                  borderLeftWidth: 3, 
+                  borderLeftColor: theme.primary 
+                }
+              ]}
               onPress={() => {
                 markAsRead(notif.id);
                 // Can navigate to order detail in future
               }}
             >
-              <View style={styles.notifIcon}>
-                <Ionicons name={getIcon(notif.type) as any} size={24} color="#2CB47B" />
+              <View style={[styles.notifIcon, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0EDE4' }]}>
+                <Ionicons name={getIcon(notif.type) as any} size={24} color={theme.primary} />
               </View>
               <View style={styles.notifContent}>
-                <Text style={styles.notifTitle}>{notif.title}</Text>
-                <Text style={styles.notifMessage}>{notif.message}</Text>
-                <Text style={styles.notifTime}>{formatTime(notif.timestamp)}</Text>
+                <Text style={[styles.notifTitle, { color: theme.text }]}>{notif.title}</Text>
+                <Text style={[styles.notifMessage, { color: theme.textSecondary }]}>{notif.message}</Text>
+                <Text style={[styles.notifTime, { color: theme.textTertiary }]}>{formatTime(notif.timestamp)}</Text>
               </View>
-              {!notif.read && <View style={styles.unreadDot} />}
+              {!notif.read && <View style={[styles.unreadDot, { backgroundColor: theme.primary }]} />}
             </TouchableOpacity>
           ))}
         </ScrollView>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Pressable, Keyboard } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Pressable, Keyboard, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,47 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+
+  // Animation values for floating labels
+  const emailLabelPosition = useRef(new Animated.Value(email ? 1 : 0)).current;
+  const passwordLabelPosition = useRef(new Animated.Value(password ? 1 : 0)).current;
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+
+  // Animate label up/down
+  const animateLabel = (animation: Animated.Value, toValue: number) => {
+    Animated.timing(animation, {
+      toValue,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const handleEmailFocus = () => {
+    setEmailFocused(true);
+    animateLabel(emailLabelPosition, 1);
+  };
+
+  const handleEmailBlur = () => {
+    setEmailFocused(false);
+    if (!email) {
+      animateLabel(emailLabelPosition, 0);
+    }
+  };
+
+  const handlePasswordFocus = () => {
+    setPasswordFocused(true);
+    animateLabel(passwordLabelPosition, 1);
+  };
+
+  const handlePasswordBlur = () => {
+    setPasswordFocused(false);
+    if (!password) {
+      animateLabel(passwordLabelPosition, 0);
+    }
+  };
 
   const handleLogin = async () => {
     // Validation
@@ -31,7 +72,7 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
-      const result = await login({ email: email.trim(), password, rememberMe: true });
+      const result = await login({ email: email.trim(), password, rememberMe });
       
       if (result.ok) {
         // AuthProvider sẽ tự động redirect về trang chủ
@@ -55,34 +96,111 @@ export default function LoginScreen() {
         <View style={styles.card}>
           <Text style={styles.title}>Đăng nhập</Text>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <View style={styles.errorContainer}>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          </View>
 
-          <TextInput 
-            style={styles.input} 
-            placeholder="Email" 
-            placeholderTextColor="#bdbdbd"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              setError('');
-            }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            editable={!isLoading}
-          />
-          <TextInput 
-            style={styles.input} 
-            placeholder="Mật khẩu" 
-            placeholderTextColor="#bdbdbd" 
-            secureTextEntry
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              setError('');
-            }}
-            editable={!isLoading}
-            onSubmitEditing={handleLogin}
-          />
+          {/* Email Input with Floating Label */}
+          <View style={styles.inputContainer}>
+            <Animated.Text 
+              style={[
+                styles.floatingLabel,
+                {
+                  top: emailLabelPosition.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [14, -8],
+                  }),
+                  fontSize: emailLabelPosition.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [15, 12],
+                  }),
+                  color: emailFocused ? '#6C7AE0' : '#bdbdbd',
+                },
+              ]}
+            >
+              Email
+            </Animated.Text>
+            <TextInput 
+              style={[styles.input, emailFocused && styles.inputFocused]} 
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                setError('');
+              }}
+              onFocus={handleEmailFocus}
+              onBlur={handleEmailBlur}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!isLoading}
+            />
+          </View>
+
+          {/* Password Input with Floating Label */}
+          <View style={styles.inputContainer}>
+            <Animated.Text 
+              style={[
+                styles.floatingLabel,
+                {
+                  top: passwordLabelPosition.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [14, -8],
+                  }),
+                  fontSize: passwordLabelPosition.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [15, 12],
+                  }),
+                  color: passwordFocused ? '#6C7AE0' : '#bdbdbd',
+                },
+              ]}
+            >
+              Mật khẩu
+            </Animated.Text>
+            <View style={styles.passwordWrapper}>
+              <TextInput 
+                style={[styles.input, styles.passwordInput, passwordFocused && styles.inputFocused]} 
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setError('');
+                }}
+                onFocus={handlePasswordFocus}
+                onBlur={handlePasswordBlur}
+                editable={!isLoading}
+                onSubmitEditing={handleLogin}
+              />
+              <TouchableOpacity 
+                style={styles.eyeButton}
+                onPress={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
+              >
+                <Ionicons 
+                  name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                  size={22} 
+                  color="#999" 
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.rememberForgotRow}>
+            <TouchableOpacity 
+              style={styles.rememberMeContainer}
+              onPress={() => setRememberMe(!rememberMe)}
+              disabled={isLoading}
+            >
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                {rememberMe && (
+                  <Ionicons name="checkmark" size={14} color="#fff" />
+                )}
+              </View>
+              <Text style={styles.rememberMeText}>Nhớ mật khẩu</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => router.push('/forgotpassword')} disabled={isLoading}>
+              <Text style={styles.linkText}>Quên mật khẩu?</Text>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity 
             style={[styles.primaryButton, isLoading && styles.buttonDisabled]} 
@@ -94,10 +212,6 @@ export default function LoginScreen() {
             ) : (
               <Text style={styles.primaryButtonText}>Đăng nhập</Text>
             )}
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => router.push('/forgotpassword')} disabled={isLoading}>
-            <Text style={styles.linkText}>Quên mật khẩu?</Text>
           </TouchableOpacity>
 
           <View style={styles.socialRow}>
@@ -128,13 +242,44 @@ const styles = StyleSheet.create({
   headerTop: { width: '100%', height: 260, alignItems: 'center', justifyContent: 'center' },
   headerGraphic: { width: '100%', height: 360, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   card: { width: '88%', backgroundColor: '#fff', borderRadius: 16, padding: 20, marginTop: -60, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 6 },
-  title: { fontSize: 28, fontWeight: '700', marginBottom: 12, color: '#1E1E2D' },
-  input: { width: '100%', height: 44, borderBottomWidth: 1, borderBottomColor: '#eee', marginBottom: 12, paddingHorizontal: 8, color: '#222' },
+  title: { fontSize: 30, fontWeight: '700', marginBottom: 12, color: '#1E1E2D' },
+  errorContainer: { width: '100%', minHeight: 28, marginBottom: 8, justifyContent: 'center', alignItems: 'center' },
+  errorText: { color: '#E74C3C', fontSize: 13, textAlign: 'center' },
+  inputContainer: { width: '100%', marginBottom: 20, position: 'relative' },
+  floatingLabel: { 
+    position: 'absolute', 
+    left: 8, 
+    backgroundColor: '#fff', 
+    paddingHorizontal: 4, 
+    fontWeight: '500',
+    zIndex: 10,
+    pointerEvents: 'none',
+  },
+  input: { 
+    width: '100%', 
+    height: 44, 
+    borderBottomWidth: 1.5, 
+    borderBottomColor: '#eee', 
+    paddingHorizontal: 8, 
+    paddingTop: 18,
+    paddingBottom: 4,
+    color: '#222',
+    fontSize: 15,
+  },
+  inputFocused: { borderBottomColor: '#6C7AE0' },
+  passwordWrapper: { width: '100%', flexDirection: 'row', alignItems: 'center' },
+  passwordInput: { flex: 1 },
+  eyeButton: { position: 'absolute', right: 8, padding: 8 },
+  passwordContainer: { width: '100%', flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#eee', marginBottom: 12 },
+  rememberForgotRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  rememberMeContainer: { flexDirection: 'row', alignItems: 'center' },
+  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, borderColor: '#ccc', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
+  checkboxChecked: { backgroundColor: '#6C7AE0', borderColor: '#6C7AE0' },
+  rememberMeText: { fontSize: 14, color: '#7C7C9A' },
   primaryButton: { width: '100%', height: 48, backgroundColor: '#6C7AE0', borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
   primaryButtonText: { color: '#fff', fontWeight: '600' },
   buttonDisabled: { opacity: 0.6 },
   linkText: { marginTop: 8, color: '#7C7C9A' },
-  errorText: { color: '#E74C3C', fontSize: 13, marginBottom: 8, textAlign: 'center' },
   socialRow: { flexDirection: 'row', gap: 12, marginTop: 18 },
   socialBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
   socialText: { color: '#444' },

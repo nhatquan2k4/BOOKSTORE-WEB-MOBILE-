@@ -11,9 +11,12 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import orderService, { Order, OrderStatusHistory } from '@/src/services/orderService';
+import orderService from '@/src/services/orderService';
+import type { Order, OrderStatusHistory } from '@/src/types/order';
 import { MINIO_BASE_URL } from '@/src/config/api';
 import { PLACEHOLDER_IMAGES } from '@/src/constants/placeholders';
+import { useTheme } from '@/context/ThemeContext';
+import { StatusBar } from 'expo-status-bar';
 
 function ImageWithFallback({ uri, style }: { uri?: string; style?: any }) {
   const [error, setError] = React.useState(false);
@@ -55,6 +58,7 @@ export default function OrderDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const orderId = params.id as string;
+  const { theme, isDarkMode } = useTheme();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [statusHistory, setStatusHistory] = useState<OrderStatusHistory[]>([]);
@@ -116,18 +120,20 @@ export default function OrderDetailScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#D5CCB3" />
-        <Text style={styles.loadingText}>Đang tải...</Text>
+      <View style={[styles.container, styles.centerContent, { backgroundColor: theme.background }]}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Đang tải...</Text>
       </View>
     );
   }
 
   if (!order) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text>Không tìm thấy đơn hàng</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+      <View style={[styles.container, styles.centerContent, { backgroundColor: theme.background }]}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <Text style={{ color: theme.text }}>Không tìm thấy đơn hàng</Text>
+        <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: theme.primary }]}>
           <Text style={styles.backBtnText}>Quay lại</Text>
         </TouchableOpacity>
       </View>
@@ -146,41 +152,42 @@ export default function OrderDetailScreen() {
   const statusColor = ORDER_STATUS_COLORS[order.status] || '#999';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chi tiết đơn hàng</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Chi tiết đơn hàng</Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Order Status Card */}
-        <View style={styles.statusCard}>
+        <View style={[styles.statusCard, { backgroundColor: theme.cardBackground }]}>
           <View style={[styles.statusBadgeLarge, { backgroundColor: `${statusColor}20` }]}>
             <Ionicons name="receipt-outline" size={32} color={statusColor} />
           </View>
-          <Text style={styles.orderNumber}>{order.orderNumber}</Text>
+          <Text style={[styles.orderNumber, { color: theme.text }]}>{order.orderNumber}</Text>
           <View style={[styles.statusChip, { backgroundColor: `${statusColor}20` }]}>
             <Text style={[styles.statusChipText, { color: statusColor }]}>{statusLabel}</Text>
           </View>
-          <Text style={styles.orderDate}>
+          <Text style={[styles.orderDate, { color: theme.textTertiary }]}>
             {order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : ''}
           </Text>
         </View>
 
         {/* Address */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Địa chỉ giao hàng</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Địa chỉ giao hàng</Text>
+          <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
             <View style={styles.addressRow}>
-              <Ionicons name="location-outline" size={20} color="#666" />
+              <Ionicons name="location-outline" size={20} color={theme.textSecondary} />
               <View style={styles.addressInfo}>
-                <Text style={styles.recipientName}>{order.address.recipientName}</Text>
-                <Text style={styles.recipientPhone}>{order.address.phoneNumber}</Text>
-                <Text style={styles.addressText}>
+                <Text style={[styles.recipientName, { color: theme.text }]}>{order.address.recipientName}</Text>
+                <Text style={[styles.recipientPhone, { color: theme.textSecondary }]}>{order.address.phoneNumber}</Text>
+                <Text style={[styles.addressText, { color: theme.textSecondary }]}>
                   {order.address.street}, {order.address.ward}, {order.address.district},{' '}
                   {order.address.province}
                 </Text>
@@ -191,8 +198,8 @@ export default function OrderDetailScreen() {
 
         {/* Items */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Sản phẩm ({order.items?.length ?? 0})</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Sản phẩm ({order.items?.length ?? 0})</Text>
+          <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
             {order.items?.map((item, index) => {
               let imageUrl = item.bookImageUrl || PLACEHOLDER_IMAGES.DEFAULT_BOOK;
               if (item.bookImageUrl && !item.bookImageUrl.startsWith('http')) {
@@ -234,46 +241,46 @@ export default function OrderDetailScreen() {
 
         {/* Payment Summary */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Thanh toán</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Thanh toán</Text>
+          <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Tổng tiền hàng</Text>
-              <Text style={styles.summaryValue}>
+              <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Tổng tiền hàng</Text>
+              <Text style={[styles.summaryValue, { color: theme.text }]}>
                 {(order.totalAmount ?? 0).toLocaleString('vi-VN')}₫
               </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Phí vận chuyển</Text>
-              <Text style={styles.summaryValue}>
+              <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Phí vận chuyển</Text>
+              <Text style={[styles.summaryValue, { color: theme.text }]}>
                 {(order.shippingFee ?? 0).toLocaleString('vi-VN')}₫
               </Text>
             </View>
             {(order.discountAmount ?? 0) > 0 && (
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Giảm giá</Text>
-                <Text style={[styles.summaryValue, { color: '#66BB6A' }]}>
+                <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Giảm giá</Text>
+                <Text style={[styles.summaryValue, { color: theme.success }]}>
                   -{(order.discountAmount ?? 0).toLocaleString('vi-VN')}₫
                 </Text>
               </View>
             )}
-            <View style={[styles.summaryRow, styles.summaryTotal]}>
-              <Text style={styles.totalLabel}>Tổng thanh toán</Text>
-              <Text style={styles.totalValue}>
+            <View style={[styles.summaryRow, styles.summaryTotal, { borderTopColor: theme.border }]}>
+              <Text style={[styles.totalLabel, { color: theme.text }]}>Tổng thanh toán</Text>
+              <Text style={[styles.totalValue, { color: theme.primary }]}>
                 {(order.finalAmount ?? 0).toLocaleString('vi-VN')}₫
               </Text>
             </View>
             <View style={styles.paymentMethodRow}>
-              <Text style={styles.summaryLabel}>Phương thức thanh toán</Text>
-              <Text style={styles.summaryValue}>
+              <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Phương thức thanh toán</Text>
+              <Text style={[styles.summaryValue, { color: theme.text }]}>
                 {paymentMethod === 'Online' ? 'Thanh toán online (VietQR)' : paymentMethod === 'COD' ? 'Ship COD' : paymentMethod}
               </Text>
             </View>
             <View style={styles.paymentMethodRow}>
-              <Text style={styles.summaryLabel}>Trạng thái thanh toán</Text>
+              <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Trạng thái thanh toán</Text>
               <Text
                 style={[
                   styles.summaryValue,
-                  { color: isPaid ? '#66BB6A' : '#FFA726' },
+                  { color: isPaid ? theme.success : '#FFA726' },
                 ]}
               >
                 {isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}
@@ -281,8 +288,8 @@ export default function OrderDetailScreen() {
             </View>
             {order.paidAt && (
               <View style={styles.paymentMethodRow}>
-                <Text style={styles.summaryLabel}>Thời gian thanh toán</Text>
-                <Text style={styles.summaryValue}>
+                <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Thời gian thanh toán</Text>
+                <Text style={[styles.summaryValue, { color: theme.text }]}>
                   {new Date(order.paidAt).toLocaleString('vi-VN')}
                 </Text>
               </View>
@@ -293,25 +300,25 @@ export default function OrderDetailScreen() {
         {/* Status History */}
         {statusHistory.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Lịch sử trạng thái</Text>
-            <View style={styles.card}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Lịch sử trạng thái</Text>
+            <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
               {statusHistory.map((history, index) => (
                 <View
                   key={history.id}
                   style={[
                     styles.historyRow,
-                    index < statusHistory.length - 1 && styles.historyBorder,
+                    index < statusHistory.length - 1 && { ...styles.historyBorder, borderBottomColor: theme.border },
                   ]}
                 >
-                  <View style={styles.historyDot} />
+                  <View style={[styles.historyDot, { backgroundColor: theme.primary }]} />
                   <View style={styles.historyContent}>
-                    <Text style={styles.historyStatus}>
+                    <Text style={[styles.historyStatus, { color: theme.text }]}>
                       {ORDER_STATUS_LABELS[history.status] || history.status}
                     </Text>
-                    <Text style={styles.historyDate}>
+                    <Text style={[styles.historyDate, { color: theme.textTertiary }]}>
                       {history.changedAt ? new Date(history.changedAt).toLocaleString('vi-VN') : ''}
                     </Text>
-                    {history.note && <Text style={styles.historyNote}>{history.note}</Text>}
+                    {history.note && <Text style={[styles.historyNote, { color: theme.textSecondary }]}>{history.note}</Text>}
                   </View>
                 </View>
               ))}
@@ -322,7 +329,7 @@ export default function OrderDetailScreen() {
         {/* Cancel Button */}
         {canCancel && (
           <TouchableOpacity
-            style={[styles.cancelButton, cancelling && styles.cancelButtonDisabled]}
+            style={[styles.cancelButton, { backgroundColor: theme.error }, cancelling && styles.cancelButtonDisabled]}
             onPress={handleCancelOrder}
             disabled={cancelling}
           >

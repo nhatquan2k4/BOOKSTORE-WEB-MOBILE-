@@ -1,45 +1,13 @@
 import { api } from './apiClient';
-
-export interface Address {
-  id: string;
-  userId: string;
-  recipientName: string;
-  phoneNumber: string;
-  province: string;
-  district: string;
-  ward: string;
-  streetAddress: string;
-  isDefault: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface CreateAddressDto {
-  recipientName: string;
-  phoneNumber: string;
-  province: string;
-  district: string;
-  ward: string;
-  streetAddress: string;
-  isDefault?: boolean;
-}
-
-export interface UpdateAddressDto {
-  recipientName?: string;
-  phoneNumber?: string;
-  province?: string;
-  district?: string;
-  ward?: string;
-  streetAddress?: string;
-  isDefault?: boolean;
-}
+import { API_ENDPOINTS } from '../config/api';
+import type { Address, CreateAddressDto, UpdateAddressDto } from '../types/address';
 
 const addressService = {
   /**
    * Lấy danh sách địa chỉ của user hiện tại
    */
   async getMyAddresses(): Promise<Address[]> {
-    const response = await api.get('/api/UserProfile/addresses');
+    const response = await api.get(API_ENDPOINTS.USER_PROFILE.ADDRESSES);
     // apiClient already unwraps response.data, so response = { success, data }
     return response.data || [];
   },
@@ -49,7 +17,7 @@ const addressService = {
    */
   async getDefaultAddress(): Promise<Address | null> {
     try {
-      const response = await api.get('/api/UserProfile/addresses/default');
+      const response = await api.get(API_ENDPOINTS.USER_PROFILE.DEFAULT_ADDRESS);
       return response.data || null;
     } catch (error: any) {
       if (error.response?.status === 404) {
@@ -63,7 +31,7 @@ const addressService = {
    * Thêm địa chỉ mới
    */
   async addAddress(data: CreateAddressDto): Promise<Address> {
-    const response = await api.post('/api/UserProfile/addresses', data);
+    const response = await api.post(API_ENDPOINTS.USER_PROFILE.ADDRESSES, data);
     return response.data;
   },
 
@@ -71,7 +39,7 @@ const addressService = {
    * Lấy thông tin địa chỉ theo ID
    */
   async getAddressById(id: string): Promise<Address> {
-    const response = await api.get(`/api/UserProfile/addresses/${id}`);
+    const response = await api.get(API_ENDPOINTS.USER_PROFILE.ADDRESS_BY_ID(id));
     return response.data;
   },
 
@@ -79,7 +47,7 @@ const addressService = {
    * Cập nhật địa chỉ
    */
   async updateAddress(id: string, data: UpdateAddressDto): Promise<Address> {
-    const response = await api.put(`/api/UserProfile/addresses/${id}`, data);
+    const response = await api.put(API_ENDPOINTS.USER_PROFILE.ADDRESS_BY_ID(id), data);
     return response.data;
   },
 
@@ -87,14 +55,14 @@ const addressService = {
    * Xóa địa chỉ
    */
   async deleteAddress(id: string): Promise<void> {
-    await api.delete(`/api/UserProfile/addresses/${id}`);
+    await api.delete(API_ENDPOINTS.USER_PROFILE.ADDRESS_BY_ID(id));
   },
 
   /**
    * Đặt địa chỉ mặc định
    */
   async setDefaultAddress(id: string): Promise<void> {
-    await api.put(`/api/UserProfile/addresses/${id}/set-default`);
+    await api.put(API_ENDPOINTS.USER_PROFILE.SET_DEFAULT_ADDRESS(id));
   },
 };
 
