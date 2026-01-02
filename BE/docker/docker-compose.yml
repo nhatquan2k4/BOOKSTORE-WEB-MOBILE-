@@ -114,7 +114,8 @@ services:
       - EmailSettings__FrontendUrl=http://localhost:3000
       - Gemini__ApiKey=${GEMINI_API_KEY}
       - Gemini__Model=gemini-2.5-flash
-      - Gemini__TimeoutSeconds=30
+      - Gemini__TimeoutSeconds=60
+      - Gemini__MaxTokens=2048
       - Gemini__Enabled=true
     ports:
       - "5276:8080"
