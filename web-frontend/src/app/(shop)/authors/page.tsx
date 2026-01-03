@@ -80,8 +80,6 @@ export default function AuthorsPage() {
     fetchAuthors();
   }, [currentPage]);
 
-  const categories = ["Tất cả", "Kỹ năng sống", "Văn học", "Khoa học", "Kinh tế"];
-
   // Client-side filtering (Nếu backend hỗ trợ filter category thì nên chuyển logic này vào API call)
   const filteredAuthors = authors.filter((author) => {
     const matchCategory =
@@ -115,22 +113,6 @@ export default function AuthorsPage() {
           <span className="mx-2">/</span>
           <span className="text-gray-900">Tác giả</span>
         </nav>
-
-        {/* Category Filter */}
-        <div className="mb-8">
-          <div className="flex flex-wrap justify-center gap-2">
-            {categories.map((cat) => (
-              <Button
-                key={cat}
-                onClick={() => setFilterCategory(cat === "Tất cả" ? "all" : cat)}
-                variant={(filterCategory === cat || (filterCategory === "all" && cat === "Tất cả")) ? "primary" : "outline"}
-                size="sm"
-              >
-                {cat}
-              </Button>
-            ))}
-          </div>
-        </div>
 
         {/* Authors Grid */}
         {loading ? (
@@ -182,14 +164,6 @@ export default function AuthorsPage() {
                     <p className="text-sm text-gray-600 mb-4 line-clamp-2 h-10">
                     {author.bio}
                     </p>
-
-                    <div className="flex flex-wrap gap-2">
-                    {author.categories.map((cat) => (
-                        <Badge key={cat} variant="default" className="text-xs bg-gray-100 text-gray-600 hover:bg-gray-200">
-                        {cat}
-                        </Badge>
-                    ))}
-                    </div>
                 </Link>
                 ))}
             </div>

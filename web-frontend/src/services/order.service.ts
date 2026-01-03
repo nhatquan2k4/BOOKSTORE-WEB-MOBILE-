@@ -92,10 +92,16 @@ export const orderService = {
 
   /**
    * --- Tạo đơn thuê sách ---
+   * Accepts both camelCase and PascalCase for .NET backend compatibility
    */
-  async createRentalOrder(data: CreateRentalOrderDto): Promise<OrderResponseDto> {
+  async createRentalOrder(data: CreateRentalOrderDto | any): Promise<OrderResponseDto> {
     try {
-      const response = await axiosInstance.post<OrderResponseDto>(`${BASE_URL}/rental`, data);
+      // Ensure PascalCase for .NET backend
+      const payload = {
+        BookId: data.BookId || data.bookId,
+        Days: data.Days || data.days
+      };
+      const response = await axiosInstance.post<OrderResponseDto>(`${BASE_URL}/rental`, payload);
       return response.data;
     } catch (error) {
       return handleApiError(error);

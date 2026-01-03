@@ -17,7 +17,6 @@ type Publisher = {
   category: string;
 };
 
-const categories = ["Tất cả", "Văn học", "Thiếu nhi", "Kinh tế", "Khoa học", "Gia đình", "Tổng hợp"];
 
 export default function PublishersPage() {
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
@@ -78,19 +77,6 @@ export default function PublishersPage() {
           <span className="mx-2">/</span>
           <span className="text-gray-900">Nhà xuất bản</span>
         </nav>
-
-        <div className="flex flex-wrap gap-3 justify-center mb-8">
-          {categories.map(cat => (
-            <Button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              variant={selectedCategory === cat ? "primary" : "outline"}
-              size="sm"
-            >
-              {cat}
-            </Button>
-          ))}
-        </div>
 
         {loading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

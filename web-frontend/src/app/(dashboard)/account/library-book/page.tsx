@@ -8,6 +8,7 @@ import {
   Badge,
 } from '@/components/ui';
 import { rentalService } from '@/services/rental.service';
+import { orderService } from '@/services/order.service';
 
 // --- TYPES ---
 // Định nghĩa lại BookRentalDto cho khớp hoàn toàn với C# (camelCase khi về JSON)
@@ -18,21 +19,26 @@ interface BookRentalDto {
   bookTitle: string;        // Khớp C# BookTitle
   bookISBN?: string;
   bookCoverImage?: string;  // Khớp C# BookCoverImage
+  rentalPlanId: string;
   rentalPlanName: string;
-  durationDays: number;
+  durationDays: number;     // hoặc DurationDays tùy backend config
+  price?: number;
   startDate: string;
   endDate: string;
   isReturned: boolean;      // Khớp C# IsReturned
+  isRenewed?: boolean;
   status: string;           // Khớp C# Status ("Active", "Expired")
   daysRemaining: number;
+  isExpired?: boolean;
   canRead: boolean;
 }
 
 type BookFormat = 'ebook' | 'physical';
-type ReadingStatus = 'reading' | 'completed' | 'expired';
+type ReadingStatus = 'reading' | 'completed' | 'expired' | 'purchased';
 
 interface LibraryBook {
-  id: string;
+  id: string;  // Composite ID cho React key: "rental-{rentalId}" hoặc "purchase-{orderId}-{bookId}"
+  bookId: string;  // Actual book ID để navigate
   title: string;
   author: string;
   cover: string;
@@ -46,6 +52,10 @@ interface LibraryBook {
   daysRemaining: number;
   downloadLinks?: string[];
   genre: string;
+  type: 'rental' | 'purchase'; // Phân biệt sách thuê hay mua
+  orderId?: string; // ID đơn hàng (nếu là purchase)
+  rentalPlanInfo?: string; // Thông tin gói thuê: "Thuê 7 ngày", "Thuê 30 ngày", "Mua vĩnh viễn"
+  rentalDuration?: number; // Số ngày thuê
 }
 
 export default function LibraryPage() {
@@ -61,59 +71,100 @@ export default function LibraryPage() {
         setLoading(true);
         setError(null);
         
-        // 1. Gọi API
-        const response: any = await rentalService.getMyRentals(false); 
-        
-        // 2. Xử lý mảng an toàn
-        const rentalList = Array.isArray(response) 
-            ? response 
-            : (response?.items || response?.data || []);
+        // 1. Lấy sách thuê từ Rental Service (Backend đã tính toán StartDate, EndDate, DurationDays)
+        const rentalList = await rentalService.getMyRentals(false); 
 
-        if (!Array.isArray(rentalList)) {
-            setLibrary([]);
-            return;
-        }
-
-        // 3. Map DTO từ C# sang UI Model
-        const books: LibraryBook[] = rentalList.map((rental: BookRentalDto) => {
-          // Logic xác định trạng thái
-          let status: ReadingStatus = 'reading';
-          let progress = 0;
-
-          if (rental.isReturned) {
-            status = 'completed';
-            progress = 100;
-          } else if (rental.status === 'Expired') {
-            status = 'expired';
-            progress = 100; // Hoặc xử lý khác tùy bạn
-          } else {
-            status = 'reading';
-            // Giả lập tiến độ vì DTO chưa có trường Progress
-            // Nếu muốn chuẩn, bạn cần thêm `ReadingProgress` vào Backend
-            progress = Math.floor(Math.random() * 80) + 10; 
-          }
-          
-          return {
-            id: rental.bookId, // Dùng BookId để link tới trang chi tiết sách
-            title: rental.bookTitle,
-            // Lưu ý: DTO C# thiếu Author, tạm thời hardcode hoặc lấy từ Book Service khác
-            author: 'Tác giả', 
-            // Map đúng trường BookCoverImage
-            cover: rental.bookCoverImage || '/image/anh.png', 
-            format: 'ebook',
-            status: status,
-            progress: progress,
-            currentPage: 0,
-            totalPages: 300, // Mock
-            startDate: rental.startDate,
-            endDate: rental.endDate,
-            daysRemaining: rental.daysRemaining,
-            genre: rental.rentalPlanName, // Tạm dùng tên gói thuê làm thể loại
-            downloadLinks: rental.canRead ? ['PDF'] : [],
-          };
+        // 2. Lấy sách đã mua từ Order Service
+        const orderResponse: any = await orderService.getMyOrders({ 
+          status: 'all',
+          pageNumber: 1,
+          pageSize: 100 
         });
         
-        setLibrary(books);
+        const orderList = Array.isArray(orderResponse?.items) ? orderResponse.items : [];
+
+        // Filter orders that are paid/completed
+        const paidOrders = orderList.filter((order: any) => 
+          ['Paid', 'Completed', 'Shipped'].includes(order.status)
+        );
+
+        const allBooks: LibraryBook[] = [];
+
+        // 3. Map sách thuê
+        if (Array.isArray(rentalList)) {
+          const rentalBooks: LibraryBook[] = rentalList.map((rental: any) => {
+            // Backend trả về DurationDays và RentalPlanName (xử lý cả camelCase và PascalCase)
+            const duration = rental.durationDays || rental.DurationDays || 0;
+            const planName = rental.rentalPlanName || rental.RentalPlanName || 'Gói thuê';
+            
+            let status: ReadingStatus = 'reading';
+            let progress = 0;
+
+            if (rental.isReturned || rental.IsReturned) {
+              status = 'completed';
+              progress = 100;
+            } else if (rental.status === 'Expired' || rental.Status === 'Expired') {
+              status = 'expired';
+              progress = 100;
+            } else {
+              status = 'reading';
+              progress = Math.floor(Math.random() * 80) + 10; 
+            }
+            
+            return {
+              id: `rental-${rental.id || rental.Id}`,  // Unique key: rental-{rentalId}
+              bookId: rental.bookId || rental.BookId,  // Actual book ID
+              title: rental.bookTitle || rental.BookTitle,
+              author: 'Tác giả', 
+              cover: rental.bookCoverImage || rental.BookCoverImage || '/image/anh.png', 
+              format: 'ebook',
+              status: status,
+              progress: progress,
+              currentPage: 0,
+              totalPages: 300,
+              startDate: rental.startDate || rental.StartDate,
+              endDate: rental.endDate || rental.EndDate,
+              daysRemaining: rental.daysRemaining || rental.DaysRemaining || 0,
+              genre: planName,
+              downloadLinks: (rental.canRead || rental.CanRead) ? ['PDF'] : [],
+              type: 'rental',
+              rentalPlanInfo: duration > 0 ? `Thuê ${duration} ngày` : planName,
+              rentalDuration: duration,
+            };
+          });
+          allBooks.push(...rentalBooks);
+        }
+
+        // 4. Map sách đã mua
+        paidOrders.forEach((order: any) => {
+          if (Array.isArray(order.items)) {
+            order.items.forEach((item: any) => {
+              allBooks.push({
+                id: `purchase-${order.id}-${item.bookId}`,  // Unique key: purchase-{orderId}-{bookId}
+                bookId: item.bookId,  // Actual book ID
+                title: item.bookTitle || 'Sách',
+                author: 'Tác giả',
+                cover: item.bookImageUrl || '/image/anh.png',
+                format: 'ebook',
+                status: 'purchased',
+                progress: 0,
+                currentPage: 0,
+                totalPages: 300,
+                startDate: order.createdAt,
+                endDate: '', // Sách mua không có hạn
+                daysRemaining: 999,
+                genre: 'Đã mua',
+                downloadLinks: ['PDF', 'EPUB'],
+                type: 'purchase',
+                orderId: order.id,
+                rentalPlanInfo: 'Mua vĩnh viễn',
+                rentalDuration: 0,
+              });
+            });
+          }
+        });
+        
+        setLibrary(allBooks);
       } catch (err) {
         console.error('Error fetching library:', err);
         setError('Không thể tải thư viện sách.');
@@ -127,13 +178,16 @@ export default function LibraryPage() {
 
   // --- FILTER ---
   const filteredBooks = useMemo(() => {
+    if (activeTab === 'purchased') {
+      return library.filter(book => book.type === 'purchase');
+    }
     return library.filter(book => book.status === activeTab);
   }, [activeTab, library]);
 
   // --- HANDLERS ---
-  const handleRead = (bookId: string) => {
-    // Chuyển hướng sang trang đọc sách
-    window.location.href = `/books/${bookId}/read`;
+  const handleRead = (book: LibraryBook) => {
+    // Sử dụng bookId thực tế từ object
+    window.location.href = `/books/${book.bookId}/read`;
   };
 
   const formatDate = useCallback((dateString: string) => {
@@ -166,8 +220,17 @@ export default function LibraryPage() {
               activeTab === 'reading' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Đang đọc
+            Đang thuê
             {activeTab === 'reading' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600"></span>}
+          </button>
+          <button
+            onClick={() => setActiveTab('purchased')}
+            className={`px-4 py-2 font-medium text-sm transition-colors relative ${
+              activeTab === 'purchased' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Đã mua
+            {activeTab === 'purchased' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600"></span>}
           </button>
           <button
             onClick={() => setActiveTab('completed')}
@@ -175,7 +238,7 @@ export default function LibraryPage() {
               activeTab === 'completed' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Đã trả / Hoàn thành
+            Đã trả
             {activeTab === 'completed' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600"></span>}
           </button>
           <button
@@ -216,7 +279,7 @@ export default function LibraryPage() {
                 {/* Nội dung */}
                 <div className="p-4 flex-1 flex flex-col justify-between">
                   <div>
-                    <Link href={`/books/${book.id}`}>
+                    <Link href={`/books/${book.bookId}`}>
                         <h3 className="font-bold text-gray-900 line-clamp-2 hover:text-blue-600 transition">
                         {book.title}
                         </h3>
@@ -224,9 +287,19 @@ export default function LibraryPage() {
                     <p className="text-sm text-gray-500 mb-2">{book.author}</p>
                     
                     {/* Badge trạng thái */}
-                    <div className="flex gap-2 mb-3">
-                        <Badge className="text-xs">{book.genre}</Badge>
-                        {book.daysRemaining <= 3 && book.status === 'reading' && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                        {book.rentalPlanInfo && (
+                            <Badge 
+                                className={`text-xs font-semibold ${
+                                    book.type === 'purchase' 
+                                        ? 'bg-green-100 text-green-700 border-green-300' 
+                                        : 'bg-blue-100 text-blue-700 border-blue-300'
+                                }`}
+                            >
+                                {book.rentalPlanInfo}
+                            </Badge>
+                        )}
+                        {book.daysRemaining <= 3 && book.status === 'reading' && book.type === 'rental' && (
                             <Badge variant="warning" className="text-xs text-orange-600 bg-orange-50 border-orange-200">
                                 Hết hạn sau {book.daysRemaining} ngày
                             </Badge>
@@ -249,20 +322,32 @@ export default function LibraryPage() {
                     )}
 
                     <div className="flex gap-2">
-                        {book.status === 'reading' ? (
-                            <Button size="sm" className="w-full" onClick={() => handleRead(book.id)}>
+                        {(book.status === 'reading' || book.type === 'purchase') ? (
+                            <Button size="sm" className="w-full" onClick={() => handleRead(book)}>
                                 Đọc ngay
                             </Button>
                         ) : (
-                            <Button size="sm" variant="outline" className="w-full" onClick={() => window.location.href = `/books/${book.id}`}>
+                            <Button size="sm" variant="outline" className="w-full" onClick={() => window.location.href = `/books/${book.bookId}`}>
                                 Xem lại sách
                             </Button>
                         )}
                     </div>
                     
-                    <p className="text-xs text-gray-400 mt-2 text-center">
-                        Hết hạn: {formatDate(book.endDate)}
-                    </p>
+                    {book.type === 'rental' && book.endDate && (
+                      <div className="mt-2 text-center">
+                        <p className="text-xs text-gray-600 font-medium">
+                          Gói: {book.rentalPlanInfo}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          Hết hạn: {formatDate(book.endDate)}
+                        </p>
+                      </div>
+                    )}
+                    {book.type === 'purchase' && (
+                      <p className="text-xs text-green-600 mt-2 text-center font-medium">
+                          ✓ Sở hữu vĩnh viễn • Mua ngày {formatDate(book.startDate)}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
