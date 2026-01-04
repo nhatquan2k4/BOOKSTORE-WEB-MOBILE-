@@ -10,6 +10,7 @@ import {
 import { notificationService } from '@/services/notification.service';
 
 type NotificationType = 'order' | 'promotion' | 'review' | 'system' | 'payment';
+type BackendNotificationType = 'order' | 'promotion' | 'review' | 'system' | 'payment' | 'order_created' | 'payment_success' | 'order_shipped' | 'order_completed' | 'rental_success' | 'rental_renewed' | 'rental_returned';
 
 interface Notification {
   id: string;
@@ -20,6 +21,23 @@ interface Notification {
   createdAt: string;
   actionUrl?: string;
 }
+
+// Map backend notification types to display types
+const mapNotificationType = (type: string): NotificationType => {
+  // Map order-related types
+  if (type.startsWith('order_') || type === 'payment_success') {
+    return 'order';
+  }
+  // Map rental-related types
+  if (type.startsWith('rental_')) {
+    return 'order';
+  }
+  // Default types
+  if (['order', 'promotion', 'review', 'system', 'payment'].includes(type)) {
+    return type as NotificationType;
+  }
+  return 'system';
+};
 
 const notificationTypeConfig: Record<
   NotificationType,
@@ -108,7 +126,7 @@ export default function NotificationsPage() {
         const items = notifResponse?.items || [];
         const transformedNotifications: Notification[] = items.map((item: any) => ({
           id: item.id,
-          type: (item.type || 'system') as NotificationType,
+          type: mapNotificationType(item.type || 'system'),
           title: item.title,
           message: item.message,
           isRead: item.isRead,

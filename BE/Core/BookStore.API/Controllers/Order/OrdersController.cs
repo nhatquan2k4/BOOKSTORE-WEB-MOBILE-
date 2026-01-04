@@ -262,18 +262,35 @@ namespace BookStore.API.Controllers.Order
         [HttpPost("rental")]
         public async Task<IActionResult> CreateRentalOrder([FromBody] CreateRentalOrderDto dto)
         {
-            var userId = GetCurrentUserId();
-            // User Service will calculate price and create order securely
-            var order = await _orderService.CreateRentalOrderAsync(userId, dto.BookId, dto.Days);
-
-            return Ok(new
+            try
             {
-                Success = true,
-                OrderId = order.Id,
-                OrderNumber = order.OrderNumber,
-                Amount = order.FinalAmount,
-                Message = "Tạo đơn thuê thành công, vui lòng thanh toán"
-            });
+                _logger.LogInformation(" [CreateRentalOrder] Request received - BookId: {BookId}, RentalPlanId: {RentalPlanId}, Days: {Days}", 
+                    dto.BookId, dto.RentalPlanId, dto.Days);
+                
+                var userId = GetCurrentUserId();
+                _logger.LogInformation(" [CreateRentalOrder] UserId: {UserId}", userId);
+                
+                // Ưu tiên dùng RentalPlanId nếu có, fallback sang Days
+                var order = dto.RentalPlanId.HasValue 
+                    ? await _orderService.CreateRentalOrderByPlanIdAsync(userId, dto.BookId, dto.RentalPlanId.Value)
+                    : await _orderService.CreateRentalOrderAsync(userId, dto.BookId, dto.Days);
+                
+                _logger.LogInformation(" [CreateRentalOrder] Order created successfully - OrderId: {OrderId}, Amount: {Amount}", order.Id, order.FinalAmount);
+
+                return Ok(new
+                {
+                    Success = true,
+                    OrderId = order.Id,
+                    OrderNumber = order.OrderNumber,
+                    Amount = order.FinalAmount,
+                    Message = "Tạo đơn thuê thành công, vui lòng thanh toán"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, " [CreateRentalOrder] Error creating rental order - BookId: {BookId}, Days: {Days}", dto.BookId, dto.Days);
+                return StatusCode(500, new { Message = "Lỗi tạo đơn thuê: " + ex.Message });
+            }
         }
 
         #endregion
@@ -409,7 +426,8 @@ namespace BookStore.API.Controllers.Order
     public class CreateRentalOrderDto
     {
         public Guid BookId { get; set; }
-        public int Days { get; set; } // 3, 7, 30...
+        public Guid? RentalPlanId { get; set; } // ID gói thuê user chọn (ưu tiên)
+        public int Days { get; set; } // 3, 7, 30... (backup nếu không có RentalPlanId)
     }
 
     public class ShipOrderDto { public string? Note { get; set; } }

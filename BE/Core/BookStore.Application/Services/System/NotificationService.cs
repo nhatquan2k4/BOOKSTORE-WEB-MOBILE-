@@ -21,25 +21,41 @@ namespace BookStore.Application.Services.System
 
         public async Task<NotificationDto> CreateNotificationAsync(CreateNotificationDto dto)
         {
-            var notification = new Notification
+            try
             {
-                Id = Guid.NewGuid(),
-                UserId = dto.UserId,
-                Title = dto.Title,
-                Message = dto.Message,
-                Type = dto.Type,
-                Link = dto.Link,
-                IsRead = false,
-                CreatedAt = DateTime.UtcNow
-            };
+                _logger.LogInformation("==== START CreateNotificationAsync ====");
+                _logger.LogInformation("UserId: {UserId}, Title: {Title}, Type: {Type}", 
+                    dto.UserId, dto.Title, dto.Type);
 
-            await _notificationRepository.AddAsync(notification);
-            await _notificationRepository.SaveChangesAsync();
+                var notification = new Notification
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = dto.UserId,
+                    Title = dto.Title,
+                    Message = dto.Message,
+                    Type = dto.Type,
+                    Link = dto.Link,
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                };
 
-            _logger.LogInformation("Created notification {NotificationId} for user {UserId}", 
-                notification.Id, dto.UserId);
+                _logger.LogInformation("Adding notification to repository...");
+                await _notificationRepository.AddAsync(notification);
+                
+                _logger.LogInformation("Saving changes to database...");
+                await _notificationRepository.SaveChangesAsync();
 
-            return MapToDto(notification);
+                _logger.LogInformation("✅ Created notification {NotificationId} for user {UserId}", 
+                    notification.Id, dto.UserId);
+
+                return MapToDto(notification);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error creating notification for user {UserId}: {Message}", 
+                    dto.UserId, ex.Message);
+                throw;
+            }
         }
 
         public async Task<(IEnumerable<NotificationListDto> Notifications, int TotalCount)> GetUserNotificationsAsync(
@@ -110,6 +126,21 @@ namespace BookStore.Application.Services.System
             await _notificationRepository.SaveChangesAsync();
             
             _logger.LogInformation("Deleted notification {NotificationId} for user {UserId}", id, userId);
+            
+            return true;
+        }
+
+        public async Task<bool> DeleteAllNotificationsAsync(Guid userId)
+        {
+            var notifications = await _notificationRepository.GetUserNotificationsAsync(userId, 1, int.MaxValue);
+            
+            foreach (var notification in notifications)
+            {
+                _notificationRepository.Delete(notification);
+            }
+            
+            await _notificationRepository.SaveChangesAsync();
+            _logger.LogInformation("Deleted all notifications for user {UserId}. Total: {Count}", userId, notifications.Count());
             
             return true;
         }

@@ -1,14 +1,4 @@
 // Rental-specific DTOs
-// DTO cho Gói thuê (Được tính toán từ Backend)
-export interface RentalPlanDto {
-  id: number;
-  days: number;
-  durationLabel: string;
-  price: number;
-  savingsPercentage: number;
-  isPopular: boolean;
-}
-
 // DTO gửi đi để tạo đơn thuê
 export interface CreateRentalOrderDto {
   bookId: string;

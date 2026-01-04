@@ -6,9 +6,11 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { bookService } from "@/services";
+import { wishlistService } from "@/services/wishlist.service";
 import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
 import { normalizeImageUrl } from '@/lib/imageUtils';
+import { toast } from "sonner";
 
 // --- COMPONENT: Khung xám thay thế khi không có ảnh ---
 const NoImagePlaceholder = ({ dark = false }: { dark?: boolean }) => (
@@ -56,6 +58,25 @@ export default function DiscoverNowPage() {
   const [loadingHero, setLoadingHero] = useState(true);
   const [loadingTrending, setLoadingTrending] = useState(true);
   const [loadingNewArrivals, setLoadingNewArrivals] = useState(true);
+  const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
+  const [togglingWishlist, setTogglingWishlist] = useState<Set<string>>(new Set());
+
+  // Fetch wishlist status
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      try {
+        const response = await wishlistService.getMyWishlist();
+        if (response && Array.isArray(response)) {
+          const ids = new Set(response.map((item: any) => item.bookId || item.id));
+          setWishlistIds(ids);
+        }
+      } catch (error) {
+        console.error("Error fetching wishlist:", error);
+      }
+    };
+    
+    fetchWishlist();
+  }, []);
 
   useEffect(() => {
     const fetchHeroBooks = async () => {
@@ -155,6 +176,44 @@ export default function DiscoverNowPage() {
     setActiveHero((prev) => (prev - 1 + heroBooks.length) % heroBooks.length);
   };
 
+  const handleToggleWishlist = async (bookId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    if (togglingWishlist.has(bookId)) return;
+
+    setTogglingWishlist(prev => new Set(prev).add(bookId));
+
+    try {
+      const isInWishlist = wishlistIds.has(bookId);
+      
+      if (isInWishlist) {
+        await wishlistService.removeFromWishlist(bookId);
+        setWishlistIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(bookId);
+          return newSet;
+        });
+        toast.success("Đã xóa khỏi danh sách yêu thích");
+      } else {
+        await wishlistService.addToWishlist(bookId);
+        setWishlistIds(prev => new Set(prev).add(bookId));
+        toast.success("Đã thêm vào danh sách yêu thích");
+      }
+    } catch (error) {
+      console.error("Error toggling wishlist:", error);
+      toast.error("Có lỗi xảy ra. Vui lòng thử lại.");
+    } finally {
+      setTogglingWishlist(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(bookId);
+        return newSet;
+      });
+    }
+  };
+
   // tự động chuyển sau 3s
   useEffect(() => {
     if (heroBooks.length === 0) return;
@@ -214,11 +273,16 @@ export default function DiscoverNowPage() {
                   >
                     Khám phá ngay
                   </Link>
-                  <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                  <Button 
+                    variant="outline" 
+                    className="border-white/30 text-white hover:bg-white/10"
+                    onClick={() => heroBooks[activeHero]?.id && handleToggleWishlist(heroBooks[activeHero].id)}
+                    disabled={togglingWishlist.has(heroBooks[activeHero]?.id || '')}
+                  >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-5 w-5 mr-2"
-                      fill="none"
+                      fill={wishlistIds.has(heroBooks[activeHero]?.id || '') ? "currentColor" : "none"}
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
@@ -229,7 +293,7 @@ export default function DiscoverNowPage() {
                         d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
                       />
                     </svg>
-                    Thêm vào yêu thích
+                    {wishlistIds.has(heroBooks[activeHero]?.id || '') ? 'Đã yêu thích' : 'Thêm vào yêu thích'}
                   </Button>
                 </div>
               </div>

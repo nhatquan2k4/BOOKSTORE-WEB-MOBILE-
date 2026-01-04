@@ -431,6 +431,7 @@ function QRPaymentContent() {
   
   // State
   const [amount, setAmount] = useState<number>(0); // Số tiền thực tế từ DB
+  const [orderNumber, setOrderNumber] = useState<string>(""); // Order number from DB
   const [timeLeft, setTimeLeft] = useState(900);
   const [paymentStatus, setPaymentStatus] = useState<string>("pending");
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
@@ -461,9 +462,12 @@ function QRPaymentContent() {
             // Backend có thể trả về key viết hoa hoặc thường tùy cấu hình
             const rawFinalAmount = (orderData as unknown as Record<string, unknown>).finalAmount;
             const rawTotalAmount = (orderData as unknown as Record<string, unknown>).totalAmount;
+            const rawOrderNumber = (orderData as unknown as Record<string, unknown>).orderNumber;
             const realAmount = Number(rawFinalAmount ?? rawTotalAmount ?? 0);
             console.log("💰 Giá gốc từ DB:", realAmount);
+            console.log("📋 Order Number:", rawOrderNumber);
             setAmount(realAmount);
+            setOrderNumber(String(rawOrderNumber || ""));
             // Sau khi có giá chuẩn, mới tạo QR
             await initQR(realAmount);
         }
@@ -517,10 +521,12 @@ function QRPaymentContent() {
     console.log("✅ Thanh toán thành công! Chuyển hướng...");
     setPaymentStatus("success");
 
-    // Nếu là đơn mua hàng, xóa giỏ hàng cho chắc
-    if (type === "buy") {
-      try { await cartService.clearCart(); } catch { }
-    }
+    // ❌ KHÔNG XÓA GIỎ HÀNG Ở ĐÂY!
+    // Lý do: Checkout page đã xóa các món được chọn để thanh toán rồi
+    // Nếu xóa toàn bộ ở đây sẽ làm mất cả những món chưa thanh toán
+    // if (type === "buy") {
+    //   try { await cartService.clearCart(); } catch { }
+    // }
 
     setTimeout(() => {
       // Chuyển sang trang Success với đúng loại đơn
@@ -531,19 +537,20 @@ function QRPaymentContent() {
 
   // --- 4. NÚT GIẢ LẬP THANH TOÁN (Test) ---
   const handleTestPayment = async () => {
-    if (!orderId || isConfirming) return;
+    if (!orderNumber || isConfirming) return;
     
     try {
       setIsConfirming(true);
-      console.log("🧪 [TEST] Đang xác nhận thanh toán...");
+      console.log("🧪 [TEST] Đang xác nhận thanh toán với orderNumber:", orderNumber);
       
-      // Gọi API giả lập trong lib/api/orders.ts (đã sửa ở bước trước)
-      await ordersApi.confirmPayment(orderId);
+      // Gọi API confirm payment với orderNumber
+      await ordersApi.confirmPaymentByOrderNumber(orderNumber);
       
+      console.log("✅ [TEST] Xác nhận thanh toán thành công!");
       await handleSuccess();
     } catch (error) {
       console.error("❌ Lỗi giả lập:", error);
-      alert("Có lỗi khi xác nhận thanh toán.");
+      alert("Có lỗi khi xác nhận thanh toán: " + (error as Error).message);
     } finally {
       setIsConfirming(false);
     }

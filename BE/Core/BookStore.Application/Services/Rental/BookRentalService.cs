@@ -1,6 +1,8 @@
 using BookStore.Application.Dtos.Rental;
 using BookStore.Application.IService;
 using BookStore.Application.IService.Rental;
+using BookStore.Application.IService.System;
+using BookStore.Application.DTOs.System.Notification;
 using BookStore.Domain.Entities.Rental;
 using BookStore.Domain.IRepository.Catalog;
 using BookStore.Domain.IRepository.Rental;
@@ -16,6 +18,7 @@ namespace BookStore.Application.Services.Rental
         private readonly IBookRepository _bookRepository;
         private readonly IUserSubscriptionRepository _subscriptionRepository;
         private readonly IEbookService _ebookService;
+        private readonly INotificationService _notificationService;
         private readonly ILogger<BookRentalService> _logger;
 
         public BookRentalService(
@@ -24,6 +27,7 @@ namespace BookStore.Application.Services.Rental
             IBookRepository bookRepository,
             IUserSubscriptionRepository subscriptionRepository,
             IEbookService ebookService,
+            INotificationService notificationService,
             ILogger<BookRentalService> logger)
         {
             _rentalRepository = rentalRepository;
@@ -31,6 +35,7 @@ namespace BookStore.Application.Services.Rental
             _bookRepository = bookRepository;
             _subscriptionRepository = subscriptionRepository;
             _ebookService = ebookService;
+            _notificationService = notificationService;
             _logger = logger;
         }
 
@@ -89,6 +94,18 @@ namespace BookStore.Application.Services.Rental
             await _rentalRepository.SaveChangesAsync();
 
             _logger.LogInformation($"User {userId} rented book {dto.BookId} with plan {dto.RentalPlanId}");
+
+            // Tạo thông báo thuê sách thành công
+            _logger.LogInformation($"[BookRentalService] Creating rental notification for user {userId}...");
+            await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+            {
+                UserId = userId,
+                Title = "Thuê sách thành công",
+                Message = $"Bạn đã thuê thành công sách '{book!.Title}' với gói {plan!.Name} ({plan.DurationDays} ngày). Hạn trả: {rental.EndDate:dd/MM/yyyy}",
+                Type = "rental_success",
+                Link = $"/rentals/{rental.Id}"
+            });
+            _logger.LogInformation($"[BookRentalService] ✅ Rental notification created for user {userId}");
 
             return new BookRentalResultDto
             {
@@ -149,6 +166,18 @@ namespace BookStore.Application.Services.Rental
 
             _logger.LogInformation($"User {userId} renewed rental {rentalId}");
 
+            // Tạo thông báo gia hạn thành công
+            _logger.LogInformation($"[BookRentalService] Creating renewal notification for user {userId}...");
+            await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+            {
+                UserId = userId,
+                Title = "Gia hạn thuê sách thành công",
+                Message = $"Bạn đã gia hạn thành công thuê sách '{rental.Book.Title}' thêm {plan.DurationDays} ngày. Hạn trả mới: {rental.EndDate:dd/MM/yyyy}",
+                Type = "rental_renewed",
+                Link = $"/rentals/{rental.Id}"
+            });
+            _logger.LogInformation($"[BookRentalService] ✅ Renewal notification created for user {userId}");
+
             return new BookRentalResultDto
             {
                 Success = true,
@@ -184,6 +213,19 @@ namespace BookStore.Application.Services.Rental
             await _rentalRepository.SaveChangesAsync();
 
             _logger.LogInformation($"User {userId} returned book rental {rentalId}");
+            
+            // Tạo thông báo trả sách
+            _logger.LogInformation($"[BookRentalService] Creating return notification for user {userId}...");
+            await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+            {
+                UserId = userId,
+                Title = "Trả sách thành công",
+                Message = $"Bạn đã trả sách thuê thành công. Cảm ơn bạn đã sử dụng dịch vụ!",
+                Type = "rental_returned",
+                Link = $"/rentals/{rentalId}"
+            });
+            _logger.LogInformation($"[BookRentalService] ✅ Return notification created for user {userId}");
+            
             return true;
         }
 
