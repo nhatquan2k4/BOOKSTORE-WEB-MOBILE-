@@ -24,6 +24,8 @@ namespace BookStore.API.Controllers.Payment
             _paymentSettings = paymentSettings.Value;
         }
 
+        #region Query Methods
+
         // GET: api/payment/{id}
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetPaymentById(Guid id)
@@ -96,6 +98,32 @@ namespace BookStore.API.Controllers.Payment
                 TotalPages = (int)Math.Ceiling((double)result.TotalCount / pageSize)
             });
         }
+
+        // GET: api/payment/expired-pending
+        [HttpGet("expired-pending")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetExpiredPendingPayments([FromQuery] int minutesThreshold = 15)
+        {
+            var payments = await _paymentService.GetExpiredPendingPaymentsAsync(minutesThreshold);
+            return Ok(new
+            {
+                ExpiredPayments = payments,
+                Count = payments.Count,
+                ThresholdMinutes = minutesThreshold
+            });
+        }
+
+        // GET: api/payment/check-transaction/{transactionCode}
+        [HttpGet("check-transaction/{transactionCode}")]
+        public async Task<IActionResult> CheckTransactionExists(string transactionCode)
+        {
+            var exists = await _paymentService.IsTransactionCodeExistsAsync(transactionCode);
+            return Ok(new { Exists = exists, TransactionCode = transactionCode });
+        }
+
+        #endregion
+
+        #region Create Operations
 
         // --- ĐOẠN SỬA CHỮA QUAN TRỌNG: CREATE QR ---
         // POST: api/payment/qr
@@ -185,6 +213,10 @@ namespace BookStore.API.Controllers.Payment
             return CreatedAtAction(nameof(GetPaymentById), new { id = payment.Id }, payment);
         }
 
+        #endregion
+
+        #region Update Operations
+
         // PUT: api/payment/status
         [HttpPut("status")]
         public async Task<IActionResult> UpdatePaymentStatus([FromBody] UpdatePaymentStatusDto dto)
@@ -227,20 +259,6 @@ namespace BookStore.API.Controllers.Payment
             return Ok(new { Message = "Đánh dấu thanh toán là thất bại" });
         }
 
-        // GET: api/payment/expired-pending
-        [HttpGet("expired-pending")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetExpiredPendingPayments([FromQuery] int minutesThreshold = 15)
-        {
-            var payments = await _paymentService.GetExpiredPendingPaymentsAsync(minutesThreshold);
-            return Ok(new
-            {
-                ExpiredPayments = payments,
-                Count = payments.Count,
-                ThresholdMinutes = minutesThreshold
-            });
-        }
-
         // POST: api/payment/cancel-expired
         [HttpPost("cancel-expired")]
         [Authorize(Roles = "Admin")]
@@ -249,6 +267,10 @@ namespace BookStore.API.Controllers.Payment
             await _paymentService.CancelExpiredPaymentsAsync();
             return Ok(new { Message = "Đã hủy các thanh toán đang chờ hết hạn" });
         }
+
+        #endregion
+
+        #region Statistics
 
         // GET: api/payment/statistics/by-provider
         [HttpGet("statistics/by-provider")]
@@ -269,19 +291,17 @@ namespace BookStore.API.Controllers.Payment
             });
         }
 
-        // GET: api/payment/check-transaction/{transactionCode}
-        [HttpGet("check-transaction/{transactionCode}")]
-        public async Task<IActionResult> CheckTransactionExists(string transactionCode)
-        {
-            var exists = await _paymentService.IsTransactionCodeExistsAsync(transactionCode);
-            return Ok(new { Exists = exists, TransactionCode = transactionCode });
-        }
+        #endregion
+
+        #region Utility Methods
 
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập"));
         }
+
+        #endregion
     }
 
     // Helper DTOs

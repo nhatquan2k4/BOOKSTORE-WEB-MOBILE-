@@ -18,11 +18,8 @@ namespace BookStore.API.Controllers.BookImages
             _bookImageService = bookImageService;
         }
 
-        /// <summary>
-        /// Lấy tất cả images của một book
-        /// </summary>
-        /// <param name="bookId">ID của book</param>
-        /// <returns>Danh sách BookImageDto</returns>
+        #region Query Methods
+
         [HttpGet]
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -32,11 +29,6 @@ namespace BookStore.API.Controllers.BookImages
             return Ok(images);
         }
 
-        /// <summary>
-        /// Lấy cover image của book
-        /// </summary>
-        /// <param name="bookId">ID của book</param>
-        /// <returns>BookImageDto hoặc null</returns>
         [HttpGet("cover")]
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -50,14 +42,10 @@ namespace BookStore.API.Controllers.BookImages
             return Ok(coverImage);
         }
 
-        /// <summary>
-        /// Upload file và tạo BookImage trong 1 request (RECOMMENDED)
-        /// </summary>
-        /// <param name="bookId">ID của book</param>
-        /// <param name="file">File ảnh cần upload</param>
-        /// <param name="isCover">Có phải ảnh bìa không (default: false)</param>
-        /// <param name="displayOrder">Thứ tự hiển thị (default: 0)</param>
-        /// <returns>BookImageDto</returns>
+        #endregion
+
+        #region Upload Operations
+
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -113,13 +101,6 @@ namespace BookStore.API.Controllers.BookImages
             }
         }
 
-        /// <summary>
-        /// Upload nhiều files và tạo BookImages trong 1 request
-        /// </summary>
-        /// <param name="bookId">ID của book</param>
-        /// <param name="files">Danh sách file ảnh</param>
-        /// <param name="coverImageIndex">Index của ảnh bìa (nếu có)</param>
-        /// <returns>Danh sách BookImageDto</returns>
         [HttpPost("upload/batch")]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -185,66 +166,10 @@ namespace BookStore.API.Controllers.BookImages
             }
         }
 
-        /// <summary>
-        /// Thêm một image mới cho book (cần upload file trước, sau đó gửi URL)
-        /// </summary>
-        /// <param name="bookId">ID của book</param>
-        /// <param name="dto">CreateBookImageDto với ImageUrl đã upload</param>
-        /// <returns>BookImageDto</returns>
-        // [HttpPost]
-        // [ProducesResponseType(StatusCodes.Status201Created)]
-        // [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        // public async Task<ActionResult<BookImageDto>> CreateImage(
-        //     Guid bookId,
-        //     [FromBody] CreateBookImageDto dto)
-        // {
-        //     if (bookId != dto.BookId)
-        //         return BadRequest(new { message = "BookId không hợp lệ" });
+        #endregion
 
-        //     try
-        //     {
-        //         var result = await _bookImageService.UploadImageAsync(dto);
-        //         return CreatedAtRoute("GetImageById", new { id = result.Id }, result);
-        //     }
-        //     catch (InvalidOperationException ex)
-        //     {
-        //         return BadRequest(new { message = ex.Message });
-        //     }
-        // }
+        #region Update Operations
 
-        /// <summary>
-        /// Thêm nhiều images cùng lúc cho book (cần upload files trước, sau đó gửi URLs)
-        /// </summary>
-        /// <param name="bookId">ID của book</param>
-        /// <param name="dto">UploadBookImagesDto với danh sách ImageUrls đã upload</param>
-        /// <returns>Danh sách BookImageDto</returns>
-        // [HttpPost("batch")]
-        // [ProducesResponseType(StatusCodes.Status201Created)]
-        // [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        // public async Task<ActionResult<IEnumerable<BookImageDto>>> CreateImages(
-        //     Guid bookId,
-        //     [FromBody] UploadBookImagesDto dto)
-        // {
-        //     if (bookId != dto.BookId)
-        //         return BadRequest(new { message = "BookId không hợp lệ" });
-
-        //     try
-        //     {
-        //         var result = await _bookImageService.UploadImagesAsync(dto);
-        //         return CreatedAtAction(nameof(GetImagesByBookId), new { bookId }, result);
-        //     }
-        //     catch (InvalidOperationException ex)
-        //     {
-        //         return BadRequest(new { message = ex.Message });
-        //     }
-        // }
-
-        /// <summary>
-        /// Set một image làm cover của book
-        /// </summary>
-        /// <param name="bookId">ID của book</param>
-        /// <param name="dto">SetCoverImageDto</param>
-        /// <returns>Success status</returns>
         [HttpPut("cover")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -264,11 +189,10 @@ namespace BookStore.API.Controllers.BookImages
             }
         }
 
-        /// <summary>
-        /// Xóa tất cả images của book
-        /// </summary>
-        /// <param name="bookId">ID của book</param>
-        /// <returns>Success status</returns>
+        #endregion
+
+        #region Delete Operations
+
         [HttpDelete]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -280,11 +204,11 @@ namespace BookStore.API.Controllers.BookImages
 
             return Ok(new { message = "Đã xóa tất cả ảnh thành công" });
         }
+
+        #endregion
     }
 
-    /// <summary>
-    /// Controller riêng cho các operations trên individual image
-    /// </summary>
+
     [AllowAnonymous]
     [Route("api/images")]
     public class BookImageController : ApiControllerBase
@@ -296,10 +220,8 @@ namespace BookStore.API.Controllers.BookImages
             _bookImageService = bookImageService;
         }
 
-        /// <summary>
-        /// Lấy tất cả images của tất cả sách
-        /// </summary>
-        /// <returns>Danh sách BookImageDto</returns>
+        #region Query Methods
+
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<BookImageDto>>> GetAllImages()
@@ -308,11 +230,6 @@ namespace BookStore.API.Controllers.BookImages
             return Ok(images);
         }
 
-        /// <summary>
-        /// Lấy chi tiết một image theo ID
-        /// </summary>
-        /// <param name="id">ID của image</param>
-        /// <returns>BookImageDto</returns>
         [HttpGet("{id:guid}", Name = "GetImageById")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -325,12 +242,10 @@ namespace BookStore.API.Controllers.BookImages
             return Ok(image);
         }
 
-        /// <summary>
-        /// Cập nhật thông tin image (IsCover, DisplayOrder)
-        /// </summary>
-        /// <param name="id">ID của image</param>
-        /// <param name="dto">UpdateBookImageDto</param>
-        /// <returns>BookImageDto đã cập nhật</returns>
+        #endregion
+
+        #region Update Operations
+
         [HttpPut("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -351,11 +266,10 @@ namespace BookStore.API.Controllers.BookImages
             }
         }
 
-        /// <summary>
-        /// Xóa một image
-        /// </summary>
-        /// <param name="id">ID của image</param>
-        /// <returns>Success status</returns>
+        #endregion
+
+        #region Delete Operations
+
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -367,5 +281,7 @@ namespace BookStore.API.Controllers.BookImages
 
             return Ok(new { message = "Đã xóa ảnh thành công" });
         }
+
+        #endregion
     }
 }

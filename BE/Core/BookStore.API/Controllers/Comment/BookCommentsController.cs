@@ -18,9 +18,7 @@ namespace BookStore.API.Controllers.Comment
             _commentService = commentService;
         }
 
-        /// <summary>
-        /// Create a comment on a book (User must be logged in)
-        /// </summary>
+
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreateComment(Guid bookId, [FromBody] CreateCommentDto dto)
@@ -57,9 +55,6 @@ namespace BookStore.API.Controllers.Comment
             }
         }
 
-        /// <summary>
-        /// Get all comments for a book (Public access)
-        /// </summary>
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> GetBookComments(

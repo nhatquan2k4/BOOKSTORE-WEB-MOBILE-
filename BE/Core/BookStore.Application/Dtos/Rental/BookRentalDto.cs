@@ -1,8 +1,6 @@
 namespace BookStore.Application.Dtos.Rental
 {
-    /// <summary>
-    /// DTO trả về thông tin lượt thuê sách
-    /// </summary>
+
     public class BookRentalDto
     {
         public Guid Id { get; set; }

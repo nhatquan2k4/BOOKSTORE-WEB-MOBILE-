@@ -9,16 +9,10 @@ using BookEntity = BookStore.Domain.Entities.Catalog.Book;
 
 namespace BookStore.Application.Mappers.Catalog.Book
 {
-    /// <summary>
-    /// Mapper thủ công cho Book entity
-    /// Sử dụng các mapper khác để map nested entities
-    /// </summary>
+
     public static class BookMapper
     {
-        /// <summary>
-        /// Map Book entity sang BookDto (Simple DTO với tên thay vì nested objects)
-        /// Bao gồm: Prices, StockQuantity, Reviews
-        /// </summary>
+
         public static BookDto ToDto(this BookEntity book)
         {
             return new BookDto
@@ -138,10 +132,6 @@ namespace BookStore.Application.Mappers.Catalog.Book
                 TotalReviews = 0
             };
         }
-
-        /// <summary>
-        /// Map CreateBookDto sang Book entity (for Create operation)
-        /// </summary>
         public static BookEntity ToEntity(this CreateBookDto dto)
         {
             return new BookEntity
@@ -161,9 +151,6 @@ namespace BookStore.Application.Mappers.Catalog.Book
             };
         }
 
-        /// <summary>
-        /// Update Book entity từ UpdateBookDto (for Update operation)
-        /// </summary>
         public static void UpdateFromDto(this BookEntity book, UpdateBookDto dto)
         {
             book.Title = dto.Title;
@@ -178,9 +165,6 @@ namespace BookStore.Application.Mappers.Catalog.Book
             book.BookFormatId = dto.BookFormatId;
         }
 
-        /// <summary>
-        /// Map collection Book entities sang collection BookDto
-        /// </summary>
         public static List<BookDto> ToDtoList(this IEnumerable<BookEntity> books)
         {
             return books.Select(b => b.ToDto()).ToList();

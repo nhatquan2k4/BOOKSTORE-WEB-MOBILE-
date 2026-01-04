@@ -16,9 +16,7 @@ namespace BookStore.API.Controllers.Publisher
             _publisherService = publisherService;
         }
 
-        /// <summary>
-        /// Lấy danh sách tất cả nhà xuất bản với phân trang
-        /// </summary>
+
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
@@ -45,9 +43,6 @@ namespace BookStore.API.Controllers.Publisher
             });
         }
 
-        /// <summary>
-        /// Lấy chi tiết nhà xuất bản theo ID
-        /// </summary>
         [HttpGet("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -60,9 +55,6 @@ namespace BookStore.API.Controllers.Publisher
             return Ok(publisher);
         }
 
-        /// <summary>
-        /// Lấy nhà xuất bản theo tên
-        /// </summary>
         [HttpGet("by-name/{name}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -75,9 +67,6 @@ namespace BookStore.API.Controllers.Publisher
             return Ok(publisher);
         }
 
-        /// <summary>
-        /// Tìm kiếm nhà xuất bản theo tên
-        /// </summary>
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<PublisherDto>>> Search([FromQuery] string searchTerm)
@@ -89,9 +78,6 @@ namespace BookStore.API.Controllers.Publisher
             return Ok(publishers);
         }
 
-        /// <summary>
-        /// Tạo mới nhà xuất bản
-        /// </summary>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -111,9 +97,6 @@ namespace BookStore.API.Controllers.Publisher
             }
         }
 
-        /// <summary>
-        /// Cập nhật nhà xuất bản
-        /// </summary>
         [HttpPut("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -137,9 +120,6 @@ namespace BookStore.API.Controllers.Publisher
             }
         }
 
-        /// <summary>
-        /// Xóa nhà xuất bản
-        /// </summary>
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -152,9 +132,6 @@ namespace BookStore.API.Controllers.Publisher
             return NoContent();
         }
 
-        /// <summary>
-        /// Kiểm tra tên nhà xuất bản đã tồn tại chưa
-        /// </summary>
         [HttpGet("check-name")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<bool>> CheckNameExists([FromQuery] string name, [FromQuery] Guid? excludeId = null)

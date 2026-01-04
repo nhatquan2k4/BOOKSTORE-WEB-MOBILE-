@@ -1,8 +1,5 @@
 namespace BookStore.Application.Dtos.Rental
 {
-    /// <summary>
-    /// DTO kiểm tra quyền đọc sách
-    /// </summary>
     public class CheckBookAccessDto
     {
         public bool CanAccess { get; set; }

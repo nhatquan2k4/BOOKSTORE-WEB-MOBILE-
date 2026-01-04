@@ -18,6 +18,7 @@ namespace BookStore.API.Controllers
             _roleService = roleService;
         }
 
+        #region Query Methods
 
         /// Lấy danh sách tất cả roles
 
@@ -178,6 +179,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Create Operations
 
         /// Tạo role mới
 
@@ -213,6 +217,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Delete Operations
 
         /// Xóa role
 
@@ -248,6 +255,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Permission Management
 
         /// Lấy permissions của role
 
@@ -344,6 +354,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Utility Methods
 
         /// Kiểm tra tên role đã tồn tại
 
@@ -369,5 +382,7 @@ namespace BookStore.API.Controllers
                 });
             }
         }
+
+        #endregion
     }
 }

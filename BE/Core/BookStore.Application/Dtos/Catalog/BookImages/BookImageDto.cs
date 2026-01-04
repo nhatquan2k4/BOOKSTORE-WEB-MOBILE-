@@ -1,8 +1,6 @@
 namespace BookStore.Application.Dtos.Catalog.BookImages
 {
-    /// <summary>
-    /// DTO cho BookImage - thông tin cơ bản
-    /// </summary>
+
     public class BookImageDto
     {
         public Guid Id { get; set; }

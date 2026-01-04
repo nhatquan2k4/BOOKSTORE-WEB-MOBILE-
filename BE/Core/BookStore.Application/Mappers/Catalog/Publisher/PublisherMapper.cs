@@ -4,14 +4,10 @@ using PublisherEntity = BookStore.Domain.Entities.Catalog.Publisher;
 
 namespace BookStore.Application.Mappers.Catalog.Publisher
 {
-    /// <summary>
-    /// Mapper thủ công cho Publisher entity
-    /// </summary>
+
     public static class PublisherMapper
     {
-        /// <summary>
-        /// Map Publisher entity sang PublisherDto
-        /// </summary>
+
         public static PublisherDto ToDto(this PublisherEntity publisher)
         {
             return new PublisherDto
@@ -25,17 +21,11 @@ namespace BookStore.Application.Mappers.Catalog.Publisher
             };
         }
 
-        /// <summary>
-        /// Map collection Publisher entities sang collection PublisherDto
-        /// </summary>
         public static List<PublisherDto> ToDtoList(this IEnumerable<PublisherEntity> publishers)
         {
             return publishers.Select(p => PublisherMapper.ToDto(p)).ToList();
         }
 
-        /// <summary>
-        /// Map CreatePublisherDto sang Publisher entity (for Create)
-        /// </summary>
         public static PublisherEntity ToEntity(this CreatePublisherDto dto)
         {
             return new PublisherEntity
@@ -48,9 +38,6 @@ namespace BookStore.Application.Mappers.Catalog.Publisher
             };
         }
 
-        /// <summary>
-        /// Update Publisher entity từ UpdatePublisherDto (for Update)
-        /// </summary>
         public static void UpdateFromDto(this PublisherEntity publisher, UpdatePublisherDto dto)
         {
             publisher.Name = dto.Name.NormalizeSpace();

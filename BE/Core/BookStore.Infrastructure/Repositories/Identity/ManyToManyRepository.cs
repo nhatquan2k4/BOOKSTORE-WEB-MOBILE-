@@ -4,9 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BookStore.Infrastructure.Repository.Identity
 {
-    /// <summary>
-    /// Base implementation cho Many-to-Many relationship repositories
-    /// </summary>
+
     public abstract class ManyToManyRepository<TEntity> : IManyToManyRepository<TEntity> 
         where TEntity : class
     {

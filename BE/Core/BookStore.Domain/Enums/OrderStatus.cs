@@ -1,8 +1,5 @@
 namespace BookStore.Domain.Enums
 {
-    /// <summary>
-    /// Trạng thái chuẩn cho Order.Status (string)
-    /// </summary>
     public static class OrderStatus
     {
         public const string Pending = "Pending";           // tạo đơn xong

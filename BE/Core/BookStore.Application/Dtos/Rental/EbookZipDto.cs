@@ -1,9 +1,5 @@
 namespace BookStore.Application.Dtos.Rental
 {
-    /// <summary>
-    /// DTO cho việc upload ebook được nén dạng ZIP (chứa file PDF/EPUB bên trong)
-    /// Mục đích: Giảm dung lượng upload, tăng tốc độ upload
-    /// </summary>
     public class UploadEbookZipDto
     {
         public Guid BookId { get; set; }
@@ -12,9 +8,7 @@ namespace BookStore.Application.Dtos.Rental
         public long CompressedSize { get; set; } // Size file ZIP
     }
 
-    /// <summary>
-    /// Response sau khi upload ZIP thành công (PDF/EPUB)
-    /// </summary>
+
     public class UploadEbookZipResultDto
     {
         public bool Success { get; set; }
@@ -25,9 +19,7 @@ namespace BookStore.Application.Dtos.Rental
         public decimal CompressionRatio { get; set; } // % giảm dung lượng
     }
 
-    /// <summary>
-    /// Response sau khi upload CBZ (truyện tranh - chứa chapters/ảnh)
-    /// </summary>
+
     public class UploadCbzResultDto
     {
         public bool Success { get; set; }
@@ -43,9 +35,6 @@ namespace BookStore.Application.Dtos.Rental
         public int PageCount { get; set; }
     }
 
-    /// <summary>
-    /// DTO để lấy danh sách chapters của truyện
-    /// </summary>
     public class EbookChaptersDto
     {
         public Guid BookId { get; set; }
@@ -61,9 +50,6 @@ namespace BookStore.Application.Dtos.Rental
         public int PageCount { get; set; }
     }
 
-    /// <summary>
-    /// DTO để lấy danh sách ảnh của 1 chapter
-    /// </summary>
     public class ChapterPagesDto
     {
         public Guid BookId { get; set; }

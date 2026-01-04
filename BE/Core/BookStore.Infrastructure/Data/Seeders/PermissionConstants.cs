@@ -1,8 +1,6 @@
 namespace BookStore.Infrastructure.Data.Seeders
 {
-    /// <summary>
-    /// Class chứa các constants cho tên Permission trong hệ thống
-    /// </summary>
+
     public static class PermissionConstants
     {
         // Book Management Permissions
@@ -129,9 +127,7 @@ namespace BookStore.Infrastructure.Data.Seeders
         public const string NotificationDelete = "Notification.Delete";
     }
 
-    /// <summary>
-    /// Class chứa các constants cho tên Role trong hệ thống
-    /// </summary>
+
     public static class RoleConstants
     {
         public const string Admin = "Admin";

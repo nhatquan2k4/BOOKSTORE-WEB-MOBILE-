@@ -6,7 +6,7 @@ services:
       - .env
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=YourStrong@Password123
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
       - MSSQL_PID=Developer
     ports:
       - "1433:1433"
@@ -16,7 +16,7 @@ services:
       - bookstore-network
     restart: unless-stopped
     healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "YourStrong@Password123" -Q "SELECT 1" -C || exit 1
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -Q "SELECT 1" -C || exit 1
       interval: 5s
       timeout: 3s
       retries: 10
@@ -25,20 +25,24 @@ services:
   sqlserver-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: bookstore-sqlserver-init
+    env_file:
+      - .env
     depends_on:
       sqlserver:
         condition: service_healthy
     networks:
       - bookstore-network
     command: >
-      /bin/bash -c " sleep 5; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -C -Q \" IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'BookStore') CREATE DATABASE BookStore;\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -C -Q \" IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = 'bookstoreUser') CREATE LOGIN bookstoreUser WITH PASSWORD = 'BookstorePass1@', CHECK_POLICY = OFF;\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -d BookStore -C -Q \" IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = 'bookstoreUser') CREATE USER bookstoreUser FOR LOGIN bookstoreUser;\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -d BookStore -C -Q \"ALTER ROLE db_owner ADD MEMBER bookstoreUser;\"; "
+      /bin/bash -c " sleep 5; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P '${MSSQL_SA_PASSWORD}' -C -Q \" IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '${APP_DB}') CREATE DATABASE ${APP_DB};\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P '${MSSQL_SA_PASSWORD}' -C -Q \" IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = '${APP_USER}') CREATE LOGIN ${APP_USER} WITH PASSWORD = '${APP_PW}', CHECK_POLICY = OFF;\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P '${MSSQL_SA_PASSWORD}' -d ${APP_DB} -C -Q \" IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = '${APP_USER}') CREATE USER ${APP_USER} FOR LOGIN ${APP_USER};\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P '${MSSQL_SA_PASSWORD}' -d ${APP_DB} -C -Q \"ALTER ROLE db_owner ADD MEMBER ${APP_USER};\"; "
 
   minio:
     image: minio/minio:latest
     container_name: bookstore-minio
+    env_file:
+      - .env
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin123
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -57,13 +61,15 @@ services:
   minio-init:
     image: minio/mc:latest
     container_name: bookstore-minio-init
+    env_file:
+      - .env
     depends_on:
       minio:
         condition: service_healthy
     networks:
       - bookstore-network
     entrypoint: >
-      /bin/sh -c " mc alias set myminio http://minio:9000 minioadmin minioadmin123; mc mb myminio/book-images --ignore-existing; mc mb myminio/ebook-files --ignore-existing; mc mb myminio/user-avatars --ignore-existing; mc anonymous set download myminio/bookstore-images; mc anonymous set download myminio/ebook-files; mc anonymous set download myminio/user-avatars; echo 'MinIO buckets created successfully!'; "
+      /bin/sh -c " mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}; mc mb myminio/book-images --ignore-existing; mc mb myminio/ebook-files --ignore-existing; mc mb myminio/user-avatars --ignore-existing; mc anonymous set download myminio/bookstore-images; mc anonymous set download myminio/ebook-files; mc anonymous set download myminio/user-avatars; echo 'MinIO buckets created successfully!'; "
 
   nginx:
     image: nginx:alpine
@@ -88,35 +94,37 @@ services:
   bookstore-api:
     image: NQ.local:5000/bookstore-backend:v126
     container_name: bookstore-api
+    env_file:
+      - .env
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__UsersDb=Server=sqlserver,1433;Database=BookStore;User Id=bookstoreUser;Password=BookstorePass1@;MultipleActiveResultSets=true;TrustServerCertificate=True;Encrypt=False
-      - JwtSettings__SecretKey=YourSuperSecretKeyForJWTTokenGenerationMustBeAtLeast32CharactersLong
-      - JwtSettings__Issuer=BookStoreAPI
-      - JwtSettings__Audience=BookStoreClient
-      - JwtSettings__AccessTokenExpirationMinutes=60
-      - JwtSettings__RefreshTokenExpirationDays=30
-      - MinIO__Endpoint=minio:9000
-      - MinIO__PublicEndpoint=http://localhost:9000
-      - MinIO__AccessKey=minioadmin
-      - MinIO__SecretKey=minioadmin123
-      - MinIO__BucketName=book-images
-      - MinIO__UseSSL=false
-      - EmailSettings__SmtpHost=smtp.gmail.com
-      - EmailSettings__SmtpPort=587
-      - EmailSettings__SmtpUsername=quangtraan20004@gmail.com
-      - EmailSettings__SmtpPassword=xnuo kvlu berx kklm
-      - EmailSettings__FromEmail=quangtraan20004@gmail.com
-      - EmailSettings__FromName=xnuo kvlu berx kklm
-      - EmailSettings__EnableSsl=true
-      - EmailSettings__TokenExpirationHours=24
-      - EmailSettings__FrontendUrl=http://localhost:3000
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=${ASPNETCORE_URLS}
+      - ConnectionStrings__UsersDb=Server=sqlserver,1433;Database=${APP_DB};User Id=${APP_USER};Password=${APP_PW};MultipleActiveResultSets=true;TrustServerCertificate=True;Encrypt=False
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY}
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
+      - JwtSettings__AccessTokenExpirationMinutes=${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES}
+      - JwtSettings__RefreshTokenExpirationDays=${JWT_REFRESH_TOKEN_EXPIRATION_DAYS}
+      - MinIO__Endpoint=${MINIO_ENDPOINT}
+      - MinIO__PublicEndpoint=${MINIO_PUBLIC_ENDPOINT}
+      - MinIO__AccessKey=${MINIO_ROOT_USER}
+      - MinIO__SecretKey=${MINIO_ROOT_PASSWORD}
+      - MinIO__BucketName=${MINIO_BUCKET_NAME}
+      - MinIO__UseSSL=${MINIO_USE_SSL}
+      - EmailSettings__SmtpHost=${EMAIL_HOST}
+      - EmailSettings__SmtpPort=${EMAIL_PORT}
+      - EmailSettings__SmtpUsername=${EMAIL_USERNAME}
+      - EmailSettings__SmtpPassword=${EMAIL_PASSWORD}
+      - EmailSettings__FromEmail=${EMAIL_FROM}
+      - EmailSettings__FromName=${EMAIL_FROM_NAME}
+      - EmailSettings__EnableSsl=${EMAIL_ENABLE_SSL}
+      - EmailSettings__TokenExpirationHours=${EMAIL_TOKEN_EXPIRATION_HOURS}
+      - EmailSettings__FrontendUrl=${EMAIL_FRONTEND_URL}
       - Gemini__ApiKey=${GEMINI_API_KEY}
-      - Gemini__Model=gemini-2.5-flash
-      - Gemini__TimeoutSeconds=60
-      - Gemini__MaxTokens=2048
-      - Gemini__Enabled=true
+      - Gemini__Model=${GEMINI_MODEL}
+      - Gemini__TimeoutSeconds=${GEMINI_TIMEOUT_SECONDS}
+      - Gemini__MaxTokens=${GEMINI_MAX_TOKENS}
+      - Gemini__Enabled=${GEMINI_ENABLED}
     ports:
       - "5276:8080"
     depends_on:

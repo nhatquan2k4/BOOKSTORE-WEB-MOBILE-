@@ -1,8 +1,6 @@
 namespace BookStore.Application.DTO.Analytics
 {
-    /// <summary>
-    /// Order statistics for admin dashboard
-    /// </summary>
+
     public class OrderStatsDto
     {
         public int TotalOrders { get; set; }

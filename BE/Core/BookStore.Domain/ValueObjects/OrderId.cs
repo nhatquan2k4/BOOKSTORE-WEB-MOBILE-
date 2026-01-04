@@ -2,10 +2,7 @@ using System;
 
 namespace BookStore.Domain.ValueObjects
 {
-    /// <summary>
-    /// Bao bọc Guid để sau này nếu em muốn đổi sang Snowflake, ULID... thì chỉ đổi ở đây.
-    /// Entity hiện tại vẫn dùng Guid bình thường.
-    /// </summary>
+
     public readonly struct OrderId
     {
         public Guid Value { get; }

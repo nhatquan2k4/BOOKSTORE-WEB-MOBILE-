@@ -3,9 +3,7 @@ using BookStore.Domain.Entities.Identity;
 
 namespace BookStore.Application.Mappers.Identity.RolePermission
 {
-    /// <summary>
-    /// Mapper thủ công cho Role entity và các Role DTOs
-    /// </summary>
+
     public static class RoleMapper
     {
         #region Role -> RoleDto

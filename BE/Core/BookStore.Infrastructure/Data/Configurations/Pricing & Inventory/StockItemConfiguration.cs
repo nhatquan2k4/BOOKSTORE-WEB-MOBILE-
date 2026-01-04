@@ -9,7 +9,7 @@ namespace BookStore.Infrastructure.Configurations.Pricing_Inventory
     {
         public void Configure(EntityTypeBuilder<StockItem> builder)
         {
-            builder.ToTable("StockItems");
+            builder.ToTable("StockItems", "inventory");
 
             builder.HasKey(x => x.Id);
 

@@ -7,9 +7,7 @@ using System.Security.Claims;
 
 namespace BookStore.API.Controllers.Rental
 {
-    /// <summary>
-    /// Controller quản lý ebook files (upload và access)
-    /// </summary>
+
     [Route("api/rental/books")]
     [ApiController]
     [Tags("Rental - Ebooks")]
@@ -26,10 +24,6 @@ namespace BookStore.API.Controllers.Rental
             _logger = logger;
         }
 
-        /// <summary>
-        /// Admin upload ebook file lên MinIO
-        /// POST: api/rental/books/{bookId}/upload
-        /// </summary>
         [HttpPost("{bookId:guid}/upload")]
         [Authorize(Roles = "Admin")]
         [Consumes("multipart/form-data")]
@@ -60,11 +54,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// User lấy link đọc ebook (Pre-signed URL có hạn 10 phút)
-        /// Yêu cầu: User phải có subscription còn hạn
-        /// GET: api/rental/books/{bookId}/access-link
-        /// </summary>
         [HttpGet("{bookId:guid}/access-link")]
         [Authorize]
         public async Task<IActionResult> GetEbookAccessLink([FromRoute] Guid bookId)
@@ -82,10 +71,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Kiểm tra ebook có tồn tại không
-        /// GET: api/rental/books/{bookId}/exists
-        /// </summary>
         [HttpGet("{bookId:guid}/exists")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> EbookExists([FromRoute] Guid bookId)
@@ -102,10 +87,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Admin xóa ebook file
-        /// DELETE: api/rental/books/{bookId}/ebook
-        /// </summary>
         [HttpDelete("{bookId:guid}/ebook")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteEbook([FromRoute] Guid bookId)
@@ -122,12 +103,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Admin upload ebook được nén trong ZIP (để tăng tốc độ upload)
-        /// ZIP chứa 1 file PDF hoặc EPUB bên trong
-        /// Hệ thống sẽ tự động extract và lưu file gốc
-        /// POST: api/rental/books/{bookId}/upload-zip
-        /// </summary>
         [HttpPost("{bookId:guid}/upload-zip")]
         [Authorize(Roles = "Admin")]
         [Consumes("multipart/form-data")]
@@ -156,11 +131,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Admin upload CBZ (Comic Book ZIP) - Truyện tranh
-        /// CBZ chứa các folder chapters với ảnh từng trang: chap-1/1.jpg, chap-2/1.jpg...
-        /// POST: api/rental/books/{bookId}/upload-cbz
-        /// </summary>
         [HttpPost("{bookId:guid}/upload-cbz")]
         [Authorize(Roles = "Admin")]
         [Consumes("multipart/form-data")]
@@ -197,10 +167,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// User lấy danh sách chapters (cho truyện tranh CBZ)
-        /// GET: api/rental/books/{bookId}/chapters
-        /// </summary>
         [HttpGet("{bookId:guid}/chapters")]
         [Authorize]
         public async Task<IActionResult> GetChapters([FromRoute] Guid bookId)
@@ -218,10 +184,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// User lấy danh sách ảnh của 1 chapter (Pre-signed URLs, hết hạn 10 phút)
-        /// GET: api/rental/books/{bookId}/chapters/{chapterName}/pages
-        /// </summary>
         [HttpGet("{bookId:guid}/chapters/{chapterName}/pages")]
         [Authorize]
         public async Task<IActionResult> GetChapterPages([FromRoute] Guid bookId, [FromRoute] string chapterName)

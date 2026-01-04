@@ -5,14 +5,10 @@ using CategoryEntity = BookStore.Domain.Entities.Catalog.Category;
 
 namespace BookStore.Application.Mappers.Catalog.Category
 {
-    /// <summary>
-    /// Mapper cho CategoryDetailDto (phức tạp hơn, có breadcrumbs, subcategories, books)
-    /// </summary>
+
     public static class CategoryDetailMapper
     {
-        /// <summary>
-        /// Map Category entity sang CategoryDetailDto
-        /// </summary>
+
         public static CategoryDetailDto ToDetailDto(this CategoryEntity category)
         {
             return new CategoryDetailDto

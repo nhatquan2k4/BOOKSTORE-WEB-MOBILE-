@@ -3,14 +3,10 @@ using BookStore.Domain.Entities.Pricing___Inventory;
 
 namespace BookStore.Application.Mappers.Inventory
 {
-    /// <summary>
-    /// Mapper thủ công cho Warehouse entity
-    /// </summary>
+
     public static class WarehouseMapper
     {
-        /// <summary>
-        /// Map Warehouse entity sang WarehouseDto
-        /// </summary>
+
         public static WarehouseDto ToDto(this Warehouse warehouse)
         {
             return new WarehouseDto
@@ -26,9 +22,6 @@ namespace BookStore.Application.Mappers.Inventory
             };
         }
 
-        /// <summary>
-        /// Map CreateWarehouseDto sang Warehouse entity
-        /// </summary>
         public static Warehouse ToEntity(this CreateWarehouseDto dto)
         {
             return new Warehouse
@@ -41,9 +34,6 @@ namespace BookStore.Application.Mappers.Inventory
             };
         }
 
-        /// <summary>
-        /// Update Warehouse entity từ UpdateWarehouseDto
-        /// </summary>
         public static void UpdateFromDto(this Warehouse warehouse, UpdateWarehouseDto dto)
         {
             if (!string.IsNullOrEmpty(dto.Name))

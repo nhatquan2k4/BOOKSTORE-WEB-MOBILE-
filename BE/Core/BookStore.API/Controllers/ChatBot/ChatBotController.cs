@@ -30,9 +30,6 @@ namespace BookStore.API.Controllers.ChatBot
             return Ok(answer);
         }
 
-        /// <summary>
-        /// Refresh book data cache manually
-        /// </summary>
         [HttpPost("cache/refresh")]
         [Authorize(Roles = "Admin")] // Chỉ admin mới được refresh cache
         public async Task<IActionResult> RefreshCacheAsync()
@@ -41,9 +38,6 @@ namespace BookStore.API.Controllers.ChatBot
             return Ok(new { message = "Cache refreshed successfully" });
         }
 
-        /// <summary>
-        /// Get cache status
-        /// </summary>
         [HttpGet("cache/status")]
         [AllowAnonymous]
         public IActionResult GetCacheStatus()

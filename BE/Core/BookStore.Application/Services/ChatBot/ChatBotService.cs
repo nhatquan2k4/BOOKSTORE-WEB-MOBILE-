@@ -106,10 +106,6 @@ namespace BookStore.Application.Services.ChatBot
             return await _geminiService.AskAsync(prompt);
         }
 
-        /// <summary>
-        /// Hàm này giúp biến câu hỏi dài thành từ khóa ngắn gọn
-        /// Ví dụ: "Tôi muốn tìm cuốn Đắc nhân tâm" -> "đắc nhân tâm"
-        /// </summary>
         private string CleanMessageToKeyword(string message)
         {
             // Chuyển về chữ thường

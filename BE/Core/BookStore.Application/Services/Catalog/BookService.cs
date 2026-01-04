@@ -557,9 +557,6 @@ namespace BookStore.Application.Services.Catalog
             }
         }
 
-        /// <summary>
-        /// Get best selling books (based on stock quantity - more sold means less in stock)
-        /// </summary>
         public async Task<List<BookDto>> GetBestSellingBooksAsync(int top = 10)
         {
             try
@@ -580,9 +577,6 @@ namespace BookStore.Application.Services.Catalog
             }
         }
 
-        /// <summary>
-        /// Get newest books (based on publication year and created date)
-        /// </summary>
         public async Task<List<BookDto>> GetNewestBooksAsync(int top = 10)
         {
             try
@@ -604,10 +598,6 @@ namespace BookStore.Application.Services.Catalog
             }
         }
 
-        /// <summary>
-        /// Get most viewed books (placeholder - requires view tracking implementation)
-        /// Currently returns books ordered by stock quantity as a proxy
-        /// </summary>
         public async Task<List<BookDto>> GetMostViewedBooksAsync(int top = 10)
         {
             try

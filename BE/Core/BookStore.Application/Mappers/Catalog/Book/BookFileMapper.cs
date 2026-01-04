@@ -3,14 +3,9 @@ using BookStore.Domain.Entities.Catalog;
 
 namespace BookStore.Application.Mappers.Catalog.Book
 {
-    /// <summary>
-    /// Mapper thủ công cho BookFile entity
-    /// </summary>
     public static class BookFileMapper
     {
-        /// <summary>
-        /// Map BookFile entity sang BookFileDto
-        /// </summary>
+
         public static BookFileDto ToDto(this BookFile bookFile)
         {
             return new BookFileDto
@@ -24,17 +19,11 @@ namespace BookStore.Application.Mappers.Catalog.Book
             };
         }
 
-        /// <summary>
-        /// Map collection BookFile entities sang collection BookFileDto
-        /// </summary>
         public static List<BookFileDto> ToDtoList(this IEnumerable<BookFile> bookFiles)
         {
             return bookFiles.Select(bf => bf.ToDto()).ToList();
         }
 
-        /// <summary>
-        /// Map BookFileDto sang BookFile entity (for Create)
-        /// </summary>
         public static BookFile ToEntity(this BookFileDto dto)
         {
             return new BookFile
@@ -48,9 +37,6 @@ namespace BookStore.Application.Mappers.Catalog.Book
             };
         }
 
-        /// <summary>
-        /// Update BookFile entity từ BookFileDto (for Update)
-        /// </summary>
         public static void UpdateFromDto(this BookFile bookFile, BookFileDto dto)
         {
             bookFile.FileUrl = dto.FileUrl;

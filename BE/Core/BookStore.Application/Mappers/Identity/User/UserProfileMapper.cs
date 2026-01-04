@@ -3,16 +3,12 @@ using BookStore.Domain.Entities.Identity;
 
 namespace BookStore.Application.Mappers.Identity.User
 {
-    /// <summary>
-    /// Mapper thủ công cho UserProfile entity và UserProfileDto
-    /// </summary>
+
     public static class UserProfileMapper
     {
         #region UserProfile -> UserProfileDto
         
-        /// <summary>
-        /// Chuyển từ UserProfile entity sang UserProfileDto
-        /// </summary>
+
         public static UserProfileDto? ToDto(this UserProfile? profile)
         {
             if (profile == null) return null;
@@ -30,9 +26,7 @@ namespace BookStore.Application.Mappers.Identity.User
             };
         }
 
-        /// <summary>
-        /// Chuyển danh sách UserProfile sang danh sách UserProfileDto
-        /// </summary>
+
         public static List<UserProfileDto> ToDtoList(this IEnumerable<UserProfile> profiles)
         {
             return profiles?.Select(p => p.ToDto()).Where(p => p != null).ToList() ?? new List<UserProfileDto>();
@@ -42,10 +36,6 @@ namespace BookStore.Application.Mappers.Identity.User
 
         #region CreateUserProfileDto -> UserProfile
 
-        /// <summary>
-        /// Chuyển từ CreateUserProfileDto sang UserProfile entity
-        /// Dùng khi: Tạo profile mới
-        /// </summary>
         public static UserProfile ToEntity(this CreateUserProfileDto dto, Guid userId)
         {
             if (dto == null) return null!;
@@ -66,10 +56,6 @@ namespace BookStore.Application.Mappers.Identity.User
 
         #region UpdateUserProfileDto -> UserProfile
 
-        /// <summary>
-        /// Cập nhật UserProfile entity từ UpdateUserProfileDto
-        /// Chỉ update các field không null/có giá trị
-        /// </summary>
         public static void UpdateFromDto(this UserProfile profile, UpdateUserProfileDto dto)
         {
             if (profile == null || dto == null) return;
@@ -106,9 +92,6 @@ namespace BookStore.Application.Mappers.Identity.User
             }
         }
 
-        /// <summary>
-        /// Tạo UserProfile entity mới từ UpdateUserProfileDto (nếu chưa có profile)
-        /// </summary>
         public static UserProfile ToEntity(this UpdateUserProfileDto dto, Guid userId)
         {
             if (dto == null) return null!;

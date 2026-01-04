@@ -22,9 +22,6 @@ namespace BookStore.API.Controllers.Admin
             _logger = logger;
         }
 
-        /// <summary>
-        /// Get all notification templates with pagination and filtering (Admin only)
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetTemplates(
             [FromQuery] int page = 1,
@@ -69,9 +66,7 @@ namespace BookStore.API.Controllers.Admin
             }
         }
 
-        /// <summary>
-        /// Get notification template by ID (Admin only)
-        /// </summary>
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTemplateById(Guid id)
         {
@@ -106,9 +101,6 @@ namespace BookStore.API.Controllers.Admin
             }
         }
 
-        /// <summary>
-        /// Create new notification template (Admin only)
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> CreateTemplate([FromBody] CreateNotificationTemplateDto dto)
         {
@@ -146,9 +138,6 @@ namespace BookStore.API.Controllers.Admin
             }
         }
 
-        /// <summary>
-        /// Update notification template (Admin only)
-        /// </summary>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTemplate(Guid id, [FromBody] UpdateNotificationTemplateDto dto)
         {
@@ -183,9 +172,7 @@ namespace BookStore.API.Controllers.Admin
             }
         }
 
-        /// <summary>
-        /// Delete notification template (Admin only)
-        /// </summary>
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTemplate(Guid id)
         {
@@ -219,9 +206,6 @@ namespace BookStore.API.Controllers.Admin
             }
         }
 
-        /// <summary>
-        /// Get notification template by code (Admin only)
-        /// </summary>
         [HttpGet("by-code/{code}")]
         public async Task<IActionResult> GetTemplateByCode(string code)
         {
@@ -256,9 +240,6 @@ namespace BookStore.API.Controllers.Admin
             }
         }
 
-        /// <summary>
-        /// Get all active templates (Admin only)
-        /// </summary>
         [HttpGet("active")]
         public async Task<IActionResult> GetActiveTemplates()
         {

@@ -5,10 +5,7 @@ using Xunit;
 
 namespace BookStore.Tests.Domain.Entities
 {
-    /// <summary>
-    /// Unit tests cho Book entity (Domain layer)
-    /// Đảm bảo logic nghiệp vụ và validation của domain entity
-    /// </summary>
+
     public class BookEntityTests
     {
         [Fact]

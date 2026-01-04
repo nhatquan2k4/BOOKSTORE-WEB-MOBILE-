@@ -12,9 +12,7 @@ using System.IO;
 
 namespace BookStore.API.Controllers.Identity
 {
-    /// <summary>
-    /// API cho user tự quản lý profile và địa chỉ của mình
-    /// </summary>
+
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -86,9 +84,6 @@ namespace BookStore.API.Controllers.Identity
             }
         }
 
-        /// <summary>
-        /// Upload ảnh đại diện cho user hiện tại (xóa ảnh cũ nếu có)
-        /// </summary>
         [HttpPost("profile/avatar")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadAvatar(IFormFile file)
@@ -201,9 +196,6 @@ namespace BookStore.API.Controllers.Identity
             }
         }
 
-        /// <summary>
-        /// Xóa ảnh đại diện của user hiện tại
-        /// </summary>
         [HttpDelete("profile/avatar")]
         public async Task<IActionResult> DeleteAvatar()
         {
@@ -420,10 +412,7 @@ namespace BookStore.API.Controllers.Identity
             return userId;
         }
 
-        /// <summary>
-        /// Extract filename từ MinIO URL
-        /// Ví dụ: http://localhost/storage/user-avatars/avatar_xxx.jpg -> avatar_xxx.jpg
-        /// </summary>
+
         private string? ExtractFileNameFromUrl(string? url)
         {
             if (string.IsNullOrEmpty(url))

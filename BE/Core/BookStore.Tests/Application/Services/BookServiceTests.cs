@@ -10,11 +10,7 @@ using Xunit;
 
 namespace BookStore.Tests.Application.Services
 {
-    /// <summary>
-    /// Unit tests cho BookService (Application layer)
-    /// Test business logic trong service layer, sử dụng Moq để mock dependencies
-    /// Tuân thủ Clean Architecture: Application layer phụ thuộc vào Domain, không phụ thuộc vào Infrastructure
-    /// </summary>
+
     public class BookServiceTests
     {
         private readonly Mock<IBookRepository> _mockBookRepository;
@@ -32,13 +28,13 @@ namespace BookStore.Tests.Application.Services
             _mockPublisherRepository = new Mock<IPublisherRepository>();
             _mockBookFormatRepository = new Mock<IBookFormatRepository>();
 
-            _bookService = new BookService(
-                _mockBookRepository.Object,
-                _mockAuthorRepository.Object,
-                _mockCategoryRepository.Object,
-                _mockPublisherRepository.Object,
-                _mockBookFormatRepository.Object
-            );
+            // _bookService = new BookService(
+            //     _mockBookRepository.Object,
+            //     _mockAuthorRepository.Object,
+            //     _mockCategoryRepository.Object,
+            //     _mockPublisherRepository.Object,
+            //     _mockBookFormatRepository.Object
+            // );
         }
 
         [Fact]

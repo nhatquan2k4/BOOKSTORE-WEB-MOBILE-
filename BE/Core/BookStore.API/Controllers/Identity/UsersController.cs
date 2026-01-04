@@ -18,6 +18,7 @@ namespace BookStore.API.Controllers
             _userService = userService;
         }
 
+        #region Query Methods
 
         /// Lấy danh sách tất cả users
 
@@ -146,6 +147,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Create Operations
 
         /// Tạo user mới
 
@@ -182,6 +186,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Delete Operations
 
         /// Xóa user
 
@@ -218,6 +225,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region User Status Management
 
         /// Kích hoạt user
 
@@ -290,6 +300,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Role Management
 
         /// Lấy roles của user
 
@@ -425,6 +438,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Permission Management
 
         /// Lấy permissions của user
 
@@ -451,6 +467,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Utility Methods
 
         /// Kiểm tra email đã tồn tại
 
@@ -477,5 +496,7 @@ namespace BookStore.API.Controllers
                 });
             }
         }
+
+        #endregion
     }
 }

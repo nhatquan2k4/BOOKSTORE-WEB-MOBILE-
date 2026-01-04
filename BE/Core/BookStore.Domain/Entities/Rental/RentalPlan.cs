@@ -14,10 +14,7 @@ namespace BookStore.Domain.Entities.Rental
         public string? Description { get; set; }                // Mô tả ngắn gọn về gói thuê
         public decimal Price { get; set; }                      // Giá thuê gói này (tính theo VND)
         public int DurationDays { get; set; }                   // Thời lượng thuê (tính bằng ngày)
-        
-        /// <summary>
-        /// Loại gói: "Subscription" (đọc tất cả ebook) hoặc "SingleBook" (thuê từng quyển)
-        /// </summary>
+
         public string PlanType { get; set; } = "SingleBook";    // "Subscription" | "SingleBook"
         
         public bool IsActive { get; set; } = true;              // Gói thuê đang hoạt động hay không

@@ -22,10 +22,6 @@ namespace BookStore.API.Controllers.Wishlist
             _logger = logger;
         }
 
-        // GET: api/wishlist
-        /// <summary>
-        /// Lấy danh sách wishlist của user hiện tại
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetMyWishlist()
         {
@@ -34,10 +30,6 @@ namespace BookStore.API.Controllers.Wishlist
             return Ok(wishlist);
         }
 
-        // GET: api/wishlist/count
-        /// <summary>
-        /// Đếm số sách trong wishlist
-        /// </summary>
         [HttpGet("count")]
         public async Task<IActionResult> GetWishlistCount()
         {
@@ -46,10 +38,6 @@ namespace BookStore.API.Controllers.Wishlist
             return Ok(new { Count = count });
         }
 
-        // GET: api/wishlist/summary
-        /// <summary>
-        /// Lấy summary wishlist (danh sách BookIds)
-        /// </summary>
         [HttpGet("summary")]
         public async Task<IActionResult> GetWishlistSummary()
         {
@@ -58,10 +46,6 @@ namespace BookStore.API.Controllers.Wishlist
             return Ok(summary);
         }
 
-        // GET: api/wishlist/{bookId}/exists
-        /// <summary>
-        /// Kiểm tra sách có trong wishlist không
-        /// </summary>
         [HttpGet("{bookId:guid}/exists")]
         public async Task<IActionResult> CheckBookInWishlist(Guid bookId)
         {
@@ -70,10 +54,6 @@ namespace BookStore.API.Controllers.Wishlist
             return Ok(new { Exists = exists });
         }
 
-        // POST: api/wishlist/{bookId}
-        /// <summary>
-        /// Thêm sách vào wishlist
-        /// </summary>
         [HttpPost("{bookId:guid}")]
         public async Task<IActionResult> AddToWishlist(Guid bookId)
         {
@@ -94,10 +74,6 @@ namespace BookStore.API.Controllers.Wishlist
             }
         }
 
-        // DELETE: api/wishlist/{bookId}
-        /// <summary>
-        /// Xóa sách khỏi wishlist
-        /// </summary>
         [HttpDelete("{bookId:guid}")]
         public async Task<IActionResult> RemoveFromWishlist(Guid bookId)
         {
@@ -110,10 +86,6 @@ namespace BookStore.API.Controllers.Wishlist
             return Ok(new { Message = "Đã xóa khỏi danh sách yêu thích" });
         }
 
-        // DELETE: api/wishlist/clear
-        /// <summary>
-        /// Xóa toàn bộ wishlist
-        /// </summary>
         [HttpDelete("clear")]
         public async Task<IActionResult> ClearWishlist()
         {

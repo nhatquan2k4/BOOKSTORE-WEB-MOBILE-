@@ -7,9 +7,7 @@ using System.Security.Claims;
 
 namespace BookStore.API.Controllers.Rental
 {
-    /// <summary>
-    /// Controller cho user mua gói thuê và quản lý subscription
-    /// </summary>
+
     [Route("api/rental/subscriptions")]
     [ApiController]
     [Authorize]
@@ -26,10 +24,6 @@ namespace BookStore.API.Controllers.Rental
             _logger = logger;
         }
 
-        /// <summary>
-        /// User mua gói thuê
-        /// POST: api/rental/subscriptions/subscribe
-        /// </summary>
         [HttpPost("subscribe")]
         public async Task<IActionResult> Subscribe([FromBody] SubscribeRentalPlanDto dto)
         {
@@ -50,11 +44,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// [TESTING ONLY] Mua gói thuê KHÔNG CẦN THANH TOÁN (Mock payment)
-        /// POST: api/rental/subscriptions/subscribe-mock
-        /// Dùng để test trong môi trường dev
-        /// </summary>
         [HttpPost("subscribe-mock")]
         public async Task<IActionResult> SubscribeMock([FromBody] SubscribeMockDto dto)
         {
@@ -93,10 +82,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Kiểm tra user có subscription còn hạn không
-        /// GET: api/rental/subscriptions/check
-        /// </summary>
         [HttpGet("check")]
         public async Task<IActionResult> CheckSubscription()
         {
@@ -113,10 +98,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Lấy subscription đang active của user
-        /// GET: api/rental/subscriptions/active
-        /// </summary>
         [HttpGet("active")]
         public async Task<IActionResult> GetActiveSubscription()
         {
@@ -137,10 +118,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Lấy danh sách subscription của user (lịch sử)
-        /// GET: api/rental/subscriptions/my
-        /// </summary>
         [HttpGet("my")]
         public async Task<IActionResult> GetMySubscriptions()
         {
@@ -157,10 +134,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Admin: Lấy tất cả subscriptions
-        /// GET: api/rental/subscriptions/all
-        /// </summary>
         [HttpGet("all")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllSubscriptions()
@@ -177,10 +150,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Admin: Hủy subscription
-        /// DELETE: api/rental/subscriptions/{id}
-        /// </summary>
         [HttpDelete("{id:guid}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CancelSubscription(Guid id)
@@ -197,10 +166,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Background job endpoint: Cập nhật các subscription hết hạn
-        /// POST: api/rental/subscriptions/update-expired
-        /// </summary>
         [HttpPost("update-expired")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateExpiredSubscriptions()
@@ -223,10 +188,6 @@ namespace BookStore.API.Controllers.Rental
             return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập"));
         }
     }
-
-    /// <summary>
-    /// DTO cho mock subscription (testing only)
-    /// </summary>
     public class SubscribeMockDto
     {
         public Guid RentalPlanId { get; set; }

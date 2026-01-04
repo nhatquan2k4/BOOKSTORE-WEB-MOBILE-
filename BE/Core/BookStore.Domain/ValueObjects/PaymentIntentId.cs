@@ -1,9 +1,6 @@
 namespace BookStore.Domain.ValueObjects
 {
-    /// <summary>
-    /// Id của payment intent từ cổng thanh toán (VNPay/MoMo/Stripe...).
-    /// Thường là string nên mình để string luôn.
-    /// </summary>
+
     public readonly struct PaymentIntentId
     {
         public string Value { get; }

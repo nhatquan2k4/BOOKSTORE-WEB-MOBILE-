@@ -8,9 +8,7 @@ using System.Threading.Tasks;
 
 namespace BookStore.API.BackgroundServices
 {
-    /// <summary>
-    /// Background service to load book and category data into cache on application startup
-    /// </summary>
+
     public class BookCacheInitializerService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;

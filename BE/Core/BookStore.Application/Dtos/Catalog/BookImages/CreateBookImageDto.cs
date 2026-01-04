@@ -1,8 +1,6 @@
 namespace BookStore.Application.Dtos.Catalog.BookImages
 {
-    /// <summary>
-    /// DTO để tạo mới BookImage
-    /// </summary>
+
     public class CreateBookImageDto
     {
         public Guid BookId { get; set; }

@@ -20,17 +20,8 @@ namespace BookStore.API.Controllers.Book
             _bookService = bookService;
         }
 
-        /// <summary>
-        /// Lấy danh sách sách với phân trang và lọc
-        /// </summary>
-        /// <param name="pageNumber">Số trang (mặc định: 1)</param>
-        /// <param name="pageSize">Kích thước trang (mặc định: 10)</param>
-        /// <param name="searchTerm">Từ khóa tìm kiếm (tìm theo tên, ISBN)</param>
-        /// <param name="categoryId">Lọc theo danh mục</param>
-        /// <param name="authorId">Lọc theo tác giả</param>
-        /// <param name="publisherId">Lọc theo nhà xuất bản</param>
-        /// <param name="isAvailable">Lọc theo trạng thái còn hàng</param>
-        /// <returns>PagedResult với danh sách BookDto</returns>
+        #region Query Methods (Get/Search)
+
         [AllowAnonymous]
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -49,14 +40,8 @@ namespace BookStore.API.Controllers.Book
             return Ok(result);
         }
 
-        /// <summary>
-        /// Lấy chi tiết sách theo ID
-        /// </summary>
-        /// <param name="id">ID của sách</param>
-        /// <returns>BookDetailDto</returns>
         [AllowAnonymous]
         [HttpGet("{id:guid}")]
-        // Remove [Authorize] here - everyone should view book details
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<BookDetailDto>> GetById(Guid id)
@@ -68,11 +53,6 @@ namespace BookStore.API.Controllers.Book
             return Ok(book);
         }
 
-        /// <summary>
-        /// Lấy sách theo ISBN
-        /// </summary>
-        /// <param name="isbn">Mã ISBN của sách</param>
-        /// <returns>BookDetailDto</returns>
         [AllowAnonymous]
         [HttpGet("by-isbn/{isbn}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -86,12 +66,7 @@ namespace BookStore.API.Controllers.Book
             return Ok(book);
         }
 
-        /// <summary>
-        /// Lấy danh sách sách theo danh mục
-        /// </summary>
-        /// <param name="categoryId">ID của danh mục</param>
-        /// <param name="top">Số lượng sách tối đa (mặc định: 10)</param>
-        /// <returns>Danh sách BookDto</returns>
+
         [AllowAnonymous]
         [HttpGet("by-category/{categoryId:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -101,12 +76,7 @@ namespace BookStore.API.Controllers.Book
             return Ok(books);
         }
 
-        /// <summary>
-        /// Lấy danh sách sách theo tác giả
-        /// </summary>
-        /// <param name="authorId">ID của tác giả</param>
-        /// <param name="top">Số lượng sách tối đa (mặc định: 10)</param>
-        /// <returns>Danh sách BookDto</returns>
+
         [AllowAnonymous]
         [HttpGet("by-author/{authorId:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -116,12 +86,6 @@ namespace BookStore.API.Controllers.Book
             return Ok(books);
         }
 
-        /// <summary>
-        /// Lấy danh sách sách theo nhà xuất bản
-        /// </summary>
-        /// <param name="publisherId">ID của nhà xuất bản</param>
-        /// <param name="top">Số lượng sách tối đa (mặc định: 10)</param>
-        /// <returns>Danh sách BookDto</returns>
         [AllowAnonymous]
         [HttpGet("by-publisher/{publisherId:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -131,12 +95,7 @@ namespace BookStore.API.Controllers.Book
             return Ok(books);
         }
 
-        /// <summary>
-        /// Tìm kiếm sách theo từ khóa
-        /// </summary>
-        /// <param name="searchTerm">Từ khóa tìm kiếm</param>
-        /// <param name="top">Số lượng kết quả tối đa (mặc định: 20)</param>
-        /// <returns>Danh sách BookDto</returns>
+
         [AllowAnonymous]
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -150,11 +109,10 @@ namespace BookStore.API.Controllers.Book
             return Ok(books);
         }
 
-        /// <summary>
-        /// Tạo mới sách
-        /// </summary>
-        /// <param name="dto">Thông tin sách</param>
-        /// <returns>BookDetailDto được tạo</returns>
+        #endregion
+
+        #region CRUD Operations
+
         [Authorize]
         [HttpPost]
         [Authorize(Roles = "Admin")]
@@ -198,12 +156,7 @@ namespace BookStore.API.Controllers.Book
                     new { message = "Có lỗi xảy ra khi tạo sách", details = ex.Message });
             }
         }
-        /// <summary>
-        /// Cập nhật sách
-        /// </summary>
-        /// <param name="id">ID của sách</param>
-        /// <param name="dto">Thông tin cập nhật</param>
-        /// <returns>BookDetailDto được cập nhật</returns>
+
         [Authorize]
         [HttpPut("{id:guid}")]
         [Authorize(Roles = "Admin")]
@@ -238,11 +191,6 @@ namespace BookStore.API.Controllers.Book
             }
         }
 
-        /// <summary>
-        /// Xóa sách
-        /// </summary>
-        /// <param name="id">ID của sách</param>
-        /// <returns>Kết quả xóa</returns>
         [Authorize]
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -269,12 +217,10 @@ namespace BookStore.API.Controllers.Book
             }
         }
 
-        /// <summary>
-        /// Cập nhật giá bán cho sách
-        /// </summary>
-        /// <param name="id">ID của sách</param>
-        /// <param name="dto">Thông tin giá mới</param>
-        /// <returns>Kết quả cập nhật</returns>
+        #endregion
+
+        #region Partial Update Operations
+
         [HttpPatch("{id:guid}/price")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -297,12 +243,6 @@ namespace BookStore.API.Controllers.Book
             }
         }
 
-        /// <summary>
-        /// Cập nhật trạng thái còn hàng của sách
-        /// </summary>
-        /// <param name="id">ID của sách</param>
-        /// <param name="isAvailable">Trạng thái còn hàng</param>
-        /// <returns>Kết quả cập nhật</returns>
         [HttpPatch("{id:guid}/availability")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -315,12 +255,10 @@ namespace BookStore.API.Controllers.Book
             return Ok(new { message = "Cập nhật trạng thái thành công", isAvailable });
         }
 
-        /// <summary>
-        /// Kiểm tra ISBN đã tồn tại chưa
-        /// </summary>
-        /// <param name="isbn">Mã ISBN cần kiểm tra</param>
-        /// <param name="excludeBookId">ID sách cần loại trừ (dùng khi update)</param>
-        /// <returns>True nếu ISBN đã tồn tại</returns>
+        #endregion
+
+        #region Utility Methods
+
         [HttpGet("check-isbn")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<object>> CheckISBN([FromQuery] string isbn, [FromQuery] Guid? excludeBookId = null)
@@ -332,13 +270,10 @@ namespace BookStore.API.Controllers.Book
             return Ok(new { exists, isbn });
         }
 
-        /// <summary>
-        /// Lấy gợi ý sách thông minh dựa trên giỏ hàng và hành vi người dùng
-        /// </summary>
-        /// <param name="excludeBookIds">Danh sách ID sách cần loại trừ (thường là sách đã có trong giỏ)</param>
-        /// <param name="categoryIds">Danh sách ID danh mục quan tâm (từ sách trong giỏ)</param>
-        /// <param name="limit">Số lượng gợi ý tối đa (mặc định: 8)</param>
-        /// <returns>Danh sách BookDto được gợi ý</returns>
+        #endregion
+
+        #region Special Lists
+
         [HttpGet("recommendations")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<BookDto>>> GetRecommendations(
@@ -372,11 +307,6 @@ namespace BookStore.API.Controllers.Book
             }
         }
 
-        /// <summary>
-        /// Lấy sách bán chạy nhất
-        /// </summary>
-        /// <param name="top">Số lượng sách (mặc định: 10)</param>
-        /// <returns>Danh sách BookDto</returns>
         [HttpGet("best-selling")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<BookDto>>> GetBestSelling([FromQuery] int top = 10)
@@ -385,11 +315,6 @@ namespace BookStore.API.Controllers.Book
             return Ok(books);
         }
 
-        /// <summary>
-        /// Lấy sách mới nhất
-        /// </summary>
-        /// <param name="top">Số lượng sách (mặc định: 10)</param>
-        /// <returns>Danh sách BookDto</returns>
         [HttpGet("newest")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<BookDto>>> GetNewest([FromQuery] int top = 10)
@@ -398,11 +323,6 @@ namespace BookStore.API.Controllers.Book
             return Ok(books);
         }
 
-        /// <summary>
-        /// Lấy sách được xem nhiều nhất
-        /// </summary>
-        /// <param name="top">Số lượng sách (mặc định: 10)</param>
-        /// <returns>Danh sách BookDto</returns>
         [HttpGet("most-viewed")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<BookDto>>> GetMostViewed([FromQuery] int top = 10)
@@ -410,5 +330,7 @@ namespace BookStore.API.Controllers.Book
             var books = await _bookService.GetMostViewedBooksAsync(top);
             return Ok(books);
         }
+
+        #endregion
     }
 }

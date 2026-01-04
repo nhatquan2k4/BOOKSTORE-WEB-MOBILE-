@@ -1,8 +1,6 @@
 namespace BookStore.Domain.Enums
 {
-    /// <summary>
-    /// Trạng thái của PaymentTransaction.Status (string)
-    /// </summary>
+
     public static class PaymentStatus
     {
         public const string Pending = "Pending";

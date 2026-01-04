@@ -7,9 +7,7 @@ using System.Security.Claims;
 
 namespace BookStore.API.Controllers.Rental
 {
-    /// <summary>
-    /// Controller cho thuê từng quyển sách riêng lẻ
-    /// </summary>
+
     [Route("api/rental/rentals")]
     [ApiController]
     [Authorize]
@@ -26,10 +24,6 @@ namespace BookStore.API.Controllers.Rental
             _logger = logger;
         }
 
-        /// <summary>
-        /// User thuê 1 quyển sách
-        /// POST: api/rental/rentals/rent
-        /// </summary>
         [HttpPost("rent")]
         public async Task<IActionResult> RentBook([FromBody] CreateBookRentalDto dto)
         {
@@ -50,10 +44,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// [TESTING ONLY] Thuê sách KHÔNG CẦN THANH TOÁN (Mock payment)
-        /// POST: api/rental/rentals/rent-mock
-        /// </summary>
         [HttpPost("rent-mock")]
         public async Task<IActionResult> RentBookMock([FromBody] RentBookMockDto dto)
         {
@@ -98,10 +88,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Xem danh sách sách đang thuê
-        /// GET: api/rental/rentals/my
-        /// </summary>
         [HttpGet("my")]
         public async Task<IActionResult> GetMyRentals([FromQuery] bool includeExpired = false)
         {
@@ -118,10 +104,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Lấy chi tiết lượt thuê
-        /// GET: api/rental/rentals/{id}
-        /// </summary>
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetRentalById(Guid id)
         {
@@ -140,10 +122,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Gia hạn lượt thuê
-        /// POST: api/rental/rentals/{id}/renew
-        /// </summary>
         [HttpPost("{id:guid}/renew")]
         public async Task<IActionResult> RenewRental(Guid id, [FromBody] RenewBookRentalDto dto)
         {
@@ -164,10 +142,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Gia hạn MOCK (test không cần thanh toán)
-        /// POST: api/rental/rentals/{id}/renew-mock
-        /// </summary>
         [HttpPost("{id:guid}/renew-mock")]
         public async Task<IActionResult> RenewRentalMock(Guid id, [FromBody] RenewMockDto dto)
         {
@@ -204,10 +178,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Trả sách sớm (hủy lượt thuê)
-        /// POST: api/rental/rentals/{id}/return
-        /// </summary>
         [HttpPost("{id:guid}/return")]
         public async Task<IActionResult> ReturnBook(Guid id)
         {
@@ -228,10 +198,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Kiểm tra có quyền đọc sách không
-        /// GET: api/rental/rentals/{bookId}/check-access
-        /// </summary>
         [HttpGet("{bookId:guid}/check-access")]
         public async Task<IActionResult> CheckBookAccess(Guid bookId)
         {
@@ -248,10 +214,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Lấy link đọc sách đã thuê (Pre-signed URL, hết hạn 10 phút)
-        /// GET: api/rental/rentals/{bookId}/access-link
-        /// </summary>
         [HttpGet("{bookId:guid}/access-link")]
         public async Task<IActionResult> GetAccessLink(Guid bookId)
         {
@@ -268,10 +230,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Admin: Lấy tất cả rentals
-        /// GET: api/rental/rentals/all
-        /// </summary>
         [HttpGet("all")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllRentals()
@@ -288,10 +246,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Admin: Lấy rentals theo user
-        /// GET: api/rental/rentals/by-user/{userId}
-        /// </summary>
         [HttpGet("by-user/{userId:guid}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetRentalsByUser(Guid userId)
@@ -308,10 +262,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Admin: Lấy rentals theo sách
-        /// GET: api/rental/rentals/by-book/{bookId}
-        /// </summary>
         [HttpGet("by-book/{bookId:guid}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetRentalsByBook(Guid bookId)
@@ -328,10 +278,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Admin: Hủy rental
-        /// DELETE: api/rental/rentals/{id}
-        /// </summary>
         [HttpDelete("{id:guid}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CancelRental(Guid id)
@@ -348,10 +294,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Admin/Background Job: Cập nhật các rental hết hạn
-        /// POST: api/rental/rentals/update-expired
-        /// </summary>
         [HttpPost("update-expired")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateExpiredRentals()
@@ -375,18 +317,11 @@ namespace BookStore.API.Controllers.Rental
         }
     }
 
-    /// <summary>
-    /// DTO cho mock rent (testing only)
-    /// </summary>
     public class RentBookMockDto
     {
         public Guid BookId { get; set; }
         public Guid RentalPlanId { get; set; }
     }
-
-    /// <summary>
-    /// DTO cho mock renew (testing only)
-    /// </summary>
     public class RenewMockDto
     {
         public Guid RentalPlanId { get; set; }

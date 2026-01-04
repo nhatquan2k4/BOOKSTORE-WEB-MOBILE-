@@ -5,9 +5,7 @@ namespace BookStore.Application.Mappers.Catalog.BookImages
 {
     public static class BookImageMapper
     {
-        /// <summary>
-        /// Entity → BookImageDto (Response)
-        /// </summary>
+
         public static BookImageDto ToDto(this BookImage bookImage)
         {
             return new BookImageDto
@@ -20,18 +18,10 @@ namespace BookStore.Application.Mappers.Catalog.BookImages
             };
         }
 
-        /// <summary>
-        /// Collection mapping
-        /// </summary>
         public static List<BookImageDto> ToDtoList(this IEnumerable<BookImage> bookImages)
         {
             return bookImages.Select(bi => bi.ToDto()).ToList();
         }
-
-        /// <summary>
-        /// CreateBookImageDto → Entity (Create)
-        /// imageUrl sẽ được set sau khi upload lên MinIO
-        /// </summary>
         public static BookImage ToEntity(this CreateBookImageDto dto, string imageUrl)
         {
             return new BookImage
@@ -44,10 +34,6 @@ namespace BookStore.Application.Mappers.Catalog.BookImages
             };
         }
 
-        /// <summary>
-        /// UpdateBookImageDto → Update existing entity
-        /// Chỉ update metadata, không update ImageUrl
-        /// </summary>
         public static void UpdateFromDto(this BookImage bookImage, UpdateBookImageDto dto)
         {
             bookImage.IsCover = dto.IsCover;

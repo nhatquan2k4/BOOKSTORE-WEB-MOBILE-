@@ -37,9 +37,7 @@ namespace BookStore.Domain.Entities.Pricing_Inventory
             UpdateTimestamp();
         }
 
-        /// <summary>
-        /// Decrease stock 
-        /// </summary>
+
         public void Decrease(int amount)
         {
             if (amount <= 0)
@@ -102,9 +100,6 @@ namespace BookStore.Domain.Entities.Pricing_Inventory
             UpdateTimestamp();
         }
 
-        /// <summary>
-        /// Confirm sale from reserved stock (Order confirmed/paid)
-        /// </summary>
         public void ConfirmSale(int amount)
         {
             if (amount <= 0)
@@ -120,9 +115,7 @@ namespace BookStore.Domain.Entities.Pricing_Inventory
             UpdateTimestamp();
         }
 
-        /// <summary>
-        /// Return stock (refund/cancellation)
-        /// </summary>
+
         public void Return(int amount)
         {
             if (amount <= 0)
@@ -134,14 +127,8 @@ namespace BookStore.Domain.Entities.Pricing_Inventory
             UpdateTimestamp();
         }
 
-        /// <summary>
-        /// Get available quantity for new orders
-        /// </summary>
         public int GetAvailableQuantity() => QuantityOnHand - ReservedQuantity;
 
-        /// <summary>
-        /// Check if can fulfill order
-        /// </summary>
         public bool CanFulfill(int requestedQuantity) => GetAvailableQuantity() >= requestedQuantity;
 
         private void UpdateTimestamp()

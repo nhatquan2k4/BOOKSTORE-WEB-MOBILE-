@@ -3,9 +3,7 @@ using System.Collections.Generic;
 
 namespace BookStore.Application.DTOs.ChatBot
 {
-    /// <summary>
-    /// DTO tối ưu cho cache - chỉ chứa thông tin cần thiết cho ChatBot
-    /// </summary>
+
     public class CachedBookDto
     {
         public Guid Id { get; set; }

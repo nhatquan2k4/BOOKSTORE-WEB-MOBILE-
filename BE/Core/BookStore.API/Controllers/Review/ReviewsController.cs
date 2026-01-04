@@ -18,9 +18,8 @@ namespace BookStore.API.Controllers.Review
             _reviewService = reviewService;
         }
 
-        /// <summary>
-        /// Create a new review for a book (User only, must have purchased the book)
-        /// </summary>
+        #region Create Operations
+
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreateReview([FromRoute] Guid bookId, [FromBody] CreateReviewDto dto)
@@ -57,9 +56,10 @@ namespace BookStore.API.Controllers.Review
             }
         }
 
-        /// <summary>
-        /// Get all approved reviews for a book (Public access)
-        /// </summary>
+        #endregion
+
+        #region Query Methods
+
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> GetBookReviews(
@@ -102,9 +102,6 @@ namespace BookStore.API.Controllers.Review
             }
         }
 
-        /// <summary>
-        /// Get review statistics for a book (Public access)
-        /// </summary>
         [HttpGet("statistics")]
         [AllowAnonymous]
         public async Task<IActionResult> GetBookReviewStatistics([FromRoute] Guid bookId)
@@ -134,9 +131,6 @@ namespace BookStore.API.Controllers.Review
             }
         }
 
-        /// <summary>
-        /// Get current user's review for a book (User only)
-        /// </summary>
         [HttpGet("my-review")]
         [Authorize]
         public async Task<IActionResult> GetMyReview([FromRoute] Guid bookId)
@@ -173,9 +167,10 @@ namespace BookStore.API.Controllers.Review
             }
         }
 
-        /// <summary>
-        /// Update user's own review for a book (User only)
-        /// </summary>
+        #endregion
+
+        #region Update Operations
+
         [HttpPut("my-review")]
         [Authorize]
         public async Task<IActionResult> UpdateMyReview([FromRoute] Guid bookId, [FromBody] UpdateReviewDto dto)
@@ -212,9 +207,10 @@ namespace BookStore.API.Controllers.Review
             }
         }
 
-        /// <summary>
-        /// Delete user's own review for a book (User only)
-        /// </summary>
+        #endregion
+
+        #region Delete Operations
+
         [HttpDelete("my-review")]
         [Authorize]
         public async Task<IActionResult> DeleteMyReview([FromRoute] Guid bookId)
@@ -250,10 +246,10 @@ namespace BookStore.API.Controllers.Review
             }
         }
 
-        /// <summary>
-        /// Mark a review as helpful (User only, standard e-commerce feature)
-        /// This replaces the need for "comments on reviews"
-        /// </summary>
+        #endregion
+
+        #region Additional Features
+
         [HttpPost("{reviewId}/helpful")]
         [Authorize]
         public async Task<IActionResult> MarkReviewAsHelpful([FromRoute] Guid bookId, [FromRoute] Guid reviewId)
@@ -266,8 +262,7 @@ namespace BookStore.API.Controllers.Review
                     return Unauthorized(new { Success = false, Message = "User not authenticated" });
                 }
 
-                // TODO: Implement helpful tracking (need ReviewHelpful table)
-                // For now, return success message
+
                 return Ok(new
                 {
                     Success = true,
@@ -285,5 +280,6 @@ namespace BookStore.API.Controllers.Review
             }
         }
 
+        #endregion
     }
 }

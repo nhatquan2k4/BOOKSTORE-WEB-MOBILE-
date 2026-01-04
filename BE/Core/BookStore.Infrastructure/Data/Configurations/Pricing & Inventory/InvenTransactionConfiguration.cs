@@ -8,7 +8,7 @@ namespace BookStore.Infrastructure.Configurations.Pricing_Inventory
     {
         public void Configure(EntityTypeBuilder<InventoryTransaction> builder)
         {
-            builder.ToTable("InventoryTransactions");
+            builder.ToTable("InventoryTransactions", "inventory");
 
             builder.HasKey(x => x.Id);
 
