@@ -13,7 +13,7 @@ import { bookService, cartService, wishlistService, reviewService, commentServic
 import type { BookDetailDto, BookDto } from "@/types/dtos";
 import { useAuth } from "@/contexts";
 import { resolveBookPrice, formatPrice } from "@/lib/price";
-import { normalizeImageUrl } from "@/lib/imageUtils";
+import { normalizeImageUrl, getBookCoverUrl } from "@/lib/imageUtils";
 
 // ============================================================================
 // TYPES (Cập nhật để khớp với logic ghép API)
@@ -399,22 +399,63 @@ export default function BookDetailPage() {
         
         // 2. Fetch Suggested Books (Newest)
         const newest = await bookService.getNewestBooks(8);
-        setSuggestedBooks(newest.map(transformBookDto));
+        const suggested = newest.map(transformBookDto);
+        // Fetch cover URLs for suggested books
+        try {
+          const suggestedCovers = await Promise.all(
+            suggested.map(async (b) => ({ id: b.id, cover: await getBookCoverUrl(b.id) }))
+          );
+          const suggestedMap: Record<string, string | null> = {};
+          suggestedCovers.forEach((c) => (suggestedMap[c.id] = c.cover));
+          setSuggestedBooks(suggested.map((b) => ({ ...b, cover: suggestedMap[b.id] || b.cover })));
+        } catch (e) {
+          setSuggestedBooks(suggested);
+        }
         
         // 3. Fetch Popular Books (Most Viewed)
         const mostViewed = await bookService.getMostViewedBooks(8);
-        setPopularBooks(mostViewed.map(transformBookDto));
+        const popular = mostViewed.map(transformBookDto);
+        try {
+          const popularCovers = await Promise.all(
+            popular.map(async (b) => ({ id: b.id, cover: await getBookCoverUrl(b.id) }))
+          );
+          const popularMap: Record<string, string | null> = {};
+          popularCovers.forEach((c) => (popularMap[c.id] = c.cover));
+          setPopularBooks(popular.map((b) => ({ ...b, cover: popularMap[b.id] || b.cover })));
+        } catch (e) {
+          setPopularBooks(popular);
+        }
         
         // 4. Fetch Related Books (Same Author) - Logic từ câu trả lời trước
         if (bookData.authors && bookData.authors.length > 0) {
            const authorId = bookData.authors[0].id;
            const byAuthor = await bookService.getBooksByAuthor(authorId, 12);
            const filtered = byAuthor.filter(b => b.id !== id);
-           setRelatedBooks(filtered.map(transformBookDto));
+           const related = filtered.map(transformBookDto);
+           try {
+             const relatedCovers = await Promise.all(
+               related.map(async (b) => ({ id: b.id, cover: await getBookCoverUrl(b.id) }))
+             );
+             const relatedMap: Record<string, string | null> = {};
+             relatedCovers.forEach((c) => (relatedMap[c.id] = c.cover));
+             setRelatedBooks(related.map((b) => ({ ...b, cover: relatedMap[b.id] || b.cover })));
+           } catch (e) {
+             setRelatedBooks(related);
+           }
         } else if (bookData.categories && bookData.categories.length > 0) {
            const byCat = await bookService.getBooksByCategory(bookData.categories[0].id, 12);
            const filtered = byCat.filter(b => b.id !== id);
-           setRelatedBooks(filtered.map(transformBookDto));
+           const related = filtered.map(transformBookDto);
+           try {
+             const relatedCovers = await Promise.all(
+               related.map(async (b) => ({ id: b.id, cover: await getBookCoverUrl(b.id) }))
+             );
+             const relatedMap: Record<string, string | null> = {};
+             relatedCovers.forEach((c) => (relatedMap[c.id] = c.cover));
+             setRelatedBooks(related.map((b) => ({ ...b, cover: relatedMap[b.id] || b.cover })));
+           } catch (e) {
+             setRelatedBooks(related);
+           }
         }
 
         // 5. Fetch Reviews & Stats

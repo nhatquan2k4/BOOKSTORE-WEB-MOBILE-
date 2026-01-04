@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
-import { normalizeImageUrl } from "@/lib/imageUtils";
+import { normalizeImageUrl, getBookCoverUrl } from "@/lib/imageUtils";
 
 // ============================================================================
 // TYPES
@@ -21,6 +21,7 @@ export default function NewArrivalsPage() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [currentPage, setCurrentPage] = useState(1);
   const [books, setBooks] = useState<BookDto[]>([]);
+  const [bookCovers, setBookCovers] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 20;
@@ -68,6 +69,30 @@ export default function NewArrivalsPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedBooks = sortedBooks.slice(startIndex, endIndex);
   const totalPages = Math.ceil(sortedBooks.length / itemsPerPage);
+
+  // Fetch covers for current page
+  useEffect(() => {
+    const fetchCovers = async () => {
+      const promises = paginatedBooks.map(async (b) => {
+        try {
+          const url = await getBookCoverUrl(b.id);
+          return { id: b.id, url };
+        } catch (err) {
+          console.error(`Failed to fetch cover for new arrival ${b.id}:`, err);
+          return { id: b.id, url: null };
+        }
+      });
+
+      const results = await Promise.all(promises);
+      setBookCovers((prev) => {
+        const next = { ...prev };
+        results.forEach((r) => (next[r.id] = r.url));
+        return next;
+      });
+    };
+
+    if (paginatedBooks.length > 0) fetchCovers();
+  }, [paginatedBooks]);
 
   // reset page when sort changes
   useEffect(() => {
@@ -178,7 +203,7 @@ export default function NewArrivalsPage() {
                 const currentPrice = book.currentPrice || book.discountPrice || 0;
                 const originalPrice = book.currentPrice && book.discountPrice ? book.currentPrice : 0;
                 const discount = calculateDiscount(originalPrice, currentPrice);
-                const imageUrl = normalizeImageUrl(book.coverImage);
+                const imageUrl = bookCovers[book.id] ?? normalizeImageUrl(book.coverImage);
                 
                 return (
                 <Link

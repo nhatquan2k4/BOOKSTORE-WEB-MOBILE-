@@ -30,3 +30,9 @@ export * from './stock';
 
 // User Profile types
 export * from './userProfile';
+
+// Wishlist types
+export * from './wishlist';
+
+// ChatBot types
+export * from './chatbot';

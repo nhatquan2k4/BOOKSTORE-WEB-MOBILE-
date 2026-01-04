@@ -376,10 +376,22 @@ export default function CheckoutPage() {
                             {cartItems.map(item => (
                                 <div key={item.id} className="flex gap-3 text-sm group">
                                     <div className="w-12 h-16 relative border rounded flex-shrink-0 overflow-hidden bg-gray-100 flex items-center justify-center">
-                                        {item.image && typeof item.image === 'string' && item.image.trim() !== '' ? (
-                                            <Image src={item.image} alt={item.title || 'Book'} fill className="object-cover group-hover:scale-105 transition-transform"/>
+                                        {/* Use Next/Image with a safe src and unoptimized for external/presigned URLs */}
+                                        {typeof item.image === 'string' && item.image.trim() !== '' ? (
+                                            <Image
+                                                src={item.image}
+                                                alt={item.title || 'Book'}
+                                                fill
+                                                unoptimized
+                                                className="object-cover group-hover:scale-105 transition-transform"
+                                                onError={(e) => {
+                                                    // If Image fails to load, attempt to replace with fallback by setting the src attribute on the target element
+                                                    const target = e?.currentTarget as HTMLImageElement | null;
+                                                    if (target) target.src = '/image/anh.png';
+                                                }}
+                                            />
                                         ) : (
-                                            <span className="text-xs text-gray-400">No Image</span>
+                                            <Image src="/image/anh.png" alt="No image" fill className="object-cover" unoptimized />
                                         )}
                                     </div>
                                     <div className="flex-1">

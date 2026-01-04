@@ -71,8 +71,8 @@ export default function ProfileScreen() {
 
   const moreSettings = [
     { id: 1, icon: 'receipt-outline', label: 'Đơn hàng của tôi', hasArrow: true, onPress: () => router.push('/(stack)/orders') },
-    { id: 2, icon: 'time-outline', label: 'Lịch sử giao dịch', hasArrow: true, onPress: () => console.log('Lịch sử giao dịch') },
-    { id: 3, icon: 'help-circle-outline', label: 'Hỗ trợ/FAQ', hasArrow: true, onPress: () => console.log('Hỗ trợ/FAQ') },
+    { id: 2, icon: 'heart-outline', label: 'Danh sách yêu thích', hasArrow: true, onPress: () => router.push('/(stack)/wishlist') },
+    { id: 3, icon: 'chatbubbles-outline', label: 'Trợ lý ảo', hasArrow: true, onPress: () => router.push('/(stack)/chatbot') },
   ];
 
   return (
