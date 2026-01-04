@@ -22,6 +22,7 @@ namespace BookStore.Infrastructure.Repository.Catalog
                     .ThenInclude(ba => ba.Author)
                 .Include(b => b.BookCategories)
                     .ThenInclude(bc => bc.Category)
+                .Include(b => b.Images)  // ← THÊM: Load cover images
                 .Include(b => b.Prices)
                 .Include(b => b.StockItems)
                 .ToListAsync();
