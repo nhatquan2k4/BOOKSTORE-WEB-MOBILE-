@@ -14,6 +14,7 @@ import {
 import { wishlistService, bookService, cartService } from '@/services';
 import type { BookDto } from '@/types/dtos';
 import { resolveBookPrice, formatPrice } from '@/lib/price';
+import { normalizeImageUrl } from '@/lib/imageUtils';
 
 interface WishlistBook extends BookDto {
   addedDate?: string;
@@ -241,11 +242,16 @@ export default function WishlistPage() {
                         <Link href={`/books/${book.id}`} className="flex-shrink-0 group">
                           <div className="relative w-24 h-36 sm:w-32 sm:h-48 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
                             <Image
-                              src={book.images?.find(i => i.isCover)?.imageUrl || book.images?.[0]?.imageUrl || '/image/anh.png'}
+                              src={normalizeImageUrl(book.images?.find(i => i.isCover)?.imageUrl || book.images?.[0]?.imageUrl) || '/image/anh.png'}
                               alt={book.title}
                               fill
+                              unoptimized
                               sizes="(max-width: 768px) 100px, 150px"
                               className={`object-cover group-hover:scale-105 transition-transform duration-300 ${isOutOfStock ? 'opacity-60 grayscale' : ''}`}
+                              onError={(e) => {
+                                const img = e?.currentTarget as HTMLImageElement | null;
+                                if (img) img.src = '/image/anh.png';
+                              }}
                             />
                           </div>
                         </Link>

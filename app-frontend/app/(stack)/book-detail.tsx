@@ -5,6 +5,7 @@ import { useRef, useState, useEffect } from 'react';
 import bookService from '@/src/services/bookService';
 import stockService from '@/src/services/stockService';
 import cartService from '@/src/services/cartService';
+import wishlistService from '@/src/services/wishlistService';
 import type { BookDetail } from '@/src/types/book';
 import { toDisplayBookDetail } from '@/src/types/book';
 import { PLACEHOLDER_IMAGES, getRandomBookCovers } from '@/src/constants/placeholders';
@@ -149,6 +150,49 @@ export default function BookDetail() {
     fetchBookDetail();
   }, [params.id]);
 
+  // Check if book is in wishlist
+  useEffect(() => {
+    if (isAuthenticated && book?.id) {
+      checkWishlistStatus();
+    }
+  }, [book?.id, isAuthenticated]);
+
+  const checkWishlistStatus = async () => {
+    if (!book?.id) return;
+    
+    try {
+      const isInWishlist = await wishlistService.isBookInWishlist(book.id);
+      setIsFavorite(isInWishlist);
+    } catch (error) {
+      console.error('Error checking wishlist:', error);
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!isAuthenticated) {
+      Alert.alert(
+        'Chưa đăng nhập',
+        'Vui lòng đăng nhập để thêm sách vào danh sách yêu thích',
+        [
+          { text: 'Hủy', style: 'cancel' },
+          { text: 'Đăng nhập', onPress: () => router.push('/login') },
+        ]
+      );
+      return;
+    }
+
+    if (!book?.id) return;
+
+    try {
+      const newState = await wishlistService.toggleWishlist(book.id);
+      setIsFavorite(newState);
+      showToast(newState ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích');
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+      Alert.alert('Lỗi', 'Không thể cập nhật danh sách yêu thích');
+    }
+  };
+
   const fetchBookDetail = async () => {
     if (!params.id) {
       setError('No book ID provided');
@@ -281,7 +325,7 @@ export default function BookDetail() {
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.headerButton, { backgroundColor: theme.cardBackground }]}
-              onPress={() => setIsFavorite(!isFavorite)}
+              onPress={handleToggleFavorite}
             >
               <Ionicons 
                 name={isFavorite ? "heart" : "heart-outline"} 
@@ -425,7 +469,7 @@ export default function BookDetail() {
           pointerEvents="none"
         >
           <View style={styles.toastBubble}>
-            <Text style={styles.toastText}>Đã thêm vào giỏ</Text>
+            <Text style={styles.toastText}>Đã thêm vào danh sách yêu thích</Text>
           </View>
         </Animated.View>
       )}
@@ -674,7 +718,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: '#2e3134ff',
+    backgroundColor: '#eee8e8ff',
     borderRadius: 16,
     paddingVertical: 16,
     marginBottom: 20,

@@ -272,7 +272,12 @@ export default function LibraryPage() {
                     src={book.cover} 
                     alt={book.title} 
                     fill 
+                    unoptimized
                     className="object-cover" 
+                    onError={(e) => {
+                      const img = e?.currentTarget as HTMLImageElement | null;
+                      if (img) img.src = '/image/anh.png';
+                    }}
                   />
                 </div>
 

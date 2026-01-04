@@ -14,14 +14,27 @@ import { orderService } from '@/services';
 import { formatPrice } from '@/lib/price';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276';
+const STORAGE_BASE = process.env.NEXT_PUBLIC_STORAGE_URL || '';
 
 // --- HELPER 1: Xử lý ảnh chuẩn ---
+// Behavior:
+// - If url is empty -> null
+// - If url is absolute (http/https) or data: -> return as-is
+// - If url is relative (starts with / or no leading slash) ->
+//    prefer NEXT_PUBLIC_STORAGE_URL if set, else fallback to API_BASE_URL
 const getFullImageUrl = (url?: string | null) => {
   if (!url || url.trim() === "") return null;
-  if (url.startsWith('http')) return url;
-  let cleanUrl = url.replace(/\\/g, '/');
+  const trimmed = url.trim();
+  // Data URLs should be returned as-is
+  if (trimmed.startsWith('data:')) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+
+  // Normalize slashes
+  let cleanUrl = trimmed.replace(/\\/g, '/');
   if (!cleanUrl.startsWith('/')) cleanUrl = `/${cleanUrl}`;
-  const cleanBase = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+
+  const base = STORAGE_BASE || API_BASE_URL;
+  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
   return `${cleanBase}${cleanUrl}`;
 };
 
