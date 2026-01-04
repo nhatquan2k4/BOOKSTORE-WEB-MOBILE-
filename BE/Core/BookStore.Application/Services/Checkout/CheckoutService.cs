@@ -440,18 +440,13 @@ namespace BookStore.Application.Services.Checkout
         }
 
 
-        /// <summary>
-        /// Generate payment URL (giả lập - thực tế cần tích hợp với payment gateway)
-        /// </summary>
         private string GeneratePaymentUrl(string transactionCode, decimal amount)
         {
             // URL giả lập cho demo
             return $"https://payment.bookstore.com/pay?txn={transactionCode}&amount={amount}";
         }
 
-        /// <summary>
-        /// Generate QR Code URL (giả lập - thực tế cần tích hợp với VietQR API)
-        /// </summary>
+
         private string GenerateQrCodeUrl(string transactionCode, decimal amount)
         {
             // URL giả lập cho demo - VietQR format
@@ -463,10 +458,7 @@ namespace BookStore.Application.Services.Checkout
             return $"https://img.vietqr.io/image/{bankCode}-{accountNo}-{template}.png?amount={amount}&addInfo={description}";
         }
 
-        /// <summary>
-        /// Lấy số lượng tồn kho khả dụng từ warehouse mặc định
-        /// (Chỉ check từ 1 warehouse để đồng bộ với ReserveStock)
-        /// </summary>
+
         private async Task<int> GetAvailableStockAsync(Guid bookId)
         {
             try
@@ -493,9 +485,6 @@ namespace BookStore.Application.Services.Checkout
             }
         }
 
-        /// <summary>
-        /// Reserve stock cho tất cả items trong cart
-        /// </summary>
         private async Task<bool> ReserveStockForCartAsync(Dtos.Cart.CartDto cart)
         {
             foreach (var item in cart.Items)
@@ -537,9 +526,7 @@ namespace BookStore.Application.Services.Checkout
             return true;
         }
 
-        /// <summary>
-        /// Release reserved stock (khi checkout fail hoặc cancel)
-        /// </summary>
+
         private async Task ReleaseStockForCartAsync(Dtos.Cart.CartDto cart)
         {
             foreach (var item in cart.Items)
@@ -562,9 +549,7 @@ namespace BookStore.Application.Services.Checkout
             }
         }
 
-        /// <summary>
-        /// Confirm sale khi thanh toán thành công (chuyển từ reserved sang sold)
-        /// </summary>
+
         private async Task ConfirmStockSaleAsync(OrderDto order)
         {
             foreach (var item in order.Items)
@@ -587,11 +572,6 @@ namespace BookStore.Application.Services.Checkout
             }
         }
 
-        /// <summary>
-        /// Release stock khi hủy order
-        /// - Nếu order chưa thanh toán (status = Pending/Confirmed) VÀ không phải COD: Release reserved stock
-        /// - Nếu order đã thanh toán HOẶC là COD (stock đã confirmed): Return sold stock
-        /// </summary>
         private async Task ReleaseStockForOrderAsync(OrderDto order)
         {
             // Kiểm tra xem stock đã được confirmed (sold) chưa
@@ -641,9 +621,6 @@ namespace BookStore.Application.Services.Checkout
             }
         }
 
-        /// <summary>
-        /// Convert OrderDto sang CartDto để xử lý stock
-        /// </summary>
         private Dtos.Cart.CartDto ConvertOrderToCart(OrderDto order)
         {
             return new Dtos.Cart.CartDto

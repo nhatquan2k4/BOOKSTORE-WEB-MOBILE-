@@ -1,8 +1,5 @@
 namespace BookStore.Application.Dtos.Rental
 {
-    /// <summary>
-    /// DTO để lấy link đọc ebook (Pre-signed URL)
-    /// </summary>
     public class EbookAccessDto
     {
         public Guid BookId { get; set; }
@@ -12,9 +9,6 @@ namespace BookStore.Application.Dtos.Rental
         public string Message { get; set; } = string.Empty;
     }
 
-    /// <summary>
-    /// DTO để upload ebook file (Admin)
-    /// </summary>
     public class UploadEbookDto
     {
         public Guid BookId { get; set; }
@@ -22,9 +16,6 @@ namespace BookStore.Application.Dtos.Rental
         public string ContentType { get; set; } = string.Empty; // application/pdf, application/epub+zip
     }
 
-    /// <summary>
-    /// DTO response sau khi upload ebook thành công
-    /// </summary>
     public class UploadEbookResultDto
     {
         public bool Success { get; set; }

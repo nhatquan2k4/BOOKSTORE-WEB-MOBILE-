@@ -8,10 +8,7 @@ using System.Threading.Tasks;
 
 namespace BookStore.Domain.Entities.Analytics___Activity
 {
-    /// <summary>
-    /// BookView entity for tracking book detail page views
-    /// Used for analytics: most viewed books, user behavior tracking
-    /// </summary>
+
     public class BookView
     {
         public Guid Id { get; set; }

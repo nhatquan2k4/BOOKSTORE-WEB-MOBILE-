@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 
 namespace BookStore.Domain.Entities.Analytics___Activity
 {
-    /// <summary>
-    /// Audit Log entity for tracking admin actions
-    /// </summary>
+
     public class AuditLog
     {
         public Guid Id { get; set; }

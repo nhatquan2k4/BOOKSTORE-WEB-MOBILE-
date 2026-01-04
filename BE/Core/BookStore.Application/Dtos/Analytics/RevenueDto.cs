@@ -1,8 +1,6 @@
 namespace BookStore.Application.DTO.Analytics
 {
-    /// <summary>
-    /// Revenue data for a single day
-    /// </summary>
+
     public class DailyRevenueDto
     {
         public DateTime Date { get; set; }
@@ -10,9 +8,7 @@ namespace BookStore.Application.DTO.Analytics
         public int OrderCount { get; set; }
     }
 
-    /// <summary>
-    /// Aggregated revenue data for dashboard
-    /// </summary>
+
     public class RevenueDto
     {
         public decimal TotalRevenue { get; set; }

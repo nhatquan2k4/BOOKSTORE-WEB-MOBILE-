@@ -3,14 +3,10 @@ using BookStore.Domain.Entities.Pricing_Inventory;
 
 namespace BookStore.Application.Mappers.Inventory
 {
-    /// <summary>
-    /// Mapper thủ công cho StockItem entity
-    /// </summary>
+
     public static class StockItemMapper
     {
-        /// <summary>
-        /// Map StockItem entity sang StockItemDto
-        /// </summary>
+
         public static StockItemDto ToDto(this StockItem stock)
         {
             return new StockItemDto
@@ -28,10 +24,6 @@ namespace BookStore.Application.Mappers.Inventory
             };
         }
 
-        /// <summary>
-        /// Create StockItem entity từ CreateStockItemDto
-        /// Sử dụng reflection để set private fields vì StockItem có domain logic
-        /// </summary>
         public static StockItem ToEntity(this CreateStockItemDto dto)
         {
             var stockItem = new StockItem();

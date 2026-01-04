@@ -1,8 +1,6 @@
 namespace BookStore.Application.Dtos.Rental
 {
-    /// <summary>
-    /// DTO kết quả sau khi thuê/gia hạn sách
-    /// </summary>
+
     public class BookRentalResultDto
     {
         public bool Success { get; set; }

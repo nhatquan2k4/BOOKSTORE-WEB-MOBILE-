@@ -2,9 +2,7 @@ using System;
 
 namespace BookStore.Domain.Events
 {
-    /// <summary>
-    /// Phát khi thanh toán thực sự được capture (trừ tiền).
-    /// </summary>
+
     public sealed class PaymentCaptured
     {
         public Guid OrderId { get; }

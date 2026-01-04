@@ -4,11 +4,6 @@ using Xunit;
 
 namespace BookStore.Tests.Domain.ValueObjects
 {
-    /// <summary>
-    /// Unit tests cho ISBN Value Object (Domain layer)
-    /// Value Objects là immutable và chứa validation logic riêng
-    /// Đây là ví dụ về DDD (Domain-Driven Design) pattern
-    /// </summary>
     public class ISBNTests
     {
         [Theory]

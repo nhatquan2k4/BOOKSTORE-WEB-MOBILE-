@@ -3,14 +3,10 @@ using BookStore.Domain.Entities.Pricing___Inventory;
 
 namespace BookStore.Application.Mappers.Inventory
 {
-    /// <summary>
-    /// Mapper thủ công cho Price entity
-    /// </summary>
+
     public static class PriceMapper
     {
-        /// <summary>
-        /// Map Price entity sang PriceDto
-        /// </summary>
+
         public static PriceDto ToDto(this Price price)
         {
             return new PriceDto
@@ -29,9 +25,6 @@ namespace BookStore.Application.Mappers.Inventory
             };
         }
 
-        /// <summary>
-        /// Map CreatePriceDto sang Price entity
-        /// </summary>
         public static Price ToEntity(this CreatePriceDto dto)
         {
             return new Price
@@ -46,9 +39,6 @@ namespace BookStore.Application.Mappers.Inventory
             };
         }
 
-        /// <summary>
-        /// Map UpdatePriceDto sang Price entity (tạo mới price với giá cập nhật)
-        /// </summary>
         public static Price ToNewEntity(this UpdatePriceDto dto, Guid bookId)
         {
             return new Price

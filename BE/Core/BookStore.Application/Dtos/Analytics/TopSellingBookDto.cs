@@ -1,8 +1,6 @@
 namespace BookStore.Application.DTO.Analytics
 {
-    /// <summary>
-    /// Top selling book information for dashboard
-    /// </summary>
+
     public class TopSellingBookDto
     {
         public Guid BookId { get; set; }

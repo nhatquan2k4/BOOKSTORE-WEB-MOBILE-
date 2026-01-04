@@ -1,8 +1,5 @@
 namespace BookStore.Application.Dtos.Rental
 {
-    /// <summary>
-    /// DTO cho subscription của user
-    /// </summary>
     public class UserSubscriptionDto
     {
         public Guid Id { get; set; }
@@ -19,18 +16,14 @@ namespace BookStore.Application.Dtos.Rental
         public bool IsValid { get; set; } // Còn hạn không
     }
 
-    /// <summary>
-    /// DTO để user mua gói thuê
-    /// </summary>
+
     public class SubscribeRentalPlanDto
     {
         public Guid RentalPlanId { get; set; }
         public string PaymentMethod { get; set; } = "Online"; // Online hoặc Cash
     }
 
-    /// <summary>
-    /// DTO response sau khi mua gói thành công
-    /// </summary>
+
     public class SubscriptionResultDto
     {
         public bool Success { get; set; }
@@ -40,18 +33,13 @@ namespace BookStore.Application.Dtos.Rental
         public string? PaymentTransactionCode { get; set; }
     }
 
-    /// <summary>
-    /// DTO để kiểm tra user có subscription còn hạn không
-    /// </summary>
+
     public class CheckSubscriptionDto
     {
         public bool HasActiveSubscription { get; set; }
         public UserSubscriptionDto? ActiveSubscription { get; set; }
     }
 
-    /// <summary>
-    /// DTO để mock thanh toán subscription (testing only)
-    /// </summary>
     public class SubscribeMockDto
     {
         public Guid RentalPlanId { get; set; }

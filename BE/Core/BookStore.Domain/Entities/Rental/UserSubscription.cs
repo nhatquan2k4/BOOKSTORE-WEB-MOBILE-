@@ -2,10 +2,7 @@ using BookStore.Domain.Entities.Identity;
 
 namespace BookStore.Domain.Entities.Rental
 {
-    /// <summary>
-    /// Gói thuê sách mà User đã mua (Story 18)
-    /// User mua gói → Có quyền đọc ebook trong thời hạn gói
-    /// </summary>
+
     public class UserSubscription
     {
         public Guid Id { get; set; }

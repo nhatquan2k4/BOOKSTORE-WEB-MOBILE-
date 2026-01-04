@@ -1,13 +1,9 @@
 namespace BookStore.Infrastructure.Data.Seeders
 {
-    /// <summary>
-    /// Orchestrator class để gọi tất cả các seeder theo đúng thứ tự
-    /// </summary>
+
     public static class DatabaseSeeder
     {
-        /// <summary>
-        /// Seed tất cả dữ liệu mẫu vào database theo thứ tự phụ thuộc
-        /// </summary>
+
         public static async Task SeedAllAsync(AppDbContext context)
         {
             // 1. Seed Identity - Roles và Permissions (phải seed trước)

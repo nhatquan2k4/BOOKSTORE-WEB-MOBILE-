@@ -55,9 +55,7 @@ namespace BookStore.API.Controllers
             return Ok(stocks);
         }
 
-        /// <summary>
-        /// Create stock item (Admin only)
-        /// </summary>
+
         [HttpPost]
         // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<StockItemDto>> CreateStockItem([FromBody] CreateStockItemDto dto)
@@ -73,9 +71,7 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Update stock quantity (Admin only)
-        /// </summary>
+
         [HttpPut("book/{bookId}/warehouse/{warehouseId}")]
         // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<StockItemDto>> UpdateStockQuantity(
@@ -90,9 +86,7 @@ namespace BookStore.API.Controllers
             return Ok(stock);
         }
 
-        /// <summary>
-        /// Check stock availability before order
-        /// </summary>
+
         [HttpGet("check-availability")]
         public async Task<ActionResult<object>> CheckStockAvailability(
             [FromQuery] Guid bookId,
@@ -117,9 +111,7 @@ namespace BookStore.API.Controllers
             });
         }
 
-        /// <summary>
-        /// Reserve stock for an order (Should be called when order is created)
-        /// </summary>
+
         [HttpPost("reserve")]
         // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ReserveStock([FromBody] ReserveStockDto dto)
@@ -149,9 +141,7 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Release reserved stock (Call when order is cancelled before payment)
-        /// </summary>
+
         [HttpPost("release")]
         // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ReleaseReservedStock(
@@ -177,9 +167,7 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Confirm sale from reserved stock (Call when order is paid/confirmed)
-        /// </summary>
+
         [HttpPost("confirm-sale")]
         // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ConfirmSale(
@@ -212,9 +200,6 @@ namespace BookStore.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Return stock (for refunds/cancellations after sale)
-        /// </summary>
         [HttpPost("return")]
         // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ReturnStock(

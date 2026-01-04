@@ -260,10 +260,6 @@ namespace BookStore.Application.Services.Ordering
             return order;
         }
 
-        // --- NEW: Logic tạo đơn thuê sách (ĐÃ FIX LỖI BUILD) ---
-        /// <summary>
-        /// Tạo đơn thuê sách dựa trên RentalPlanId (Cách mới - Chính xác hơn)
-        /// </summary>
         public async Task<OrderDto> CreateRentalOrderByPlanIdAsync(Guid userId, Guid bookId, Guid rentalPlanId)
         {
             _logger.LogInformation("[CreateRentalOrderByPlanIdAsync] START - UserId: {UserId}, BookId: {BookId}, RentalPlanId: {RentalPlanId}", 
@@ -329,9 +325,6 @@ namespace BookStore.Application.Services.Ordering
             return order.ToDto();
         }
 
-        /// <summary>
-        /// Tạo đơn thuê sách dựa trên số ngày (Cách cũ - Fallback)
-        /// </summary>
         public async Task<OrderDto> CreateRentalOrderAsync(Guid userId, Guid bookId, int days)
 
         {

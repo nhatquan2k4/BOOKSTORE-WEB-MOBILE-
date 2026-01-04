@@ -4,14 +4,10 @@ using PublisherEntity = BookStore.Domain.Entities.Catalog.Publisher;
 
 namespace BookStore.Application.Mappers.Catalog.Publisher
 {
-    /// <summary>
-    /// Mapper cho PublisherDetailDto (bao gồm navigation properties)
-    /// </summary>
+
     public static class PublisherDetailMapper
     {
-        /// <summary>
-        /// Map Publisher entity sang PublisherDetailDto (bao gồm Books)
-        /// </summary>
+
         public static PublisherDetailDto ToDetailDto(this PublisherEntity publisher)
         {
             return new PublisherDetailDto

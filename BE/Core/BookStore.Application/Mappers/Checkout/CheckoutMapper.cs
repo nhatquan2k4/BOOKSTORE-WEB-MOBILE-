@@ -14,9 +14,6 @@ namespace BookStore.Application.Mappers.Checkout
     {
         #region CheckoutPreviewDto Mappings
 
-        /// <summary>
-        /// Tạo CheckoutPreviewDto từ Cart và các thông tin tính toán
-        /// </summary>
         public static CheckoutPreviewDto ToCheckoutPreviewDto(
             this Domain.Entities.Cart.Cart cart,
             decimal subtotal,
@@ -40,9 +37,6 @@ namespace BookStore.Application.Mappers.Checkout
             };
         }
 
-        /// <summary>
-        /// Tạo CheckoutPreviewDto từ CartDto
-        /// </summary>
         public static CheckoutPreviewDto ToCheckoutPreviewDto(
             this CartDto cart,
             decimal subtotal,
@@ -70,9 +64,6 @@ namespace BookStore.Application.Mappers.Checkout
 
         #region CheckoutValidationResultDto Mappings
 
-        /// <summary>
-        /// Tạo CheckoutValidationResultDto thành công
-        /// </summary>
         public static CheckoutValidationResultDto ToValidationSuccess()
         {
             return new CheckoutValidationResultDto
@@ -83,9 +74,6 @@ namespace BookStore.Application.Mappers.Checkout
             };
         }
 
-        /// <summary>
-        /// Tạo CheckoutValidationResultDto thất bại
-        /// </summary>
         public static CheckoutValidationResultDto ToValidationFailure(
             List<string> errorMessages,
             List<CheckoutItemValidationDto>? itemValidations = null)
@@ -98,9 +86,6 @@ namespace BookStore.Application.Mappers.Checkout
             };
         }
 
-        /// <summary>
-        /// Tạo CheckoutItemValidationDto từ CartItem
-        /// </summary>
         public static CheckoutItemValidationDto ToItemValidationDto(
             this CartItem cartItem,
             bool isAvailable,
@@ -117,10 +102,6 @@ namespace BookStore.Application.Mappers.Checkout
                 ErrorMessage = errorMessage
             };
         }
-
-        /// <summary>
-        /// Tạo CheckoutItemValidationDto từ CartItemDto
-        /// </summary>
         public static CheckoutItemValidationDto ToItemValidationDto(
             this CartItemDto cartItem,
             bool isAvailable,
@@ -142,9 +123,6 @@ namespace BookStore.Application.Mappers.Checkout
 
         #region CheckoutResultDto Mappings
 
-        /// <summary>
-        /// Tạo CheckoutResultDto thành công từ Order và Payment
-        /// </summary>
         public static CheckoutResultDto ToCheckoutResultDto(
             this Order order,
             Domain.Entities.Ordering___Payment.PaymentTransaction? payment = null,
@@ -162,9 +140,6 @@ namespace BookStore.Application.Mappers.Checkout
             };
         }
 
-        /// <summary>
-        /// Tạo CheckoutResultDto thành công từ OrderDto và PaymentDto
-        /// </summary>
         public static CheckoutResultDto ToCheckoutResultDto(
             this OrderDto order,
             PaymentDto.PaymentTransactionDto? payment = null,
@@ -181,10 +156,6 @@ namespace BookStore.Application.Mappers.Checkout
                 QrCodeUrl = qrCodeUrl
             };
         }
-
-        /// <summary>
-        /// Tạo CheckoutResultDto thất bại
-        /// </summary>
         public static CheckoutResultDto ToCheckoutFailureDto(string errorMessage)
         {
             return new CheckoutResultDto
@@ -201,10 +172,6 @@ namespace BookStore.Application.Mappers.Checkout
         #endregion
 
         #region CheckoutCalculationDto Mappings
-
-        /// <summary>
-        /// Tạo CheckoutCalculationDto
-        /// </summary>
         public static CheckoutCalculationDto ToCalculationDto(
             decimal subtotal,
             decimal discountAmount,
@@ -225,9 +192,7 @@ namespace BookStore.Application.Mappers.Checkout
             };
         }
 
-        /// <summary>
-        /// Tính toán từ Cart
-        /// </summary>
+
         public static CheckoutCalculationDto CalculateFromCart(
             this Domain.Entities.Cart.Cart cart,
             decimal discountAmount = 0,
@@ -247,9 +212,6 @@ namespace BookStore.Application.Mappers.Checkout
             );
         }
 
-        /// <summary>
-        /// Tính toán từ CartDto
-        /// </summary>
         public static CheckoutCalculationDto CalculateFromCartDto(
             this CartDto cart,
             decimal discountAmount = 0,
@@ -273,9 +235,6 @@ namespace BookStore.Application.Mappers.Checkout
 
         #region CheckoutRequestDto to Order Entity
 
-        /// <summary>
-        /// Chuyển CheckoutRequestDto thành Order Entity
-        /// </summary>
         public static Order ToOrderEntity(
             this CheckoutRequestDto dto,
             List<CreateOrderItemDto> orderItems,
@@ -300,9 +259,6 @@ namespace BookStore.Application.Mappers.Checkout
 
         #region Helper Methods
 
-        /// <summary>
-        /// Tạo mã đơn hàng tự động
-        /// </summary>
         private static string GenerateOrderNumber()
         {
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
@@ -310,9 +266,6 @@ namespace BookStore.Application.Mappers.Checkout
             return $"BK-{timestamp}-{random}";
         }
 
-        /// <summary>
-        /// Chuyển CartItems thành CreateOrderItemDto
-        /// </summary>
         public static List<CreateOrderItemDto> ToOrderItems(this ICollection<CartItem> cartItems)
         {
             return cartItems.Select(item => new CreateOrderItemDto
@@ -323,9 +276,6 @@ namespace BookStore.Application.Mappers.Checkout
             }).ToList();
         }
 
-        /// <summary>
-        /// Chuyển CartItemDtos thành CreateOrderItemDto
-        /// </summary>
         public static List<CreateOrderItemDto> ToOrderItems(this IEnumerable<CartItemDto> cartItems)
         {
             return cartItems.Select(item => new CreateOrderItemDto
@@ -336,17 +286,11 @@ namespace BookStore.Application.Mappers.Checkout
             }).ToList();
         }
 
-        /// <summary>
-        /// Tính tổng tiền từ cart items
-        /// </summary>
         public static decimal CalculateSubtotal(this ICollection<CartItem> cartItems)
         {
             return cartItems.Sum(i => i.UnitPrice * i.Quantity);
         }
 
-        /// <summary>
-        /// Tính tổng tiền từ cart item DTOs
-        /// </summary>
         public static decimal CalculateSubtotal(this IEnumerable<CartItemDto> cartItems)
         {
             return cartItems.Sum(i => i.BookPrice * i.Quantity);

@@ -139,11 +139,7 @@ namespace BookStore.Application.Mappers.Identity.User
 
         #region User -> UserSummaryDto
 
-        /// <summary>
-        /// Chuyển User entity sang UserSummaryDto (thông tin tóm tắt)
-        /// Dùng khi: Hiển thị danh sách users, dropdown, autocomplete
-        /// Ưu điểm: Nhẹ hơn UserDto, không load relationships
-        /// </summary>
+
         public static UserSummaryDto ToSummaryDto(this Domain.Entities.Identity.User user)
         {
             if (user == null) return null;
@@ -164,9 +160,7 @@ namespace BookStore.Application.Mappers.Identity.User
             };
         }
 
-        /// <summary>
-        /// Chuyển danh sách User sang danh sách UserSummaryDto
-        /// </summary>
+
         public static List<UserSummaryDto> ToSummaryDtoList(this IEnumerable<Domain.Entities.Identity.User> users)
         {
             return users?.Select(u => u.ToSummaryDto()).ToList() ?? new List<UserSummaryDto>();

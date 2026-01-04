@@ -1,8 +1,5 @@
 namespace BookStore.Application.Dtos.Ordering
 {
-    /// <summary>
-    /// DTO cho lịch sử thay đổi trạng thái đơn hàng
-    /// </summary>
     public class OrderStatusLogDto
     {
         public Guid Id { get; set; }
@@ -14,9 +11,6 @@ namespace BookStore.Application.Dtos.Ordering
         public string? ChangedBy { get; set; }
     }
 
-    /// <summary>
-    /// DTO để tạo log khi thay đổi trạng thái đơn hàng
-    /// </summary>
     public class CreateOrderStatusLogDto
     {
         public Guid OrderId { get; set; }

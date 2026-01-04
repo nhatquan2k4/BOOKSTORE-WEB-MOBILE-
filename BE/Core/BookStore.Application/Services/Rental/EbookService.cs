@@ -151,10 +151,6 @@ namespace BookStore.Application.Services.Rental
             }
         }
 
-        /// <summary>
-        /// Upload ebook được nén trong file ZIP (ZIP chứa PDF/EPUB bên trong)
-        /// Lý do: Giảm dung lượng upload 30-50%, tăng tốc độ upload
-        /// </summary>
         public async Task<UploadEbookZipResultDto> UploadEbookZipAsync(Guid bookId, Stream zipStream, string zipFileName)
         {
             // Validate book exists
@@ -239,10 +235,7 @@ namespace BookStore.Application.Services.Rental
             }
         }
 
-        /// <summary>
-        /// Upload CBZ (Comic Book ZIP) - chứa chapters/folders với ảnh từng trang
-        /// Structure: chap-1/1.jpg, chap-1/2.jpg, chap-2/1.jpg...
-        /// </summary>
+
         public async Task<UploadCbzResultDto> UploadCbzAsync(Guid bookId, Stream cbzStream, string cbzFileName)
         {
             // Validate book exists
@@ -371,9 +364,6 @@ namespace BookStore.Application.Services.Rental
             }
         }
 
-        /// <summary>
-        /// Lấy danh sách chapters của truyện (cho CBZ)
-        /// </summary>
         public async Task<EbookChaptersDto> GetChaptersAsync(Guid userId, Guid bookId)
         {
             // Check subscription
@@ -443,9 +433,6 @@ namespace BookStore.Application.Services.Rental
             };
         }
 
-        /// <summary>
-        /// Lấy danh sách ảnh của 1 chapter (với Pre-signed URLs)
-        /// </summary>
         public async Task<ChapterPagesDto> GetChapterPagesAsync(Guid userId, Guid bookId, string chapterName)
         {
             // Check subscription

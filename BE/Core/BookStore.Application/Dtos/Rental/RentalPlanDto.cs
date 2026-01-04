@@ -1,8 +1,6 @@
 namespace BookStore.Application.Dtos.Rental
 {
-    /// <summary>
-    /// DTO cho gói thuê sách
-    /// </summary>
+
     public class RentalPlanDto
     {
         public Guid Id { get; set; }
@@ -15,9 +13,6 @@ namespace BookStore.Application.Dtos.Rental
         public DateTime CreatedAt { get; set; }
     }
 
-    /// <summary>
-    /// DTO để tạo gói thuê mới (Admin)
-    /// </summary>
     public class CreateRentalPlanDto
     {
         public string Name { get; set; } = null!;
@@ -26,10 +21,6 @@ namespace BookStore.Application.Dtos.Rental
         public int DurationDays { get; set; }
         public string PlanType { get; set; } = "SingleBook"; // "Subscription" | "SingleBook"
     }
-
-    /// <summary>
-    /// DTO để cập nhật gói thuê (Admin)
-    /// </summary>
     public class UpdateRentalPlanDto
     {
         public Guid Id { get; set; }
