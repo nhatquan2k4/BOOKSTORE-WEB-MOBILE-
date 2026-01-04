@@ -11,9 +11,6 @@ import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
 import { normalizeImageUrl } from "@/lib/imageUtils";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 type Book = {
   id: string;
   title: string;
@@ -181,91 +178,6 @@ export default function EconomicsPage() {
             Khám phá {filteredBooks.length} đầu sách về kinh tế, tài chính và
             đầu tư
           </p>
-        </div>
-
-        {/* Category Filters */}
-        <div className="mb-8 flex flex-wrap gap-3">
-          <Button
-            onClick={() => handleCategoryChange("all")}
-            variant={selectedCategory === "all" ? "primary" : "outline"}
-            size="sm"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="inline-block mr-2"
-            >
-              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-            </svg>
-            Tất cả ({books.length})
-          </Button>
-          <Button
-            onClick={() => handleCategoryChange("macro")}
-            variant={selectedCategory === "macro" ? "primary" : "outline"}
-            size="sm"
-          >
-            Kinh tế vĩ mô (
-            {
-              books.filter((b) => b.subCategory === "macro")
-                .length
-            }
-            )
-          </Button>
-          <Button
-            onClick={() => handleCategoryChange("micro")}
-            variant={selectedCategory === "micro" ? "primary" : "outline"}
-            size="sm"
-          >
-            Kinh tế vi mô (
-            {
-              books.filter((b) => b.subCategory === "micro")
-                .length
-            }
-            )
-          </Button>
-          <Button
-            onClick={() => handleCategoryChange("finance")}
-            variant={selectedCategory === "finance" ? "primary" : "outline"}
-            size="sm"
-          >
-            Tài chính (
-            {
-              books.filter((b) => b.subCategory === "finance")
-                .length
-            }
-            )
-          </Button>
-          <Button
-            onClick={() => handleCategoryChange("investing")}
-            variant={selectedCategory === "investing" ? "primary" : "outline"}
-            size="sm"
-          >
-            Đầu tư (
-            {
-              books.filter((b) => b.subCategory === "investing")
-                .length
-            }
-            )
-          </Button>
-          <Button
-            onClick={() => handleCategoryChange("business")}
-            variant={selectedCategory === "business" ? "primary" : "outline"}
-            size="sm"
-          >
-            Kinh doanh (
-            {
-              books.filter((b) => b.subCategory === "business")
-                .length
-            }
-            )
-          </Button>
         </div>
 
         {/* Result Count */}

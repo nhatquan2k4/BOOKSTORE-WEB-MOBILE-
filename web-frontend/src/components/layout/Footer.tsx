@@ -52,16 +52,6 @@ export function Footer() {
                   <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                 </svg>
               </Link>
-              <Link 
-                href="https://twitter.com" 
-                target="_blank"
-                className="hover:text-sky-400 transition-colors"
-                aria-label="Twitter"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                </svg>
-              </Link>
             </div>
           </div>
 
@@ -70,28 +60,8 @@ export function Footer() {
             <h3 className="text-white text-lg font-bold mb-4">Hỗ Trợ Khách Hàng</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/help/contact" className="hover:text-white transition-colors">
-                  Liên hệ
-                </Link>
-              </li>
-              <li>
-                <Link href="/help/shipping" className="hover:text-white transition-colors">
-                  Chính sách giao hàng
-                </Link>
-              </li>
-              <li>
                 <Link href="/help/returns" className="hover:text-white transition-colors">
                   Chính sách đổi trả
-                </Link>
-              </li>
-              <li>
-                <Link href="/help/payment" className="hover:text-white transition-colors">
-                  Phương thức thanh toán
-                </Link>
-              </li>
-              <li>
-                <Link href="/help/faq" className="hover:text-white transition-colors">
-                  Câu hỏi thường gặp
                 </Link>
               </li>
               <li>
@@ -112,11 +82,6 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/careers" className="hover:text-white transition-colors">
-                  Tuyển dụng
-                </Link>
-              </li>
-              <li>
                 <Link href="/terms" className="hover:text-white transition-colors">
                   Điều khoản sử dụng
                 </Link>
@@ -129,11 +94,6 @@ export function Footer() {
               <li>
                 <Link href="/partners" className="hover:text-white transition-colors">
                   Đối tác
-                </Link>
-              </li>
-              <li>
-                <Link href="/affiliate" className="hover:text-white transition-colors">
-                  Chương trình Affiliate
                 </Link>
               </li>
             </ul>
@@ -172,50 +132,7 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Payment Methods */}
-        <div className="mt-12 pt-8 border-t border-gray-800">
-          <h4 className="text-white text-sm font-semibold mb-4">Phương thức thanh toán</h4>
-          <div className="flex flex-wrap gap-4">
-            <div className="bg-white rounded-lg px-4 py-2 flex items-center justify-center">
-              <span className="text-blue-600 font-bold text-sm">VISA</span>
-            </div>
-            <div className="bg-white rounded-lg px-4 py-2 flex items-center justify-center">
-              <span className="text-orange-500 font-bold text-sm">MasterCard</span>
-            </div>
-            <div className="bg-white rounded-lg px-4 py-2 flex items-center justify-center">
-              <span className="text-blue-600 font-bold text-sm">JCB</span>
-            </div>
-            <div className="bg-white rounded-lg px-4 py-2 flex items-center justify-center">
-              <span className="text-red-600 font-bold text-sm">MoMo</span>
-            </div>
-            <div className="bg-white rounded-lg px-4 py-2 flex items-center justify-center">
-              <span className="text-blue-600 font-bold text-sm">ZaloPay</span>
-            </div>
-            <div className="bg-white rounded-lg px-4 py-2 flex items-center justify-center">
-              <span className="text-green-600 font-bold text-sm">VNPay</span>
-            </div>
-            <div className="bg-white rounded-lg px-4 py-2 flex items-center justify-center">
-              <span className="text-gray-800 font-bold text-sm">COD</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Newsletter */}
-        <div className="mt-8 pt-8 border-t border-gray-800">
-          <div className="max-w-md">
-            <h4 className="text-white text-sm font-semibold mb-3">Đăng ký nhận tin khuyến mãi</h4>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Nhập email của bạn"
-                className="flex-1 px-4 py-2 rounded-full text-white-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button className="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors text-sm font-medium">
-                Đăng ký
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Newsletter - Xóa phần này */}
       </div>
 
       {/* Bottom Footer */}
@@ -224,14 +141,8 @@ export function Footer() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
             <p>© {currentYear} Bookstore. All rights reserved.</p>
             <div className="flex gap-6">
-              <Link href="/sitemap" className="hover:text-white transition-colors">
-                Sơ đồ trang
-              </Link>
               <Link href="/accessibility" className="hover:text-white transition-colors">
                 Hỗ trợ truy cập
-              </Link>
-              <Link href="/cookies" className="hover:text-white transition-colors">
-                Chính sách Cookie
               </Link>
             </div>
           </div>

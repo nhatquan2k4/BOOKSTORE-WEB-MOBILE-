@@ -5,6 +5,7 @@ import "./globals.css";
 // import { Footer } from "@/components/layout/Footer"; // Có thể bỏ nếu đã dùng trong LayoutWrapper
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,6 +50,7 @@ export default function RootLayout({
             {children}
           </LayoutWrapper>
         </AuthProvider>
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );

@@ -58,11 +58,16 @@ export const cartService = {
   /**
    * Thêm sách vào giỏ hàng
    * URL: POST /api/cart/add
-   * Body: { bookId, quantity }
+   * Body: { BookId, Quantity } (PascalCase for .NET backend)
    */
-  async addToCart(dto: AddToCartDto): Promise<CartDto> {
+  async addToCart(dto: AddToCartDto | any): Promise<CartDto> {
     try {
-      const response = await axiosInstance.post<CartDto>(`${CART_BASE_URL}/add`, dto);
+      // Ensure PascalCase for .NET backend
+      const payload = {
+        BookId: dto.BookId || dto.bookId,
+        Quantity: dto.Quantity || dto.quantity || 1
+      };
+      const response = await axiosInstance.post<CartDto>(`${CART_BASE_URL}/add`, payload);
       return response.data;
     } catch (error) {
       return handleApiError(error);

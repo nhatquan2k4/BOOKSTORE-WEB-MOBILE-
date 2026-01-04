@@ -13,6 +13,7 @@ namespace BookStore.Application.IService.Ordering
         // Create Order
         Task<OrderDto> CreateOrderAsync(CreateOrderDto dto);
         Task<OrderDto> CreateOrderFromCartAsync(Guid userId, CreateOrderAddressDto address, Guid? couponId = null);
+        Task<OrderDto> CreateRentalOrderByPlanIdAsync(Guid userId, Guid bookId, Guid rentalPlanId);
         Task<OrderDto> CreateRentalOrderAsync(Guid userId, Guid bookId, int days);
         
         // Update Order

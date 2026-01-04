@@ -143,24 +143,21 @@ namespace BookStore.Application.Services.Catalog
         {
             var plans = new List<RentalPlanDto>();
             
-            // Cấu hình % giá thuê dựa trên giá bìa
-            // 3 ngày: 2.5% (Thấp hơn gói 7 ngày là 5%)
+            // Cấu hình % giá thuê dựa trên giá bìa (CẬP NHẬT THEO YÊU CẦU MỚI)
+            // 3 ngày: 10%, 7 ngày: 15%, 14 ngày: 25%, 30 ngày: 40%, 180 ngày: 60%
             var configs = new[]
             {
-                new { Days = 3,   Percent = 0.025m, Label = "3 ngày", Popular = false }, 
-                new { Days = 7,   Percent = 0.05m,  Label = "7 ngày", Popular = false },
-                new { Days = 15,  Percent = 0.08m,  Label = "15 ngày", Popular = false },
-                new { Days = 30,  Percent = 0.12m,  Label = "30 ngày", Popular = false },
-                new { Days = 60,  Percent = 0.20m,  Label = "60 ngày", Popular = false },
-                new { Days = 90,  Percent = 0.25m,  Label = "90 ngày", Popular = false },
-                new { Days = 180, Percent = 0.35m,  Label = "180 ngày", Popular = true },
-                new { Days = 365, Percent = 0.50m,  Label = "1 năm (365 ngày)", Popular = false }
+                new { Days = 3,   Percent = 0.10m, Label = "3 ngày", Popular = false }, 
+                new { Days = 7,   Percent = 0.15m, Label = "7 ngày", Popular = false },
+                new { Days = 14,  Percent = 0.25m, Label = "14 ngày", Popular = false },
+                new { Days = 30,  Percent = 0.40m, Label = "30 ngày", Popular = false },
+                new { Days = 180, Percent = 0.60m, Label = "180 ngày", Popular = true }
             };
 
-            // Tính giá cơ sở gói 7 ngày để so sánh mức tiết kiệm
-            decimal base7Price = Math.Ceiling((purchasePrice * 0.05m) / 1000) * 1000;
-            if (base7Price < 2000) base7Price = 2000; // Giá tối thiểu tham chiếu
-            decimal basePerDay = base7Price / 7;
+            // Tính giá cơ sở gói 3 ngày để so sánh mức tiết kiệm
+            decimal base3Price = Math.Ceiling((purchasePrice * 0.10m) / 1000) * 1000;
+            if (base3Price < 2000) base3Price = 2000; // Giá tối thiểu tham chiếu
+            decimal basePerDay = base3Price / 3;
 
             int index = 1;
             foreach (var cfg in configs)
