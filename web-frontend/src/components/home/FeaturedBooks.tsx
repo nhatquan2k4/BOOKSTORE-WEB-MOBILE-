@@ -7,6 +7,7 @@ import { bookService } from '@/services';
 import type { BookDto } from '@/types/dtos';
 import { Badge } from '@/components/ui';
 import { resolveBookPrice, formatPrice } from '@/lib/price';
+import { normalizeImageUrl } from '@/lib/imageUtils';
 
 interface FeaturedBooksProps {
   limit?: number;
@@ -74,7 +75,7 @@ export function FeaturedBooks({ limit = 6 }: FeaturedBooksProps) {
           >
             <div className="relative h-80">
               <Image
-                src={book.coverImage || "/image/anh.png"}
+                src={normalizeImageUrl(book.coverImage) || "/image/anh.png"}
                 alt={book.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"

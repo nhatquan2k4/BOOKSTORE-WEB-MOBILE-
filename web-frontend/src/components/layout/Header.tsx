@@ -975,7 +975,7 @@ export function Header() {
                       >
                         <div className="relative w-12 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
                           <Image
-                            src={book.coverImage || "/image/anh.png"}
+                            src={normalizeImageUrl(book.coverImage) || "/image/anh.png"}
                             alt={book.title}
                             fill
                             className="object-cover"

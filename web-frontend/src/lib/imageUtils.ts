@@ -1,28 +1,31 @@
 /**
- * Image URL Utilities
- * Based on app-frontend logic for consistent image handling
- */
+* Image URL Utilities
+* Based on app-frontend logic for consistent image handling
+*/
 
 import axiosInstance from './axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tautologously-hyperconscious-carolyne.ngrok-free.dev/';
-// MinIO is accessible via localhost:9000 (not through API /storage)
+// Use environment variables for API and Storage URLs
+// These should be set in .env.local for local dev and in Vercel Environment Variables for production
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tautologously-hyperconscious-carolyne.ngrok-free.dev';
 const STORAGE_BASE_URL = process.env.NEXT_PUBLIC_STORAGE_URL || 'https://tautologously-hyperconscious-carolyne.ngrok-free.dev/storage';
 
+console.log('🔧 imageUtils loaded:', { API_BASE_URL, STORAGE_BASE_URL });
+
 /**
- * Normalize image URL with smart resolution
- * Handles relative paths, full URLs, and localhost replacements
- * 
- * Logic from app-frontend/src/services/bookService.ts
- */
+* Normalize image URL with smart resolution
+* Handles relative paths, full URLs, and localhost replacements
+* 
+* Logic from app-frontend/src/services/bookService.ts
+*/
 export const normalizeImageUrl = (url?: string | null): string | null => {
   // If no URL or empty string, return null (will show placeholder)
   if (!url || typeof url !== 'string' || url.trim() === '') {
     return null;
   }
-
+  
   const trimmedUrl = url.trim();
-
+  
   // If already a full external URL (e.g., salt.tikicdn.com), return as-is
   if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
     // If URL points to localhost/127.0.0.1, replace with storage host
@@ -33,9 +36,9 @@ export const normalizeImageUrl = (url?: string | null): string | null => {
         const storagePort = storageUrl.port || '80';
         
         return trimmedUrl
-          .replace(/localhost|127\.0\.0\.1|0\.0\.0\.0/g, storageHost)
-          .replace(':9000', `:${storagePort}`)
-          .replace(':5276', `:${storagePort}`);
+        .replace(/localhost|127\.0\.0\.1|0\.0\.0\.0/g, storageHost)
+        .replace(':9000', `:${storagePort}`)
+        .replace(':5276', `:${storagePort}`);
       } catch {
         // If URL parsing fails, return original
         return trimmedUrl;
@@ -44,7 +47,7 @@ export const normalizeImageUrl = (url?: string | null): string | null => {
     
     return trimmedUrl;
   }
-
+  
   // Handle relative paths (e.g., "/images/books/book1.jpg" or "\images\books\book1.jpg")
   let cleanUrl = trimmedUrl;
   
@@ -55,16 +58,16 @@ export const normalizeImageUrl = (url?: string | null): string | null => {
   if (!cleanUrl.startsWith('/')) {
     cleanUrl = `/${cleanUrl}`;
   }
-
+  
   // Prepend STORAGE_BASE_URL (not API_BASE_URL)
   const cleanBase = STORAGE_BASE_URL.endsWith('/') ? STORAGE_BASE_URL.slice(0, -1) : STORAGE_BASE_URL;
   return `${cleanBase}${cleanUrl}`;
 };
 
 /**
- * Get book cover image from API
- * Same as app-frontend bookService.getBookCover()
- */
+* Get book cover image from API
+* Same as app-frontend bookService.getBookCover()
+*/
 export const getBookCoverUrl = async (bookId: string): Promise<string | null> => {
   try {
     const response = await axiosInstance.get<{ imageUrl: string }>(`/api/books/${bookId}/images/cover`);
@@ -72,7 +75,7 @@ export const getBookCoverUrl = async (bookId: string): Promise<string | null> =>
     if (!response?.data?.imageUrl) {
       return null;
     }
-
+    
     // Normalize the image URL
     return normalizeImageUrl(response.data.imageUrl);
   } catch (error) {
@@ -82,22 +85,22 @@ export const getBookCoverUrl = async (bookId: string): Promise<string | null> =>
 };
 
 /**
- * Get full image URL for display
- * Alias for normalizeImageUrl for backward compatibility
- */
+* Get full image URL for display
+* Alias for normalizeImageUrl for backward compatibility
+*/
 export const getFullImageUrl = normalizeImageUrl;
 
 /**
- * Check if image URL is valid
- */
+* Check if image URL is valid
+*/
 export const isValidImageUrl = (url?: string | null): boolean => {
   return normalizeImageUrl(url) !== null;
 };
 
 /**
- * Get image URL or fallback
- * If url is invalid, returns fallback (or null if no fallback provided)
- */
+* Get image URL or fallback
+* If url is invalid, returns fallback (or null if no fallback provided)
+*/
 export const getImageUrlOrFallback = (
   url?: string | null, 
   fallback?: string | null

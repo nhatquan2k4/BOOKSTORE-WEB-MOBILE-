@@ -1,6 +1,6 @@
 import axiosInstance, { handleApiError } from '@/lib/axios';
 
-const IMAGE_BASE_URL = '/api/images';
+const IMAGE_BASE_URL = '/api/books';
 
 export const bookImagesService = {
   /**

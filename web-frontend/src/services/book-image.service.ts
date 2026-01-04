@@ -1,6 +1,6 @@
 import axiosInstance, { handleApiError } from '@/lib/axios';
 
-const BASE_URL = '/api/BookImage';
+const BASE_URL = '/api/books';
 
 export interface CreateBookImageDto {
   bookId: string;
