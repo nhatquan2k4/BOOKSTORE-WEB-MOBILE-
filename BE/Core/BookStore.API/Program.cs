@@ -233,12 +233,7 @@ builder.Services.AddSingleton<IBookDataCacheService, BookDataCacheService>(); //
 builder.Services.AddScoped<IChatBotService, ChatBotService>();
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 
-// Notification Repository & Service
-builder.Services.AddScoped<BookStore.Domain.IRepository.System.INotificationRepository, BookStore.Infrastructure.Repositories.System.NotificationRepository>();
-builder.Services.AddScoped<BookStore.Application.IService.System.INotificationService, BookStore.Application.Services.System.NotificationService>();
-
 // Event Bus (Singleton because it uses Channel)
-
 builder.Services.AddSingleton<BookStore.Application.Services.System.IEventBus, BookStore.Application.Services.System.InMemoryEventBus>();
 
 // SignalR

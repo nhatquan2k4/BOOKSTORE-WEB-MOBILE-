@@ -1,22 +1,18 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button, Badge, Card, CardContent } from '@/components/ui';
-import { bookService, orderService } from '@/services';
-import type { BookDetailDto } from '@/types/dtos';
+import { bookService, orderService, cartService } from '@/services';
+import type { BookDetailDto, RentalPlanDto } from '@/types/dtos';
+import { toast } from 'sonner';
 
-// List tính năng tĩnh (giữ nguyên để hiển thị cho đẹp)
-const STATIC_FEATURES = [
-  'Đọc offline không cần kết nối internet',
-  'Đồng bộ trên nhiều thiết bị',
-  'Tìm kiếm và highlight văn bản',
-  'Đánh dấu trang và ghi chú',
-  'Chế độ đọc ban đêm',
-  'Điều chỉnh font chữ và cỡ chữ',
-];
+// Helper function to validate UUID format
+const isValidUUID = (uuid: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
 
 export default function RentDetailPage() {
   const params = useParams();
@@ -25,34 +21,54 @@ export default function RentDetailPage() {
 
   // --- 1. STATE & API LOGIC (MỚI) ---
   const [book, setBook] = useState<BookDetailDto | null>(null);
+  const [rentalPlans, setRentalPlans] = useState<RentalPlanDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false); // State khi đang gọi API thuê
   
-  const [selectedPlanId, setSelectedPlanId] = useState<number>(0);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'description' | 'details' | 'reviews'>('description');
 
   // Load dữ liệu từ API
   useEffect(() => {
-    const fetchBookDetail = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await bookService.getBookById(id);
-        setBook(data);
-
-        // TODO: Tự động chọn gói Phổ biến hoặc gói đầu tiên từ API trả về
-        // Tạm thời comment vì BookDetailDto không có rentalPlans
-        // if (data?.rentalPlans && data.rentalPlans.length > 0) {
-        //     const popularPlan = data.rentalPlans.find(p => p.isPopular);
-        //     setSelectedPlanId(popularPlan ? popularPlan.id : data.rentalPlans[0].id);
-        // }
+        
+        // Chỉ fetch book detail - rental plans đã được tính trong book detail
+        const bookData = await bookService.getBookById(id);
+        
+        setBook(bookData);
+        
+        console.log('[RentPage] ========== RENTAL PLANS DEBUG ==========');
+        console.log('[RentPage] Book data:', bookData);
+        console.log('[RentPage] Rental plans from book:', bookData.rentalPlans);
+        
+        // Lấy rental plans từ book detail (đã được tính theo % giá sách)
+        const rentalPlansFromBook = bookData.rentalPlans || [];
+        
+        console.log('[RentPage] Total rental plans:', rentalPlansFromBook.length);
+        console.log('[RentPage] Rental plans data:', JSON.stringify(rentalPlansFromBook, null, 2));
+        console.log('[RentPage] ==========================================');
+        
+        // Sort by duration ascending (3, 7, 14, 30, 180 days)
+        rentalPlansFromBook.sort((a: any, b: any) => a.days - b.days);
+        
+        setRentalPlans(rentalPlansFromBook);
+        
+        // Tự động chọn gói đầu tiên
+        if (rentalPlansFromBook.length > 0) {
+          setSelectedPlanId(rentalPlansFromBook[0].id);
+        } else {
+          console.warn('[RentPage] No rental plans found!');
+        }
       } catch (error) {
-        console.error("Error fetching book detail:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
     
-    if (id) fetchBookDetail();
+    if (id) fetchData();
   }, [id]);
 
   // --- 2. DATA MAPPING (CẦU NỐI GIỮA API VÀ UI CŨ) ---
@@ -66,25 +82,25 @@ export default function RentDetailPage() {
     pages: book.pageCount,
     language: book.language,
     format: book.bookFormat?.formatType || 'ePub, PDF',
-    size: '2.5 MB', // Backend chưa có field này, để tạm
+    size: book.files?.[0]?.fileSize ? `${(book.files[0].fileSize / (1024 * 1024)).toFixed(2)} MB` : 'N/A',
     isbn: book.isbn,
     category: book.categories?.[0]?.name || "Chưa phân loại",
-    rating: book.averageRating || 4.5,
-    reviews: book.totalReviews || 0,
+    rating: book.averageRating,
+    reviews: book.totalReviews,
     cover: book.images?.[0]?.imageUrl || '/image/anh.png',
     description: book.description || "Chưa có mô tả",
-    features: STATIC_FEATURES,
     purchasePrice: book.currentPrice,
-    // QUAN TRỌNG: TODO - Backend chưa trả về rentalPlans, để tạm array rỗng
-    rentalPlans: [] as Array<{ 
-      id: number; 
-      name: string; 
-      price: number; 
-      duration: number; 
-      isPopular?: boolean;
-      durationLabel?: string;
-      savingsPercentage?: number;
-    }> // book.rentalPlans || []
+    // Rental plans từ book.rentalPlans (đã tính động theo giá sách)
+    rentalPlans: rentalPlans
+      .filter((plan: any) => plan && plan.days && plan.price) // Filter out invalid plans
+      .map((plan: any) => ({
+        id: plan.id || `plan-${plan.days}`,
+        name: plan.name || `Thuê ${plan.days} ngày`,
+        price: plan.price,
+        duration: plan.days, // This must be valid: 3, 7, 14, 30, 180
+        durationLabel: `${plan.days} ngày`,
+        description: plan.description || ''
+      }))
   } : null;
 
   // Tìm gói đang chọn
@@ -93,32 +109,178 @@ export default function RentDetailPage() {
   // --- 3. ACTIONS (LOGIC MỚI) ---
   
   const handleRentNow = async () => {
-    if (!book || !currentPlan) return;
+    console.log('[RentDetail] ========== HANDLE RENT NOW ==========');
+    console.log('[RentDetail] Book:', book);
+    console.log('[RentDetail] Current Plan:', currentPlan);
+    console.log('[RentDetail] Book ID:', book?.id);
+    console.log('[RentDetail] Duration:', currentPlan?.duration);
+    
+    if (!book || !currentPlan) {
+      toast.error('Vui lòng chọn gói thuê');
+      return;
+    }
+
+    // Validate book ID is valid UUID
+    if (!isValidUUID(book.id)) {
+      toast.error('Mã sách không hợp lệ');
+      console.error('[RentDetail] Invalid Book ID format:', book.id);
+      return;
+    }
+
+    // Validate duration value
+    const validDurations = [3, 7, 14, 30, 180];
+    if (!currentPlan.duration || !validDurations.includes(currentPlan.duration)) {
+      toast.error('Gói thuê không hợp lệ. Vui lòng chọn lại.');
+      console.error('[RentDetail] Invalid duration:', currentPlan.duration);
+      console.error('[RentDetail] Valid durations:', validDurations);
+      return;
+    }
+
+    // Check đăng nhập
+    const token = globalThis.window?.localStorage?.getItem('accessToken');
+    if (!token) {
+      toast.error('Vui lòng đăng nhập để thuê sách');
+      router.push(`/auth/login?redirect=/rent/${id}`);
+      return;
+    }
 
     try {
         setProcessing(true);
-        // Gọi API tạo đơn hàng (Secure)
-        const result = await orderService.createRentalOrder({
-            bookId: book.id,
-            days: currentPlan.duration
-        });
+        
+        // Prepare data - Gửi RentalPlanId để backend biết chính xác gói thuê nào
+        const requestData = {
+            BookId: book.id,
+            RentalPlanId: selectedPlanId, // ID của gói thuê user đã chọn
+            Days: currentPlan.duration     // Số ngày (backup)
+        };
+        
+        console.log('[RentDetail] ✅ Validation passed!');
+        console.log('[RentDetail] Selected Plan ID:', selectedPlanId);
+        console.log('[RentDetail] Request data:', JSON.stringify(requestData, null, 2));
+        
+        // Gọi API tạo đơn hàng
+        const result = await orderService.createRentalOrder(requestData);
 
-        if (result.success) {
-            // Chuyển hướng thanh toán với ID thật
-            router.push(`/payment/qr?orderId=${result.orderId}&amount=${result.amount}`);
+        console.log('[RentDetail] ✅ API response:', result);
+
+        if (result && result.orderId) {
+            toast.success('Tạo đơn thuê thành công!');
+            // Chuyển hướng thanh toán - backend trả về { success, orderId, orderNumber, amount }
+            const orderId = result.orderId;
+            const amount = result.amount;
+            router.push(`/payment/qr?orderId=${orderId}&amount=${amount}`);
         } else {
-            alert(result.message);
+            toast.error('Không thể tạo đơn thuê. Vui lòng thử lại.');
         }
-    } catch (err: any) {
-        alert(err.message || 'Lỗi tạo đơn hàng');
+    } catch (error: any) {
+        console.error('[RentDetail] ERROR:', error);
+        console.error('[RentDetail] Error type:', error?.constructor?.name);
+        console.error('[RentDetail] Error statusCode:', error?.statusCode);
+        console.error('[RentDetail] Error message:', error?.message);
+        console.error('[RentDetail] Error errors:', error?.errors);
+        
+        // handleApiError throws ApiError, not AxiosError
+        // ApiError has: message, statusCode, errors (not response.data)
+        let errorMessage = 'Lỗi không xác định';
+        
+        if (error?.message) {
+            errorMessage = error.message;
+        }
+        
+        // Check if it's a validation error
+        if (error?.errors) {
+            const errorDetails = Object.entries(error.errors)
+                .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+                .join('; ');
+            errorMessage = `${errorMessage}. Chi tiết: ${errorDetails}`;
+        }
+        
+        toast.error(`Lỗi tạo đơn thuê: ${errorMessage}`);
     } finally {
         setProcessing(false);
+        console.log('[RentDetail] ========================================');
     }
   };
 
-  const handleBuyNow = () => {
-    if (!bookData) return;
-    router.push(`/checkout?type=buy&bookId=${bookData.id}`);
+  const handleBuyNow = async () => {
+    console.log('[RentDetail] ========== HANDLE BUY NOW ==========');
+    console.log('[RentDetail] Book:', book);
+    console.log('[RentDetail] Book ID:', book?.id);
+    
+    if (!book) {
+      toast.error('Thông tin sách không hợp lệ');
+      return;
+    }
+
+    // Validate book ID is valid UUID
+    if (!isValidUUID(book.id)) {
+      toast.error('Mã sách không hợp lệ');
+      console.error('[RentDetail] Invalid Book ID format:', book.id);
+      return;
+    }
+    
+    // Check đăng nhập
+    const token = globalThis.window?.localStorage?.getItem('accessToken');
+    if (!token) {
+      toast.error('Vui lòng đăng nhập để mua sách');
+      router.push(`/auth/login?redirect=/rent/${id}`);
+      return;
+    }
+    
+    try {
+      setProcessing(true);
+      
+      // Prepare data with correct format (PascalCase for .NET backend)
+      const cartData = {
+        BookId: book.id,
+        Quantity: 1
+      };
+      
+      console.log('[RentDetail] Validation passed!');
+      console.log('[RentDetail] Cart data:', JSON.stringify(cartData, null, 2));
+      
+      // Thêm vào giỏ hàng trước
+      await cartService.addToCart(cartData as any);
+      
+      console.log('[RentDetail] Added to cart successfully');
+      toast.success('Đã thêm vào giỏ hàng!');
+      
+      // Chuyển sang trang checkout với item này
+      router.push(`/checkout?items=${book.id}`);
+      
+    } catch (error: any) {
+      console.error('[RentDetail] ERROR:', error);
+      console.error('[RentDetail] Error type:', error?.constructor?.name);
+      console.error('[RentDetail] Error statusCode:', error?.statusCode);
+      console.error('[RentDetail] Error message:', error?.message);
+      console.error('[RentDetail] Error errors:', error?.errors);
+      
+      // handleApiError throws ApiError, not AxiosError
+      let errorMessage = 'Lỗi không xác định';
+      
+      if (error?.message) {
+          errorMessage = error.message;
+      }
+      
+      // Check if it's a validation error
+      if (error?.errors) {
+          const errorDetails = Object.entries(error.errors)
+              .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+              .join('; ');
+          errorMessage = `${errorMessage}. Chi tiết: ${errorDetails}`;
+      }
+      
+      // Nếu lỗi là "sách đã có trong giỏ", vẫn chuyển sang checkout
+      if (errorMessage.includes('đã có') || errorMessage.includes('already') || errorMessage.includes('exist')) {
+        toast.info('Sách đã có trong giỏ hàng');
+        router.push(`/checkout?items=${book.id}`);
+      } else {
+        toast.error(`Lỗi thêm vào giỏ: ${errorMessage}`);
+      }
+    } finally {
+      setProcessing(false);
+      console.log('[RentDetail] ========================================');
+    }
   };
 
   // --- 4. RENDER UI (GIỮ NGUYÊN 100% HTML CŨ CỦA BẠN) ---
@@ -212,18 +374,6 @@ export default function RentDetailPage() {
                   <div className="mb-6">
                     <Badge variant="default" className="bg-blue-100 text-blue-700">{bookData.category}</Badge>
                   </div>
-
-                  {/* Features */}
-                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4">
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">Tính năng nổi bật</h3>
-                    <ul className="space-y-2">
-                      {bookData.features.map((feature, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                          <span className="text-green-500">✓</span> {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
                 </div>
               </div>
 
@@ -287,16 +437,11 @@ export default function RentDetailPage() {
                               selectedPlanId === plan.id ? 'bg-blue-50 border-blue-500 shadow-md ring-1 ring-blue-500' : 'border-gray-200 hover:border-blue-300'
                             }`}
                           >
-                            {plan.isPopular && (
-                              <div className="absolute -top-2 -right-2">
-                                <Badge variant="danger" className="text-xs bg-red-500 text-white hover:bg-red-600">Phổ biến</Badge>
-                              </div>
-                            )}
                             <div className="flex items-center justify-between w-full">
                               <div className="text-left">
-                                <div className="font-semibold text-gray-900">{plan.durationLabel}</div>
-                                {(plan.savingsPercentage || 0) > 0 && (
-                                  <div className="text-xs text-green-600 font-medium">Tiết kiệm {plan.savingsPercentage}%</div>
+                                <div className="font-semibold text-gray-900">{plan.name}</div>
+                                {plan.description && (
+                                  <div className="text-xs text-gray-600 mt-1">{plan.description}</div>
                                 )}
                               </div>
                               <div className="text-right">
@@ -328,10 +473,10 @@ export default function RentDetailPage() {
                     <Button
                       onClick={handleBuyNow}
                       variant="outline"
-                      disabled={!bookData.purchasePrice}
+                      disabled={!bookData.purchasePrice || processing}
                       className="w-full border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white font-semibold py-3 h-auto"
                     >
-                      Mua sở hữu - {bookData.purchasePrice ? bookData.purchasePrice.toLocaleString('vi-VN') : 0}₫
+                      {processing ? 'Đang xử lý...' : `Mua sở hữu - ${bookData.purchasePrice ? bookData.purchasePrice.toLocaleString('vi-VN') : 0}₫`}
                     </Button>
                   </div>
 

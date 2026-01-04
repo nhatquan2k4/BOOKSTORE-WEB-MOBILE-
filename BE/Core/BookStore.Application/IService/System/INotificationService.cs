@@ -12,6 +12,7 @@ namespace BookStore.Application.IService.System
         Task<bool> MarkAllAsReadAsync(Guid userId);
         Task<UnreadCountDto> GetUnreadCountAsync(Guid userId);
         Task<bool> DeleteNotificationAsync(Guid id, Guid userId);
+        Task<bool> DeleteAllNotificationsAsync(Guid userId);
         Task<IEnumerable<NotificationListDto>> GetRecentNotificationsAsync(Guid userId, int count);
     }
 }

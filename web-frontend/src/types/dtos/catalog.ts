@@ -55,6 +55,17 @@ export interface BookDetailDto {
   stockQuantity?: number;
   averageRating?: number;
   totalReviews: number;
+  rentalPlans?: RentalPlanDto[];
+}
+
+export interface RentalPlanDto {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  days: number;
+  popular?: boolean;
+  savingsPercent?: number;
 }
 
 export interface CreateBookDto {

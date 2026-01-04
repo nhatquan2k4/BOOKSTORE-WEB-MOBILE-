@@ -9,7 +9,7 @@ export interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  type: 'order' | 'promotion' | 'system' | 'review';
+  type: 'order' | 'promotion' | 'system' | 'review' | 'order_created' | 'payment_success' | 'order_shipped' | 'order_completed' | 'rental_success' | 'rental_renewed' | 'rental_returned';
   isRead: boolean;
   createdAt: Date;
   link?: string;
@@ -21,6 +21,7 @@ interface NotificationDropdownProps {
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
   onClearAll: () => void;
+  onDelete: (id: string) => void;
 }
 
 export function NotificationDropdown({
@@ -28,11 +29,16 @@ export function NotificationDropdown({
   onMarkAsRead,
   onMarkAllAsRead,
   onClearAll,
+  onDelete,
 }: NotificationDropdownProps) {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const getIcon = (type: NotificationItem['type']) => {
-    switch (type) {
+    // Map backend types to display types
+    const iconType = type.startsWith('order_') || type.startsWith('payment_') ? 'order' : 
+                     type.startsWith('rental_') ? 'order' : type;
+    
+    switch (iconType) {
       case 'order':
         return (
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -66,7 +72,11 @@ export function NotificationDropdown({
   };
 
   const getIconColor = (type: NotificationItem['type']) => {
-    switch (type) {
+    // Map backend types to display colors
+    const colorType = type.startsWith('order_') || type.startsWith('payment_') ? 'order' : 
+                      type.startsWith('rental_') ? 'order' : type;
+    
+    switch (colorType) {
       case 'order':
         return 'bg-blue-100 text-blue-600';
       case 'promotion':
@@ -135,11 +145,9 @@ export function NotificationDropdown({
         ) : (
           <div className="divide-y divide-gray-100">
             {notifications.map((notification) => (
-              <Link
+              <div
                 key={notification.id}
-                href={notification.link || '/account/notifications'}
-                onClick={() => onMarkAsRead(notification.id)}
-                className={`block w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left ${
+                className={`w-full px-4 py-3 transition-colors ${
                   notification.isRead ? '' : 'bg-blue-50'
                 }`}
               >
@@ -162,12 +170,38 @@ export function NotificationDropdown({
                     <p className="text-xs text-gray-600 line-clamp-2 mb-1">
                       {notification.message}
                     </p>
-                    <p className="text-xs text-gray-400">
-                      {formatTime(notification.createdAt)}
-                    </p>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-gray-400">
+                        {formatTime(notification.createdAt)}
+                      </p>
+                      <div className="flex gap-2">
+                        {!notification.isRead && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onMarkAsRead(notification.id);
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                            title="Đánh dấu đã đọc"
+                          >
+                            Đã đọc
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(notification.id);
+                          }}
+                          className="text-xs text-red-600 hover:text-red-700 font-medium"
+                          title="Xóa thông báo"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
@@ -196,6 +230,14 @@ export function useNotifications() {
   // Fetch notifications from API
   useEffect(() => {
     const fetchNotifications = async () => {
+      // Chỉ fetch khi user đã login (có token)
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      if (!token) {
+        setNotifications([]);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const response = await notificationService.getMyNotifications(1, 20);
@@ -223,6 +265,16 @@ export function useNotifications() {
     };
 
     fetchNotifications();
+    
+    // Poll for new notifications every 30 seconds (only if logged in)
+    const pollInterval = setInterval(() => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      if (token) {
+        fetchNotifications();
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(pollInterval);
   }, []);
 
   const markAsRead = async (id: string) => {
@@ -247,11 +299,23 @@ export function useNotifications() {
 
   const clearAll = async () => {
     try {
-      // TODO: Backend chưa có API deleteAllRead
-      // await notificationService.deleteAllRead();
-      setNotifications((prev) => prev.filter((n) => !n.isRead));
+      const success = await notificationService.deleteAllNotifications();
+      if (success) {
+        setNotifications([]);
+      }
     } catch (error) {
       console.error('Failed to clear all:', error);
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    try {
+      const success = await notificationService.deleteNotification(id);
+      if (success) {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+      }
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
     }
   };
 
@@ -270,6 +334,7 @@ export function useNotifications() {
     markAsRead,
     markAllAsRead,
     clearAll,
+    deleteNotification,
     addNotification,
     unreadCount: notifications.filter((n) => !n.isRead).length,
     loading,

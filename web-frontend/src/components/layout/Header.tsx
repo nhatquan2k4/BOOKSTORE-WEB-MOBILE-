@@ -76,8 +76,17 @@ export function Header() {
   }, [isLoggedIn]);
 
   // Get notifications
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } =
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, deleteNotification } =
     useNotifications();
+
+  // Debug log notifications
+  useEffect(() => {
+    if (isLoggedIn) {
+      console.log('[Header] Notifications count:', notifications.length);
+      console.log('[Header] Unread count:', unreadCount);
+      console.log('[Header] Notifications:', notifications);
+    }
+  }, [notifications, unreadCount, isLoggedIn]);
 
   // Debounced search effect
   useEffect(() => {
@@ -227,21 +236,6 @@ export function Header() {
                 </svg>
                 support@bookstore.vn
               </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/help"
-                className="hover:text-blue-200 transition-colors"
-              >
-                Trợ giúp
-              </Link>
-              <span className="hidden md:inline">|</span>
-              <Link
-                href="/track-order"
-                className="hidden md:inline hover:text-blue-200 transition-colors"
-              >
-                Tra cứu đơn hàng
-              </Link>
             </div>
           </div>
         </div>
@@ -514,6 +508,7 @@ export function Header() {
                     onMarkAsRead={markAsRead}
                     onMarkAllAsRead={markAllAsRead}
                     onClearAll={clearAll}
+                    onDelete={deleteNotification}
                   />
                 </>
               )}

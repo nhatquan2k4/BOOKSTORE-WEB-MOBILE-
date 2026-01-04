@@ -1,11 +1,15 @@
 using BookStore.Application.Dtos.Ordering;
 using BookStore.Application.IService.Ordering;
+using BookStore.Application.IService.System;
+using BookStore.Application.DTOs.System.Notification;
 using BookStore.Application.Mappers.Ordering;
 using BookStore.Domain.Entities.Ordering;
 using BookStore.Domain.Entities.Ordering___Payment;
+using BookStore.Domain.Entities.Rental;
 using BookStore.Domain.IRepository.Cart;
 using BookStore.Domain.IRepository.Catalog;
 using BookStore.Domain.IRepository.Ordering;
+using BookStore.Domain.IRepository.Rental;
 using BookStore.Shared.Utilities;
 using BookStore.Shared.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -19,7 +23,10 @@ namespace BookStore.Application.Services.Ordering
         private readonly IOrderStatusLogRepository _statusLogRepository;
         private readonly ICartRepository _cartRepository;
         private readonly IBookRepository _bookRepository;
+        private readonly INotificationService _notificationService;
         private readonly ILogger<OrderService> _logger;
+        private readonly IRentalPlanRepository _rentalPlanRepository;
+        private readonly IBookRentalRepository _bookRentalRepository;
 
         public OrderService(
             IOrderRepository orderRepository,
@@ -27,14 +34,20 @@ namespace BookStore.Application.Services.Ordering
             IOrderStatusLogRepository statusLogRepository,
             ICartRepository cartRepository,
             IBookRepository bookRepository,
-            ILogger<OrderService> logger)
+            INotificationService notificationService,
+            ILogger<OrderService> logger,
+            IRentalPlanRepository rentalPlanRepository,
+            IBookRentalRepository bookRentalRepository)
         {
             _orderRepository = orderRepository;
             _orderItemRepository = orderItemRepository;
             _statusLogRepository = statusLogRepository;
             _cartRepository = cartRepository;
             _bookRepository = bookRepository;
+            _notificationService = notificationService;
             _logger = logger;
+            _rentalPlanRepository = rentalPlanRepository;
+            _bookRentalRepository = bookRentalRepository;
         }
 
         #region Get Orders
@@ -145,11 +158,11 @@ namespace BookStore.Application.Services.Ordering
                     
                     if (book == null)
                     {
-                        _logger.LogError($"[OrderService] ❌ Book not found: {itemDto.BookId}");
+                        _logger.LogError($"[OrderService] Book not found: {itemDto.BookId}");
                         Guard.Against(true, $"Sách với ID {itemDto.BookId} không tồn tại");
                     }
                     
-                    _logger.LogInformation($"[OrderService] ✅ Book found: {book!.Title}");
+                    _logger.LogInformation($"[OrderService] Book found: {book!.Title}");
 
                     order.Items.Add(new OrderItem
                     {
@@ -168,13 +181,44 @@ namespace BookStore.Application.Services.Ordering
                 await _orderRepository.AddAsync(order);
                 await _orderRepository.SaveChangesAsync();
 
-                _logger.LogInformation($"[OrderService] ✅✅✅ Order saved successfully: {order.OrderNumber} for user {dto.UserId}");
+                _logger.LogInformation($"[OrderService] Order saved successfully: {order.OrderNumber} for user {dto.UserId}");
+
+                // Tạo thông báo đơn hàng mới
+                try
+                {
+                    _logger.LogInformation($"[OrderService] START Creating notification for order {order.OrderNumber}...");
+                    _logger.LogInformation($"[OrderService] UserId: {dto.UserId}, OrderId: {order.Id}");
+                    
+                    var notificationDto = new CreateNotificationDto
+                    {
+                        UserId = dto.UserId,
+                        Title = "Đơn hàng đã được tạo",
+                        Message = $"Đơn hàng #{order.OrderNumber} của bạn đã được tạo thành công. Tổng tiền: {totalAmount:N0} VNĐ",
+                        Type = "order_created",
+                        Link = $"/orders/{order.Id}"
+                    };
+                    
+                    _logger.LogInformation($"[OrderService] Calling _notificationService.CreateNotificationAsync...");
+                    var result = await _notificationService.CreateNotificationAsync(notificationDto);
+                    _logger.LogInformation($"[OrderService] Notification created successfully! NotificationId: {result.Id}");
+                }
+                catch (Exception notifEx)
+                {
+                    _logger.LogError(notifEx, $"[OrderService] FAILED to create notification for order {order.OrderNumber}");
+                    _logger.LogError($"[OrderService] Notification error: {notifEx.Message}");
+                    _logger.LogError($"[OrderService] Notification stack trace: {notifEx.StackTrace}");
+                    if (notifEx.InnerException != null)
+                    {
+                        _logger.LogError($"[OrderService] Notification inner exception: {notifEx.InnerException.Message}");
+                    }
+                    // Don't throw - allow order to complete even if notification fails
+                }
 
                 return order.ToDto();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[OrderService] ❌❌❌ Error in CreateOrderAsync");
+                _logger.LogError(ex, "[OrderService] Error in CreateOrderAsync");
                 _logger.LogError($"[OrderService] Error details: {ex.Message}");
                 if (ex.InnerException != null)
                 {
@@ -217,36 +261,116 @@ namespace BookStore.Application.Services.Ordering
         }
 
         // --- NEW: Logic tạo đơn thuê sách (ĐÃ FIX LỖI BUILD) ---
-        public async Task<OrderDto> CreateRentalOrderAsync(Guid userId, Guid bookId, int days)
+        /// <summary>
+        /// Tạo đơn thuê sách dựa trên RentalPlanId (Cách mới - Chính xác hơn)
+        /// </summary>
+        public async Task<OrderDto> CreateRentalOrderByPlanIdAsync(Guid userId, Guid bookId, Guid rentalPlanId)
         {
+            _logger.LogInformation("[CreateRentalOrderByPlanIdAsync] START - UserId: {UserId}, BookId: {BookId}, RentalPlanId: {RentalPlanId}", 
+                userId, bookId, rentalPlanId);
+
             // 1. Lấy thông tin sách
             var book = await _bookRepository.GetDetailByIdAsync(bookId);
             Guard.Against(book == null, "Sách không tồn tại");
+            _logger.LogInformation("[CreateRentalOrderByPlanIdAsync] Book found: {BookTitle}", book!.Title);
+
+            // 2. Lấy RentalPlan từ repository
+            var rentalPlan = await _rentalPlanRepository.GetByIdAsync(rentalPlanId);
+            Guard.Against(rentalPlan == null, "Gói thuê không tồn tại");
+            
+            _logger.LogInformation("[CreateRentalOrderByPlanIdAsync] RentalPlan found - Name: {Name}, DurationDays: {Duration}, Price: {Price}", 
+                rentalPlan!.Name, rentalPlan.DurationDays, rentalPlan.Price);
+
+            decimal rentalPrice = rentalPlan.Price;
+
+            // 3. Tạo địa chỉ ảo (digital rental không cần địa chỉ thật)
+            // Lưu RentalPlanId vào Note để dễ parse sau này
+            var dummyAddress = new OrderAddress
+            {
+                Id = Guid.NewGuid(),
+                RecipientName = "Digital Rental",
+                PhoneNumber = "N/A",
+                Province = "Online",
+                District = "Online",
+                Ward = "Online",
+                Street = "Digital Delivery",
+                Note = $"RentalPlanId:{rentalPlanId}|Duration:{rentalPlan.DurationDays}|PlanName:{rentalPlan.Name}"
+            };
+
+            // 4. Tạo đơn hàng
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                OrderNumber = "RENT-" + GenerateOrderNumber().Substring(4),
+                Status = "Pending",
+                TotalAmount = rentalPrice,
+                DiscountAmount = 0,
+                CreatedAt = DateTime.UtcNow,
+                AddressId = dummyAddress.Id,
+                Address = dummyAddress
+            };
+
+            order.Items.Add(new OrderItem
+            {
+                Id = Guid.NewGuid(),
+                OrderId = order.Id,
+                BookId = bookId,
+                Quantity = 1,
+                UnitPrice = rentalPrice
+            });
+
+            await _orderRepository.AddAsync(order);
+            await _orderRepository.SaveChangesAsync();
+
+            _logger.LogInformation("[CreateRentalOrderByPlanIdAsync] Order created - OrderNumber: {OrderNumber}, Price: {Price}", 
+                order.OrderNumber, rentalPrice);
+
+            return order.ToDto();
+        }
+
+        /// <summary>
+        /// Tạo đơn thuê sách dựa trên số ngày (Cách cũ - Fallback)
+        /// </summary>
+        public async Task<OrderDto> CreateRentalOrderAsync(Guid userId, Guid bookId, int days)
+
+        {
+            _logger.LogInformation("[CreateRentalOrderAsync] START - UserId: {UserId}, BookId: {BookId}, Days: {Days}", userId, bookId, days);
+
+            // 1. Lấy thông tin sách
+            var book = await _bookRepository.GetDetailByIdAsync(bookId);
+            Guard.Against(book == null, "Sách không tồn tại");
+            _logger.LogInformation("[CreateRentalOrderAsync] Book found: {BookTitle}", book!.Title);
 
             var bookPrice = book!.Prices?.Where(p => p.IsCurrent && p.EffectiveFrom <= DateTime.UtcNow)
                                         .OrderByDescending(p => p.EffectiveFrom)
                                         .FirstOrDefault()?.Amount ?? 0;
+            _logger.LogInformation("[CreateRentalOrderAsync] Book price: {BookPrice}", bookPrice);
             Guard.Against(bookPrice <= 0, "Sách chưa có giá bán, không thể thuê");
 
-            // 2. Tính giá thuê
-            decimal rentalPrice = 0;
-            if (days == 3) rentalPrice = 10000;
-            else
+            // 2. Tính giá thuê theo % giá sách
+            // 3 ngày: 10%, 7 ngày: 15%, 14 ngày: 25%, 30 ngày: 40%, 180 ngày: 60%
+            decimal percent = days switch
             {
-                decimal percent = days switch
-                {
-                    7 => 0.05m,
-                    15 => 0.08m,
-                    30 => 0.12m,
-                    60 => 0.20m,
-                    90 => 0.25m,
-                    180 => 0.35m,
-                    365 => 0.50m,
-                    _ => 0
-                };
-                if (percent == 0) throw new UserFriendlyException("Gói thuê không hợp lệ");
+                3 => 0.10m,   // 10%
+                7 => 0.15m,   // 15%
+                14 => 0.25m,  // 25%
+                30 => 0.40m,  // 40%
+                180 => 0.60m, // 60%
+                _ => throw new UserFriendlyException("Gói thuê không hợp lệ. Chỉ hỗ trợ: 3, 7, 14, 30, 180 ngày")
+            };
+            _logger.LogInformation("[CreateRentalOrderAsync] Percent: {Percent}%, Days: {Days}", percent * 100, days);
 
-                rentalPrice = Math.Round((bookPrice * percent) / 1000) * 1000;
+            // Tính giá thuê = % × giá sách, làm tròn lên hàng nghìn
+            decimal rentalPrice = Math.Ceiling((bookPrice * percent) / 1000) * 1000;
+            _logger.LogInformation("[CreateRentalOrderAsync] Calculated rental price: {RentalPrice}", rentalPrice);
+            
+            // Áp dụng giá sàn tối thiểu
+            decimal minPrice = days <= 3 ? 2000 : 3000;
+            if (rentalPrice < minPrice)
+            {
+                _logger.LogInformation("[CreateRentalOrderAsync] Price below minimum, adjusting from {OldPrice} to {MinPrice}", rentalPrice, minPrice);
+                rentalPrice = minPrice;
             }
 
             // 3. Tạo địa chỉ ảo (FIX LỖI AddressId non-nullable)
@@ -337,7 +461,162 @@ namespace BookStore.Application.Services.Ordering
             await _orderRepository.SaveChangesAsync();
 
             var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
-            return order!.ToDto();
+            
+            //Nếu là đơn thuê sách (OrderNumber bắt đầu với "RENT-"), tạo BookRental record
+            if (order!.OrderNumber.StartsWith("RENT-"))
+            {
+                _logger.LogInformation($"[OrderService] Detected rental order {order.OrderNumber}, creating BookRental record...");
+                
+                try
+                {
+                    // Lấy thông tin từ OrderItem
+                    var orderItem = order.Items.FirstOrDefault();
+                    if (orderItem != null)
+                    {
+                        var bookId = orderItem.BookId;
+                        
+                        // Parse RentalPlanId và Duration từ OrderAddress Note
+                        // Format: "RentalPlanId:{id}|Duration:{days}|PlanName:{name}"
+                        Guid? rentalPlanId = null;
+                        int durationDays = 0;
+                        
+                        if (!string.IsNullOrEmpty(order.Address?.Note))
+                        {
+                            var note = order.Address.Note;
+                            var parts = note.Split('|');
+                            
+                            foreach (var part in parts)
+                            {
+                                if (part.StartsWith("RentalPlanId:"))
+                                {
+                                    var idStr = part.Replace("RentalPlanId:", "").Trim();
+                                    if (Guid.TryParse(idStr, out var parsedId))
+                                    {
+                                        rentalPlanId = parsedId;
+                                        _logger.LogInformation($"[OrderService] Parsed RentalPlanId: {rentalPlanId}");
+                                    }
+                                }
+                                else if (part.StartsWith("Duration:"))
+                                {
+                                    var daysStr = part.Replace("Duration:", "").Trim();
+                                    if (int.TryParse(daysStr, out var days))
+                                    {
+                                        durationDays = days;
+                                        _logger.LogInformation($"[OrderService] Parsed Duration: {durationDays} days");
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Fallback: Tìm RentalPlan theo format cũ ("Rental Plan: {planName}" hoặc "Rental: {days} days")
+                        if (!rentalPlanId.HasValue && !string.IsNullOrEmpty(order.Address?.Note))
+                        {
+                            var note = order.Address.Note;
+                            
+                            // Trường hợp 1: "Rental Plan: {planName}"
+                            if (note.Contains("Rental Plan:"))
+                            {
+                                var planName = note.Replace("Rental Plan:", "").Trim();
+                                var rentalPlans = await _rentalPlanRepository.GetAllAsync();
+                                var matchedPlan = rentalPlans.FirstOrDefault(p => p.Name == planName);
+                                if (matchedPlan != null)
+                                {
+                                    rentalPlanId = matchedPlan.Id;
+                                    durationDays = matchedPlan.DurationDays;
+                                    _logger.LogInformation($"[OrderService] Found RentalPlan by name (fallback): {planName}");
+                                }
+                            }
+                            // Trường hợp 2: "Rental: {days} days"
+                            else if (note.Contains("Rental:"))
+                            {
+                                var daysStr = note.Replace("Rental:", "").Replace("days", "").Trim();
+                                if (int.TryParse(daysStr, out var days))
+                                {
+                                    durationDays = days;
+                                    var rentalPlans = await _rentalPlanRepository.GetAllAsync();
+                                    var matchedPlan = rentalPlans.FirstOrDefault(p => p.DurationDays == days);
+                                    if (matchedPlan != null)
+                                    {
+                                        rentalPlanId = matchedPlan.Id;
+                                        _logger.LogInformation($"[OrderService] Found RentalPlan by duration (fallback): {days} days");
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Nếu vẫn không tìm thấy, dùng gói mặc định
+                        if (!rentalPlanId.HasValue)
+                        {
+                            _logger.LogWarning($"[OrderService] Could not parse RentalPlan from order note, using default");
+                            var rentalPlans = await _rentalPlanRepository.GetAllAsync();
+                            var defaultPlan = rentalPlans.FirstOrDefault(p => p.DurationDays == 7) ?? rentalPlans.FirstOrDefault();
+                            if (defaultPlan != null)
+                            {
+                                rentalPlanId = defaultPlan.Id;
+                                durationDays = defaultPlan.DurationDays;
+                            }
+                        }
+                        
+                        if (rentalPlanId.HasValue && durationDays > 0)
+                        {
+                            // Tạo BookRental record
+                            var startDate = DateTime.UtcNow;
+                            var endDate = startDate.AddDays(durationDays);
+                            
+                            var bookRental = new BookRental
+                            {
+                                Id = Guid.NewGuid(),
+                                UserId = order.UserId,
+                                BookId = bookId,
+                                RentalPlanId = rentalPlanId.Value,
+                                StartDate = startDate,
+                                EndDate = endDate,
+                                IsReturned = false,
+                                IsRenewed = false,
+                                Status = "Active"
+                            };
+                            
+                            await _bookRentalRepository.AddAsync(bookRental);
+                            await _bookRentalRepository.SaveChangesAsync();
+                            
+                            _logger.LogInformation($"[OrderService] BookRental created successfully!");
+                            _logger.LogInformation($"   - RentalId: {bookRental.Id}");
+                            _logger.LogInformation($"   - BookId: {bookId}");
+                            _logger.LogInformation($"   - RentalPlanId: {rentalPlanId}");
+                            _logger.LogInformation($"   - Duration: {durationDays} days");
+                            _logger.LogInformation($"   - StartDate: {startDate:yyyy-MM-dd HH:mm:ss}");
+                            _logger.LogInformation($"   - EndDate: {endDate:yyyy-MM-dd HH:mm:ss}");
+                        }
+                        else
+                        {
+                            _logger.LogError($"[OrderService] Failed to create BookRental: Invalid RentalPlan or Duration");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogError($"[OrderService] Failed to create BookRental: Order has no items");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"[OrderService] Error creating BookRental for order {order.OrderNumber}");
+                    // Không throw exception để không làm gián đoạn flow thanh toán
+                }
+            }
+            
+            // Tạo thông báo thanh toán thành công
+            _logger.LogInformation($"[OrderService] Creating payment notification for order {order.OrderNumber}...");
+            await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+            {
+                UserId = order.UserId,
+                Title = "Thanh toán thành công",
+                Message = $"Đơn hàng #{order.OrderNumber} đã được thanh toán thành công. Đơn hàng sẽ sớm được xử lý.",
+                Type = "payment_success",
+                Link = $"/orders/{order.Id}"
+            });
+            _logger.LogInformation($"[OrderService] Payment notification created for order {order.OrderNumber}");
+            
+            return order.ToDto();
         }
 
         public async Task<OrderDto> ShipOrderAsync(Guid orderId, string? note = null)
@@ -352,6 +631,19 @@ namespace BookStore.Application.Services.Ordering
             await _orderRepository.SaveChangesAsync();
 
             var updatedOrder = await _orderRepository.GetOrderWithDetailsAsync(orderId);
+            
+            // Tạo thông báo đơn hàng đang vận chuyển
+            _logger.LogInformation($"[OrderService] Creating shipping notification for order {updatedOrder!.OrderNumber}...");
+            await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+            {
+                UserId = updatedOrder!.UserId,
+                Title = "Đơn hàng đang vận chuyển",
+                Message = $"Đơn hàng #{updatedOrder.OrderNumber} đã được giao cho shipper và đang trên đường giao đến bạn.",
+                Type = "order_shipped",
+                Link = $"/orders/{updatedOrder.Id}"
+            });
+            _logger.LogInformation($"[OrderService] Shipping notification created for order {updatedOrder.OrderNumber}");
+            
             return updatedOrder!.ToDto();
         }
 
@@ -367,6 +659,19 @@ namespace BookStore.Application.Services.Ordering
             await _orderRepository.SaveChangesAsync();
 
             var updatedOrder = await _orderRepository.GetOrderWithDetailsAsync(orderId);
+            
+            // Tạo thông báo đơn hàng đã hoàn thành
+            _logger.LogInformation($"[OrderService] Creating completion notification for order {updatedOrder!.OrderNumber}...");
+            await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+            {
+                UserId = updatedOrder!.UserId,
+                Title = "Đơn hàng đã hoàn thành",
+                Message = $"Đơn hàng #{updatedOrder.OrderNumber} đã được giao thành công! Cảm ơn bạn đã mua hàng.",
+                Type = "order_completed",
+                Link = $"/orders/{updatedOrder.Id}"
+            });
+            _logger.LogInformation($"[OrderService] Completion notification created for order {updatedOrder.OrderNumber}");
+            
             return updatedOrder!.ToDto();
         }
 
