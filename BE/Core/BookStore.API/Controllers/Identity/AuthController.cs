@@ -25,6 +25,7 @@ namespace BookStore.API.Controllers
             _passwordService = passwordService;
         }
 
+        #region Authentication Methods
 
         /// Đăng nhập
 
@@ -133,6 +134,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Logout Operations
 
         /// Đăng xuất
 
@@ -207,6 +211,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Password Management
 
         /// Đổi mật khẩu
 
@@ -320,6 +327,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region User Information
 
         /// Lấy thông tin user hiện tại
 
@@ -367,6 +377,9 @@ namespace BookStore.API.Controllers
             }
         }
 
+        #endregion
+
+        #region Test/Debug Endpoints
 
         /// Test endpoint - Kiểm tra JWT protected route
 
@@ -411,5 +424,7 @@ namespace BookStore.API.Controllers
                 Message = "JWT Token generated successfully!"
             });
         }
+
+        #endregion
     }
 }

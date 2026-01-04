@@ -18,6 +18,8 @@ namespace BookStore.API.Controllers.Shipping
             _shipperService = shipperService;
         }
 
+        #region Query Methods
+
         // GET: api/shippers
         [HttpGet]
         public async Task<IActionResult> GetAll()
@@ -59,6 +61,18 @@ namespace BookStore.API.Controllers.Shipping
             return Ok(shipper);
         }
 
+        // GET: api/shippers/{id}/shipments/count
+        [HttpGet("{id:guid}/shipments/count")]
+        public async Task<IActionResult> GetShipmentCount(Guid id)
+        {
+            var count = await _shipperService.GetShipmentCountAsync(id);
+            return Ok(new { shipperId = id, shipmentCount = count });
+        }
+
+        #endregion
+
+        #region Create Operations
+
         // POST: api/shippers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateShipperDto dto)
@@ -84,6 +98,10 @@ namespace BookStore.API.Controllers.Shipping
             }
         }
 
+        #endregion
+
+        #region Update Operations
+
         // PUT: api/shippers/{id}
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateShipperDto dto)
@@ -103,29 +121,6 @@ namespace BookStore.API.Controllers.Shipping
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Có lỗi xảy ra khi cập nhật shipper", details = ex.Message });
-            }
-        }
-
-        // DELETE: api/shippers/{id}
-        [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            try
-            {
-                var result = await _shipperService.DeleteShipperAsync(id);
-
-                if (!result)
-                    return NotFound(new { message = $"Không tìm thấy shipper với ID: {id}" });
-
-                return Ok(new { message = "Đã xóa shipper thành công" });
-            }
-            catch (UserFriendlyException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Có lỗi xảy ra khi xóa shipper", details = ex.Message });
             }
         }
 
@@ -153,12 +148,33 @@ namespace BookStore.API.Controllers.Shipping
             return Ok(new { message = "Đã vô hiệu hóa shipper thành công" });
         }
 
-        // GET: api/shippers/{id}/shipments/count
-        [HttpGet("{id:guid}/shipments/count")]
-        public async Task<IActionResult> GetShipmentCount(Guid id)
+        #endregion
+
+        #region Delete Operations
+
+        // DELETE: api/shippers/{id}
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> Delete(Guid id)
         {
-            var count = await _shipperService.GetShipmentCountAsync(id);
-            return Ok(new { shipperId = id, shipmentCount = count });
+            try
+            {
+                var result = await _shipperService.DeleteShipperAsync(id);
+
+                if (!result)
+                    return NotFound(new { message = $"Không tìm thấy shipper với ID: {id}" });
+
+                return Ok(new { message = "Đã xóa shipper thành công" });
+            }
+            catch (UserFriendlyException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi xóa shipper", details = ex.Message });
+            }
         }
+
+        #endregion
     }
 }

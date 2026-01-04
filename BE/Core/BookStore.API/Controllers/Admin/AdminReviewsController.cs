@@ -19,9 +19,6 @@ namespace BookStore.API.Controllers.Admin
             _reviewService = reviewService;
         }
 
-        /// <summary>
-        /// Get all pending reviews (Admin only)
-        /// </summary>
         [HttpGet("pending")]
         public async Task<IActionResult> GetPendingReviews(
             [FromQuery] int page = 1,
@@ -61,9 +58,7 @@ namespace BookStore.API.Controllers.Admin
             }
         }
 
-        /// <summary>
-        /// Get review by ID (Admin only)
-        /// </summary>
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetReviewById(Guid id)
         {
@@ -92,9 +87,7 @@ namespace BookStore.API.Controllers.Admin
             }
         }
 
-        /// <summary>
-        /// Approve a review (Admin only)
-        /// </summary>
+
         [HttpPut("{id}/approve")]
         public async Task<IActionResult> ApproveReview(Guid id)
         {
@@ -130,9 +123,7 @@ namespace BookStore.API.Controllers.Admin
             }
         }
 
-        /// <summary>
-        /// Reject a review (Admin only)
-        /// </summary>
+
         [HttpPut("{id}/reject")]
         public async Task<IActionResult> RejectReview(Guid id, [FromBody] UpdateReviewStatusDto dto)
         {
@@ -162,9 +153,7 @@ namespace BookStore.API.Controllers.Admin
             }
         }
 
-        /// <summary>
-        /// Delete a review (soft delete) (Admin only)
-        /// </summary>
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteReview(Guid id)
         {

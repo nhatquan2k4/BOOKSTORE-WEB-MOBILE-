@@ -26,8 +26,7 @@ namespace BookStore.API.Controllers.Order
             _logger = logger;
         }
 
-        // ... Các phương thức GET (GetAllOrders, GetOrderById...) giữ nguyên ...
-        // (Để tiết kiệm không gian, tôi chỉ liệt kê phần thay đổi quan trọng, bạn hãy giữ nguyên code cũ của các API GET)
+        #region Query Methods
 
         // GET: api/orders
         [HttpGet]
@@ -123,6 +122,82 @@ namespace BookStore.API.Controllers.Order
             });
         }
 
+        // GET: api/orders/{id:guid}/status-history
+        [HttpGet("{id:guid}/status-history")]
+        public async Task<IActionResult> GetOrderStatusHistory(Guid id)
+        {
+            var userId = GetCurrentUserId();
+            var isAdmin = User.IsInRole("Admin");
+            var order = await _orderService.GetOrderByIdAsync(id);
+
+            if (order == null) return NotFound(new { Message = "Không tìm thấy đơn hàng" });
+            if (!isAdmin && order.UserId != userId) return Forbid();
+
+            var history = await _orderService.GetOrderStatusHistoryAsync(id);
+            return Ok(history);
+        }
+
+        // GET: api/orders/available-for-shipping - Shipper lấy danh sách đơn đã xác nhận
+        [HttpGet("available-for-shipping")]
+        [Authorize(Roles = "Shipper,Admin")]
+        public async Task<IActionResult> GetAvailableOrdersForShipping(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 100)
+        {
+            try
+            {
+                // Lấy tất cả đơn có status = "Confirmed" (sẵn sàng giao)
+                var result = await _orderService.GetAllOrdersAsync(pageNumber, pageSize, "Confirmed");
+                
+                return Ok(new
+                {
+                    Items = result.Items,
+                    TotalCount = result.TotalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling((double)result.TotalCount / pageSize)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting available orders for shipping");
+                return StatusCode(500, new { Message = "Lỗi khi lấy danh sách đơn hàng" });
+            }
+        }
+
+        // GET: api/orders/my-shipping-orders - Shipper lấy danh sách đơn đang giao của mình
+        [HttpGet("my-shipping-orders")]
+        [Authorize(Roles = "Shipper,Admin")]
+        public async Task<IActionResult> GetMyShippingOrders(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 100)
+        {
+            try
+            {
+                // TODO: Sau này có thể thêm logic filter theo ShipperId nếu cần
+                // Hiện tại lấy tất cả đơn đang giao (status = "Shipping")
+                var result = await _orderService.GetAllOrdersAsync(pageNumber, pageSize, "Shipping");
+                
+                return Ok(new
+                {
+                    Items = result.Items,
+                    TotalCount = result.TotalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling((double)result.TotalCount / pageSize)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting my shipping orders");
+                return StatusCode(500, new { Message = "Lỗi khi lấy danh sách đơn hàng" });
+            }
+        }
+
+        #endregion
+
+        #region Create Operations
+
         // POST: api/orders
         [HttpPost]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto dto)
@@ -201,6 +276,10 @@ namespace BookStore.API.Controllers.Order
             });
         }
 
+        #endregion
+
+        #region Update Operations
+
         // ... Các phương thức PUT (Status, Cancel, Payment...) giữ nguyên ...
         [HttpPut("status")]
         public async Task<IActionResult> UpdateOrderStatus([FromBody] UpdateOrderStatusDto dto)
@@ -276,6 +355,10 @@ namespace BookStore.API.Controllers.Order
             return Ok(order);
         }
 
+        #endregion
+
+        #region Statistics
+
         // ... Statistics endpoints giữ nguyên ...
         [HttpGet("statistics/revenue")]
         [Authorize(Roles = "Admin")]
@@ -303,19 +386,9 @@ namespace BookStore.API.Controllers.Order
             return Ok(counts);
         }
 
-        [HttpGet("{id:guid}/status-history")]
-        public async Task<IActionResult> GetOrderStatusHistory(Guid id)
-        {
-            var userId = GetCurrentUserId();
-            var isAdmin = User.IsInRole("Admin");
-            var order = await _orderService.GetOrderByIdAsync(id);
+        #endregion
 
-            if (order == null) return NotFound(new { Message = "Không tìm thấy đơn hàng" });
-            if (!isAdmin && order.UserId != userId) return Forbid();
-
-            var history = await _orderService.GetOrderStatusHistoryAsync(id);
-            return Ok(history);
-        }
+        #region Utility Methods
 
         private Guid GetCurrentUserId()
         {
@@ -323,62 +396,7 @@ namespace BookStore.API.Controllers.Order
             return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập"));
         }
 
-        // GET: api/orders/available-for-shipping - Shipper lấy danh sách đơn đã xác nhận
-        [HttpGet("available-for-shipping")]
-        [Authorize(Roles = "Shipper,Admin")]
-        public async Task<IActionResult> GetAvailableOrdersForShipping(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 100)
-        {
-            try
-            {
-                // Lấy tất cả đơn có status = "Confirmed" (sẵn sàng giao)
-                var result = await _orderService.GetAllOrdersAsync(pageNumber, pageSize, "Confirmed");
-                
-                return Ok(new
-                {
-                    Items = result.Items,
-                    TotalCount = result.TotalCount,
-                    PageNumber = pageNumber,
-                    PageSize = pageSize,
-                    TotalPages = (int)Math.Ceiling((double)result.TotalCount / pageSize)
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting available orders for shipping");
-                return StatusCode(500, new { Message = "Lỗi khi lấy danh sách đơn hàng" });
-            }
-        }
-
-        // GET: api/orders/my-shipping-orders - Shipper lấy danh sách đơn đang giao của mình
-        [HttpGet("my-shipping-orders")]
-        [Authorize(Roles = "Shipper,Admin")]
-        public async Task<IActionResult> GetMyShippingOrders(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 100)
-        {
-            try
-            {
-                // TODO: Sau này có thể thêm logic filter theo ShipperId nếu cần
-                // Hiện tại lấy tất cả đơn đang giao (status = "Shipping")
-                var result = await _orderService.GetAllOrdersAsync(pageNumber, pageSize, "Shipping");
-                
-                return Ok(new
-                {
-                    Items = result.Items,
-                    TotalCount = result.TotalCount,
-                    PageNumber = pageNumber,
-                    PageSize = pageSize,
-                    TotalPages = (int)Math.Ceiling((double)result.TotalCount / pageSize)
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting my shipping orders");
-                return StatusCode(500, new { Message = "Lỗi khi lấy danh sách đơn hàng" });
-            }
-        }
+        #endregion
     }
 
     // Helper DTOs

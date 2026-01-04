@@ -6,9 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers.Rental
 {
-    /// <summary>
-    /// Controller quản lý gói thuê sách (Admin)
-    /// </summary>
+
     [Route("api/rental/plans")]
     [ApiController]
     public class RentalPlansController : ApiControllerBase
@@ -24,10 +22,6 @@ namespace BookStore.API.Controllers.Rental
             _logger = logger;
         }
 
-        /// <summary>
-        /// Lấy tất cả gói thuê (Admin)
-        /// GET: api/rental/plans
-        /// </summary>
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllRentalPlans()
@@ -44,12 +38,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Lấy các gói thuê đang active (User có thể xem)
-        /// GET: api/rental/plans/active
-        /// GET: api/rental/plans/active?type=Subscription (filter theo loại)
-        /// GET: api/rental/plans/active?type=SingleBook
-        /// </summary>
         [HttpGet("active")]
         [AllowAnonymous]
         public async Task<IActionResult> GetActiveRentalPlans([FromQuery] string? type = null)
@@ -78,10 +66,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Lấy chi tiết gói thuê
-        /// GET: api/rental/plans/{id}
-        /// </summary>
         [HttpGet("{id:guid}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetRentalPlanById(Guid id)
@@ -101,10 +85,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Tạo gói thuê mới (Admin)
-        /// POST: api/rental/plans
-        /// </summary>
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateRentalPlan([FromBody] CreateRentalPlanDto dto)
@@ -121,10 +101,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Cập nhật gói thuê (Admin)
-        /// PUT: api/rental/plans/{id}
-        /// </summary>
         [HttpPut("{id:guid}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateRentalPlan(Guid id, [FromBody] UpdateRentalPlanDto dto)
@@ -144,10 +120,6 @@ namespace BookStore.API.Controllers.Rental
             }
         }
 
-        /// <summary>
-        /// Xóa gói thuê (Admin)
-        /// DELETE: api/rental/plans/{id}
-        /// </summary>
         [HttpDelete("{id:guid}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteRentalPlan(Guid id)

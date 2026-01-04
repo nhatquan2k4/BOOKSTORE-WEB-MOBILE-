@@ -16,9 +16,7 @@ namespace BookStore.API.Controllers
             _priceService = priceService;
         }
 
-        /// <summary>
-        /// Get all current prices
-        /// </summary>
+
         [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PriceDto>>> GetAllCurrentPrices()
@@ -27,9 +25,6 @@ namespace BookStore.API.Controllers
             return Ok(prices);
         }
 
-        /// <summary>
-        /// Get current price by book ID
-        /// </summary>
         [AllowAnonymous]
         [HttpGet("book/{bookId}")]
         public async Task<ActionResult<PriceDto>> GetCurrentPriceByBookId(Guid bookId)
@@ -41,9 +36,6 @@ namespace BookStore.API.Controllers
             return Ok(price);
         }
 
-        /// <summary>
-        /// Get current price amount (simplified) by book ID - returns { price, currency }
-        /// </summary>
         [AllowAnonymous]
         [HttpGet("book/{bookId}/amount")]
         public async Task<ActionResult> GetCurrentPriceAmountByBookId(Guid bookId)
@@ -55,9 +47,7 @@ namespace BookStore.API.Controllers
             return Ok(new { price = price.Amount, currency = price.Currency ?? "VND" });
         }
 
-        /// <summary>
-        /// Get price history by book ID
-        /// </summary>
+
         [HttpGet("book/{bookId}/history")]
         public async Task<ActionResult<IEnumerable<PriceDto>>> GetPriceHistory(Guid bookId)
         {
@@ -65,9 +55,6 @@ namespace BookStore.API.Controllers
             return Ok(prices);
         }
 
-        /// <summary>
-        /// Create/Update price for a book (Admin only)
-        /// </summary>
         [Authorize]
         [HttpPost]
         public async Task<ActionResult<PriceDto>> CreatePrice([FromBody] CreatePriceDto dto)
@@ -76,9 +63,7 @@ namespace BookStore.API.Controllers
             return Ok(price);
         }
 
-        /// <summary>
-        /// Update price for a book (Admin only)
-        /// </summary>
+
         [Authorize]
         [HttpPut("book/{bookId}")]
         public async Task<ActionResult<PriceDto>> UpdatePrice(Guid bookId, [FromBody] UpdatePriceDto dto)
@@ -90,9 +75,7 @@ namespace BookStore.API.Controllers
             return Ok(price);
         }
 
-        /// <summary>
-        /// Bulk update prices (Admin only)
-        /// </summary>
+
         [Authorize]
         [HttpPost("bulk-update")]
         public async Task<IActionResult> BulkUpdatePrices([FromBody] BulkUpdatePriceDto dto)

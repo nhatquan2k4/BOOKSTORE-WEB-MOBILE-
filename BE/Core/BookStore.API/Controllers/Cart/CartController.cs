@@ -74,7 +74,7 @@ namespace BookStore.API.Controllers.Cart
             try
             {
                 var userId = GetCurrentUserId();
-                dto.UserId = userId; // Ensure user can only add to their own cart
+                dto.UserId = userId; 
 
                 var cart = await _cartService.AddToCartAsync(dto);
                 return Ok(cart);

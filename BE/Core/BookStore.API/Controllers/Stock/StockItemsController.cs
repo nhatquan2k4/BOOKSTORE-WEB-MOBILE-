@@ -16,9 +16,6 @@ namespace BookStore.API.Controllers
             _stockItemService = stockItemService;
         }
 
-        /// <summary>
-        /// Get stock by book ID and warehouse ID
-        /// </summary>
         [HttpGet("book/{bookId}/warehouse/{warehouseId}")]
         public async Task<ActionResult<StockItemDto>> GetStock(Guid bookId, Guid warehouseId)
         {
@@ -29,9 +26,6 @@ namespace BookStore.API.Controllers
             return Ok(stock);
         }
 
-        /// <summary>
-        /// Get all stocks by book ID (across all warehouses)
-        /// </summary>
         [HttpGet("book/{bookId}")]
         public async Task<ActionResult<IEnumerable<StockItemDto>>> GetStocksByBookId(Guid bookId)
         {
@@ -39,9 +33,6 @@ namespace BookStore.API.Controllers
             return Ok(stocks);
         }
 
-        /// <summary>
-        /// Get all stocks in a warehouse
-        /// </summary>
         [HttpGet("warehouse/{warehouseId}")]
         public async Task<ActionResult<IEnumerable<StockItemDto>>> GetStocksByWarehouseId(Guid warehouseId)
         {
@@ -49,9 +40,6 @@ namespace BookStore.API.Controllers
             return Ok(stocks);
         }
 
-        /// <summary>
-        /// Get low stock items (Admin only)
-        /// </summary>
         [HttpGet("low-stock")]
         // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<StockItemDto>>> GetLowStockItems([FromQuery] int threshold = 10)
@@ -60,11 +48,7 @@ namespace BookStore.API.Controllers
             return Ok(stocks);
         }
 
-        /// <summary>
-        /// Get out of stock items (Admin only)
-        /// </summary>
         [HttpGet("out-of-stock")]
-        // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<StockItemDto>>> GetOutOfStockItems()
         {
             var stocks = await _stockItemService.GetOutOfStockItemsAsync();

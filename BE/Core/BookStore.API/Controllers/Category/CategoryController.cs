@@ -16,9 +16,6 @@ namespace BookStore.API.Controllers.Category
             _categoryService = categoryService;
         }
 
-        /// <summary>
-        /// Lấy danh sách tất cả danh mục với phân trang
-        /// </summary>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
@@ -46,12 +43,6 @@ namespace BookStore.API.Controllers.Category
         }
 
 
-
-
-
-        /// <summary>
-        /// Lấy chi tiết danh mục theo ID
-        /// </summary>
         [HttpGet("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -64,9 +55,7 @@ namespace BookStore.API.Controllers.Category
             return Ok(category);
         }
 
-        /// <summary>
-        /// Lấy danh sách danh mục con theo parent ID
-        /// </summary>
+
         [HttpGet("{parentId:guid}/subcategories")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<CategoryDto>>> GetSubCategories(Guid parentId)
@@ -75,9 +64,6 @@ namespace BookStore.API.Controllers.Category
             return Ok(subcategories);
         }
 
-        /// <summary>
-        /// Lấy cây danh mục (hierarchical tree)
-        /// </summary>
         [HttpGet("tree")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<List<CategoryTreeDto>>> GetTree()
@@ -86,9 +72,7 @@ namespace BookStore.API.Controllers.Category
             return Ok(tree);
         }
 
-        /// <summary>
-        /// Lấy breadcrumb của danh mục
-        /// </summary>
+
         [HttpGet("{id:guid}/breadcrumb")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -101,9 +85,6 @@ namespace BookStore.API.Controllers.Category
             return Ok(breadcrumbs);
         }
 
-        /// <summary>
-        /// Tạo mới danh mục
-        /// </summary>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -123,9 +104,6 @@ namespace BookStore.API.Controllers.Category
             }
         }
 
-        /// <summary>
-        /// Cập nhật danh mục
-        /// </summary>
         [HttpPut("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -149,9 +127,6 @@ namespace BookStore.API.Controllers.Category
             }
         }
 
-        /// <summary>
-        /// Xóa danh mục
-        /// </summary>
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -172,9 +147,7 @@ namespace BookStore.API.Controllers.Category
             }
         }
 
-        /// <summary>
-        /// Kiểm tra danh mục có danh mục con không
-        /// </summary>
+
         [HttpGet("{id:guid}/has-subcategories")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<bool>> HasSubCategories(Guid id)
@@ -183,9 +156,7 @@ namespace BookStore.API.Controllers.Category
             return Ok(new { hasSubCategories });
         }
 
-        /// <summary>
-        /// Kiểm tra danh mục có sách không
-        /// </summary>
+
         [HttpGet("{id:guid}/has-books")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<bool>> HasBooks(Guid id)

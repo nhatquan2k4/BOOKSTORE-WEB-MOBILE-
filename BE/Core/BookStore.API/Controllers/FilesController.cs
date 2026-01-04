@@ -18,9 +18,6 @@ public class FilesController : ApiControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Upload a file to MinIO
-    /// </summary>
     [HttpPost("upload")]
     [Authorize]
     [Consumes("multipart/form-data")]
@@ -77,9 +74,6 @@ public class FilesController : ApiControllerBase
         }
     }
 
-    /// <summary>
-    /// Upload book-images
-    /// </summary>
     [HttpPost("upload/book-images")]
     [Authorize]
     [Consumes("multipart/form-data")]
@@ -88,9 +82,6 @@ public class FilesController : ApiControllerBase
         return await UploadFile(file, "book-images");
     }
 
-    /// <summary>
-    /// Upload ebook files
-    /// </summary>
     [HttpPost("upload/ebook-files")]
     [Authorize]
     [Consumes("multipart/form-data")]
@@ -99,9 +90,6 @@ public class FilesController : ApiControllerBase
         return await UploadFile(file, "ebook-files");
     }
 
-    /// <summary>
-    /// Upload user avatar
-    /// </summary>
     [HttpPost("upload/user-avatars")]
     [Authorize]
     [Consumes("multipart/form-data")]
@@ -110,9 +98,6 @@ public class FilesController : ApiControllerBase
         return await UploadFile(file, "user-avatars");
     }
 
-    /// <summary>
-    /// Delete a file from MinIO
-    /// </summary>
     [HttpDelete("{fileName}")]
     [Authorize]
     public async Task<IActionResult> DeleteFile(string fileName, [FromQuery] string? bucket = null)
@@ -138,9 +123,6 @@ public class FilesController : ApiControllerBase
         }
     }
 
-    /// <summary>
-    /// Get presigned URL for a file (temporary access)
-    /// </summary>
     [HttpGet("presigned-url/{fileName}")]
     public async Task<IActionResult> GetPresignedUrl(string fileName, [FromQuery] string? bucket = null, [FromQuery] int expiryInSeconds = 3600)
     {
@@ -167,9 +149,6 @@ public class FilesController : ApiControllerBase
         }
     }
 
-    /// <summary>
-    /// Download a file from MinIO
-    /// </summary>
     [HttpGet("download/{fileName}")]
     public async Task<IActionResult> DownloadFile(string fileName, [FromQuery] string? bucket = null)
     {

@@ -6,7 +6,7 @@ services:
       - .env
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=YourStrong@Password123
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
       - MSSQL_PID=Developer
     ports:
       - "1433:1433"
@@ -16,7 +16,7 @@ services:
       - bookstore-network
     restart: unless-stopped
     healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "YourStrong@Password123" -Q "SELECT 1" -C || exit 1
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -Q "SELECT 1" -C || exit 1
       interval: 5s
       timeout: 3s
       retries: 10
@@ -25,13 +25,15 @@ services:
   sqlserver-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: bookstore-sqlserver-init
+    env_file:
+      - .env
     depends_on:
       sqlserver:
         condition: service_healthy
     networks:
       - bookstore-network
     command: >
-      /bin/bash -c " sleep 5; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -C -Q \" IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'BookStore') CREATE DATABASE BookStore;\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -C -Q \" IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = 'bookstoreUser') CREATE LOGIN bookstoreUser WITH PASSWORD = 'BookstorePass1@', CHECK_POLICY = OFF;\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -d BookStore -C -Q \" IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = 'bookstoreUser') CREATE USER bookstoreUser FOR LOGIN bookstoreUser;\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Password123' -d BookStore -C -Q \"ALTER ROLE db_owner ADD MEMBER bookstoreUser;\"; "
+      /bin/bash -c " sleep 5; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P '${MSSQL_SA_PASSWORD}' -C -Q \" IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '${APP_DB}') CREATE DATABASE ${APP_DB};\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P '${MSSQL_SA_PASSWORD}' -C -Q \" IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = '${APP_USER}') CREATE LOGIN ${APP_USER} WITH PASSWORD = '${APP_PW}', CHECK_POLICY = OFF;\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P '${MSSQL_SA_PASSWORD}' -d ${APP_DB} -C -Q \" IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = '${APP_USER}') CREATE USER ${APP_USER} FOR LOGIN ${APP_USER};\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P '${MSSQL_SA_PASSWORD}' -d ${APP_DB} -C -Q \"ALTER ROLE db_owner ADD MEMBER ${APP_USER};\"; "
 
   minio:
     image: minio/minio:latest

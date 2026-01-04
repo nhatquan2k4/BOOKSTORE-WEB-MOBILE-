@@ -19,9 +19,6 @@ namespace BookStore.API.Controllers.Coupon
             _context = context;
         }
 
-        /// <summary>
-        /// Validate coupon code and get discount information
-        /// </summary>
         [HttpPost("validate")]
         [Authorize]
         public async Task<IActionResult> ValidateCoupon([FromBody] ValidateCouponRequest request)
@@ -105,9 +102,6 @@ namespace BookStore.API.Controllers.Coupon
             }
         }
 
-        /// <summary>
-        /// Get available coupons for current user
-        /// </summary>
         [HttpGet("my-coupons")]
         [Authorize]
         public async Task<IActionResult> GetMyCoupons()
@@ -154,9 +148,6 @@ namespace BookStore.API.Controllers.Coupon
             }
         }
 
-        /// <summary>
-        /// Get public/promotional coupons (available for all users)
-        /// </summary>
         [HttpGet("public")]
         [AllowAnonymous]
         public async Task<IActionResult> GetPublicCoupons()

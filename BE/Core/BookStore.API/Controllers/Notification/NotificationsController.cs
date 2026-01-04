@@ -10,13 +10,6 @@ namespace BookStore.API.Controllers.Notification
     [Authorize]
     public class NotificationController : ControllerBase
     {
-        // Giả sử bạn có INotificationService, nếu chưa có hãy tạo hoặc thay bằng Repository
-        // private readonly INotificationService _notificationService;
-
-        public NotificationController(/* INotificationService notificationService */)
-        {
-            // _notificationService = notificationService;
-        }
 
         // GET: api/notifications/my
         [HttpGet("my")]

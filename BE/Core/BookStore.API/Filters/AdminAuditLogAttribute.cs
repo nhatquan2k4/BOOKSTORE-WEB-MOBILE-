@@ -5,9 +5,6 @@ using System.Text.Json;
 
 namespace BookStore.API.Filters
 {
-    /// <summary>
-    /// Action filter to automatically log admin actions for audit purposes
-    /// </summary>
     public class AdminAuditLogAttribute : ActionFilterAttribute
     {
         private readonly string _action;

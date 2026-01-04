@@ -21,16 +21,8 @@ namespace BookStore.API.Controllers.Stock
             _logger = logger;
         }
 
-        /// <summary>
-        /// Get inventory transaction history with filters
-        /// </summary>
-        /// <remarks>
-        /// Example request:
-        /// 
-        ///     GET /api/inventorytransactions?warehouseId=xxx&bookId=xxx&type=Inbound&fromDate=2024-01-01&toDate=2024-12-31&pageNumber=1&pageSize=20
-        ///     
-        /// Type values: Inbound (nhập kho), Outbound (xuất kho), Adjustment (điều chỉnh)
-        /// </remarks>
+        #region Query Methods
+
         [HttpGet]
         public async Task<IActionResult> GetTransactionHistory([FromQuery] InventoryTransactionFilterDto filter)
         {
@@ -46,9 +38,6 @@ namespace BookStore.API.Controllers.Stock
             }
         }
 
-        /// <summary>
-        /// Get transaction history by warehouse
-        /// </summary>
         [HttpGet("warehouse/{warehouseId}")]
         public async Task<IActionResult> GetByWarehouse(
             Guid warehouseId,
@@ -67,9 +56,6 @@ namespace BookStore.API.Controllers.Stock
             }
         }
 
-        /// <summary>
-        /// Get transaction history by book
-        /// </summary>
         [HttpGet("book/{bookId}")]
         public async Task<IActionResult> GetByBook(
             Guid bookId,
@@ -88,9 +74,7 @@ namespace BookStore.API.Controllers.Stock
             }
         }
 
-        /// <summary>
-        /// Get transaction history by warehouse and book
-        /// </summary>
+
         [HttpGet("warehouse/{warehouseId}/book/{bookId}")]
         public async Task<IActionResult> GetByWarehouseAndBook(
             Guid warehouseId,
@@ -110,29 +94,11 @@ namespace BookStore.API.Controllers.Stock
             }
         }
 
-        /// <summary>
-        /// Create inventory transaction manually (Admin only)
-        /// </summary>
-        /// <remarks>
-        /// Example request:
-        /// 
-        ///     POST /api/inventorytransactions
-        ///     {
-        ///       "warehouseId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        ///       "bookId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        ///       "type": "Inbound",
-        ///       "quantityChange": 100,
-        ///       "referenceId": "PO-12345",
-        ///       "note": "Nhập kho từ nhà cung cấp"
-        ///     }
-        ///     
-        /// Type values: 
-        /// - Inbound: Nhập kho (quantityChange phải > 0)
-        /// - Outbound: Xuất kho (quantityChange phải &lt; 0)
-        /// - Adjustment: Điều chỉnh tồn
-        /// </remarks>
+        #endregion
+
+        #region Create Operations
+
         [HttpPost]
-        // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateTransaction([FromBody] CreateInventoryTransactionDto dto)
         {
             try
@@ -146,5 +112,7 @@ namespace BookStore.API.Controllers.Stock
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        #endregion
     }
 }

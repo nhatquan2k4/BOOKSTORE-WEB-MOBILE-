@@ -21,6 +21,8 @@ namespace BookStore.API.Controllers.Shipping
             _logger = logger;
         }
 
+        #region Query Methods
+
         // GET: api/shipments
         [HttpGet]
         [Authorize(Roles = "Admin,Shipper")]
@@ -84,10 +86,10 @@ namespace BookStore.API.Controllers.Shipping
             return Ok(shipments);
         }
 
-        // POST: api/shipments
-        /// <summary>
-        /// Tạo vận đơn mới cho đơn hàng
-        /// </summary>
+        #endregion
+
+        #region Create Operations
+
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] CreateShipmentDto dto)
@@ -114,10 +116,10 @@ namespace BookStore.API.Controllers.Shipping
             }
         }
 
-        // PUT: api/shipments/{id}/status
-        /// <summary>
-        /// Cập nhật trạng thái vận đơn (dùng bởi shipper hoặc admin)
-        /// </summary>
+        #endregion
+
+        #region Update Operations
+
         [HttpPut("{id:guid}/status")]
         [Authorize(Roles = "Admin,Shipper")]
         public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateShipmentStatusDto dto)
@@ -141,10 +143,6 @@ namespace BookStore.API.Controllers.Shipping
             }
         }
 
-        // POST: api/shipments/{id}/route
-        /// <summary>
-        /// Thêm điểm route cho vận đơn
-        /// </summary>
         [HttpPost("{id:guid}/route")]
         [Authorize(Roles = "Admin,Shipper")]
         public async Task<IActionResult> AddRoutePoint(Guid id, [FromBody] CreateRoutePointDto dto)
@@ -168,10 +166,6 @@ namespace BookStore.API.Controllers.Shipping
             }
         }
 
-        // PUT: api/shipments/{id}/assign/{shipperId}
-        /// <summary>
-        /// Gán shipper cho vận đơn
-        /// </summary>
         [HttpPut("{id:guid}/assign/{shipperId:guid}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AssignShipper(Guid id, Guid shipperId)
@@ -192,10 +186,6 @@ namespace BookStore.API.Controllers.Shipping
             }
         }
 
-        // POST: api/shipments/{id}/complete
-        /// <summary>
-        /// Hoàn thành giao hàng
-        /// </summary>
         [HttpPost("{id:guid}/complete")]
         [Authorize(Roles = "Admin,Shipper")]
         public async Task<IActionResult> CompleteDelivery(Guid id, [FromBody] CompleteDeliveryDto dto)
@@ -219,10 +209,10 @@ namespace BookStore.API.Controllers.Shipping
             }
         }
 
-        // DELETE: api/shipments/{id}
-        /// <summary>
-        /// Hủy vận đơn
-        /// </summary>
+        #endregion
+
+        #region Delete Operations
+
         [HttpDelete("{id:guid}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Cancel(Guid id, [FromBody] CancelShipmentDto dto)
@@ -247,10 +237,10 @@ namespace BookStore.API.Controllers.Shipping
             }
         }
 
-        // POST: api/shipments/webhook
-        /// <summary>
-        /// Webhook từ đối tác giao vận để cập nhật trạng thái tự động
-        /// </summary>
+        #endregion
+
+        #region Webhook Operations
+
         [HttpPost("webhook")]
         [AllowAnonymous] // Webhook từ bên ngoài, không cần auth (sẽ verify bằng signature)
         public async Task<IActionResult> HandleWebhook([FromBody] ShipmentWebhookDto dto)
@@ -273,6 +263,8 @@ namespace BookStore.API.Controllers.Shipping
                 return StatusCode(500, new { message = "Có lỗi xảy ra khi xử lý webhook" });
             }
         }
+
+        #endregion
     }
 
     // DTO cho cancel request

@@ -16,9 +16,6 @@ namespace BookStore.API.Controllers
             _warehouseService = warehouseService;
         }
 
-        /// <summary>
-        /// Get all warehouses
-        /// </summary>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<WarehouseDto>>> GetAllWarehouses()
         {
@@ -26,9 +23,6 @@ namespace BookStore.API.Controllers
             return Ok(warehouses);
         }
 
-        /// <summary>
-        /// Get warehouse by ID
-        /// </summary>
         [HttpGet("{id}")]
         public async Task<ActionResult<WarehouseDto>> GetWarehouse(Guid id)
         {
@@ -39,9 +33,7 @@ namespace BookStore.API.Controllers
             return Ok(warehouse);
         }
 
-        // Tạo kho mới
         [HttpPost]
-        // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<WarehouseDto>> CreateWarehouse([FromBody] CreateWarehouseDto dto)
         {
             var warehouse = await _warehouseService.CreateWarehouseAsync(dto);
@@ -50,7 +42,6 @@ namespace BookStore.API.Controllers
 
         //Cập nhật kho 
         [HttpPut("{id}")]
-        // [Authorize(Roles = "Admin")]
         public async Task<ActionResult<WarehouseDto>> UpdateWarehouse(Guid id, [FromBody] UpdateWarehouseDto dto)
         {
             var warehouse = await _warehouseService.UpdateWarehouseAsync(id, dto);

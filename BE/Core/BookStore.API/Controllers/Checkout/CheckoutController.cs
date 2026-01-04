@@ -28,10 +28,6 @@ namespace BookStore.API.Controllers.Checkout
 
         #region Preview & Validation
 
-        /// <summary>
-        /// Xem trước thông tin checkout với tính toán giá
-        /// GET: api/checkout/preview?couponCode=DISCOUNT10
-        /// </summary>
         [HttpGet("preview")]
         public async Task<IActionResult> GetCheckoutPreview([FromQuery] string? couponCode = null)
         {
@@ -48,10 +44,6 @@ namespace BookStore.API.Controllers.Checkout
             }
         }
 
-        /// <summary>
-        /// Validate giỏ hàng trước khi checkout
-        /// GET: api/checkout/validate
-        /// </summary>
         [HttpGet("validate")]
         public async Task<IActionResult> ValidateCheckout()
         {
@@ -82,10 +74,6 @@ namespace BookStore.API.Controllers.Checkout
             }
         }
 
-        /// <summary>
-        /// Tính toán tổng tiền với coupon
-        /// GET: api/checkout/calculate?couponCode=DISCOUNT10
-        /// </summary>
         [HttpGet("calculate")]
         public async Task<IActionResult> CalculateCheckoutTotal([FromQuery] string? couponCode = null)
         {
@@ -102,10 +90,6 @@ namespace BookStore.API.Controllers.Checkout
             }
         }
 
-        /// <summary>
-        /// Validate mã coupon
-        /// GET: api/checkout/validate-coupon?code=DISCOUNT10
-        /// </summary>
         [HttpGet("validate-coupon")]
         public async Task<IActionResult> ValidateCoupon([FromQuery] string code)
         {
@@ -136,10 +120,6 @@ namespace BookStore.API.Controllers.Checkout
 
         #region Process Checkout
 
-        /// <summary>
-        /// Thực hiện checkout đầy đủ
-        /// POST: api/checkout/process
-        /// </summary>
         [HttpPost("process")]
         public async Task<IActionResult> ProcessCheckout([FromBody] CheckoutRequestDto dto)
         {
@@ -168,10 +148,6 @@ namespace BookStore.API.Controllers.Checkout
             }
         }
 
-        /// <summary>
-        /// Checkout nhanh (chỉ cần địa chỉ)
-        /// POST: api/checkout/quick
-        /// </summary>
         [HttpPost("quick")]
         public async Task<IActionResult> QuickCheckout([FromBody] QuickCheckoutRequest request)
         {
@@ -208,10 +184,7 @@ namespace BookStore.API.Controllers.Checkout
 
         #region Payment Callback & Status
 
-        /// <summary>
-        /// Xử lý callback từ payment gateway (webhook)
-        /// POST: api/checkout/payment-callback
-        /// </summary>
+
         [HttpPost("payment-callback")]
         [AllowAnonymous] // Payment gateway gọi đến endpoint này
         public async Task<IActionResult> HandlePaymentCallback([FromBody] PaymentDto.PaymentCallbackDto callbackDto)
@@ -237,10 +210,6 @@ namespace BookStore.API.Controllers.Checkout
             }
         }
 
-        /// <summary>
-        /// Kiểm tra trạng thái thanh toán
-        /// GET: api/checkout/payment-status/{orderId}
-        /// </summary>
         [HttpGet("payment-status/{orderId:guid}")]
         public async Task<IActionResult> GetPaymentStatus(Guid orderId)
         {
@@ -271,10 +240,6 @@ namespace BookStore.API.Controllers.Checkout
 
         #region Order Management
 
-        /// <summary>
-        /// Hủy checkout (hủy đơn hàng)
-        /// POST: api/checkout/cancel/{orderId}
-        /// </summary>
         [HttpPost("cancel/{orderId:guid}")]
         public async Task<IActionResult> CancelCheckout(Guid orderId)
         {
@@ -301,10 +266,7 @@ namespace BookStore.API.Controllers.Checkout
             }
         }
 
-        /// <summary>
-        /// Lấy thông tin checkout theo order ID
-        /// GET: api/checkout/order/{orderId}
-        /// </summary>
+
         [HttpGet("order/{orderId:guid}")]
         public async Task<IActionResult> GetCheckoutByOrderId(Guid orderId)
         {
@@ -328,10 +290,6 @@ namespace BookStore.API.Controllers.Checkout
             }
         }
 
-        /// <summary>
-        /// Lấy lịch sử checkout của user
-        /// GET: api/checkout/history?pageNumber=1&pageSize=10
-        /// </summary>
         [HttpGet("history")]
         public async Task<IActionResult> GetCheckoutHistory(
             [FromQuery] int pageNumber = 1,
@@ -377,9 +335,7 @@ namespace BookStore.API.Controllers.Checkout
 
     #region Request Models
 
-    /// <summary>
-    /// Request model cho quick checkout
-    /// </summary>
+
     public class QuickCheckoutRequest
     {
         public CreateOrderAddressDto Address { get; set; } = null!;

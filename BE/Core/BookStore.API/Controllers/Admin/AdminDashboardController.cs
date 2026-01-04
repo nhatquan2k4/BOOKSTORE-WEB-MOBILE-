@@ -21,11 +21,6 @@ namespace BookStore.API.Controllers.Admin
             _auditLogService = auditLogService;
         }
 
-        /// <summary>
-        /// Get revenue statistics for a date range
-        /// </summary>
-        /// <param name="from">Start date (default: 30 days ago)</param>
-        /// <param name="to">End date (default: today)</param>
         [HttpGet("revenue")]
         public async Task<ActionResult<RevenueDto>> GetRevenue(
             [FromQuery] DateTime? from = null,
@@ -38,12 +33,6 @@ namespace BookStore.API.Controllers.Admin
             return Ok(result);
         }
 
-        /// <summary>
-        /// Get top selling books for a date range
-        /// </summary>
-        /// <param name="from">Start date (default: 30 days ago)</param>
-        /// <param name="to">End date (default: today)</param>
-        /// <param name="top">Number of top books to return (default: 10)</param>
         [HttpGet("top-selling-books")]
         public async Task<ActionResult<List<TopSellingBookDto>>> GetTopSellingBooks(
             [FromQuery] DateTime? from = null,
@@ -57,12 +46,6 @@ namespace BookStore.API.Controllers.Admin
             return Ok(result);
         }
 
-        /// <summary>
-        /// Get top viewed books for a date range
-        /// </summary>
-        /// <param name="from">Start date (default: 30 days ago)</param>
-        /// <param name="to">End date (default: today)</param>
-        /// <param name="top">Number of top books to return (default: 10)</param>
         [HttpGet("book-views")]
         public async Task<ActionResult<List<TopViewedBookDto>>> GetTopViewedBooks(
             [FromQuery] DateTime? from = null,
@@ -76,11 +59,7 @@ namespace BookStore.API.Controllers.Admin
             return Ok(result);
         }
 
-        /// <summary>
-        /// Get order statistics for a date range
-        /// </summary>
-        /// <param name="from">Start date (default: 30 days ago)</param>
-        /// <param name="to">End date (default: today)</param>
+
         [HttpGet("order-stats")]
         public async Task<ActionResult<OrderStatsDto>> GetOrderStats(
             [FromQuery] DateTime? from = null,
@@ -93,9 +72,7 @@ namespace BookStore.API.Controllers.Admin
             return Ok(result);
         }
 
-        /// <summary>
-        /// Get audit logs for current admin
-        /// </summary>
+
         [HttpGet("audit-logs")]
         public async Task<ActionResult<IEnumerable<object>>> GetMyAuditLogs(
             [FromQuery] int pageNumber = 1,
