@@ -9,7 +9,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
-import { normalizeImageUrl } from "@/lib/imageUtils";
+import { normalizeImageUrl, getBookCoverUrl } from "@/lib/imageUtils";
 
 // ============================================================================
 // TYPES
@@ -38,6 +38,7 @@ export default function BestsellersPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
   const [currentPage, setCurrentPage] = useState(1);
   const [books, setBooks] = useState<Book[]>([]);
+  const [bookCovers, setBookCovers] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -58,14 +59,14 @@ export default function BestsellersPage() {
 
         if (response.items && response.items.length > 0) {
           // Transform API data to match component Book type
-          const transformedBooks: Book[] = response.items.map((book: BookDto, index: number) => {
+      const transformedBooks: Book[] = response.items.map((book: BookDto, index: number) => {
             const priceInfo = resolveBookPrice(book);
             return {
               id: book.id,
               title: book.title,
               author: book.authorNames?.[0] || "Tác giả không xác định",
               category: book.categoryNames?.[0] || "Chưa phân loại",
-              cover: normalizeImageUrl(book.coverImage) || "/image/anh.png",
+        cover: normalizeImageUrl(book.coverImage) || "/image/anh.png",
               rating: book.averageRating || 0,
               reviewCount: book.totalReviews || 0,
               price: priceInfo.finalPrice,
@@ -118,6 +119,30 @@ export default function BestsellersPage() {
   const filteredBooks = filterBooksByTimeRange(books, timeRange);
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const paginatedBooks = filteredBooks;
+
+  // Fetch covers for currently shown books
+  useEffect(() => {
+    const fetchCovers = async () => {
+      const promises = paginatedBooks.map(async (b) => {
+        try {
+          const url = await getBookCoverUrl(b.id);
+          return { id: b.id, url };
+        } catch (err) {
+          console.error(`Failed to fetch cover for bestseller ${b.id}:`, err);
+          return { id: b.id, url: null };
+        }
+      });
+
+      const results = await Promise.all(promises);
+      setBookCovers((prev) => {
+        const next = { ...prev };
+        results.forEach((r) => (next[r.id] = r.url));
+        return next;
+      });
+    };
+
+    if (paginatedBooks.length > 0) fetchCovers();
+  }, [paginatedBooks]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -402,8 +427,8 @@ export default function BestsellersPage() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {paginatedBooks.map((book) => (
-              <BookCard key={book.id} book={book} />
-            ))}
+                  <BookCard key={book.id} book={{ ...book, cover: bookCovers[book.id] ?? book.cover }} />
+                ))}
           </div>
         )}
 

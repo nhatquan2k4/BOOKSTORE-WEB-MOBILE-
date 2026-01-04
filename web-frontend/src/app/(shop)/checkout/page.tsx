@@ -756,15 +756,31 @@ function CheckoutPageContent() {
                         <h2 className="text-xl font-bold mb-4">Đơn hàng ({cartItems.length} món)</h2>
                         <div className="space-y-3 mb-4 max-h-60 overflow-y-auto custom-scrollbar">
                             {cartItems.map(item => (
-                                <div key={item.id} className="flex gap-3 text-sm">
-                                     <div className="w-12 h-16 relative bg-gray-100 flex-shrink-0">
-                                        {item.image && <Image src={item.image} alt={item.title} fill className="object-cover rounded" />}
-                                     </div>
-                                     <div className="flex-1">
-                                         <div className="line-clamp-2 font-medium">{item.title}</div>
-                                         <div className="text-gray-500">x{item.quantity}</div>
-                                     </div>
-                                     <div className="font-semibold text-gray-900">{formatPrice(item.price * item.quantity)}</div>
+                                <div key={item.id} className="flex gap-3 text-sm group">
+                                    <div className="w-12 h-16 relative border rounded flex-shrink-0 overflow-hidden bg-gray-100 flex items-center justify-center">
+                                        {/* Use Next/Image with a safe src and unoptimized for external/presigned URLs */}
+                                        {typeof item.image === 'string' && item.image.trim() !== '' ? (
+                                            <Image
+                                                src={item.image}
+                                                alt={item.title || 'Book'}
+                                                fill
+                                                unoptimized
+                                                className="object-cover group-hover:scale-105 transition-transform"
+                                                onError={(e) => {
+                                                    // If Image fails to load, attempt to replace with fallback by setting the src attribute on the target element
+                                                    const target = e?.currentTarget as HTMLImageElement | null;
+                                                    if (target) target.src = '/image/anh.png';
+                                                }}
+                                            />
+                                        ) : (
+                                            <Image src="/image/anh.png" alt="No image" fill className="object-cover" unoptimized />
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="line-clamp-2 font-medium text-gray-800">{item.title}</div>
+                                        <div className="text-gray-500 mt-1">x{item.quantity}</div>
+                                    </div>
+                                    <div className="font-semibold text-gray-900">{formatPrice(item.price * item.quantity)}</div>
                                 </div>
                             ))}
                         </div>

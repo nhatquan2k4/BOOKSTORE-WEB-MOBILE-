@@ -9,7 +9,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { bookService, categoryService } from "@/services";
 import { BookDto, CategoryDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
-import { normalizeImageUrl } from "@/lib/imageUtils";
+import { normalizeImageUrl, getBookCoverUrl } from "@/lib/imageUtils";
 
 // --- HELPER: Format Giá ---
 const formatPrice = (price: number) => {
@@ -29,14 +29,13 @@ const NoImagePlaceholder = () => (
 );
 
 // --- COMPONENT: BOOK ITEM ---
-const BookItem = ({ book }: { book: BookDto }) => {
+const BookItem = ({ book, coverUrl }: { book: BookDto; coverUrl?: string | null }) => {
   const priceInfo = resolveBookPrice(book);
   
   // Debug log
   console.log('Book coverImage:', book.coverImage);
-  console.log('Normalized URL:', normalizeImageUrl(book.coverImage));
-  
-  const coverUrl = normalizeImageUrl(book.coverImage);
+  // If a coverUrl prop is provided (fetched), prefer it; otherwise normalize DTO value
+  const computedCover = coverUrl ?? normalizeImageUrl(book.coverImage);
   
   const authorName = book.authorNames?.[0] || "Tác giả ẩn danh";
   const isBestseller = (book.totalReviews || 0) > 50;
@@ -50,9 +49,9 @@ const BookItem = ({ book }: { book: BookDto }) => {
       {/* Book Cover */}
       <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3 shadow-inner bg-gray-100">
         
-        {coverUrl ? (
+        {computedCover ? (
           <Image
-            src={coverUrl}
+            src={computedCover}
             alt={book.title}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
@@ -128,6 +127,8 @@ export default function AllBooksPage() {
   const itemsPerPage = 20;
 
   const [books, setBooks] = useState<BookDto[]>([]);
+  // Map of bookId -> coverUrl (string|null)
+  const [bookCovers, setBookCovers] = useState<Record<string, string | null>>({});
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
   const [totalBooksInDb, setTotalBooksInDb] = useState(0);
@@ -174,7 +175,7 @@ export default function AllBooksPage() {
 
   // 3. Fetch Books
   useEffect(() => {
-    const fetchBooks = async () => {
+  const fetchBooks = async () => {
       setLoading(true);
       try {
         const params: any = {
@@ -212,6 +213,8 @@ export default function AllBooksPage() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, selectedCategoryId, sortBy]);
 
+  
+
   // Click outside dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -239,6 +242,34 @@ export default function AllBooksPage() {
   const endIndex = startIndex + itemsPerPage;
   const displayBooks = filteredBooks.slice(startIndex, endIndex);
   const totalPages = Math.ceil(filteredBooks.length / itemsPerPage);
+
+  // Fetch cover URLs for books currently displayed on the page
+  useEffect(() => {
+    const fetchCovers = async () => {
+      const visibleBooks = displayBooks;
+      const promises = visibleBooks.map(async (b) => {
+        try {
+          const url = await getBookCoverUrl(b.id);
+          return { id: b.id, url };
+        } catch (err) {
+          console.error(`Failed to fetch cover for ${b.id}:`, err);
+          return { id: b.id, url: null };
+        }
+      });
+
+      const results = await Promise.all(promises);
+      setBookCovers((prev) => {
+        const next = { ...prev };
+        results.forEach((r) => (next[r.id] = r.url));
+        return next;
+      });
+    };
+
+    // Only fetch when we have books to show
+    if (displayBooks.length > 0) {
+      fetchCovers();
+    }
+  }, [displayBooks]);
 
   useEffect(() => { setCurrentPage(1); }, [priceRange, selectedCategoryId, searchQuery, sortBy]);
 
@@ -369,7 +400,7 @@ export default function AllBooksPage() {
         ) : displayBooks.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             {displayBooks.map((book) => (
-              <BookItem key={book.id} book={book} />
+              <BookItem key={book.id} book={book} coverUrl={bookCovers[book.id]} />
             ))}
           </div>
         ) : (

@@ -7,9 +7,10 @@ import { BookCard } from '@/components/BookCard';
 import type { Book } from '@/src/types/book';
 import { toDisplayBook } from '@/src/types/book';
 import { PLACEHOLDER_IMAGES } from '@/src/constants/placeholders';
+import { useTheme } from '@/context/ThemeContext';
+import { StatusBar } from 'expo-status-bar';
 import {
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -34,6 +35,7 @@ export default function CategoryBooksScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const flatListRef = useRef<FlatList>(null);
+  const { theme, isDarkMode } = useTheme();
   
   const [books, setBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,20 +139,20 @@ export default function CategoryBooksScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: theme.headerBackground, borderBottomColor: theme.border }]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>{categoryName}</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>{categoryName}</Text>
           {/* <Text style={styles.headerSubtitle}>
             {books.length} {books.length === 1 ? 'sách' : 'sách'}
           </Text> */}
@@ -162,15 +164,15 @@ export default function CategoryBooksScreen() {
       {/* Content */}
       {loading ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#4ECDC4" />
-          <Text style={styles.loadingText}>Đang tải sách...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Đang tải sách...</Text>
         </View>
       ) : error ? (
         <View style={styles.centerContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#FF4757" />
-          <Text style={styles.errorText}>{error}</Text>
+          <Ionicons name="alert-circle-outline" size={64} color={theme.error} />
+          <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
           <TouchableOpacity 
-            style={styles.retryButton}
+            style={[styles.retryButton, { backgroundColor: theme.primary }]}
             onPress={fetchCategoryBooks}
           >
             <Text style={styles.retryButtonText}>Thử lại</Text>
@@ -178,8 +180,8 @@ export default function CategoryBooksScreen() {
         </View>
       ) : books.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Ionicons name="book-outline" size={64} color="#999" />
-          <Text style={styles.emptyText}>Không có sách nào</Text>
+          <Ionicons name="book-outline" size={64} color={theme.textTertiary} />
+          <Text style={[styles.emptyText, { color: theme.textTertiary }]}>Không có sách nào</Text>
         </View>
       ) : (
         <FlatList
@@ -199,7 +201,7 @@ export default function CategoryBooksScreen() {
       {/* Scroll to Top Button */}
       {showScrollTop && (
         <TouchableOpacity 
-          style={[styles.scrollTopButton, { bottom: insets.bottom + 20 }]}
+          style={[styles.scrollTopButton, { bottom: insets.bottom + 20, backgroundColor: theme.primary }]}
           onPress={scrollToTop}
           activeOpacity={0.8}
         >
@@ -213,7 +215,6 @@ export default function CategoryBooksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0ede4',
   },
   header: {
     flexDirection: 'row',
@@ -221,9 +222,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 15,
-    backgroundColor: '#D5CCB3',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   backButton: {
     width: 40,
@@ -238,11 +237,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#333',
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#999',
     marginTop: 2,
   },
   headerRight: {
@@ -257,25 +254,21 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 15,
     fontSize: 16,
-    color: '#666',
   },
   errorText: {
     marginTop: 15,
     fontSize: 16,
-    color: '#FF4757',
     textAlign: 'center',
   },
   emptyText: {
     marginTop: 15,
     fontSize: 16,
-    color: '#999',
     textAlign: 'center',
   },
   retryButton: {
     marginTop: 20,
     paddingHorizontal: 30,
     paddingVertical: 12,
-    backgroundColor: '#4ECDC4',
     borderRadius: 25,
   },
   retryButtonText: {
@@ -301,7 +294,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#4ECDC4',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

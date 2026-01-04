@@ -124,6 +124,24 @@ export const API_ENDPOINTS = {
     CHECK_AVAILABILITY: '/api/StockItems/check-availability',
   },
   
+  // Wishlist
+  WISHLIST: {
+    GET: '/api/Wishlist',
+    COUNT: '/api/Wishlist/count',
+    SUMMARY: '/api/Wishlist/summary',
+    CHECK_EXISTS: '/api/Wishlist',
+    ADD: '/api/Wishlist',
+    REMOVE: '/api/Wishlist',
+    CLEAR: '/api/Wishlist/clear',
+  },
+  
+  // ChatBot
+  CHATBOT: {
+    ASK: '/api/ChatBot/ask',
+    CACHE_REFRESH: '/api/ChatBot/cache/refresh',
+    CACHE_STATUS: '/api/ChatBot/cache/status',
+  },
+  
   // Email Verification
   EMAIL_VERIFICATION: {
     VERIFY: '/api/EmailVerification/verify',
