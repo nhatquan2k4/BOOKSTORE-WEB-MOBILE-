@@ -173,7 +173,10 @@ export const API_ENDPOINTS = {
   STOCK_ITEMS: {
     LIST: "/StockItems",
     GET_BY_ID: (id: string) => `/StockItems/${id}`,
+    GET_BY_BOOK: (bookId: string) => `/StockItems/book/${bookId}`,
+    CREATE: "/StockItems",
     UPDATE: (id: string) => `/StockItems/${id}`,
+    CHECK_AVAILABILITY: "/StockItems/check-availability",
   },
 
   // Inventory Transactions
@@ -181,6 +184,7 @@ export const API_ENDPOINTS = {
     LIST: "/InventoryTransactions",
     GET_BY_ID: (id: string) => `/InventoryTransactions/${id}`,
     CREATE: "/InventoryTransactions",
+    GET_BY_STOCK_ITEM: (stockItemId: string) => `/InventoryTransactions/stock-item/${stockItemId}`,
   },
 
   // Warehouses

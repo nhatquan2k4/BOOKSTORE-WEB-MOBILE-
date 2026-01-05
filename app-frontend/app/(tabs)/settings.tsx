@@ -8,14 +8,18 @@ import { useEffect } from 'react';
 import { useState } from 'react';
 import avatarStore from '@/src/utils/avatarStore';
 import { useTheme } from '@/context/ThemeContext';
+import { createTestNotification } from '@/src/services/notificationService';
+import { useNotifications } from '@/app/providers/NotificationProvider';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { logout, user } = useAuth();
   const { theme, isDarkMode, setDarkMode } = useTheme();
+  const { refresh } = useNotifications();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [isTestingNotif, setIsTestingNotif] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -62,6 +66,40 @@ export default function ProfileScreen() {
     );
   };
 
+  // Test notification API
+  const handleTestNotification = async () => {
+    setIsTestingNotif(true);
+    try {
+      console.log('🧪 Creating test notification...');
+      const result = await createTestNotification();
+      
+      if (result) {
+        Alert.alert(
+          '✅ Thành công!',
+          'Thông báo test đã được tạo. Kiểm tra tab Thông báo.',
+          [
+            {
+              text: 'OK',
+              onPress: async () => {
+                // Refresh notifications
+                await refresh();
+                // Navigate to notification tab
+                router.push('/(tabs)/notification');
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert('❌ Lỗi', 'Không thể tạo thông báo test');
+      }
+    } catch (error: any) {
+      console.error('Error testing notification:', error);
+      Alert.alert('❌ Lỗi', error.message || 'Không thể tạo thông báo test');
+    } finally {
+      setIsTestingNotif(false);
+    }
+  };
+
   const otherSettings = [
     { id: 1, icon: 'person-outline', label: 'Hồ sơ của tôi', hasArrow: true, onPress: () => router.push('/(stack)/profile-details') },
     { id: 2, icon: 'lock-closed-outline', label: 'Đổi mật khẩu', hasArrow: true, onPress: () => router.push('/(stack)/change-password') },
@@ -73,6 +111,10 @@ export default function ProfileScreen() {
     { id: 1, icon: 'receipt-outline', label: 'Đơn hàng của tôi', hasArrow: true, onPress: () => router.push('/(stack)/orders') },
     { id: 2, icon: 'heart-outline', label: 'Danh sách yêu thích', hasArrow: true, onPress: () => router.push('/(stack)/wishlist') },
     { id: 3, icon: 'chatbubbles-outline', label: 'Trợ lý ảo', hasArrow: true, onPress: () => router.push('/(stack)/chatbot') },
+  ];
+
+  const devSettings = [
+    { id: 1, icon: 'flask-outline', label: isTestingNotif ? 'Đang tạo...' : 'Test Notification API', hasArrow: false, onPress: handleTestNotification, disabled: isTestingNotif },
   ];
 
   return (
@@ -172,6 +214,36 @@ export default function ProfileScreen() {
           ))}
         </View>
       </View>
+
+      {/* Developer/Test Section */}
+      {/* <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.textTertiary }]}>Developer Tools</Text>
+        <View style={[styles.settingsGroup, { backgroundColor: theme.cardBackground }]}>
+          {devSettings.map((item, index) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.settingItem,
+                { borderBottomColor: theme.border },
+                index === devSettings.length - 1 && styles.settingItemLast,
+                item.disabled && { opacity: 0.5 }
+              ]}
+              onPress={item.onPress}
+              disabled={item.disabled}
+            >
+              <View style={styles.settingLeft}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name={item.icon as any} size={20} color={theme.primary} />
+                </View>
+                <Text style={[styles.settingLabel, { color: theme.primary }]}>{item.label}</Text>
+              </View>
+              {item.hasArrow && (
+                <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View> */}
 
       {/* Logout Button */}
       <TouchableOpacity 

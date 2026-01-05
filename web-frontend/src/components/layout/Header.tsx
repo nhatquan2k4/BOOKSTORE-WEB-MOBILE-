@@ -15,7 +15,7 @@ import { bookService, cartService, authorService, categoryService } from "@/serv
 import type { BookDto, AuthorDto, CategoryDto } from "@/types/dtos";
 import { matchVietnameseText } from "@/lib/utils/text";
 import { resolveBookPrice, formatPrice } from "@/lib/price";
-import { normalizeImageUrl } from '@/lib/imageUtils';
+import { normalizeImageUrl, getBookCoverUrl } from '@/lib/imageUtils';
 
 export function Header() {
   const router = useRouter();
@@ -26,6 +26,7 @@ export function Header() {
   
   // Search results state
   const [searchResults, setSearchResults] = useState<BookDto[]>([]);
+  const [searchCovers, setSearchCovers] = useState<Record<string, string | null>>({});
   const [authorResults, setAuthorResults] = useState<AuthorDto[]>([]);
   const [categoryResults, setCategoryResults] = useState<CategoryDto[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -90,7 +91,8 @@ export function Header() {
 
   // Debounced search effect
   useEffect(() => {
-    const searchAll = async () => {
+  let cancelled = false;
+  const searchAll = async () => {
       if (searchQuery.trim().length < 2) {
         setSearchResults([]);
         setAuthorResults([]);
@@ -116,6 +118,19 @@ export function Header() {
 
         // Set books từ API (backend đã xử lý search)
         setSearchResults(booksResult.items || []);
+        // Fetch cover URLs for top results to avoid placeholder
+        try {
+          const tops = (booksResult.items || []).slice(0, 6);
+          const coverPromises = tops.map(async (b: any) => ({ id: b.id, cover: await getBookCoverUrl(b.id) }));
+          const coverResults = await Promise.all(coverPromises);
+          if (!cancelled) {
+            const map: Record<string, string | null> = {};
+            coverResults.forEach((c) => (map[c.id] = c.cover));
+            setSearchCovers(map);
+          }
+        } catch (e) {
+          // ignore
+        }
         
         // Filter authors với Vietnamese text matching
         // Backend có thể chưa hỗ trợ tìm không dấu, nên filter thêm ở client
@@ -143,7 +158,10 @@ export function Header() {
     };
 
     const debounceTimer = setTimeout(searchAll, 300);
-    return () => clearTimeout(debounceTimer);
+    return () => {
+      cancelled = true;
+      clearTimeout(debounceTimer);
+    };
   }, [searchQuery]);
 
   // Click outside to close search results
@@ -196,7 +214,7 @@ export function Header() {
 
   return (
     <header
-      className="bg-white shadow-sm sticky top-0 z-50"
+      className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50 w-full"
       suppressHydrationWarning
     >
       {/* Top Bar */}
@@ -384,8 +402,10 @@ export function Header() {
                           Sách
                         </div>
                         {searchResults.map((book) => {
-                          const imageUrl = normalizeImageUrl(book.coverImage);
-                          
+                          const imageUrl = searchCovers[book.id] ?? (normalizeImageUrl(
+                            (book as any).coverImage || (book as any).cover || (book as any).imageUrl
+                          ) || '/image/anh.png');
+
                           return (
                             <button
                               key={book.id}
@@ -393,21 +413,13 @@ export function Header() {
                               className="w-full flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-0"
                             >
                               <div className="relative w-16 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
-                                {imageUrl ? (
-                                  <Image
-                                    src={imageUrl}
-                                    alt={book.title}
-                                    fill
-                                    unoptimized
-                                    className="object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                                    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                  </div>
-                                )}
+                                <Image
+                                  src={imageUrl}
+                                  alt={book.title}
+                                  fill
+                                  unoptimized
+                                  className="object-cover"
+                                />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-medium text-gray-900 line-clamp-2 mb-1">
@@ -974,12 +986,15 @@ export function Header() {
                         className="w-full flex items-start gap-3 p-3 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-0"
                       >
                         <div className="relative w-12 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
-                          <Image
-                            src={normalizeImageUrl(book.coverImage) || "/image/anh.png"}
-                            alt={book.title}
-                            fill
-                            className="object-cover"
-                          />
+                          {
+                                <Image
+                                  src={searchCovers[book.id] ?? (normalizeImageUrl((book as any).coverImage || (book as any).cover || (book as any).imageUrl) || '/image/anh.png')}
+                                  alt={book.title}
+                                  fill
+                                  unoptimized
+                                  className="object-cover"
+                                />
+                          }
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">

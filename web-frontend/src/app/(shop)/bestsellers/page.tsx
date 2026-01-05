@@ -280,11 +280,11 @@ export default function BestsellersPage() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-orange-500"
+              className="text-orange-500 mt-10"
             >
               <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" />
             </svg>
-            <h1 className="text-4xl font-bold text-gray-900">Sách Bán Chạy</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mt-10">Sách Bán Chạy</h1>
           </div>
           {/* dùng filteredBooks.length để khớp filter */}
           <p className="text-gray-600 text-lg">

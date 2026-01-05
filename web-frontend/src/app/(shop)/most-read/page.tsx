@@ -12,7 +12,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
-import { normalizeImageUrl } from "@/lib/imageUtils";
+import { normalizeImageUrl, getBookCoverUrl } from "@/lib/imageUtils";
 
 type Book = {
   id: string;
@@ -68,7 +68,25 @@ export default function MostReadBooksPage() {
               trend: "stable" as "up" | "down" | "stable",
             };
           });
-          setBooks(transformedBooks);
+
+          // Fetch per-book covers when available
+          try {
+            const coverPromises = transformedBooks.map(async (tb) => {
+              try {
+                const apiCover = await getBookCoverUrl(tb.id);
+                return apiCover || tb.cover;
+              } catch (e) {
+                return tb.cover;
+              }
+            });
+
+            const coverResults = await Promise.all(coverPromises);
+            const updated = transformedBooks.map((tb, idx) => ({ ...tb, cover: coverResults[idx] || tb.cover }));
+            setBooks(updated);
+          } catch (e) {
+            setBooks(transformedBooks);
+          }
+
           setTotalItems(response.totalCount || 0);
         } else {
           setBooks([]);
@@ -314,11 +332,13 @@ export default function MostReadBooksPage() {
                 <CardContent className="p-3">
                   <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                     <Image
-                      src={book.cover}
+                      src={book.cover || "/image/anh.png"}
                       alt={book.title}
                       fill
                       sizes="(max-width: 768px) 50vw, 25vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      unoptimized
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/image/anh.png'; }}
                     />
 
                     {startIndex + index < 3 && (

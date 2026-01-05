@@ -584,13 +584,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation"; 
-import { Button, Input, EmptyState } from "@/components/ui";
+import { useRouter } from "next/navigation";
+import { Button, Input, Badge, EmptyState } from "@/components/ui";
 import { cartService } from "@/services/cart.service";
 import { couponService, CouponDto } from "@/services/coupon.service";
 import { bookService } from "@/services/book.service";
 import { resolveBookPrice, formatPrice } from "@/lib/price";
 import { normalizeImageUrl } from "@/lib/imageUtils";
+
 
 type CartItemUI = {
   id: string;
@@ -809,7 +810,14 @@ export default function CartPage() {
                                   onChange={(e) => setCartItems(prev => prev.map(i => i.id === item.id ? {...i, selected: e.target.checked} : i))} />
                         </div>
                         <div className="w-20 h-28 relative bg-gray-200">
-                           {item.cover && <Image src={item.cover} alt={item.title} fill className="object-cover" />}
+                           <Image
+                             src={item.cover || "/image/anh.png"}
+                             alt={item.title}
+                             fill
+                             className="object-cover"
+                             unoptimized
+                             onError={(e) => { (e.target as HTMLImageElement).src = '/image/anh.png'; }}
+                           />
                         </div>
                         <div className="flex-1">
                            <Link href={`/books/${item.bookId}`} className="font-bold text-lg hover:text-blue-600">{item.title}</Link>

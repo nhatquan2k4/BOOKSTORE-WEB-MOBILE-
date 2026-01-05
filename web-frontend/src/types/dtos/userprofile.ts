@@ -23,6 +23,8 @@ export interface UpdateUserProfileDto {
   dateOfBirth?: string;
   gender?: string;
   phoneNumber?: string;
+  // Optional avatar URL (frontend will send this when user uploads a new avatar)
+  avatarUrl?: string;
   bio?: string;
 }
 

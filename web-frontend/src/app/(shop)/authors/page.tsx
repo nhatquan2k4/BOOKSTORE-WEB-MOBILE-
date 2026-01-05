@@ -99,7 +99,7 @@ export default function AuthorsPage() {
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold mb-4">Tác giả nổi bật</h1>
+          <h1 className="text-4xl font-bold mb-4 mt-15">Tác giả nổi bật</h1>
           <p className="text-lg opacity-90">
             Khám phá các tác giả và tác phẩm của họ
           </p>

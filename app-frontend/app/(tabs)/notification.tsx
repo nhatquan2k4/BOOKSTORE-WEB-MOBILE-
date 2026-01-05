@@ -1,15 +1,25 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotifications } from '@/app/providers/NotificationProvider';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { StatusBar } from 'expo-status-bar';
+import { formatSmartTime } from '@/src/utils/dateUtils';
 
 export default function NotificationScreen() {
   const insets = useSafeAreaInsets();
-  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotifications();
+  const { 
+    notifications, 
+    markAsRead, 
+    markAllAsRead, 
+    unreadCount, 
+    loading, 
+    refreshing, 
+    error, 
+    refresh 
+  } = useNotifications();
   const router = useRouter();
   const { theme, isDarkMode } = useTheme();
 
@@ -26,17 +36,11 @@ export default function NotificationScreen() {
     }
   };
 
+  // Sử dụng formatSmartTime từ dateUtils
+  // < 7 ngày: "5 phút trước", "2 giờ trước"
+  // >= 7 ngày: "05/01/2026 14:30"
   const formatTime = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return 'Vừa xong';
-    if (minutes < 60) return `${minutes} phút trước`;
-    if (hours < 24) return `${hours} giờ trước`;
-    return `${days} ngày trước`;
+    return formatSmartTime(date);
   };
 
   return (
@@ -51,7 +55,33 @@ export default function NotificationScreen() {
         )}
       </View>
 
-      {notifications.length === 0 ? (
+      {/* Loading State */}
+      {loading && notifications.length === 0 ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Đang tải thông báo...</Text>
+        </View>
+      ) : error && notifications.length === 0 ? (
+        /* Error State */
+        <View style={styles.contentWrapper}>
+          <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
+            <View style={styles.iconWrap}>
+              <View style={[styles.iconCircle, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0EDE4' }]}>
+                <Ionicons name="alert-circle-outline" size={90} color="#FF6B6B" />
+              </View>
+            </View>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Không thể tải thông báo</Text>
+            <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>{error}</Text>
+            <TouchableOpacity 
+              onPress={refresh} 
+              style={[styles.retryBtn, { backgroundColor: theme.primary }]}
+            >
+              <Text style={styles.retryBtnText}>Thử lại</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : notifications.length === 0 ? (
+        /* Empty State */
         <View style={styles.contentWrapper}>
           <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
             <View style={styles.iconWrap}>
@@ -71,7 +101,18 @@ export default function NotificationScreen() {
           </View>
         </View>
       ) : (
-        <ScrollView style={styles.listContainer}>
+        /* Notifications List */
+        <ScrollView 
+          style={styles.listContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refresh}
+              tintColor={theme.primary}
+              colors={[theme.primary]}
+            />
+          }
+        >
           {notifications.map((notif) => (
             <TouchableOpacity
               key={notif.id}
@@ -87,6 +128,9 @@ export default function NotificationScreen() {
               onPress={() => {
                 markAsRead(notif.id);
                 // Can navigate to order detail in future
+                if (notif.link) {
+                  // router.push(notif.link);
+                }
               }}
             >
               <View style={[styles.notifIcon, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0EDE4' }]}>
@@ -112,6 +156,8 @@ const styles = StyleSheet.create({
   headerTitle: { color: '#111', fontSize: 26, fontWeight: '700', paddingTop: 0},
   markAllBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#fff', borderRadius: 12 },
   markAllText: { color: '#2CB47B', fontSize: 13, fontWeight: '600' },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
+  loadingText: { marginTop: 12, fontSize: 14, color: '#888' },
   contentWrapper: { flex: 1, paddingHorizontal: 20, marginTop: -50 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 20, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 6 },
   iconWrap: { marginTop: 30, marginBottom: 25, width: 96, height: 96, alignItems: 'center', justifyContent: 'center' },
@@ -119,6 +165,8 @@ const styles = StyleSheet.create({
   plusBadge: { position: 'absolute', right: 8, top: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: '#2CB47B', alignItems: 'center', justifyContent: 'center', elevation: 4 },
   cardTitle: { fontSize: 18, fontWeight: '700', color: '#333', textAlign: 'center', marginTop: 8 },
   cardSubtitle: { fontSize: 14, color: '#888', textAlign: 'center', marginTop: 12, lineHeight: 20 },
+  retryBtn: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: '#2CB47B', borderRadius: 12 },
+  retryBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   listContainer: { flex: 1, paddingHorizontal: 16, marginTop: -50 },
   notifCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 3 },
   notifCardUnread: { backgroundColor: '#FFF9F0', borderLeftWidth: 3, borderLeftColor: '#2CB47B' },

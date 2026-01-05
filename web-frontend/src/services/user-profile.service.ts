@@ -37,21 +37,66 @@ export const userProfileService = {
   },
 
   /**
-   * Upload Avatar (MỚI THÊM)
-   * Route: POST /api/UserProfile/avatar
+   * Upload Avatar
+   * Route: POST /api/UserProfile/profile/avatar
    */
   async uploadAvatar(file: File): Promise<{ success: boolean; avatarUrl?: string; message?: string }> {
     try {
       const formData = new FormData();
-      // 'file' ở đây phải khớp tên tham số trong Controller (IFormFile file)
-      formData.append('file', file); 
+      formData.append('file', file);
 
-      const response = await axiosInstance.post(`${BASE_URL}/avatar`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data', // Bắt buộc header này để upload file
-        },
+  // Do not set Content-Type header manually for multipart/form-data —
+  // the browser/axios will add the correct boundary when sending FormData.
+      // Use transformRequest to ensure Content-Type header is removed for this
+      // request so the browser can set the correct multipart boundary.
+      const response = await axiosInstance.post(`${BASE_URL}/profile/avatar`, formData, {
+        transformRequest: [(data: any, headers: any) => {
+          if (headers) {
+            // Remove any content-type header so browser sets boundary automatically
+            delete headers['Content-Type'];
+            delete headers['content-type'];
+          }
+          return data;
+        }],
       });
-      return response.data;
+
+      // Controller returns { Success: true, Message: ..., Data: { AvatarUrl: "...", FileName: ..., Size: ... } }
+      const resData = response.data as any;
+      // Log full response for debugging
+      // eslint-disable-next-line no-console
+      console.log('[userProfileService] uploadAvatar response:', resData);
+
+      if (resData && (resData.Success === true || resData.success === true)) {
+        const avatarUrl = resData.Data?.AvatarUrl || resData.Data?.avatarUrl || null;
+        return { success: true, avatarUrl, message: resData.Message || resData.message || 'OK' };
+      }
+
+      return { success: false, message: resData?.Message || resData?.message || 'Upload failed' };
+    } catch (error: any) {
+      // Debug: log error details to help trace upload failures
+      // eslint-disable-next-line no-console
+      console.error('[userProfileService] uploadAvatar error:', error?.response?.data || error.message || error);
+
+      // Return structured failure instead of throwing so caller can handle UI accordingly
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+      const message = data?.Message || data?.message || (status ? `Request failed with status code ${status}` : error.message || 'Upload error');
+      return { success: false, message };
+    }
+  },
+
+  /**
+   * Delete Avatar
+   * Route: DELETE /api/UserProfile/profile/avatar
+   */
+  async deleteAvatar(): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await axiosInstance.delete(`${BASE_URL}/profile/avatar`);
+      const resData = response.data as any;
+      if (resData && resData.Success) {
+        return { success: true, message: resData.Message || 'Deleted' };
+      }
+      return { success: false, message: resData?.Message || 'Delete failed' };
     } catch (error) {
       return handleApiError(error);
     }
