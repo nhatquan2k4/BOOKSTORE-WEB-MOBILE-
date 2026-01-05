@@ -8,7 +8,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { bookService } from "@/services";
 import type { BookDto } from "@/types/dtos";
 import { resolveBookPrice } from "@/lib/price";
-import { normalizeImageUrl } from "@/lib/imageUtils";
+import { normalizeImageUrl, getBookCoverUrl } from "@/lib/imageUtils";
 
 type Book = {
   id: string;
@@ -62,7 +62,26 @@ export default function FeaturedBooksPage() {
               highlight: priceInfo.hasDiscount ? "Giảm giá" : undefined,
             };
           });
-          setBooks(transformedBooks);
+
+          // Try fetching per-book cover URLs (cover API may return presigned or relative paths)
+          try {
+            const coverPromises = transformedBooks.map(async (tb) => {
+              try {
+                const apiCover = await getBookCoverUrl(tb.id);
+                return apiCover || tb.cover;
+              } catch (e) {
+                return tb.cover;
+              }
+            });
+
+            const coverResults = await Promise.all(coverPromises);
+            const updated = transformedBooks.map((tb, idx) => ({ ...tb, cover: coverResults[idx] || tb.cover }));
+            setBooks(updated);
+          } catch (e) {
+            // fallback to transformedBooks if cover fetch fails
+            setBooks(transformedBooks);
+          }
+
           setTotalItems(response.totalCount || 0);
         } else {
           setBooks([]);
@@ -133,7 +152,7 @@ export default function FeaturedBooksPage() {
         {/* Hero */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
-            <div className="relative">
+            <div className="relative mt-15">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="48"
@@ -161,7 +180,7 @@ export default function FeaturedBooksPage() {
                 </svg>
               </div>
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mt-15">
               Sách Nổi Bật
             </h1>
           </div>
@@ -224,11 +243,13 @@ export default function FeaturedBooksPage() {
             >
               <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3">
                 <Image
-                  src={book.cover}
+                  src={book.cover || "/image/anh.png"}
                   alt={book.title}
                   fill
                   sizes="(max-width: 768px) 50vw, 25vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  unoptimized
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/image/anh.png'; }}
                 />
 
                 {index < 3 && (

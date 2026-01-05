@@ -47,17 +47,13 @@ const BookItem = ({ book, coverUrl }: { book: BookDto; coverUrl?: string | null 
       className="flex flex-col rounded-xl bg-white p-3 shadow-sm transition hover:shadow-lg hover:-translate-y-1 group border border-transparent hover:border-blue-100"
     >
       {/* Book Cover */}
+
       <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg mb-3 shadow-inner bg-gray-100">
-        
+        {
+          // Use resilient BookImage component (unoptimized + onError fallback)
+        }
         {computedCover ? (
-          <Image
-            src={computedCover}
-            alt={book.title}
-            fill
-            sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            unoptimized
-          />
+          <BookImage src={computedCover} alt={book.title} className="object-cover group-hover:scale-105 transition-transform duration-300" />
         ) : (
           <NoImagePlaceholder />
         )}
@@ -113,6 +109,13 @@ const BookItem = ({ book, coverUrl }: { book: BookDto; coverUrl?: string | null 
     </Link>
   );
 };
+
+// Small resilient image component with onError fallback (reuse pattern)
+function BookImage({ src, alt, className }: { src?: string | null; alt?: string; className?: string }) {
+  const [imgSrc, setImgSrc] = useState<string>(src && src.trim() !== '' ? src : '/image/anh.png');
+  useEffect(() => { setImgSrc(src && src.trim() !== '' ? src : '/image/anh.png'); }, [src]);
+  return <Image src={imgSrc} alt={alt || 'Book'} fill className={className} unoptimized onError={() => setImgSrc('/image/anh.png')} />;
+}
 
 // --- MAIN PAGE ---
 type SortOption = "popular" | "price-asc" | "price-desc" | "rating" | "name";
@@ -305,7 +308,7 @@ export default function AllBooksPage() {
         </nav>
 
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3 mt-15">
             Tất cả sách
           </h1>
           <p className="text-gray-600 text-lg">

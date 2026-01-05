@@ -147,4 +147,17 @@ export const API_ENDPOINTS = {
     VERIFY: '/api/EmailVerification/verify',
     RESEND: '/api/EmailVerification/resend',
   },
+  
+  // Notifications
+  NOTIFICATIONS: {
+    MY: '/api/notifications/my',
+    RECENT: '/api/notifications/recent',
+    GET_BY_ID: (id: string) => `/api/notifications/${id}`,
+    MARK_AS_READ: (id: string) => `/api/notifications/${id}/read`,
+    MARK_ALL_AS_READ: '/api/notifications/read-all',
+    UNREAD_COUNT: '/api/notifications/unread-count',
+    DELETE: (id: string) => `/api/notifications/${id}`,
+    DELETE_ALL: '/api/notifications/delete-all',
+    CREATE_TEST: '/api/notifications/test',
+  },
 };

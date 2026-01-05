@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts';
 import { useRouter } from 'next/navigation';
 import { userProfileService } from '@/services/user-profile.service';
 import { UserProfile, UpdateUserProfileDto } from '@/types/dtos/userprofile';
+import { normalizeImageUrl } from '@/lib/imageUtils';
 
 // 1. THÊM CẤU HÌNH DOMAIN BACKEND (Giống bên ProfilePage)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5276'; 
@@ -36,13 +37,12 @@ export default function UpdateProfilePage() {
     text: string;
   } | null>(null);
 
-  // 2. THÊM HÀM XỬ LÝ URL ẢNH (Logic đồng nhất)
-  const getFullAvatarUrl = (url?: string) => {
+  // Use shared normalization utility so avatar handling matches other pages
+  const getFullAvatarUrl = (url?: string | null) => {
     if (!url) return null;
-    // Nếu là 'blob:...' (ảnh vừa chọn từ máy) hoặc 'http...' (ảnh tuyệt đối) thì giữ nguyên
-    if (url.startsWith('http') || url.startsWith('blob:')) return url;
-    // Nếu là đường dẫn tương đối, nối domain backend vào
-    return `${API_BASE_URL}${url}`;
+    // Keep blob: previews as-is
+    if (url.startsWith('blob:')) return url;
+    return normalizeImageUrl(url);
   };
 
   // Chặn người chưa login
@@ -112,6 +112,10 @@ export default function UpdateProfilePage() {
         const uploadRes = await userProfileService.uploadAvatar(avatarFile);
         if (uploadRes.success && uploadRes.avatarUrl) {
           currentAvatarUrl = uploadRes.avatarUrl;
+          // Show uploaded avatar immediately (normalize URL for display)
+          const normalized = normalizeImageUrl(uploadRes.avatarUrl) || uploadRes.avatarUrl;
+          setAvatarPreview(normalized);
+          setForm((p) => ({ ...p, avatarUrl: uploadRes.avatarUrl ?? '' }));
         } else {
           throw new Error(uploadRes.message || 'Lỗi khi upload ảnh');
         }
@@ -121,6 +125,8 @@ export default function UpdateProfilePage() {
       const payload: UpdateUserProfileDto = {
         fullName: form.fullName,
         phoneNumber: form.phoneNumber,
+  // Include avatarUrl if we have one (either existing or newly uploaded)
+  avatarUrl: form.avatarUrl || undefined,
       };
 
       const res = await userProfileService.updateMyProfile(payload);

@@ -135,7 +135,7 @@ export default function NewArrivalsPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-4xl font-bold text-gray-900">
+            <h1 className="text-4xl font-bold text-gray-900 mt-10">
               Sách Mới Phát Hành
             </h1>
           </div>

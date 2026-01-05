@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { authService } from '@/services';
 import { userProfileService } from '@/services/user-profile.service';
 import { UserProfile } from '@/types/dtos/userprofile';
+import { normalizeImageUrl } from '@/lib/imageUtils';
 
 // --- CẤU HÌNH ĐƯỜNG DẪN BACKEND ---
 // Hãy thay đổi port này đúng với port Backend của bạn (ví dụ 5276, 5000, 7123...)
@@ -105,12 +106,11 @@ export default function ProfilePage() {
   if (!user) return null;
 
   // --- LOGIC XỬ LÝ ẢNH (QUAN TRỌNG) ---
-  const getFullAvatarUrl = (url?: string) => {
+  const getFullAvatarUrl = (url?: string | null) => {
     if (!url) return null;
-    // Nếu URL đã là tuyệt đối (http...) thì giữ nguyên (ví dụ ảnh Google)
-    if (url.startsWith('http')) return url;
-    // Nếu là đường dẫn tương đối (/uploads/...), nối thêm domain backend vào
-    return `${API_BASE_URL}${url}`;
+    // Keep blob previews
+    if (url.startsWith('blob:')) return url;
+    return normalizeImageUrl(url);
   };
 
   // Lấy URL thô từ API hoặc Context

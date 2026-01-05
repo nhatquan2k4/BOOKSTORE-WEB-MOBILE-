@@ -36,3 +36,6 @@ export * from './wishlist';
 
 // ChatBot types
 export * from './chatbot';
+
+// Notification types
+export * from './notification';

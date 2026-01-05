@@ -7,7 +7,6 @@ import {
     Tag,
     UserCircle,
     Building2,
-    Settings
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -23,7 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         { icon: Tag, label: 'Quản lý thể loại', path: '/categories' },
         { icon: Users, label: 'Quản lý người dùng', path: '/users' },
         { icon: ShoppingCart, label: 'Quản lý đơn hàng', path: '/orders' },
-        { icon: Settings, label: 'Cài đặt', path: '/settings' },
+        // { icon: Package, label: 'Cập nhật tồn kho', path: '/inventory' },
     ];
 
     const isActive = (path: string) => location.pathname === path;

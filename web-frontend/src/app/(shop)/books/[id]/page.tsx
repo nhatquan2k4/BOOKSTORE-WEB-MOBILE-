@@ -262,12 +262,12 @@
 //   const params = useParams();
 //   const id = params?.id as string;
 //   const router = useRouter();
-   
+
 //   // -------- API States --------
 //   const [book, setBook] = useState<BookDetailDto | null>(null);
 //   const [loading, setLoading] = useState(true);
 //   const [error, setError] = useState<string | null>(null);
-  
+
 //   // Carousel Data
 //   const [suggestedBooks, setSuggestedBooks] = useState<CarouselBook[]>([]);
 //   const [popularBooks, setPopularBooks] = useState<CarouselBook[]>([]);
@@ -396,15 +396,15 @@
 //         const bookData = await bookService.getBookById(id);
 //         setBook(bookData);
 //         setIsLiked(false);
-        
+
 //         // 2. Fetch Suggested Books (Newest)
 //         const newest = await bookService.getNewestBooks(8);
 //         setSuggestedBooks(newest.map(transformBookDto));
-        
+
 //         // 3. Fetch Popular Books (Most Viewed)
 //         const mostViewed = await bookService.getMostViewedBooks(8);
 //         setPopularBooks(mostViewed.map(transformBookDto));
-        
+
 //         // 4. Fetch Related Books (Same Author) - Logic từ câu trả lời trước
 //         if (bookData.authors && bookData.authors.length > 0) {
 //            const authorId = bookData.authors[0].id;
@@ -430,7 +430,7 @@
 //         setLoading(false);
 //       }
 //     };
-     
+
 //     if (id) fetchAllData();
 //   }, [id]);
 
@@ -463,7 +463,7 @@
 //       try {
 //           // Giả sử API: commentService.getBookComments(id, page, size) trả về { comments, totalCount }
 //           const res = await commentService.getBookComments(id, 1, 20);
-          
+
 //           // Map từ C# CommentDto sang CommentItem
 //           // Lưu ý: C# Service GetBookCommentsAsync trả về comment phẳng (flat), cần xử lý UI
 //           // Ở đây giả định UI CommentTree hỗ trợ nesting nếu bạn build cây từ flat list
@@ -527,7 +527,7 @@
 //   async function addNewReview() {
 //     const text = newReview.trim();
 //     if (!text) return;
-    
+
 //     if (!isLoggedIn) {
 //         setCartMessage({ type: 'error', text: 'Vui lòng đăng nhập để đánh giá' });
 //         return;
@@ -540,10 +540,10 @@
 //             title: "Đánh giá sách", // C# CreateReviewDto yêu cầu Title
 //             content: text
 //         });
-        
+
 //         // Reload lại danh sách review sau khi post thành công
 //         await fetchReviewsData(); 
-        
+
 //         setNewReview("");
 //         setNewReviewRating(5);
 //         setCartMessage({ type: 'success', text: 'Gửi đánh giá thành công!' });
@@ -614,7 +614,7 @@
 //             content: text,
 //             parentCommentId: parentId
 //         });
-        
+
 //         // Cần reload lại comment hoặc load riêng reply của parent đó
 //         // Ở đây reload toàn bộ cho đơn giản theo UI hiện tại
 //         await fetchCommentsData();
@@ -703,10 +703,10 @@
 //       return;
 //     }
 //     if (!book || !displayBook) return;
-    
+
 //     // 1. Thêm vào giỏ hàng
 //     handleAddToCart(); 
-    
+
 //     // 2. Chuyển hướng đến trang Giỏ hàng với tham số buy_now để Cart biết cần tick chọn sách nào
 //     setTimeout(() => {
 //       // SỬA DÒNG NÀY: Thay vì push '/checkout', hãy push về '/cart' kèm query param
@@ -813,7 +813,7 @@
 
 //             <p className="text-sm text-slate-500">Tác giả: {displayBook.author}</p>
 //             <p className="text-sm text-slate-500">Nhà xuất bản: {displayBook.publisher}</p>
-            
+
 //             {/* Hiển thị số lượng tồn kho */}
 //             {/* <div className="rounded-lg bg-slate-50 border border-slate-200 p-3"> */}
 //               <div className="flex items-center justify-between">
@@ -1564,7 +1564,7 @@ type CommentItem = {
   id: string;
   author: string;
   content: string;
-  createdAt: string; 
+  createdAt: string;
   replies?: CommentItem[];
   parentId?: string | null;
 };
@@ -1816,12 +1816,12 @@ export default function BookDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const router = useRouter();
-    
+
   // -------- API States --------
   const [book, setBook] = useState<BookDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-   
+
   // Carousel Data
   const [suggestedBooks, setSuggestedBooks] = useState<CarouselBook[]>([]);
   const [popularBooks, setPopularBooks] = useState<CarouselBook[]>([]);
@@ -1948,7 +1948,7 @@ export default function BookDetailPage() {
         const bookData = await bookService.getBookById(id);
         setBook(bookData);
         setIsLiked(false);
-        
+
         // 2. Fetch Suggested Books (Newest)
         const newest = await bookService.getNewestBooks(8);
         const suggested = newest.map(transformBookDto);
@@ -1963,7 +1963,7 @@ export default function BookDetailPage() {
         } catch (e) {
           setSuggestedBooks(suggested);
         }
-        
+
         // 3. Fetch Popular Books (Most Viewed)
         const mostViewed = await bookService.getMostViewedBooks(8);
         const popular = mostViewed.map(transformBookDto);
@@ -1977,37 +1977,37 @@ export default function BookDetailPage() {
         } catch (e) {
           setPopularBooks(popular);
         }
-        
+
         // 4. Fetch Related Books (Same Author)
         if (bookData.authors && bookData.authors.length > 0) {
-           const authorId = bookData.authors[0].id;
-           const byAuthor = await bookService.getBooksByAuthor(authorId, 12);
-           const filtered = byAuthor.filter(b => b.id !== id);
-           const related = filtered.map(transformBookDto);
-           try {
-             const relatedCovers = await Promise.all(
-               related.map(async (b) => ({ id: b.id, cover: await getBookCoverUrl(b.id) }))
-             );
-             const relatedMap: Record<string, string | null> = {};
-             relatedCovers.forEach((c) => (relatedMap[c.id] = c.cover));
-             setRelatedBooks(related.map((b) => ({ ...b, cover: relatedMap[b.id] || b.cover })));
-           } catch (e) {
-             setRelatedBooks(related);
-           }
+          const authorId = bookData.authors[0].id;
+          const byAuthor = await bookService.getBooksByAuthor(authorId, 12);
+          const filtered = byAuthor.filter(b => b.id !== id);
+          const related = filtered.map(transformBookDto);
+          try {
+            const relatedCovers = await Promise.all(
+              related.map(async (b) => ({ id: b.id, cover: await getBookCoverUrl(b.id) }))
+            );
+            const relatedMap: Record<string, string | null> = {};
+            relatedCovers.forEach((c) => (relatedMap[c.id] = c.cover));
+            setRelatedBooks(related.map((b) => ({ ...b, cover: relatedMap[b.id] || b.cover })));
+          } catch (e) {
+            setRelatedBooks(related);
+          }
         } else if (bookData.categories && bookData.categories.length > 0) {
-           const byCat = await bookService.getBooksByCategory(bookData.categories[0].id, 12);
-           const filtered = byCat.filter(b => b.id !== id);
-           const related = filtered.map(transformBookDto);
-           try {
-             const relatedCovers = await Promise.all(
-               related.map(async (b) => ({ id: b.id, cover: await getBookCoverUrl(b.id) }))
-             );
-             const relatedMap: Record<string, string | null> = {};
-             relatedCovers.forEach((c) => (relatedMap[c.id] = c.cover));
-             setRelatedBooks(related.map((b) => ({ ...b, cover: relatedMap[b.id] || b.cover })));
-           } catch (e) {
-             setRelatedBooks(related);
-           }
+          const byCat = await bookService.getBooksByCategory(bookData.categories[0].id, 12);
+          const filtered = byCat.filter(b => b.id !== id);
+          const related = filtered.map(transformBookDto);
+          try {
+            const relatedCovers = await Promise.all(
+              related.map(async (b) => ({ id: b.id, cover: await getBookCoverUrl(b.id) }))
+            );
+            const relatedMap: Record<string, string | null> = {};
+            relatedCovers.forEach((c) => (relatedMap[c.id] = c.cover));
+            setRelatedBooks(related.map((b) => ({ ...b, cover: relatedMap[b.id] || b.cover })));
+          } catch (e) {
+            setRelatedBooks(related);
+          }
         }
 
         // 5. Fetch Reviews & Stats
@@ -2023,47 +2023,47 @@ export default function BookDetailPage() {
         setLoading(false);
       }
     };
-      
+
     if (id) fetchAllData();
   }, [id]);
 
   // --- API Functions for Reviews & Comments ---
 
   const fetchReviewsData = async () => {
-      try {
-          const res = await reviewService.getBookReviews(id, 1, 20); 
-          const reviewList = (res as any).reviews || res.items || [];
-          const mappedReviews: Review[] = reviewList.map((r: any) => ({
-              id: r.id,
-              author: r.userName || "Người dùng", 
-              text: r.content,
-              rating: r.rating,
-              likes: 0,
-              dislikes: 0,
-              userVote: null,
-              createdAt: r.createdAt
-          }));
-          setReviews(mappedReviews);
+    try {
+      const res = await reviewService.getBookReviews(id, 1, 20);
+      const reviewList = (res as any).reviews || res.items || [];
+      const mappedReviews: Review[] = reviewList.map((r: any) => ({
+        id: r.id,
+        author: r.userName || "Người dùng",
+        text: r.content,
+        rating: r.rating,
+        likes: 0,
+        dislikes: 0,
+        userVote: null,
+        createdAt: r.createdAt
+      }));
+      setReviews(mappedReviews);
 
-          const stats = await reviewService.getBookReviewStatistics(id);
-          setReviewStats(stats);
-      } catch (e) { console.error("Error loading reviews", e); }
+      const stats = await reviewService.getBookReviewStatistics(id);
+      setReviewStats(stats);
+    } catch (e) { console.error("Error loading reviews", e); }
   }
 
   const fetchCommentsData = async () => {
-      try {
-          const res = await commentService.getBookComments(id, 1, 20);
-          
-          const commentList = (res as any).comments || res.items || [];
-          const mappedComments: CommentItem[] = commentList.map((c: any) => ({
-              id: c.id,
-              author: c.userName || "Người dùng",
-              content: c.content,
-              createdAt: c.createdAt,
-              replies: [] 
-          }));
-          setComments(mappedComments);
-      } catch (e) { console.error("Error loading comments", e); }
+    try {
+      const res = await commentService.getBookComments(id, 1, 20);
+
+      const commentList = (res as any).comments || res.items || [];
+      const mappedComments: CommentItem[] = commentList.map((c: any) => ({
+        id: c.id,
+        author: c.userName || "Người dùng",
+        content: c.content,
+        createdAt: c.createdAt,
+        replies: []
+      }));
+      setComments(mappedComments);
+    } catch (e) { console.error("Error loading comments", e); }
   }
 
   const getMetadataValue = (key: string, defaultValue: any = null) => {
@@ -2085,14 +2085,14 @@ export default function BookDetailPage() {
       price: priceInfo.finalPrice,
       originalPrice: priceInfo.originalPrice,
       rating: finalRating,
-      reviewCount: finalReviewCount, 
+      reviewCount: finalReviewCount,
       stock: book.stockQuantity || 0,
       year: book.publicationYear || new Date().getFullYear(),
       weight: parseInt(getMetadataValue("weight", "500")),
       size: `${book.pageCount || 0} trang`,
       language: book.language || "Tiếng Việt",
       cover: normalizeImageUrl(
-        (book.images && book.images.length > 0 ? book.images.find(img => img.isCover)?.imageUrl : null) || 
+        (book.images && book.images.length > 0 ? book.images.find(img => img.isCover)?.imageUrl : null) ||
         (book.images && book.images.length > 0 ? book.images[0].imageUrl : null)
       ) || "/image/anh.png",
       description: book.description || "Chưa có mô tả",
@@ -2110,29 +2110,29 @@ export default function BookDetailPage() {
   async function addNewReview() {
     const text = newReview.trim();
     if (!text) return;
-    
+
     if (!isLoggedIn) {
-        setCartMessage({ type: 'error', text: 'Vui lòng đăng nhập để đánh giá' });
-        return;
+      setCartMessage({ type: 'error', text: 'Vui lòng đăng nhập để đánh giá' });
+      return;
     }
 
     try {
-        await reviewService.createReview(id, {
-            rating: newReviewRating,
-            title: "Đánh giá sách",
-            content: text
-        });
-        
-        await fetchReviewsData(); 
-        
-        setNewReview("");
-        setNewReviewRating(5);
-        setCartMessage({ type: 'success', text: 'Gửi đánh giá thành công!' });
-        setTimeout(() => setCartMessage(null), 3000);
+      await reviewService.createReview(id, {
+        rating: newReviewRating,
+        title: "Đánh giá sách",
+        content: text
+      });
+
+      await fetchReviewsData();
+
+      setNewReview("");
+      setNewReviewRating(5);
+      setCartMessage({ type: 'success', text: 'Gửi đánh giá thành công!' });
+      setTimeout(() => setCartMessage(null), 3000);
     } catch (err: any) {
-        const msg = err.response?.data?.message || err.message || "Lỗi khi gửi đánh giá";
-        setCartMessage({ type: 'error', text: msg });
-        setTimeout(() => setCartMessage(null), 3000);
+      const msg = err.response?.data?.message || err.message || "Lỗi khi gửi đánh giá";
+      setCartMessage({ type: 'error', text: msg });
+      setTimeout(() => setCartMessage(null), 3000);
     }
   }
 
@@ -2152,21 +2152,21 @@ export default function BookDetailPage() {
   async function addNewComment() {
     if (!newComment.trim()) return;
     if (!isLoggedIn) {
-        setCartMessage({ type: 'error', text: 'Vui lòng đăng nhập để bình luận' });
-        return;
+      setCartMessage({ type: 'error', text: 'Vui lòng đăng nhập để bình luận' });
+      return;
     }
 
     try {
-        await commentService.createComment({
-            bookId: id,
-            content: newComment.trim(),
-            parentCommentId: null
-        });
-        await fetchCommentsData();
-        setNewComment("");
+      await commentService.createComment({
+        bookId: id,
+        content: newComment.trim(),
+        parentCommentId: null
+      });
+      await fetchCommentsData();
+      setNewComment("");
     } catch (err) {
-        console.error(err);
-        setCartMessage({ type: 'error', text: 'Lỗi gửi bình luận' });
+      console.error(err);
+      setCartMessage({ type: 'error', text: 'Lỗi gửi bình luận' });
     }
   }
 
@@ -2182,24 +2182,24 @@ export default function BookDetailPage() {
     const text = (replyDrafts[parentId] ?? "").trim();
     if (!text) return;
     if (!isLoggedIn) {
-        setCartMessage({ type: 'error', text: 'Vui lòng đăng nhập để trả lời' });
-        return;
+      setCartMessage({ type: 'error', text: 'Vui lòng đăng nhập để trả lời' });
+      return;
     }
 
     try {
-        await commentService.createComment({
-            bookId: id,
-            content: text,
-            parentCommentId: parentId
-        });
-        
-        await fetchCommentsData();
+      await commentService.createComment({
+        bookId: id,
+        content: text,
+        parentCommentId: parentId
+      });
 
-        setReplyDrafts((prev) => ({ ...prev, [parentId]: "" }));
-        setReplyOpen((prev) => ({ ...prev, [parentId]: false }));
+      await fetchCommentsData();
+
+      setReplyDrafts((prev) => ({ ...prev, [parentId]: "" }));
+      setReplyOpen((prev) => ({ ...prev, [parentId]: false }));
     } catch (err) {
-        console.error(err);
-        setCartMessage({ type: 'error', text: 'Lỗi gửi câu trả lời' });
+      console.error(err);
+      setCartMessage({ type: 'error', text: 'Lỗi gửi câu trả lời' });
     }
   }
 
@@ -2227,7 +2227,7 @@ export default function BookDetailPage() {
   async function handleAddToCart() {
     if (!isLoggedIn) {
       setCartMessage({ type: 'error', text: 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng' });
-      setTimeout(() => { router.push('/auth/login?redirect=/books/' + id); }, 1500);
+      setTimeout(() => { router.push(`/login?redirect=/books/${id}`); }, 1500);
       return;
     }
     if (!book || !displayBook) return;
@@ -2247,20 +2247,20 @@ export default function BookDetailPage() {
   async function handleBuyNow() {
     if (!isLoggedIn) {
       setCartMessage({ type: 'error', text: 'Vui lòng đăng nhập để mua hàng' });
-      setTimeout(() => { router.push('/auth/login?redirect=/books/' + id); }, 1500);
+      setTimeout(() => { router.push(`/login?redirect=/books/${id}`); }, 1500);
       return;
     }
     if (!book || !displayBook) return;
-    
+
     try {
       // 1. Thêm vào giỏ hàng (Backend cần record để xử lý checkout)
       // Không cần hiện loading UI quá lâu, chỉ cần đảm bảo request gửi đi
       await cartService.addToCart({ bookId: id, quantity: 1 });
-      
+
       // 2. Chuyển hướng THẲNG sang Checkout, kèm theo ID sách
       // Logic: Checkout chỉ xử lý item có ID này
       router.push(`/checkout?items=${id}`);
-      
+
     } catch (error) {
       console.error('Failed to prepare buy now:', error);
       // Nếu lỗi (ví dụ item đã có trong giỏ), vẫn thử chuyển sang checkout
@@ -2370,16 +2370,15 @@ export default function BookDetailPage() {
 
             <p className="text-sm text-slate-500">Tác giả: {displayBook.author}</p>
             <p className="text-sm text-slate-500">Nhà xuất bản: {displayBook.publisher}</p>
-            
+
             <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-grey-600">Số lượng còn lại:</span>
-                <span className={`text-lg font-bold ${
-                  displayBook.stock === 0 ? 'text-red-600' : 
-                  displayBook.stock < 10 ? 'text-amber-600' : 
-                  'text-green-600'
+              <span className="text-sm font-medium text-grey-600">Số lượng còn lại:</span>
+              <span className={`text-lg font-bold ${displayBook.stock === 0 ? 'text-red-600' :
+                  displayBook.stock < 10 ? 'text-amber-600' :
+                    'text-green-600'
                 }`}>
-                  {displayBook.stock === 0 ? 'Hết hàng' : `${displayBook.stock} cuốn`}
-                </span>
+                {displayBook.stock === 0 ? 'Hết hàng' : `${displayBook.stock} cuốn`}
+              </span>
             </div>
 
             <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
@@ -2451,15 +2450,22 @@ export default function BookDetailPage() {
                 )}
               </Button>
 
-              <Link href={`/rent/${id}`}>
-                <Button className="bg-amber-500 shadow-sm hover:bg-amber-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-book-open">
-                    <path d="M12 7v14" />
-                    <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
-                  </svg>
-                  <span>Thuê e-book</span>
-                </Button>
-              </Link>
+              <Button
+                className="bg-amber-500 shadow-sm hover:bg-amber-600"
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    router.push(`/login?redirect=/rent/${id}`);
+                    return;
+                  }
+                  router.push(`/rent/${id}`);
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-book-open">
+                  <path d="M12 7v14" />
+                  <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                </svg>
+                <span>Thuê e-book</span>
+              </Button>
 
               <Button onClick={handleToggleWishlist} variant="ghost" size="sm" disabled={isTogglingWishlist} aria-label={isLiked ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"} title={isLiked ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"}>
                 {isTogglingWishlist ? (
@@ -2567,33 +2573,30 @@ export default function BookDetailPage() {
             <Button
               onClick={() => setActiveTab("desc")}
               variant="ghost"
-              className={`border-b-2 rounded-none ${
-                activeTab === "desc"
+              className={`border-b-2 rounded-none ${activeTab === "desc"
                   ? "border-blue-600 text-blue-600"
                   : "border-transparent text-gray-600 hover:text-gray-800"
-              }`}
+                }`}
             >
               Mô tả sản phẩm
             </Button>
             <Button
               onClick={() => setActiveTab("review")}
               variant="ghost"
-              className={`border-b-2 rounded-none ${
-                activeTab === "review"
+              className={`border-b-2 rounded-none ${activeTab === "review"
                   ? "border-blue-600 text-blue-600"
                   : "border-transparent text-gray-600 hover:text-gray-800"
-              }`}
+                }`}
             >
               Đánh giá & nhận xét ({totalReviews})
             </Button>
             <Button
               onClick={() => setActiveTab("comments")}
               variant="ghost"
-              className={`border-b-2 rounded-none ${
-                activeTab === "comments"
+              className={`border-b-2 rounded-none ${activeTab === "comments"
                   ? "border-blue-600 text-blue-600"
                   : "border-transparent text-gray-600 hover:text-gray-800"
-              }`}
+                }`}
             >
               Bình luận ({commentCountLabel})
             </Button>
@@ -2724,38 +2727,38 @@ export default function BookDetailPage() {
               <div className="space-y-4 border-t pt-6">
                 <h3 className="text-lg font-semibold">Tất cả đánh giá</h3>
                 {reviews.length === 0 ? (
-                    <p className="text-gray-500 italic">Chưa có đánh giá nào.</p>
+                  <p className="text-gray-500 italic">Chưa có đánh giá nào.</p>
                 ) : (
-                    <div className="space-y-3">
+                  <div className="space-y-3">
                     {reviews.map((rv) => (
-                        <div key={rv.id} className="rounded-lg border border-gray-200 p-4">
-                            <div className="mb-2 flex items-start justify-between">
-                                <div className="flex-1">
-                                    <div className="mb-1 flex items-center gap-2">
-                                        <p className="font-medium">{rv.author}</p>
-                                        <span className="text-gray-400">•</span>
-                                        <span className="text-sm text-gray-500">
-                                            {timeAgo(rv.createdAt)}
-                                        </span>
-                                    </div>
-                                    <div className="mb-2 flex items-center gap-2">
-                                        <div className="flex items-center gap-1">
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <svg key={star} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={star <= rv.rating ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" className={star <= rv.rating ? "text-yellow-400" : "text-gray-300"}>
-                                                    <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" />
-                                                </svg>
-                                            ))}
-                                        </div>
-                                        <Badge variant={rv.rating >= 4 ? "success" : rv.rating >= 3 ? "warning" : "danger"} size="sm">
-                                            {rv.rating} sao
-                                        </Badge>
-                                    </div>
-                                    <p className="text-sm text-gray-700">{rv.text}</p>
-                                </div>
+                      <div key={rv.id} className="rounded-lg border border-gray-200 p-4">
+                        <div className="mb-2 flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="mb-1 flex items-center gap-2">
+                              <p className="font-medium">{rv.author}</p>
+                              <span className="text-gray-400">•</span>
+                              <span className="text-sm text-gray-500">
+                                {timeAgo(rv.createdAt)}
+                              </span>
                             </div>
+                            <div className="mb-2 flex items-center gap-2">
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <svg key={star} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={star <= rv.rating ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" className={star <= rv.rating ? "text-yellow-400" : "text-gray-300"}>
+                                    <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2" />
+                                  </svg>
+                                ))}
+                              </div>
+                              <Badge variant={rv.rating >= 4 ? "success" : rv.rating >= 3 ? "warning" : "danger"} size="sm">
+                                {rv.rating} sao
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-700">{rv.text}</p>
+                          </div>
                         </div>
+                      </div>
                     ))}
-                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -2793,21 +2796,21 @@ export default function BookDetailPage() {
               </div>
 
               {comments.length === 0 ? (
-                  <p className="text-gray-500 italic">Chưa có bình luận nào.</p>
+                <p className="text-gray-500 italic">Chưa có bình luận nào.</p>
               ) : (
                 <div className="space-y-4">
-                    {visibleComments.map((c) => (
+                  {visibleComments.map((c) => (
                     <CommentTree
-                        key={c.id}
-                        comment={c}
-                        depth={0}
-                        replyOpen={replyOpen}
-                        replyDrafts={replyDrafts}
-                        toggleReply={toggleReply}
-                        updateReplyDraft={updateReplyDraft}
-                        addReply={addReply}
+                      key={c.id}
+                      comment={c}
+                      depth={0}
+                      replyOpen={replyOpen}
+                      replyDrafts={replyDrafts}
+                      toggleReply={toggleReply}
+                      updateReplyDraft={updateReplyDraft}
+                      addReply={addReply}
                     />
-                    ))}
+                  ))}
                 </div>
               )}
 
@@ -2837,63 +2840,63 @@ export default function BookDetailPage() {
               Có thể bạn thích
             </h2>
             {suggestedBooks.length > 0 && (
-                <Link
+              <Link
                 href="/books?filter=suggested"
                 className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
-                >
+              >
                 <span>Xem tất cả</span>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-                </Link>
+              </Link>
             )}
           </div>
 
           {suggestedBooks.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 italic bg-white rounded-xl shadow-sm border border-gray-100">
-                  Không có sách gợi ý nào tại thời điểm này.
-              </div>
+            <div className="text-center py-8 text-gray-500 italic bg-white rounded-xl shadow-sm border border-gray-100">
+              Không có sách gợi ý nào tại thời điểm này.
+            </div>
           ) : (
             <div className="relative">
-                <Button
+              <Button
                 type="button"
                 onClick={() => scrollByStepLike("left")}
                 disabled={!canPrevLike}
                 variant="secondary"
                 size="sm"
                 className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
-                >
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m15 18-6-6 6-6" />
+                  <path d="m15 18-6-6 6-6" />
                 </svg>
-                </Button>
+              </Button>
 
-                <div
+              <div
                 ref={likeRef}
                 onScroll={updateArrowsLike}
                 className="flex gap-5 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 style={{ overflowX: "auto" }}
-                >
+              >
                 {suggestedBooks.map((b) => (
-                    <CarouselBookCard key={b.id} book={b} />
+                  <CarouselBookCard key={b.id} book={b} />
                 ))}
-                </div>
+              </div>
 
-                <Button
+              <Button
                 type="button"
                 onClick={() => scrollByStepLike("right")}
                 disabled={!canNextLike}
                 variant="secondary"
                 size="sm"
                 className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
-                >
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m9 18 6-6-6-6" />
+                  <path d="m9 18 6-6-6-6" />
                 </svg>
-                </Button>
+              </Button>
 
-                <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
-                <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
             </div>
           )}
         </div>
@@ -2905,63 +2908,63 @@ export default function BookDetailPage() {
               Sách được đọc nhiều nhất
             </h2>
             {popularBooks.length > 0 && (
-                <Link
+              <Link
                 href="/books?filter=popular"
                 className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
-                >
+              >
                 <span>Xem tất cả</span>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-                </Link>
+              </Link>
             )}
           </div>
 
           {popularBooks.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 italic bg-white rounded-xl shadow-sm border border-gray-100">
-                  Chưa có dữ liệu về sách đọc nhiều nhất.
-              </div>
+            <div className="text-center py-8 text-gray-500 italic bg-white rounded-xl shadow-sm border border-gray-100">
+              Chưa có dữ liệu về sách đọc nhiều nhất.
+            </div>
           ) : (
             <div className="relative">
-                <Button
+              <Button
                 type="button"
                 onClick={() => scrollByStepPopular("left")}
                 disabled={!canPrevPopular}
                 variant="secondary"
                 size="sm"
                 className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
-                >
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m15 18-6-6 6-6" />
+                  <path d="m15 18-6-6 6-6" />
                 </svg>
-                </Button>
+              </Button>
 
-                <div
+              <div
                 ref={popularRef}
                 onScroll={updateArrowsPopular}
                 className="flex gap-5 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 style={{ overflowX: "auto" }}
-                >
+              >
                 {popularBooks.map((b) => (
-                    <CarouselBookCard key={b.id} book={b} />
+                  <CarouselBookCard key={b.id} book={b} />
                 ))}
-                </div>
+              </div>
 
-                <Button
+              <Button
                 type="button"
                 onClick={() => scrollByStepPopular("right")}
                 disabled={!canNextPopular}
                 variant="secondary"
                 size="sm"
                 className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
-                >
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m9 18 6-6-6-6" />
+                  <path d="m9 18 6-6-6-6" />
                 </svg>
-                </Button>
+              </Button>
 
-                <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
-                <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
             </div>
           )}
         </div>
@@ -2973,63 +2976,63 @@ export default function BookDetailPage() {
               Cùng tác giả
             </h2>
             {relatedBooks.length > 0 && (
-                <Link
+              <Link
                 href="/books?filter=related"
                 className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
-                >
+              >
                 <span>Xem tất cả</span>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-                </Link>
+              </Link>
             )}
           </div>
 
           {relatedBooks.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 italic bg-white rounded-xl shadow-sm border border-gray-100">
-                  Không tìm thấy sách khác cùng tác giả.
-              </div>
+            <div className="text-center py-8 text-gray-500 italic bg-white rounded-xl shadow-sm border border-gray-100">
+              Không tìm thấy sách khác cùng tác giả.
+            </div>
           ) : (
             <div className="relative">
-                <Button
+              <Button
                 type="button"
                 onClick={() => scrollByStepAuthor("left")}
                 disabled={!canPrevAuthor}
                 variant="secondary"
                 size="sm"
                 className="absolute left-0 top-1/2 z-10 -translate-y-1/2 shadow"
-                >
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m15 18-6-6 6-6" />
+                  <path d="m15 18-6-6 6-6" />
                 </svg>
-                </Button>
+              </Button>
 
-                <div
+              <div
                 ref={authorRef}
                 onScroll={updateArrowsAuthor}
                 className="flex gap-5 overflow-x-auto pb-3 pr-2 pl-10 md:pl-12 md:pr-12 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 style={{ overflowX: "auto" }}
-                >
+              >
                 {relatedBooks.map((b) => (
-                    <CarouselBookCard key={b.id} book={b} />
+                  <CarouselBookCard key={b.id} book={b} />
                 ))}
-                </div>
+              </div>
 
-                <Button
+              <Button
                 type="button"
                 onClick={() => scrollByStepAuthor("right")}
                 disabled={!canNextAuthor}
                 variant="secondary"
                 size="sm"
                 className="absolute right-0 top-1/2 z-10 -translate-y-1/2 shadow"
-                >
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m9 18 6-6-6-6" />
+                  <path d="m9 18 6-6-6-6" />
                 </svg>
-                </Button>
+              </Button>
 
-                <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
-                <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-gray-50 to-transparent" />
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-gray-50 to-transparent" />
             </div>
           )}
         </div>

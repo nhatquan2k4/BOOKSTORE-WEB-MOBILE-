@@ -153,9 +153,11 @@ const BookDetailPage: React.FC = () => {
         }
         
         try {
-            // Some backends validate that URL id === body.id. Include id to be safe.
-            const payload = { ...editForm, id: book.id } as any;
-            console.debug('Update book payload:', payload);
+            // Preserve existing book fields (isAvailable, stockQuantity, currentPrice, images, etc.)
+            // so that fields not present in the edit form are not overwritten by defaults.
+            // Merge `book` first, then `editForm` to apply edits on top of the existing record.
+            const payload = { ...book, ...editForm, id: book.id } as any;
+            console.debug('Update book payload (merged):', payload);
             await bookService.update(book.id, payload);
             alert('Cập nhật sách thành công!');
             setShowEditModal(false);

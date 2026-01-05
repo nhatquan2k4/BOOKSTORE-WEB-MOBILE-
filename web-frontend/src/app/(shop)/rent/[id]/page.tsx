@@ -140,7 +140,7 @@ export default function RentDetailPage() {
     const token = globalThis.window?.localStorage?.getItem('accessToken');
     if (!token) {
       toast.error('Vui lòng đăng nhập để thuê sách');
-      router.push(`/auth/login?redirect=/rent/${id}`);
+  router.push(`/login?redirect=/rent/${id}`);
       return;
     }
 
@@ -223,7 +223,7 @@ export default function RentDetailPage() {
     const token = globalThis.window?.localStorage?.getItem('accessToken');
     if (!token) {
       toast.error('Vui lòng đăng nhập để mua sách');
-      router.push(`/auth/login?redirect=/rent/${id}`);
+  router.push(`/login?redirect=/rent/${id}`);
       return;
     }
     

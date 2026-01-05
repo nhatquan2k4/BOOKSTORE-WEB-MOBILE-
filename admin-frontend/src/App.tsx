@@ -11,6 +11,7 @@ import PublishersPage from './pages/PublishersPage';
 import CategoriesPage from './pages/CategoriesPage';
 import UsersPage from './pages/UsersPage';
 import OrdersPage from './pages/OrdersPage';
+import InventoryPage from './pages/InventoryPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 
@@ -41,8 +42,8 @@ function App() {
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="orders" element={<OrdersPage />} />
+            <Route path="inventory" element={<InventoryPage />} />
             <Route path="statistics" element={<div className="text-2xl font-bold">Thống kê - Đang phát triển</div>} />
-            <Route path="settings" element={<div className="text-2xl font-bold">Cài đặt - Đang phát triển</div>} />
           </Route>
 
           {/* Catch all - redirect to dashboard */}
