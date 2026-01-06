@@ -350,6 +350,94 @@ class ShipperOrderService {
       throw error;
     }
   }
+
+  // Lấy thông tin profile của shipper hiện tại
+  async getShipperProfile(): Promise<any> {
+    try {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/shippers/me`, {
+        headers: await this.getAuthHeader(),
+      });
+      
+      return response.data;
+    } catch (error) {
+      if ((error as any).isAxiosError) {
+        const axiosErr = error as any;
+        console.error('[ShipperOrderService] Error fetching shipper profile: status=', axiosErr.response?.status, 'data=', axiosErr.response?.data);
+      } else {
+        console.error('[ShipperOrderService] Error fetching shipper profile:', error);
+      }
+      throw error;
+    }
+  }
+
+  // Lấy thống kê shipments của shipper
+  async getShipperStats(shipperId: string): Promise<{
+    totalShipments: number;
+    completedShipments: number;
+    totalEarnings: number;
+    monthlyShipments: number;
+    monthlyEarnings: number;
+    successRate: number;
+  }> {
+    try {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/shipments/shipper/${shipperId}`, {
+        headers: await this.getAuthHeader(),
+      });
+      
+      const shipments = response.data || [];
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      // Calculate statistics
+      const totalShipments = shipments.length;
+      const completedShipments = shipments.filter((s: any) => 
+        s.status === 'Delivered' || s.order?.status === 'Delivered'
+      ).length;
+
+      const monthlyShipments = shipments.filter((s: any) => {
+        const shipmentDate = new Date(s.createdAt);
+        return shipmentDate.getMonth() === currentMonth && shipmentDate.getFullYear() === currentYear;
+      });
+
+      const totalEarnings = shipments.reduce((sum: number, s: any) => {
+        if (s.status === 'Delivered' || s.order?.status === 'Delivered') {
+          const shippingFee = s.order?.finalAmount - s.order?.totalAmount || 0;
+          return sum + shippingFee;
+        }
+        return sum;
+      }, 0);
+
+      const monthlyEarnings = monthlyShipments.reduce((sum: number, s: any) => {
+        if (s.status === 'Delivered' || s.order?.status === 'Delivered') {
+          const shippingFee = s.order?.finalAmount - s.order?.totalAmount || 0;
+          return sum + shippingFee;
+        }
+        return sum;
+      }, 0);
+
+      const successRate = totalShipments > 0 
+        ? Math.round((completedShipments / totalShipments) * 100) 
+        : 0;
+
+      return {
+        totalShipments,
+        completedShipments,
+        totalEarnings,
+        monthlyShipments: monthlyShipments.length,
+        monthlyEarnings,
+        successRate,
+      };
+    } catch (error) {
+      if ((error as any).isAxiosError) {
+        const axiosErr = error as any;
+        console.error('[ShipperOrderService] Error fetching shipper stats: status=', axiosErr.response?.status, 'data=', axiosErr.response?.data);
+      } else {
+        console.error('[ShipperOrderService] Error fetching shipper stats:', error);
+      }
+      throw error;
+    }
+  }
 }
 
 export default new ShipperOrderService();

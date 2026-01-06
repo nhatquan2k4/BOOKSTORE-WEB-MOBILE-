@@ -40,14 +40,19 @@ export default function ChatBot() {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    // Optimistically add user message to UI
+    setMessages(prev => {
+      const next = [...prev, userMessage];
+      return next;
+    });
     setInputMessage('');
     setIsLoading(true);
 
     try {
+      // Pass the up-to-date conversation (include the new user message)
       const response = await chatbotService.sendMessage(
         userMessage.content,
-        messages
+        [...messages, userMessage]
       );
 
       const assistantMessage: ChatMessage = {
