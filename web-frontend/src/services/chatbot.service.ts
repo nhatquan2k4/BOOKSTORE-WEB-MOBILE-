@@ -19,7 +19,7 @@ export interface ChatResponse {
 export const chatbotService = {
   sendMessage: async (message: string, conversationHistory: ChatMessage[] = []): Promise<string> => {
     try {
-      const response = await axiosInstance.post<ChatResponse>('/api/chatbot/chat', {
+      const response = await axiosInstance.post<ChatResponse>('/api/chatbot/ask', {
         message,
         conversationHistory: conversationHistory.map(msg => ({
           role: msg.role,
