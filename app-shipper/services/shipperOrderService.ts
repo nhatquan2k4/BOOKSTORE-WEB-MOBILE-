@@ -14,9 +14,13 @@ export interface ShipperOrder {
   createdAt: string;
   items: Array<{
     id: string;
+    bookId: string;
+    bookISBN: string;
     bookTitle: string;
+    bookImageUrl?: string; // Path to book cover image (e.g. /book-images/book_xxx.jpg)
     quantity: number;
     unitPrice: number;
+    subtotal: number;
   }>;
   address: {
     recipientName: string;
@@ -38,6 +42,15 @@ export interface UpdateOrderStatusDto {
 class ShipperOrderService {
   private async getAuthHeader() {
     const token = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+  // Debug: log token presence (do not log in production)
+  console.debug('[ShipperOrderService] getAuthHeader token:', token ? '<<present>>' : '<<missing>>');
+    if (!token) {
+      // Throw a specific error so callers can catch and redirect to login
+      const err: any = new Error('No access token in storage');
+      err.code = 'NO_TOKEN';
+      throw err;
+    }
+
     return {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -54,7 +67,13 @@ class ShipperOrderService {
       
       return response.data.items || response.data || [];
     } catch (error) {
-      console.error('Error fetching confirmed orders:', error);
+      // Improve logging to include HTTP status / response body for diagnosis
+      if ((error as any).isAxiosError) {
+        const axiosErr = error as any;
+        console.error('[ShipperOrderService] Error fetching confirmed orders: status=', axiosErr.response?.status, 'data=', axiosErr.response?.data);
+      } else {
+        console.error('[ShipperOrderService] Error fetching confirmed orders:', error);
+      }
       throw error;
     }
   }
@@ -69,7 +88,12 @@ class ShipperOrderService {
       
       return response.data.items || response.data || [];
     } catch (error) {
-      console.error('Error fetching shipping orders:', error);
+      if ((error as any).isAxiosError) {
+        const axiosErr = error as any;
+        console.error('[ShipperOrderService] Error fetching shipping orders: status=', axiosErr.response?.status, 'data=', axiosErr.response?.data);
+      } else {
+        console.error('[ShipperOrderService] Error fetching shipping orders:', error);
+      }
       throw error;
     }
   }
@@ -83,7 +107,12 @@ class ShipperOrderService {
       
       return response.data;
     } catch (error) {
-      console.error('Error fetching order detail:', error);
+      if ((error as any).isAxiosError) {
+        const axiosErr = error as any;
+        console.error('[ShipperOrderService] Error fetching order detail: status=', axiosErr.response?.status, 'data=', axiosErr.response?.data);
+      } else {
+        console.error('[ShipperOrderService] Error fetching order detail:', error);
+      }
       throw error;
     }
   }
@@ -101,7 +130,12 @@ class ShipperOrderService {
         headers: await this.getAuthHeader(),
       });
     } catch (error) {
-      console.error('Error accepting order:', error);
+      if ((error as any).isAxiosError) {
+        const axiosErr = error as any;
+        console.error('[ShipperOrderService] Error accepting order: status=', axiosErr.response?.status, 'data=', axiosErr.response?.data);
+      } else {
+        console.error('[ShipperOrderService] Error accepting order:', error);
+      }
       throw error;
     }
   }
@@ -119,7 +153,30 @@ class ShipperOrderService {
         headers: await this.getAuthHeader(),
       });
     } catch (error) {
-      console.error('Error marking as delivered:', error);
+      if ((error as any).isAxiosError) {
+        const axiosErr = error as any;
+        console.error('[ShipperOrderService] Error marking as delivered: status=', axiosErr.response?.status, 'data=', axiosErr.response?.data);
+      } else {
+        console.error('[ShipperOrderService] Error marking as delivered:', error);
+      }
+      throw error;
+    }
+  }
+
+  // Shipper confirms COD payment collected and marks payment as paid
+  async confirmCodPayment(orderId: string): Promise<void> {
+    try {
+      // Backend exposes PUT /api/orders/{id}/confirm-payment and now allows Shipper role
+      await axios.put(`${API_CONFIG.BASE_URL}/orders/${orderId}/confirm-payment`, null, {
+        headers: await this.getAuthHeader(),
+      });
+    } catch (error) {
+      if ((error as any).isAxiosError) {
+        const axiosErr = error as any;
+        console.error('[ShipperOrderService] Error confirming COD payment: status=', axiosErr.response?.status, 'data=', axiosErr.response?.data);
+      } else {
+        console.error('[ShipperOrderService] Error confirming COD payment:', error);
+      }
       throw error;
     }
   }
@@ -137,7 +194,12 @@ class ShipperOrderService {
         headers: await this.getAuthHeader(),
       });
     } catch (error) {
-      console.error('Error reporting issue:', error);
+      if ((error as any).isAxiosError) {
+        const axiosErr = error as any;
+        console.error('[ShipperOrderService] Error reporting issue: status=', axiosErr.response?.status, 'data=', axiosErr.response?.data);
+      } else {
+        console.error('[ShipperOrderService] Error reporting issue:', error);
+      }
       throw error;
     }
   }

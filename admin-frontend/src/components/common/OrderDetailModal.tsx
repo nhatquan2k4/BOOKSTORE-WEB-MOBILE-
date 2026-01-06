@@ -12,29 +12,35 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpen, onCl
     if (!isOpen || !order) return null;
 
     const getStatusColor = (status: Order['status']) => {
-        const colors = {
-            pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-            processing: 'bg-blue-100 text-blue-800 border-blue-300',
-            shipped: 'bg-purple-100 text-purple-800 border-purple-300',
-            delivered: 'bg-green-100 text-green-800 border-green-300',
-            completed: 'bg-green-100 text-green-800 border-green-300',
-            cancelled: 'bg-red-100 text-red-800 border-red-300',
+        const s = (status || '').toString().toLowerCase();
+        const colors: Record<string, string> = {
+            'pending': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+            'paid': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+            'confirmed': 'bg-blue-100 text-blue-800 border-blue-300',
+            'processing': 'bg-blue-100 text-blue-800 border-blue-300',
+            'shipping': 'bg-purple-100 text-purple-800 border-purple-300',
+            'shipped': 'bg-purple-100 text-purple-800 border-purple-300',
+            'delivered': 'bg-green-100 text-green-800 border-green-300',
+            'completed': 'bg-green-100 text-green-800 border-green-300',
+            'cancelled': 'bg-red-100 text-red-800 border-red-300',
         };
-        return colors[status];
+        return colors[s] || 'bg-gray-100 text-gray-800 border-gray-200';
     };
 
     const getStatusText = (status: Order['status']) => {
-        const texts = {
-            pending: 'Chờ xử lý',
-            confirmed: 'Đã xác nhận',
-            processing: 'Đang xử lý',
-            shipping: 'Đang giao',
-            shipped: 'Đang giao',
-            delivered: 'Đã giao',
-            completed: 'Hoàn thành',
-            cancelled: 'Đã hủy',
+        const s = (status || '').toString().toLowerCase();
+        const texts: Record<string, string> = {
+            'pending': 'Chờ xác nhận',
+            'paid': 'Chờ xác nhận',
+            'confirmed': 'Đã xác nhận',
+            'processing': 'Đang xử lý',
+            'shipping': 'Đang giao',
+            'shipped': 'Đang giao',
+            'delivered': 'Đã giao',
+            'completed': 'Hoàn thành',
+            'cancelled': 'Đã hủy',
         };
-        return texts[status] || status;
+        return texts[s] || (status as string);
     };
 
     // Extract address info from order.address object or fallback to top-level fields
@@ -213,15 +219,40 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, isOpen, onCl
                             {order.paymentMethod && (
                                 <div className="flex justify-between text-gray-700 text-sm mt-2">
                                     <span>Phương thức thanh toán:</span>
-                                    <span className="font-medium capitalize">{order.paymentMethod}</span>
+                                    <span className="font-medium capitalize">{(order.paymentMethod === 'Online' ? 'Thanh toán Online (VietQR)' : order.paymentMethod === 'COD' ? 'Ship COD' : order.paymentMethod) || 'N/A'}</span>
                                 </div>
                             )}
-                            {(order as any).paymentStatus && (
+                            {/* Payment status (use paymentTransaction.status, paymentStatus, or paidAt) */}
+                            {((order as any).paymentTransaction?.status || (order as any).paymentStatus || (order as any).paidAt) && (
                                 <div className="flex justify-between text-gray-700 text-sm">
                                     <span>Trạng thái thanh toán:</span>
                                     <span className="font-medium">
-                                        {(order as any).paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                                        {((order as any).paymentTransaction?.status === 'SUCCESS' || (order as any).paymentTransaction?.status === 'Success' || (order as any).paymentStatus === 'paid' || (order as any).paidAt)
+                                            ? 'Đã thanh toán'
+                                            : 'Chưa thanh toán'}
                                     </span>
+                                </div>
+                            )}
+
+                            {/* Payment transaction details */}
+                            {(order as any).paymentTransaction && (
+                                <div className="space-y-1 text-sm mt-2 text-gray-700">
+                                    <div className="flex justify-between">
+                                        <span>Mã giao dịch:</span>
+                                        <span className="font-medium">{(order as any).paymentTransaction.transactionId || (order as any).paymentTransaction.id || 'N/A'}</span>
+                                    </div>
+                                    {((order as any).paymentTransaction.paymentMethod || (order as any).paymentTransaction.method) && (
+                                        <div className="flex justify-between">
+                                            <span>Phương thức (chi tiết):</span>
+                                            <span className="font-medium">{(order as any).paymentTransaction.paymentMethod || (order as any).paymentTransaction.method}</span>
+                                        </div>
+                                    )}
+                    {(order as any).paidAt && (
+                                        <div className="flex justify-between">
+                                            <span>Thời gian thanh toán:</span>
+                        <span className="font-medium">{new Date((order as any).paidAt).toLocaleString('vi-VN')}</span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

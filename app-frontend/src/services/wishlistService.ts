@@ -15,9 +15,10 @@ import type {
 export const getMyWishlist = async (): Promise<WishlistItem[]> => {
   try {
     console.log('💖 Fetching wishlist from API...');
-    const response = await api.get<WishlistItem[]>(API_ENDPOINTS.WISHLIST.GET);
-    console.log('💖 Wishlist items:', response.length);
-    return response;
+  const response = await api.get<any>(API_ENDPOINTS.WISHLIST.GET);
+  const items: WishlistItem[] = response?.data ?? response ?? [];
+  console.log('💖 Wishlist items:', items.length);
+  return items;
   } catch (error: any) {
     console.error('Error fetching wishlist:', error);
     throw error;
@@ -29,8 +30,8 @@ export const getMyWishlist = async (): Promise<WishlistItem[]> => {
  */
 export const getWishlistCount = async (): Promise<number> => {
   try {
-    const response = await api.get<WishlistCountResponse>(API_ENDPOINTS.WISHLIST.COUNT);
-    return response.count;
+  const response = await api.get<any>(API_ENDPOINTS.WISHLIST.COUNT);
+  return response?.count ?? response?.data?.count ?? 0;
   } catch (error: any) {
     console.error('Error getting wishlist count:', error);
     throw error;
@@ -55,8 +56,8 @@ export const getWishlistSummary = async (): Promise<WishlistSummary> => {
  */
 export const isBookInWishlist = async (bookId: string): Promise<boolean> => {
   try {
-    const response = await api.get<BookInWishlistResponse>(`${API_ENDPOINTS.WISHLIST.CHECK_EXISTS}/${bookId}/exists`);
-    return response.exists;
+  const response = await api.get<any>(`${API_ENDPOINTS.WISHLIST.CHECK_EXISTS}/${bookId}/exists`);
+  return !!(response?.exists ?? response?.data?.exists ?? false);
   } catch (error: any) {
     console.error('Error checking book in wishlist:', error);
     return false;
@@ -69,11 +70,12 @@ export const isBookInWishlist = async (bookId: string): Promise<boolean> => {
 export const addToWishlist = async (bookId: string): Promise<WishlistItem> => {
   try {
     console.log('💖 Adding to wishlist:', bookId);
-    const response = await api.post<AddToWishlistResponse>(
-      `${API_ENDPOINTS.WISHLIST.ADD}/${bookId}`
-    );
-    console.log('✅ Added to wishlist:', response.data);
-    return response.data;
+  const response = await api.post<AddToWishlistResponse>(`${API_ENDPOINTS.WISHLIST.ADD}/${bookId}`);
+  // api client returns response.data (the body). The body may be either the created item directly
+  // or a wrapper { message, data }. Be defensive and normalize to WishlistItem.
+  const created: any = response?.data ?? response;
+  console.log('✅ Added to wishlist:', created);
+  return created as WishlistItem;
   } catch (error: any) {
     console.error('Error adding to wishlist:', error);
     throw error;
@@ -115,11 +117,11 @@ export const toggleWishlist = async (bookId: string): Promise<boolean> => {
   try {
     const exists = await isBookInWishlist(bookId);
     if (exists) {
-      await removeFromWishlist(bookId);
-      return false; // Removed
+  await removeFromWishlist(bookId);
+  return false; // Removed
     } else {
-      await addToWishlist(bookId);
-      return true; // Added
+  await addToWishlist(bookId);
+  return true; // Added
     }
   } catch (error: any) {
     console.error('Error toggling wishlist:', error);

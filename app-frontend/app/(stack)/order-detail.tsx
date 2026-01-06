@@ -38,19 +38,23 @@ function ImageWithFallback({ uri, style }: { uri?: string; style?: any }) {
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   Pending: 'Chờ xác nhận',
+  Paid: 'Chờ xác nhận',
   Confirmed: 'Đã xác nhận',
   Processing: 'Đang xử lý',
-  Shipped: 'Đang giao',
+  Shipping: 'Đang giao',
   Completed: 'Hoàn thành',
+  Delivered: 'Đã giao',
   Cancelled: 'Đã hủy',
 };
 
 const ORDER_STATUS_COLORS: Record<string, string> = {
   Pending: '#FFA726',
+  Paid: '#FFA726',
   Confirmed: '#42A5F5',
   Processing: '#AB47BC',
-  Shipped: '#26C6DA',
+  Shipping: '#26C6DA',
   Completed: '#66BB6A',
+  Delivered: '#66BB6A',
   Cancelled: '#EF5350',
 };
 
@@ -144,10 +148,10 @@ export default function OrderDetailScreen() {
   const paymentMethod = order.paymentTransaction?.paymentMethod || 'N/A';
   const paymentStatus = order.paymentTransaction?.status || 'Pending';
   const isPaid = paymentStatus === 'SUCCESS' || paymentStatus === 'Success' || order.paidAt !== null;
-  
+
   // Chỉ cho phép hủy nếu: đơn hàng ở trạng thái có thể hủy VÀ chưa thanh toán
   const canCancel = ['Pending', 'Confirmed', 'Processing'].includes(order.status) && !isPaid;
-  
+
   const statusLabel = ORDER_STATUS_LABELS[order.status] || order.status;
   const statusColor = ORDER_STATUS_COLORS[order.status] || '#999';
 
@@ -302,26 +306,43 @@ export default function OrderDetailScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Lịch sử trạng thái</Text>
             <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
-              {statusHistory.map((history, index) => (
-                <View
-                  key={history.id}
-                  style={[
-                    styles.historyRow,
-                    index < statusHistory.length - 1 && { ...styles.historyBorder, borderBottomColor: theme.border },
-                  ]}
-                >
-                  <View style={[styles.historyDot, { backgroundColor: theme.primary }]} />
-                  <View style={styles.historyContent}>
-                    <Text style={[styles.historyStatus, { color: theme.text }]}>
-                      {ORDER_STATUS_LABELS[history.status] || history.status}
-                    </Text>
-                    <Text style={[styles.historyDate, { color: theme.textTertiary }]}>
-                      {history.changedAt ? new Date(history.changedAt).toLocaleString('vi-VN') : ''}
-                    </Text>
-                    {history.note && <Text style={[styles.historyNote, { color: theme.textSecondary }]}>{history.note}</Text>}
+              {(() => {
+                const sorted = statusHistory.slice().sort((a, b) => {
+                  const ta = a.changedAt ? new Date(a.changedAt).getTime() : 0;
+                  const tb = b.changedAt ? new Date(b.changedAt).getTime() : 0;
+                  return ta - tb; // oldest first
+                });
+
+                return sorted.map((history, index) => (
+                  <View
+                    key={history.id}
+                    style={[
+                      styles.historyRow,
+                      index < sorted.length - 1 && { ...styles.historyBorder, borderBottomColor: theme.border },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.historyDot,
+                        { backgroundColor: ORDER_STATUS_COLORS[history.newStatus || history.oldStatus || ''] || theme.primary },
+                      ]}
+                    />
+                    <View style={styles.historyContent}>
+                      <Text style={[styles.historyStatus, { color: theme.text }]}>
+                        {history.oldStatus
+                          ? `${ORDER_STATUS_LABELS[history.oldStatus] ?? history.oldStatus} → ${ORDER_STATUS_LABELS[history.newStatus] ?? history.newStatus}`
+                          : ORDER_STATUS_LABELS[history.newStatus] ?? history.newStatus}
+                      </Text>
+                      <Text style={[styles.historyDate, { color: theme.textTertiary }]}>
+                        {history.changedAt
+                          ? new Date(new Date(history.changedAt).getTime() + 7 * 60 * 60 * 1000).toLocaleString('vi-VN')
+                          : ''}
+                      </Text>
+                      {history.note && <Text style={[styles.historyNote, { color: theme.textSecondary }]}>{history.note}</Text>}
+                    </View>
                   </View>
-                </View>
-              ))}
+                ));
+              })()}
             </View>
           </View>
         )}

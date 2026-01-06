@@ -68,7 +68,8 @@ export interface OrderListResponse {
 export interface OrderStatusHistory {
   id: string;
   orderId: string;
-  status: string;
+  oldStatus?: string;
+  newStatus: string;
   note?: string;
   changedAt: string;
   changedBy?: string;

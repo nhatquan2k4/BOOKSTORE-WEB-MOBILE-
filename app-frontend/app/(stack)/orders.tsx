@@ -40,19 +40,21 @@ function ImageWithFallback({ uri, style }: { uri?: string; style?: any }) {
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   Pending: 'Chờ xác nhận',
+  Paid: 'Chờ xác nhận',
   Confirmed: 'Đã xác nhận',
   Processing: 'Đang xử lý',
-  Shipped: 'Đang giao',
-  Completed: 'Hoàn thành',
+  Shipping: 'Đang giao',
+  Delivered: 'Đã giao',
   Cancelled: 'Đã hủy',
 };
 
 const ORDER_STATUS_COLORS: Record<string, string> = {
   Pending: '#FFA726',
+  Paid: '#FFA726',
   Confirmed: '#42A5F5',
   Processing: '#AB47BC',
-  Shipped: '#26C6DA',
-  Completed: '#66BB6A',
+  Shipping: '#26C6DA',
+  Delivered: '#66BB6A',
   Cancelled: '#EF5350',
 };
 
@@ -78,9 +80,9 @@ export default function OrdersScreen() {
   const tabs = [
     { key: 'all', label: 'Tất cả', status: undefined },
     { key: 'pending', label: 'Chờ xác nhận', status: 'Pending' },
-    { key: 'processing', label: 'Đang xử lý', status: 'Processing' },
-    { key: 'shipped', label: 'Đang giao', status: 'Shipped' },
-    { key: 'completed', label: 'Hoàn thành', status: 'Completed' },
+    { key: 'processing', label: 'Đã xác nhận', status: 'Confirmed' },
+    { key: 'shipping', label: 'Đang giao', status: 'Shipping' },
+    { key: 'delivered', label: 'Đã giao', status: 'Delivered' },
     { key: 'cancelled', label: 'Đã hủy', status: 'Cancelled' },
   ];
 
@@ -149,10 +151,14 @@ export default function OrdersScreen() {
     const statusLabel = ORDER_STATUS_LABELS[item.status] || item.status;
     const statusColor = ORDER_STATUS_COLORS[item.status] || '#999';
     
-    // Lấy payment status từ paymentTransaction
-    const paymentStatus = item.paymentTransaction?.status || 'Pending';
-    const paymentStatusLabel = PAYMENT_STATUS_LABELS[paymentStatus] || paymentStatus;
-    const paymentMethod = item.paymentTransaction?.paymentMethod || 'N/A';
+  // Determine payment state: prefer explicit paidAt / paymentTransaction, fallback to order.status
+  const paymentMethod = item.paymentTransaction?.paymentMethod || (item.note?.includes('COD') ? 'COD' : 'N/A');
+  const rawPaymentStatus = item.paymentTransaction?.status;
+  const isPaidFromPaidAt = !!item.paidAt;
+  const isPaidFromTransaction = rawPaymentStatus && ['Paid', 'SUCCESS', 'Success'].includes(rawPaymentStatus);
+  const isPaidFromOrderStatus = ['Delivered', 'Completed', 'Paid'].includes(item.status);
+  const isPaid = isPaidFromPaidAt || isPaidFromTransaction || isPaidFromOrderStatus;
+  const paymentStatusLabel = isPaid ? 'Đã thanh toán' : 'Chưa thanh toán';
 
     return (
       <TouchableOpacity

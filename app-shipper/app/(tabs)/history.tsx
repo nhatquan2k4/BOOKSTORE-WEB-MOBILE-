@@ -151,7 +151,10 @@ export default function HistoryScreen() {
   const stats = calculateStats();
 
   const handleOrderPress = (orderId: string) => {
-    router.push(`/(stack)/history-order-detail?id=${orderId}`);
+    router.push({
+      pathname: '/(stack)/order-detail',
+      params: { orderId },
+    });
   };
 
   const renderOrderCard = ({ item }: { item: typeof mockHistory[0] }) => {

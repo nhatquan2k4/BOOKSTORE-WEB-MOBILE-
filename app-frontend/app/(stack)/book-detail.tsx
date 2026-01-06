@@ -136,7 +136,10 @@ export default function BookDetail() {
 
   const handleBuyNow = () => openBuySheet();
 
+  const [toastText, setToastText] = useState('');
+
   const showToast = (text: string) => {
+    setToastText(text);
     setToastVisible(true);
     toastAnim.setValue(0);
     Animated.timing(toastAnim, { toValue: 1, duration: 220, useNativeDriver: true }).start();
@@ -168,6 +171,8 @@ export default function BookDetail() {
     }
   };
 
+  const [togglingFavorite, setTogglingFavorite] = useState(false);
+
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
       Alert.alert(
@@ -183,13 +188,28 @@ export default function BookDetail() {
 
     if (!book?.id) return;
 
+    // Prevent double taps while toggling
+    if (togglingFavorite) return;
+    setTogglingFavorite(true);
+
+    // Optimistic update
+    const prev = isFavorite;
+    setIsFavorite(!prev);
+    showToast(!prev ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích');
+
     try {
-      const newState = await wishlistService.toggleWishlist(book.id);
-      setIsFavorite(newState);
-      showToast(newState ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích');
+      const result = await wishlistService.toggleWishlist(book.id);
+      // If service returns boolean, keep it; otherwise infer from optimistic update
+      if (typeof result === 'boolean') {
+        setIsFavorite(result);
+      }
     } catch (error) {
       console.error('Error toggling wishlist:', error);
+      // Revert optimistic update
+      setIsFavorite(prev);
       Alert.alert('Lỗi', 'Không thể cập nhật danh sách yêu thích');
+    } finally {
+      setTogglingFavorite(false);
     }
   };
 
@@ -469,7 +489,7 @@ export default function BookDetail() {
           pointerEvents="none"
         >
           <View style={styles.toastBubble}>
-            <Text style={styles.toastText}>Đã thêm vào danh sách yêu thích</Text>
+            <Text style={styles.toastText}>{toastText}</Text>
           </View>
         </Animated.View>
       )}

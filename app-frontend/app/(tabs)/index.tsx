@@ -28,6 +28,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useTheme } from '@/context/ThemeContext';
+import { Modal, Pressable, Animated, Easing, Platform } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = 160;
@@ -503,6 +504,64 @@ export default function HomeScreen() {
     router.push(`/(stack)/category-books?categoryId=${categoryId}&categoryName=${encodeURIComponent(categoryName)}`);
   };
 
+  // Modal state for category filter
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+
+  // Animated value for modal (0 = closed, 1 = open)
+  const modalAnim = useRef(new Animated.Value(0)).current;
+
+  const openFilterModal = () => setFilterModalVisible(true);
+  const closeFilterModal = () => setFilterModalVisible(false);
+
+  // For anchored dropdown: ref to filter button and measurement state
+  const filterBtnRef = useRef<any>(null);
+  const [filterAnchor, setFilterAnchor] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const DROPDOWN_WIDTH = 220; // fixed width for anchored dropdown
+  const EXTRA_LEFT_SHIFT = 28; // shift left by this many pixels for better alignment
+  const screenW = SCREEN_WIDTH;
+
+  const openAnchoredDropdown = async () => {
+    try {
+      if (filterBtnRef.current && filterBtnRef.current.measureInWindow) {
+        filterBtnRef.current.measureInWindow((x: number, y: number, width: number, height: number) => {
+          setFilterAnchor({ x, y, width, height });
+          setFilterModalVisible(true);
+        });
+      } else {
+        // fallback to full sheet
+        setFilterModalVisible(true);
+      }
+    } catch (err) {
+      setFilterModalVisible(true);
+    }
+  };
+
+  // Animate on visibility change
+  useEffect(() => {
+    Animated.timing(modalAnim, {
+      toValue: filterModalVisible ? 1 : 0,
+      duration: filterModalVisible ? 320 : 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [filterModalVisible]);
+
+  const handleFilterSelect = (category: any) => {
+    // Clear any active search
+    clearSearch();
+    // close animation: set visible false after a short timeout to allow animation
+    // we set filterModalVisible to false which will trigger animation via effect
+    closeFilterModal();
+    if (category.id === null) {
+      // 'All' selected - reset to All view
+      setSelectedCategory(null);
+      // Scroll to top for UX
+      if (scrollRef.current) scrollRef.current.scrollTo({ y: 0, animated: true });
+      return;
+    }
+    handleViewAllCategory(category.id, category.name);
+  };
+
   const handleBookPress = (bookId: string | number) => {
     const idToUse = (bookId as any)?.guid ? (bookId as any).guid : bookId;
     console.log('[Navigation] Book pressed:', { bookId, idToUse });
@@ -674,8 +733,8 @@ export default function HomeScreen() {
           {/* Header Content on top - Centered */}
           <View style={styles.header}>
             <View style={styles.headerTextContainer}>
-              <Text style={styles.greeting}>Hello, Reader!</Text>
-              <Text style={styles.subtitle}>What would you like to read today?</Text>
+              <Text style={styles.greeting}>Chào Mừng Bạn Đến Với BookStore</Text>
+              <Text style={styles.subtitle}>Bạn muốn đọc gì hôm nay?</Text>
             </View>
           </View>
         </View>
@@ -695,13 +754,100 @@ export default function HomeScreen() {
               <Ionicons name="close-circle" size={20} color={theme.textTertiary} />
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={styles.filterButton}>
+          <TouchableOpacity style={styles.filterButton} ref={filterBtnRef} onPress={openAnchoredDropdown}>
             <Ionicons name="options-outline" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
 
         {/* White Content Area with curved top - All content from Categories down */}
         <View style={[styles.whiteContentArea, { backgroundColor: theme.background }]}>
+
+          {/* Category Filter Modal */}
+          <Modal
+            visible={filterModalVisible}
+            transparent
+            statusBarTranslucent={true}
+            onRequestClose={closeFilterModal}
+          >
+            {/* Animated overlay (covers whole screen) */}
+            <Animated.View
+              pointerEvents={filterModalVisible ? 'auto' : 'none'}
+              style={[
+                styles.modalOverlay,
+                {
+                  opacity: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] }),
+                },
+              ]}
+            >
+              <Pressable style={{ flex: 1 }} onPress={closeFilterModal} />
+            </Animated.View>
+
+            {/* If filterAnchor is available, render anchored dropdown near the button */}
+            {filterAnchor ? (
+              <Animated.View
+                style={[
+                  styles.anchoredDropdown,
+                  (() => {
+                    const rawLeft = filterAnchor.x - EXTRA_LEFT_SHIFT;
+                    const clampedLeft = Math.max(8, Math.min(rawLeft, screenW - DROPDOWN_WIDTH - 8));
+                    return {
+                      left: clampedLeft,
+                      top: filterAnchor.y + filterAnchor.height + 6,
+                      width: DROPDOWN_WIDTH,
+                      opacity: modalAnim,
+                      transform: [{ scale: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }],
+                      backgroundColor: theme.cardBackground,
+                    };
+                  })(),
+                ]}
+              >
+                <ScrollView contentContainerStyle={{ padding: 8 }}>
+                  {categories.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.id || 'anch-' + cat.name}
+                      onPress={() => handleFilterSelect(cat)}
+                      style={[{ paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8 }]}
+                    >
+                      <Text style={{ color: theme.text }}>{cat.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </Animated.View>
+            ) : (
+              // fallback to slide-up sheet
+              <Animated.View
+                style={[
+                  styles.modalContent,
+                  { backgroundColor: theme.cardBackground },
+                  {
+                    transform: [
+                      {
+                        translateY: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <View style={styles.modalHandle} />
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Chọn thể loại</Text>
+                <ScrollView style={{ maxHeight: 360 }} contentContainerStyle={{ paddingBottom: 12 }}>
+                  {categories.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.id || 'all-modal'}
+                      onPress={() => handleFilterSelect(cat)}
+                      style={[styles.modalItem, { backgroundColor: theme.background }]}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ color: theme.text, fontSize: 16 }}>{cat.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <TouchableOpacity onPress={closeFilterModal} style={styles.modalCloseButton}>
+                  <Text style={{ color: '#4ECDC4', fontWeight: '600' }}>Đóng</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            )}
+          </Modal>
           {/* Show search results if searching or has results */}
           {(isTyping || isSearching || 
             searchResults.books.length > 0 || 
@@ -868,7 +1014,7 @@ export default function HomeScreen() {
                 }
               ]}
             >
-              {categories.map((category) => (
+              {categories.slice(0,5).map((category) => (
                 <CategoryItem
                   key={category.id || 'all'}
                   {...category}
@@ -1144,6 +1290,67 @@ const styles = StyleSheet.create({
   topBanner: {
     width: '100%',
     height: 140,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#000',
+  },
+  modalContent: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingTop: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 12,
+  },
+  modalHandle: {
+    width: 40,
+    height: 5,
+    borderRadius: 4,
+    backgroundColor: '#ddd',
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  modalItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  modalCloseButton: {
+    marginTop: 8,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  anchoredDropdown: {
+    position: 'absolute',
+  minWidth: 160,
+  maxWidth: 320,
+  paddingVertical: 6,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 14,
+    zIndex: 9999,
   },
 
 });
