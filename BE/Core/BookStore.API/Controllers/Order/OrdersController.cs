@@ -148,7 +148,7 @@ namespace BookStore.API.Controllers.Order
             {
                 // Lấy tất cả đơn có status = "Confirmed" (sẵn sàng giao)
                 var result = await _orderService.GetAllOrdersAsync(pageNumber, pageSize, "Confirmed");
-                
+
                 return Ok(new
                 {
                     Items = result.Items,
@@ -177,7 +177,7 @@ namespace BookStore.API.Controllers.Order
                 // TODO: Sau này có thể thêm logic filter theo ShipperId nếu cần
                 // Hiện tại lấy tất cả đơn đang giao (status = "Shipping")
                 var result = await _orderService.GetAllOrdersAsync(pageNumber, pageSize, "Shipping");
-                
+
                 return Ok(new
                 {
                     Items = result.Items,
@@ -208,7 +208,7 @@ namespace BookStore.API.Controllers.Order
                 _logger.LogInformation($"[OrdersController] User from token: {User?.Identity?.Name}");
                 _logger.LogInformation($"[OrdersController] UserId from dto: {dto.UserId}");
                 _logger.LogInformation($"[OrdersController] Number of items: {dto.Items?.Count ?? 0}");
-                
+
                 if (dto.Items != null)
                 {
                     foreach (var item in dto.Items)
@@ -219,15 +219,15 @@ namespace BookStore.API.Controllers.Order
 
                 var userId = GetCurrentUserId();
                 _logger.LogInformation($"[OrdersController] Current UserId from JWT: {userId}");
-                
+
                 // Override UserId with JWT token user ID for security
                 dto.UserId = userId;
                 _logger.LogInformation($"[OrdersController] UserId overridden with JWT token userId: {userId}");
 
                 var order = await _orderService.CreateOrderAsync(dto);
-                
+
                 _logger.LogInformation($"[OrdersController] ✅ Order created successfully: {order.OrderNumber}");
-                
+
                 return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, order);
             }
             catch (Exception ex)
@@ -235,13 +235,14 @@ namespace BookStore.API.Controllers.Order
                 _logger.LogError(ex, "[OrdersController] ❌ Error creating order");
                 _logger.LogError($"[OrdersController] Error message: {ex.Message}");
                 _logger.LogError($"[OrdersController] Stack trace: {ex.StackTrace}");
-                
+
                 if (ex.InnerException != null)
                 {
                     _logger.LogError($"[OrdersController] Inner exception: {ex.InnerException.Message}");
                 }
-                
-                return StatusCode(500, new { 
+
+                return StatusCode(500, new
+                {
                     message = ex.Message,
                     error = "Internal server error",
                     details = ex.InnerException?.Message
@@ -264,17 +265,17 @@ namespace BookStore.API.Controllers.Order
         {
             try
             {
-                _logger.LogInformation(" [CreateRentalOrder] Request received - BookId: {BookId}, RentalPlanId: {RentalPlanId}, Days: {Days}", 
+                _logger.LogInformation(" [CreateRentalOrder] Request received - BookId: {BookId}, RentalPlanId: {RentalPlanId}, Days: {Days}",
                     dto.BookId, dto.RentalPlanId, dto.Days);
-                
+
                 var userId = GetCurrentUserId();
                 _logger.LogInformation(" [CreateRentalOrder] UserId: {UserId}", userId);
-                
+
                 // Ưu tiên dùng RentalPlanId nếu có, fallback sang Days
-                var order = dto.RentalPlanId.HasValue 
+                var order = dto.RentalPlanId.HasValue
                     ? await _orderService.CreateRentalOrderByPlanIdAsync(userId, dto.BookId, dto.RentalPlanId.Value)
                     : await _orderService.CreateRentalOrderAsync(userId, dto.BookId, dto.Days);
-                
+
                 _logger.LogInformation(" [CreateRentalOrder] Order created successfully - OrderId: {OrderId}, Amount: {Amount}", order.Id, order.FinalAmount);
 
                 return Ok(new
@@ -329,7 +330,8 @@ namespace BookStore.API.Controllers.Order
         }
 
         [HttpPut("{id:guid}/confirm-payment")]
-        [Authorize(Roles = "Admin")]
+        // Allow Admin and Shipper to confirm payment (shipper may confirm COD collection)
+        [Authorize(Roles = "Admin,Shipper")]
         public async Task<IActionResult> ConfirmPayment(Guid id)
         {
             var order = await _orderService.ConfirmOrderPaymentAsync(id);
@@ -341,7 +343,7 @@ namespace BookStore.API.Controllers.Order
         public async Task<IActionResult> ConfirmMyPayment(string orderNumber)
         {
             var userId = GetCurrentUserId();
-            
+
             // Get order by order number
             var order = await _orderService.GetOrderByOrderNumberAsync(orderNumber);
             if (order == null)

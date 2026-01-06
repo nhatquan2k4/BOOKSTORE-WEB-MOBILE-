@@ -17,6 +17,10 @@ namespace BookStore.Infrastructure.Repositories.Shipping
             return await _dbSet
                 .Include(s => s.Shipper)
                 .Include(s => s.Order)
+                    .ThenInclude(o => o.Address)
+                .Include(s => s.Order)
+                    .ThenInclude(o => o.Items)
+                        .ThenInclude(i => i.Book)
                 .Include(s => s.StatusHistory.OrderByDescending(sh => sh.UpdatedAt))
                 .Include(s => s.RoutePoints.OrderByDescending(rp => rp.Timestamp))
                 .FirstOrDefaultAsync(s => s.TrackingCode == trackingCode);
@@ -27,6 +31,10 @@ namespace BookStore.Infrastructure.Repositories.Shipping
             return await _dbSet
                 .Include(s => s.Shipper)
                 .Include(s => s.Order)
+                    .ThenInclude(o => o.Address)
+                .Include(s => s.Order)
+                    .ThenInclude(o => o.Items)
+                        .ThenInclude(i => i.Book)
                 .Include(s => s.StatusHistory.OrderByDescending(sh => sh.UpdatedAt))
                 .Include(s => s.RoutePoints.OrderByDescending(rp => rp.Timestamp))
                 .FirstOrDefaultAsync(s => s.OrderId == orderId);
@@ -36,6 +44,10 @@ namespace BookStore.Infrastructure.Repositories.Shipping
         {
             return await _dbSet
                 .Include(s => s.Order)
+                    .ThenInclude(o => o.Address)
+                .Include(s => s.Order)
+                    .ThenInclude(o => o.Items)
+                        .ThenInclude(i => i.Book)
                 .Include(s => s.StatusHistory.OrderByDescending(sh => sh.UpdatedAt))
                 .Where(s => s.ShipperId == shipperId)
                 .OrderByDescending(s => s.CreatedAt)
@@ -47,6 +59,10 @@ namespace BookStore.Infrastructure.Repositories.Shipping
             return await _dbSet
                 .Include(s => s.Shipper)
                 .Include(s => s.Order)
+                    .ThenInclude(o => o.Address)
+                .Include(s => s.Order)
+                    .ThenInclude(o => o.Items)
+                        .ThenInclude(i => i.Book)
                 .Where(s => s.Status == status)
                 .OrderByDescending(s => s.CreatedAt)
                 .ToListAsync();
@@ -57,10 +73,28 @@ namespace BookStore.Infrastructure.Repositories.Shipping
             return await _dbSet
                 .Include(s => s.Shipper)
                 .Include(s => s.Order)
+                    .ThenInclude(o => o.Address)
+                .Include(s => s.Order)
                     .ThenInclude(o => o.Items)
+                        .ThenInclude(i => i.Book)
                 .Include(s => s.StatusHistory.OrderByDescending(sh => sh.UpdatedAt))
                 .Include(s => s.RoutePoints.OrderByDescending(rp => rp.Timestamp))
                 .FirstOrDefaultAsync(s => s.Id == id);
+        }
+
+        public async Task<IEnumerable<Shipment>> GetAllWithDetailsAsync()
+        {
+            return await _dbSet
+                .Include(s => s.Shipper)
+                .Include(s => s.Order)
+                    .ThenInclude(o => o.Address)
+                .Include(s => s.Order)
+                    .ThenInclude(o => o.Items)
+                        .ThenInclude(i => i.Book)
+                .Include(s => s.StatusHistory.OrderByDescending(sh => sh.UpdatedAt))
+                .Include(s => s.RoutePoints.OrderByDescending(rp => rp.Timestamp))
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
         }
 
         public async Task<string> GenerateTrackingCodeAsync()
@@ -81,4 +115,3 @@ namespace BookStore.Infrastructure.Repositories.Shipping
         }
     }
 }
-

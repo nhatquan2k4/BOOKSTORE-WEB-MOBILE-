@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert,
   Image,
@@ -13,23 +13,74 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { profileService, UserProfile } from '@/services/profileService';
+import { API_CONFIG } from '@/constants/config';
+import { useAuth } from '@/context/AuthContext';
 
 export default function PersonalInfoScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
 
-  const [avatar, setAvatar] = useState('https://i.pravatar.cc/150?img=12');
-  const [fullName, setFullName] = useState('Nguyễn Văn Shipper');
-  const [phone, setPhone] = useState('0901234567');
-  const [email, setEmail] = useState('shipper@example.com');
-  const [address, setAddress] = useState('123 Nguyễn Văn Linh, Q.7, TP.HCM');
-  const [idCard, setIdCard] = useState('079123456789');
-  const [birthDate, setBirthDate] = useState('15/03/1995');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [avatar, setAvatar] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
+  const [idCard, setIdCard] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const loadProfileData = async () => {
+    try {
+      setLoading(true);
+      const profileData = await profileService.getMyProfile();
+      setProfile(profileData);
+      
+      // Populate form fields
+      setFullName(profileData.fullName || '');
+      setPhone(profileData.phoneNumber || '');
+      setEmail(user?.email || ''); // Email from user context
+      setAddress('');
+      setIdCard('');
+      setBirthDate(profileData.dateOfBirth ? new Date(profileData.dateOfBirth).toLocaleDateString('vi-VN') : '');
+      setAvatar(getAvatarUrl(profileData.avatarUrl));
+    } catch (error: any) {
+      console.error('Error loading profile:', error);
+      Alert.alert('Lỗi', 'Không thể tải thông tin profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getAvatarUrl = (avatarUrl?: string) => {
+    if (avatarUrl) {
+      if (avatarUrl.startsWith('http')) {
+        console.log('[PersonalInfo] Avatar URL (full):', avatarUrl);
+        return avatarUrl;
+      }
+      const fullUrl = `${API_CONFIG.IMAGE_BASE_URL}${avatarUrl}`;
+      console.log('[PersonalInfo] Avatar URL (constructed):', fullUrl);
+      return fullUrl;
+    }
+    console.log('[PersonalInfo] Using default avatar');
+    return 'https://i.pravatar.cc/150?img=12';
+  };
+
   const handlePickAvatar = async () => {
+    if (!isEditing) return;
+    
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (status !== 'granted') {
@@ -45,17 +96,150 @@ export default function PersonalInfoScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setAvatar(result.assets[0].uri);
+      try {
+        setUploading(true);
+        const imageUri = result.assets[0].uri;
+        
+        console.log('[PersonalInfo] Selected image URI:', imageUri);
+        console.log('[PersonalInfo] Image details:', {
+          width: result.assets[0].width,
+          height: result.assets[0].height,
+          fileSize: result.assets[0].fileSize,
+        });
+        
+        // Show local image immediately for better UX
+        setAvatar(imageUri);
+        
+        console.log('[PersonalInfo] Starting upload...');
+        
+        // Upload to server
+        const newAvatarUrl = await profileService.uploadAvatar(imageUri);
+        
+        console.log('[PersonalInfo] Upload successful, new URL:', newAvatarUrl);
+        
+        // Update avatar URL directly without reloading entire profile
+        setAvatar(getAvatarUrl(newAvatarUrl));
+        
+        // Update profile state
+        if (profile) {
+          setProfile({
+            ...profile,
+            avatarUrl: newAvatarUrl,
+          });
+        }
+        
+        console.log('[PersonalInfo] Avatar updated in state');
+        
+        Alert.alert('Thành công', 'Đã cập nhật ảnh đại diện');
+      } catch (error: any) {
+        console.error('[PersonalInfo] Error uploading avatar:', {
+          message: error.message,
+          error: error,
+        });
+        Alert.alert(
+          'Lỗi upload ảnh', 
+          error.message || 'Không thể tải lên ảnh đại diện'
+        );
+        // Reload original avatar on error
+        await loadProfileData();
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
-  const handleSave = () => {
-    Alert.alert(
-      'Lưu thành công',
-      'Thông tin cá nhân đã được cập nhật',
-      [{ text: 'OK', onPress: () => setIsEditing(false) }]
-    );
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      
+      // Prepare update DTO - only include fields that are changed
+      const updateDto: any = {};
+      
+      if (fullName && fullName !== profile?.fullName) {
+        updateDto.fullName = fullName;
+      }
+      
+      if (phone && phone !== profile?.phoneNumber) {
+        updateDto.phoneNumber = phone;
+      }
+      
+      if (birthDate) {
+        const isoDate = convertToISODate(birthDate);
+        // Only add if valid ISO date
+        if (isoDate && isoDate !== profile?.dateOfBirth) {
+          updateDto.dateOfBirth = isoDate;
+        }
+      }
+
+      console.log('[PersonalInfo] Updating profile with:', updateDto);
+
+      // Only call API if there are changes
+      if (Object.keys(updateDto).length === 0) {
+        Alert.alert('Thông báo', 'Không có thay đổi nào để lưu');
+        setIsEditing(false);
+        return;
+      }
+
+      await profileService.updateMyProfile(updateDto);
+      
+      Alert.alert(
+        'Lưu thành công',
+        'Thông tin cá nhân đã được cập nhật',
+        [{ text: 'OK', onPress: () => {
+          setIsEditing(false);
+          loadProfileData();
+        }}]
+      );
+    } catch (error: any) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Lỗi', error.message || 'Không thể lưu thông tin');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const convertToISODate = (dateString: string): string | null => {
+    try {
+      // Convert DD/MM/YYYY to ISO format YYYY-MM-DD
+      const parts = dateString.split('/');
+      if (parts.length === 3) {
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[2];
+        
+        // Validate date
+        const date = new Date(`${year}-${month}-${day}`);
+        if (!isNaN(date.getTime())) {
+          return `${year}-${month}-${day}T00:00:00.000Z`;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error converting date:', error);
+      return null;
+    }
+  };
+
+  if (loading) {
+    return (
+      <KeyboardAvoidingView
+        style={[styles.container, { paddingTop: insets.top }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Thông tin cá nhân</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#E24A4A" />
+          <Text style={styles.loadingText}>Đang tải thông tin...</Text>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -68,7 +252,7 @@ export default function PersonalInfoScreen() {
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Thông tin cá nhân</Text>
-        <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
+        <TouchableOpacity onPress={() => setIsEditing(!isEditing)} disabled={saving}>
           <Text style={styles.editText}>{isEditing ? 'Hủy' : 'Sửa'}</Text>
         </TouchableOpacity>
       </View>
@@ -77,14 +261,34 @@ export default function PersonalInfoScreen() {
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
-            <Image source={{ uri: avatar }} style={styles.avatar} />
+            <Image 
+              source={{ uri: avatar }} 
+              style={styles.avatar}
+              onError={(error) => {
+                console.error('[PersonalInfo] Image load error:', error.nativeEvent.error);
+                console.error('[PersonalInfo] Failed URL:', avatar);
+              }}
+              onLoad={() => {
+                console.log('[PersonalInfo] Image loaded successfully:', avatar);
+              }}
+            />
             {isEditing && (
-              <TouchableOpacity style={styles.cameraButton} onPress={handlePickAvatar}>
-                <Ionicons name="camera" size={20} color="#fff" />
+              <TouchableOpacity 
+                style={styles.cameraButton} 
+                onPress={handlePickAvatar}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="camera" size={20} color="#fff" />
+                )}
               </TouchableOpacity>
             )}
           </View>
-          <Text style={styles.avatarHint}>Nhấn vào ảnh để thay đổi</Text>
+          <Text style={styles.avatarHint}>
+            {isEditing ? 'Nhấn vào ảnh để thay đổi' : 'Bấm "Sửa" để thay đổi ảnh'}
+          </Text>
         </View>
 
         {/* Info Form */}
@@ -213,9 +417,22 @@ export default function PersonalInfoScreen() {
 
         {/* Save Button */}
         {isEditing && (
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Ionicons name="checkmark-circle" size={20} color="#fff" />
-            <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
+          <TouchableOpacity 
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]} 
+            onPress={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <ActivityIndicator size="small" color="#fff" />
+                <Text style={styles.saveButtonText}>Đang lưu...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
+              </>
+            )}
           </TouchableOpacity>
         )}
 
@@ -396,5 +613,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#ccc',
+    opacity: 0.6,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#666',
   },
 });

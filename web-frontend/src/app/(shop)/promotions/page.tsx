@@ -35,7 +35,7 @@ export default function PromotionsPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 mt-17">
         <nav className="mb-6 text-sm text-gray-600">
           <Link href="/" className="hover:text-blue-600">Trang chủ</Link> / <span className="font-medium text-gray-800">Khuyến mãi</span>
         </nav>

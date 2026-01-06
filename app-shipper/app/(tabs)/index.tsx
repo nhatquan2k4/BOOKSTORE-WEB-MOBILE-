@@ -44,10 +44,15 @@ export default function HomeScreen() {
       
       setOrders(data);
     } catch (error: any) {
-      console.error('Error loading orders:', error);
-      
-      // Just log the error, don't show alert
-      // AuthContext will handle redirect to login automatically
+      console.error('[HomeScreen] Error loading orders:', error);
+      // If no token or 401, navigate to login
+      if (error?.code === 'NO_TOKEN' || error?.response?.status === 401) {
+        // Redirect to login screen
+        router.replace('/(auth)/login');
+        return;
+      }
+
+      // Other errors: clear list and keep user on screen
       setOrders([]);
     } finally {
       setLoading(false);
@@ -76,6 +81,16 @@ export default function HomeScreen() {
               loadOrders(); // Reload list
             } catch (error) {
               console.error('Error accepting order:', error);
+              // If backend indicated the order already has a shipment, offer to open it
+              if ((error as any)?.code === 'ORDER_ALREADY_HAS_SHIPMENT' && (error as any)?.existingShipment) {
+                const shipment = (error as any).existingShipment;
+                Alert.alert('Đã có vận đơn', 'Đơn hàng này đã có vận đơn. Mở chi tiết vận đơn?', [
+                  { text: 'Hủy' },
+                  { text: 'Mở', onPress: () => router.push({ pathname: '/(stack)/history-order-detail', params: { id: shipment.orderId } }) }
+                ]);
+                return;
+              }
+
               Alert.alert('Lỗi', 'Không thể nhận đơn hàng');
             }
           },
@@ -86,21 +101,38 @@ export default function HomeScreen() {
 
   const handleCompleteDelivery = async (orderId: string, event: any) => {
     event.stopPropagation();
+    // When delivering COD orders, ask shipper to confirm cash collection before marking payment as paid
     Alert.alert(
       'Xác nhận giao hàng',
-      'Xác nhận đã giao hàng thành công?',
+      'Đơn hàng đã giao thành công chứ? Bạn đã thu tiền khách (nếu COD)?',
       [
         { text: 'Hủy', style: 'cancel' },
         {
-          text: 'Đã giao',
+          text: 'Chưa thu tiền',
           onPress: async () => {
             try {
-              await shipperOrderService.markAsDelivered(orderId, 'Đơn hàng đã được giao thành công');
+              // Mark delivered without confirming payment
+              await shipperOrderService.markAsDelivered(orderId, 'Đã giao (chưa thu tiền)');
               Alert.alert('Thành công', 'Đã cập nhật trạng thái giao hàng!');
-              loadOrders(); // Reload list
+              loadOrders();
             } catch (error) {
-              console.error('Error completing delivery:', error);
+              console.error('Error completing delivery (no payment):', error);
               Alert.alert('Lỗi', 'Không thể cập nhật trạng thái');
+            }
+          },
+        },
+        {
+          text: 'Đã thu tiền',
+          onPress: async () => {
+            try {
+              // First confirm payment (for COD) then mark delivered
+              await shipperOrderService.confirmCodPayment(orderId);
+              await shipperOrderService.markAsDelivered(orderId, 'Đã giao và thu tiền');
+              Alert.alert('Thành công', 'Đã cập nhật trạng thái và xác nhận thanh toán!');
+              loadOrders();
+            } catch (error) {
+              console.error('Error completing delivery (with payment):', error);
+              Alert.alert('Lỗi', 'Không thể cập nhật trạng thái hoặc xác nhận thanh toán');
             }
           },
         },
@@ -111,7 +143,10 @@ export default function HomeScreen() {
   const handleOrderPress = (order: ShipperOrder) => {
     router.push({
       pathname: '/(stack)/order-detail',
-      params: { orderId: order.id },
+      params: { 
+        orderId: order.id,
+        orderData: JSON.stringify(order), // Pass full order data
+      },
     });
   };
 
@@ -128,6 +163,7 @@ export default function HomeScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+  case 'Paid': return '#2196F3';
       case 'Confirmed': return '#2196F3';
       case 'Shipping': return '#4CAF50';
       case 'Delivered': return '#9E9E9E';
@@ -137,6 +173,7 @@ export default function HomeScreen() {
 
   const getStatusText = (status: string) => {
     switch (status) {
+  case 'Paid': return 'Chờ xác nhận';
       case 'Confirmed': return 'Sẵn sàng giao';
       case 'Shipping': return 'Đang giao';
       case 'Delivered': return 'Đã giao';
@@ -213,13 +250,15 @@ export default function HomeScreen() {
                 <Ionicons name="navigate-outline" size={20} color="#2196F3" />
                 <Text style={styles.navigateButtonText}>Chỉ đường</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.acceptButton]}
-                onPress={(e) => handleAcceptOrder(item.id, e)}
-              >
-                <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                <Text style={styles.acceptButtonText}>Nhận đơn</Text>
-              </TouchableOpacity>
+              {(item.status === 'Confirmed' || item.status === 'Paid') && (
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.acceptButton]}
+                  onPress={(e) => handleAcceptOrder(item.id, e)}
+                >
+                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                  <Text style={styles.acceptButtonText}>Nhận đơn</Text>
+                </TouchableOpacity>
+              )}
             </>
           ) : (
             <>

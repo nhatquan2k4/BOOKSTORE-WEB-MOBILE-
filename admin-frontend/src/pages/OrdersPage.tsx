@@ -87,6 +87,7 @@ const OrdersPage: React.FC = () => {
         const statusStr = status.toLowerCase();
         const colors: Record<string, string> = {
             'pending': 'bg-yellow-100 text-yellow-800',
+        'paid': 'bg-yellow-100 text-yellow-800',
             'confirmed': 'bg-blue-100 text-blue-800',
             'processing': 'bg-blue-100 text-blue-800',
             'shipping': 'bg-purple-100 text-purple-800',
@@ -102,6 +103,7 @@ const OrdersPage: React.FC = () => {
         const statusStr = status.toLowerCase();
         const texts: Record<string, string> = {
             'pending': 'Chờ xác nhận',
+            'paid': 'Chờ xác nhận',
             'confirmed': 'Đã xác nhận',
             'processing': 'Đang xử lý',
             'shipping': 'Đang giao',
@@ -206,7 +208,7 @@ const OrdersPage: React.FC = () => {
                 return (
                     <div className="flex gap-2">
                         {/* Button Xác nhận - chỉ hiện khi Pending */}
-                        {status === 'pending' && (
+                        { (status === 'pending' || status === 'paid') && (
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -309,7 +311,7 @@ const OrdersPage: React.FC = () => {
                 <div className="bg-white p-4 rounded-lg shadow">
                     <p className="text-gray-500 text-sm">Chờ xác nhận</p>
                     <p className="text-2xl font-bold text-yellow-600">
-                        {orders.filter((o) => o.status.toLowerCase() === 'pending').length}
+                        {orders.filter((o) => ['pending','paid'].includes(o.status.toLowerCase())).length}
                     </p>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow">
@@ -351,6 +353,7 @@ const OrdersPage: React.FC = () => {
                     >
                         <option value="">Tất cả trạng thái</option>
                         <option value="pending">Chờ xác nhận</option>
+                        <option value="paid">Đã thanh toán (Chờ xác nhận)</option>
                         <option value="confirmed">Đã xác nhận</option>
                         <option value="shipping">Đang giao</option>
                         <option value="delivered">Đã giao</option>

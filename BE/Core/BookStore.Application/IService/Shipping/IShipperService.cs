@@ -26,5 +26,7 @@ namespace BookStore.Application.IService.Shipping
         Task<bool> IsPhoneNumberAvailableAsync(string phoneNumber, Guid? excludeShipperId = null);
         Task<bool> IsEmailAvailableAsync(string email, Guid? excludeShipperId = null);
         Task<int> GetShipmentCountAsync(Guid shipperId);
+        // Lấy shipper theo user account id
+        Task<ShipperDto?> GetShipperByUserIdAsync(Guid userId);
     }
 }

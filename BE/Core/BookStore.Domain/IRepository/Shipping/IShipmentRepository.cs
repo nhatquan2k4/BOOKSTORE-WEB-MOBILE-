@@ -9,6 +9,7 @@ namespace BookStore.Domain.IRepository.Shipping
         Task<IEnumerable<Shipment>> GetByShipperIdAsync(Guid shipperId);
         Task<IEnumerable<Shipment>> GetByStatusAsync(string status);
         Task<Shipment?> GetWithDetailsAsync(Guid id);
+        Task<IEnumerable<Shipment>> GetAllWithDetailsAsync();
         Task<string> GenerateTrackingCodeAsync();
     }
 }

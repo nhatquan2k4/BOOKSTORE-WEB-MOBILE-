@@ -1,84 +1,32 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FlatList,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Mock data lịch sử giao hàng
-const mockHistory = [
-  {
-    id: 'ORD012',
-    date: '15/01/2024',
-    time: '14:30',
-    customerName: 'Nguyễn Văn A',
-    deliveryAddress: '123 Nguyễn Huệ, Q.1, TP.HCM',
-    totalAmount: 450000,
-    shippingFee: 25000,
-    status: 'completed',
-    rating: 5,
-  },
-  {
-    id: 'ORD011',
-    date: '15/01/2024',
-    time: '11:20',
-    customerName: 'Trần Thị B',
-    deliveryAddress: '456 Lê Lợi, Q.3, TP.HCM',
-    totalAmount: 320000,
-    shippingFee: 20000,
-    status: 'failed',
-    rating: 0,
-  },
-  {
-    id: 'ORD010',
-    date: '14/01/2024',
-    time: '16:45',
-    customerName: 'Lê Văn C',
-    deliveryAddress: '789 Võ Văn Tần, Q.3, TP.HCM',
-    totalAmount: 580000,
-    shippingFee: 30000,
-    status: 'completed',
-    rating: 4,
-  },
-  {
-    id: 'ORD009',
-    date: '14/01/2024',
-    time: '14:10',
-    customerName: 'Phạm Thị D',
-    deliveryAddress: '12 Pasteur, Q.1, TP.HCM',
-    totalAmount: 195000,
-    shippingFee: 15000,
-    status: 'cancelled',
-    rating: 0,
-  },
-  {
-    id: 'ORD008',
-    date: '13/01/2024',
-    time: '10:30',
-    customerName: 'Hoàng Văn E',
-    deliveryAddress: '234 Điện Biên Phủ, Q.3, TP.HCM',
-    totalAmount: 750000,
-    shippingFee: 35000,
-    status: 'completed',
-    rating: 5,
-  },
-  {
-    id: 'ORD007',
-    date: '13/01/2024',
-    time: '09:15',
-    customerName: 'Ngô Thị F',
-    deliveryAddress: '567 Nguyễn Đình Chiểu, Q.1, TP.HCM',
-    totalAmount: 420000,
-    shippingFee: 22000,
-    status: 'completed',
-    rating: 4,
-  },
-];
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_CONFIG, STORAGE_KEYS } from '../../constants/config';
+
+type ShipmentItem = {
+  id: string;
+  orderId: string;
+  shipperId: string;
+  shipperName?: string;
+  trackingCode?: string;
+  status?: string;
+  createdAt?: string;
+  deliveredAt?: string | null;
+  notes?: string | null;
+  order: any;
+};
 
 type FilterPeriod = 'today' | 'week' | 'month' | 'all';
 
@@ -107,8 +55,8 @@ const getStatusInfo = (status: string) => {
       };
     default:
       return {
-        label: 'Không xác định',
-        color: '#9E9E9E',
+        label: 'Đã giao',
+        color: '#4CAF50',
         bgColor: '#F5F5F5',
         icon: 'help-circle' as const,
       };
@@ -117,107 +65,145 @@ const getStatusInfo = (status: string) => {
 
 export default function HistoryScreen() {
   const router = useRouter();
-  const [selectedPeriod, setSelectedPeriod] = useState<FilterPeriod>('today');
+  const [selectedPeriod, setSelectedPeriod] = useState<FilterPeriod>('all');
+  const [shipments, setShipments] = useState<ShipmentItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const getFilteredOrders = () => {
-    const today = new Date();
-    const todayStr = today.toLocaleDateString('vi-VN');
-    
-    switch (selectedPeriod) {
-      case 'today':
-        return mockHistory.filter(order => order.date === '15/01/2024'); // Mock today
-      case 'week':
-        return mockHistory.filter((_, index) => index < 4); // Last 7 days
-      case 'month':
-        return mockHistory;
-      case 'all':
-        return mockHistory;
-      default:
-        return mockHistory;
+  useEffect(() => {
+    loadShipments();
+  }, []);
+
+  const loadShipments = async () => {
+    try {
+      setLoading(true);
+      // get current user and shipperId
+      const userStr = await AsyncStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      if (!user) {
+        setShipments([]);
+        return;
+      }
+
+      // fetch shipper record to get shipperId
+      const shipperResp = await axios.get(`${API_CONFIG.BASE_URL}/shippers/me`, { headers: { Authorization: `Bearer ${await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)}` } });
+      const shipperId = shipperResp.data?.id;
+      if (!shipperId) {
+        setShipments([]);
+        return;
+      }
+
+      const resp = await axios.get(`${API_CONFIG.BASE_URL}/shipments/shipper/${shipperId}`, { headers: { Authorization: `Bearer ${await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)}` } });
+      setShipments(resp.data || []);
+    } catch (error) {
+      console.error('[History] Error loading shipments:', error);
+      setShipments([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const calculateStats = () => {
-    const orders = getFilteredOrders();
-    const totalOrders = orders.length;
-    const totalEarnings = orders.reduce((sum, order) => sum + order.shippingFee, 0);
-    const avgRating = orders.length > 0 
-      ? orders.reduce((sum, order) => sum + order.rating, 0) / orders.length 
-      : 0;
-
-    return { totalOrders, totalEarnings, avgRating };
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadShipments();
+    setRefreshing(false);
   };
 
-  const stats = calculateStats();
-
-  const handleOrderPress = (orderId: string) => {
-    router.push(`/(stack)/history-order-detail?id=${orderId}`);
+  const handleOrderPress = (orderId: string, orderNumber?: string, fullOrder?: any) => {
+    router.push({ 
+      pathname: '/(stack)/order-detail', 
+      params: { 
+        orderId,
+        orderNumber: orderNumber || orderId,
+        orderData: fullOrder ? JSON.stringify(fullOrder) : undefined // Pass full order data
+      } 
+    });
   };
 
-  const renderOrderCard = ({ item }: { item: typeof mockHistory[0] }) => {
-    const statusInfo = getStatusInfo(item.status);
-    
+  const renderOrderCard = ({ item }: { item: ShipmentItem }) => {
+    const order = item.order;
+    const statusInfo = getStatusInfo(item.status ?? '');
+
     return (
-      <TouchableOpacity
-        style={styles.orderCard}
-        onPress={() => handleOrderPress(item.id)}
-      >
+      <TouchableOpacity style={styles.orderCard} onPress={() => handleOrderPress(order.id, order.orderNumber, order)}>
         <View style={styles.orderHeader}>
           <View style={styles.orderIdRow}>
             <Ionicons name="receipt-outline" size={20} color="#E24A4A" />
-            <Text style={styles.orderId}>{item.id}</Text>
+            <Text style={styles.orderId}>{order.orderNumber || order.id}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: statusInfo.bgColor }]}>
             <Ionicons name={statusInfo.icon} size={14} color={statusInfo.color} />
-            <Text style={[styles.statusText, { color: statusInfo.color }]}>
-              {statusInfo.label}
-            </Text>
+            <Text style={[styles.statusText, { color: statusInfo.color }]}>{statusInfo.label}</Text>
           </View>
         </View>
 
-      <View style={styles.orderContent}>
-        <View style={styles.infoRow}>
-          <Ionicons name="person-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{item.customerName}</Text>
+        <View style={styles.orderContent}>
+          <View style={styles.infoRow}>
+            <Ionicons name="person-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>{order.address?.recipientName || order.customerName}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={16} color="#666" />
+            <Text style={styles.addressText} numberOfLines={1}>{order.address?.fullAddress || ''}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="time-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>{new Date(item.createdAt || order.createdAt).toLocaleString('vi-VN')}</Text>
+          </View>
         </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="location-outline" size={16} color="#666" />
-          <Text style={styles.addressText} numberOfLines={1}>
-            {item.deliveryAddress}
-          </Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="time-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>
-            {item.date} • {item.time}
-          </Text>
-        </View>
-      </View>
 
-      <View style={styles.orderFooter}>
-        <View style={styles.amountContainer}>
-          <Text style={styles.amountLabel}>Tổng đơn:</Text>
-          <Text style={styles.totalAmount}>
-            {item.totalAmount.toLocaleString('vi-VN')}đ
-          </Text>
+        <View style={styles.orderFooter}>
+          <View style={styles.amountContainer}>
+            <Text style={styles.amountLabel}>Tổng đơn:</Text>
+            <Text style={styles.totalAmount}>{(order.finalAmount ?? 0).toLocaleString('vi-VN')}đ</Text>
+          </View>
+          {item.status === 'Delivered' || item.status === 'completed' ? (
+            <View style={styles.earningContainer}>
+              <Text style={styles.earningLabel}>Thu nhập:</Text>
+              <Text style={styles.earningValue}>+{((order.shippingFee ?? 0)).toLocaleString('vi-VN')}đ</Text>
+            </View>
+          ) : (
+            <View style={styles.ratingContainer}>
+              {/* <Ionicons name="star" size={16} color="#FFB800" /> */}
+              <Text style={styles.ratingText}></Text>
+            </View>
+          )}
         </View>
-        {item.status === 'completed' ? (
-          <View style={styles.earningContainer}>
-            <Text style={styles.earningLabel}>Thu nhập:</Text>
-            <Text style={styles.earningValue}>
-              +{item.shippingFee.toLocaleString('vi-VN')}đ
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.ratingContainer}>
-            <Ionicons name="star" size={16} color="#FFB800" />
-            <Text style={styles.ratingText}>{item.rating}.0</Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
     );
   };
+
+  // derive filtered shipments based on selectedPeriod
+  const filteredShipments = React.useMemo(() => {
+    if (!shipments || shipments.length === 0) return [];
+    if (selectedPeriod === 'all') return shipments;
+
+    const now = new Date();
+    return shipments.filter((s) => {
+      const dtStr = s.createdAt ?? s.order?.createdAt;
+      if (!dtStr) return false;
+      const dt = new Date(dtStr);
+      if (!isFinite(dt.getTime())) return false;
+
+      if (selectedPeriod === 'today') {
+        return dt.toDateString() === now.toDateString();
+      }
+
+      if (selectedPeriod === 'week') {
+        const weekAgo = new Date(now);
+        weekAgo.setDate(now.getDate() - 7);
+        return dt >= weekAgo && dt <= now;
+      }
+
+      if (selectedPeriod === 'month') {
+        const monthAgo = new Date(now);
+        monthAgo.setMonth(now.getMonth() - 1);
+        return dt >= monthAgo && dt <= now;
+      }
+
+      return true;
+    });
+  }, [shipments, selectedPeriod]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -252,11 +238,12 @@ export default function HistoryScreen() {
 
       {/* Orders List */}
       <FlatList
-        data={getFilteredOrders()}
+        data={filteredShipments}
         keyExtractor={(item) => item.id}
         renderItem={renderOrderCard}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#E24A4A']} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="document-text-outline" size={64} color="#CCC" />

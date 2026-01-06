@@ -37,7 +37,19 @@ const orderService = {
 
   // Get order status history
   async getOrderStatusHistory(orderId: string): Promise<OrderStatusHistory[]> {
-    return await apiClient.get(API_ENDPOINTS.ORDERS.STATUS_HISTORY(orderId));
+    // Server returns OrderStatusLogDto with OldStatus, NewStatus, ChangedAt, ChangedBy
+    const raw = await apiClient.get(API_ENDPOINTS.ORDERS.STATUS_HISTORY(orderId));
+    // Map to front-end OrderStatusHistory: use NewStatus as the status and include OldStatus as note
+    if (!raw || !Array.isArray(raw)) return [];
+    return raw.map((r: any) => ({
+      id: r.id ?? (r.id ? String(r.id) : ''),
+      orderId: r.orderId ?? (r.orderId ? String(r.orderId) : ''),
+      oldStatus: r.oldStatus ?? r.OldStatus ?? r.old_status ?? undefined,
+      newStatus: r.newStatus ?? r.NewStatus ?? r.new_status ?? r.newStatus ?? r.status ?? '',
+      note: r.note ?? undefined,
+      changedAt: r.changedAt ?? r.ChangedAt ?? r.changed_at ?? '',
+      changedBy: r.changedBy ?? r.ChangedBy ?? r.changed_by ?? undefined,
+    }));
   },
 
   // Cancel order

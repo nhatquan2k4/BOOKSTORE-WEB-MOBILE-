@@ -118,7 +118,7 @@ namespace BookStore.Application.Services.Shipping
             Guard.Against(shipmentCount > 0,
                 $"Không thể xóa shipper vì đã có {shipmentCount} đơn hàng được giao bởi shipper này. Hãy deactivate thay vì xóa.");
 
-            _shipperRepository.Delete(shipper);
+            _shipperRepository.Delete(shipper!);
             await _shipperRepository.SaveChangesAsync();
 
             _logger.LogInformation($"Deleted shipper: {shipper.Name} (ID: {shipper.Id})");
@@ -213,6 +213,12 @@ namespace BookStore.Application.Services.Shipping
         public async Task<int> GetShipmentCountAsync(Guid shipperId)
         {
             return await _shipperRepository.GetShipmentCountAsync(shipperId);
+        }
+
+        public async Task<ShipperDto?> GetShipperByUserIdAsync(Guid userId)
+        {
+            var shipper = await _shipperRepository.GetByUserIdAsync(userId);
+            return shipper?.ToDto();
         }
 
         #endregion

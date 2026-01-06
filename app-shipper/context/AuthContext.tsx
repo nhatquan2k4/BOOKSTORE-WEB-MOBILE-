@@ -28,20 +28,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Load user from AsyncStorage on mount
   useEffect(() => {
-    const loadUser = async () => {
+    const initAuth = async () => {
       try {
-        const storedUser = await authService.getCurrentUser();
-        if (storedUser) {
-          setUser(storedUser);
-        }
+        // Force logout on app start during testing: clear stored tokens and user
+        await authService.logout();
+        setUser(null);
       } catch (error) {
-        console.error('Error loading user:', error);
+        console.error('Error forcing logout on init:', error);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadUser();
+    initAuth();
   }, []);
 
   // Navigation protection

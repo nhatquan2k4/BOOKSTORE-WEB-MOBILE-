@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   StatusBar,
@@ -11,94 +11,268 @@ import {
   Linking,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-
-// Mock order data với thông tin CHUẨN HÀ NỘI
-const mockOrderDetail = {
-  id: 'ORD001',
-  orderDate: '15/01/2024 09:30',
-  
-  // Thông tin shop (điểm lấy hàng) - Tại Cầu Giấy
-  shopName: 'Nhà sách Nhã Nam',
-  shopAddress: '59 Đỗ Quang, Trung Hoà, Cầu Giấy, Hà Nội',
-  shopPhone: '02437564321', // Mã vùng 024 (Hà Nội)
-  shopCoordinates: { lat: 21.009059, lng: 105.803189 }, // Tọa độ Hà Nội
-  
-  // Thông tin khách hàng (điểm giao hàng) - Tại Hoàn Kiếm
-  customerName: 'Nguyễn Văn An',
-  customerPhone: '0988123456',
-  deliveryAddress: '40 P. Nhà Chung, Hàng Trống, Hoàn Kiếm, Hà Nội',
-  deliveryCoordinates: { lat: 21.028795, lng: 105.849265 }, // Tọa độ Hà Nội
-  
-  // Thông tin đơn hàng
-  items: [
-    { 
-      id: 1, 
-      name: 'Hà Nội Băm Sáu Phố Phường', 
-      quantity: 1, 
-      price: 85000,
-      image: 'https://via.placeholder.com/80',
-    },
-    { 
-      id: 2, 
-      name: 'Thương Nhớ Mười Hai', 
-      quantity: 1, 
-      price: 120000,
-      image: 'https://via.placeholder.com/80',
-    },
-  ],
-  totalAmount: 205000,
-  shippingFee: 30000,
-  paymentStatus: 'paid', // Khách đã thanh toán 100%
-  paymentMethod: 'Chuyển khoản',
-  
-  // Thông tin giao hàng
-  pickupDistance: '2.5 km',
-  deliveryDistance: '5.2 km',
-  estimatedPickupTime: '10 phút',
-  estimatedDeliveryTime: '25 phút',
-  notes: 'Giao hàng giờ hành chính. Đến sảnh tòa nhà gọi tôi xuống lấy.',
-  
-  // Trạng thái: new, accepted, picking_up, picked_up, delivering, completed, cancelled
-  status: 'accepted',
-  
-  // Timeline
-  timeline: [
-    { status: 'created', time: '15/01/2024 09:30', label: 'Đơn hàng được tạo' },
-    { status: 'accepted', time: '15/01/2024 09:35', label: 'Shipper nhận đơn' },
-  ],
-};
+import shipperOrderService, { ShipperOrder } from '../../services/shipperOrderService';
+import { API_CONFIG, STORAGE_KEYS } from '../../constants/config';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function OrderDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [orderStatus, setOrderStatus] = useState(mockOrderDetail.status);
-  const [timeline, setTimeline] = useState(mockOrderDetail.timeline);
+  const params = useLocalSearchParams<{ orderId: string; orderData?: string; orderNumber?: string }>();
+  const { orderId, orderData: orderDataParam, orderNumber } = params;
+  
+  // States
+  const [orderData, setOrderData] = useState<ShipperOrder | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [orderStatus, setOrderStatus] = useState('');
+  const [timeline, setTimeline] = useState<Array<{ status: string; time: string; label: string }>>([]);
   const [pickupProof, setPickupProof] = useState<string | null>(null);
   const [deliveryProof, setDeliveryProof] = useState<string | null>(null);
 
+  // Fetch order detail from API or use passed data
+  useEffect(() => {
+    fetchOrderDetail();
+  }, [orderId, orderDataParam]);
+
+  const fetchOrderDetail = async () => {
+    try {
+      setLoading(true);
+      if (!orderId) {
+        Alert.alert('Lỗi', 'Không tìm thấy mã đơn hàng');
+        router.back();
+        return;
+      }
+
+      let data: ShipperOrder;
+
+      // If order data was passed in params, use it directly
+      if (orderDataParam) {
+        try {
+          data = JSON.parse(orderDataParam);
+          console.log('[OrderDetail] Using passed order data');
+        } catch (parseError) {
+          console.error('[OrderDetail] Error parsing order data:', parseError);
+          // Fallback to API call
+          data = await shipperOrderService.getOrderDetail(orderId);
+        }
+      } else {
+        // Fetch from API if no data was passed
+        console.log('[OrderDetail] Fetching order from API');
+        try {
+          data = await shipperOrderService.getOrderDetail(orderId);
+        } catch (error: any) {
+          // If 403 Forbidden, try multiple fallbacks
+          if (error.response?.status === 403) {
+            console.log('[OrderDetail] Access denied, trying fallbacks...');
+            
+            // Fallback 1: Try orderNumber endpoint
+            if (orderNumber) {
+              console.log('[OrderDetail] Fallback 1: Trying with orderNumber:', orderNumber);
+              try {
+                data = await shipperOrderService.getOrderByNumber(orderNumber as string);
+                console.log('[OrderDetail] Successfully fetched by orderNumber');
+              } catch (fallbackError1) {
+                console.error('[OrderDetail] Fallback 1 (orderNumber) failed:', fallbackError1);
+                
+                // Fallback 2: Try via shipment endpoint
+                console.log('[OrderDetail] Fallback 2: Trying via shipment...');
+                try {
+                  data = await shipperOrderService.getOrderViaShipment(orderId);
+                  console.log('[OrderDetail] Successfully fetched via shipment');
+                } catch (fallbackError2) {
+                  console.error('[OrderDetail] Fallback 2 (shipment) also failed:', fallbackError2);
+                  throw error; // Throw original error
+                }
+              }
+            } else {
+              // No orderNumber, try shipment directly
+              console.log('[OrderDetail] No orderNumber, trying shipment directly...');
+              try {
+                data = await shipperOrderService.getOrderViaShipment(orderId);
+                console.log('[OrderDetail] Successfully fetched via shipment');
+              } catch (fallbackError) {
+                console.error('[OrderDetail] Shipment fallback failed:', fallbackError);
+                throw error; // Throw original error
+              }
+            }
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      setOrderData(data);
+      setOrderStatus(data.status);
+      
+      // Load missing book images
+      if (data.items && data.items.length > 0) {
+        const itemsNeedingImages = data.items.filter(item => !item.bookImageUrl);
+        if (itemsNeedingImages.length > 0) {
+          console.log(`[OrderDetail] ${itemsNeedingImages.length} items missing bookImageUrl, fetching...`);
+          await loadMissingItemImages(data);
+        }
+      }
+      
+      // Debug: Log order data structure
+      console.log('[OrderDetail] Full order data:', JSON.stringify(data, null, 2));
+      console.log('[OrderDetail] Items:', data.items);
+      if (data.items && data.items.length > 0) {
+        console.log('[OrderDetail] First item bookImageUrl:', data.items[0].bookImageUrl);
+        console.log('[OrderDetail] Full image URL:', getImageUrl(data.items[0].bookImageUrl));
+      }
+      
+      // Initialize timeline based on current status
+      const initialTimeline = [
+        { status: 'created', time: formatDate(data.createdAt), label: 'Đơn hàng được tạo' },
+      ];
+      
+      if (data.status === 'Shipping' || data.status === 'Delivered') {
+        initialTimeline.push({
+          status: 'shipping',
+          time: formatDate(data.createdAt),
+          label: 'Shipper đã nhận đơn',
+        });
+      }
+      
+      if (data.status === 'Delivered') {
+        initialTimeline.push({
+          status: 'delivered',
+          time: formatDate(data.createdAt),
+          label: 'Giao hàng thành công',
+        });
+      }
+      
+      setTimeline(initialTimeline);
+    } catch (error: any) {
+      console.error('[OrderDetail] Error fetching order:', error);
+      if (error.code === 'NO_TOKEN') {
+        Alert.alert('Phiên đăng nhập hết hạn', 'Vui lòng đăng nhập lại', [
+          { text: 'OK', onPress: () => router.replace('/(auth)/login') },
+        ]);
+      } else if (error.response?.status === 403) {
+        Alert.alert(
+          'Lỗi truy cập', 
+          'Không có quyền xem chi tiết đơn hàng này. Vui lòng liên hệ quản trị viên.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      } else {
+        Alert.alert('Lỗi', 'Không thể tải thông tin đơn hàng. Vui lòng thử lại.', [
+          { text: 'OK', onPress: () => router.back() }
+        ]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Format full address
+  const formatAddress = (address: any) => {
+    if (!address) return '';
+    const parts = [address.street, address.ward, address.district, address.province];
+    return parts.filter(Boolean).join(', ');
+  };
+
+  // Load missing book images from /books/{bookId}/images endpoint
+  const loadMissingItemImages = async (order: ShipperOrder) => {
+    try {
+      const token = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const updatedItems = await Promise.all(
+        order.items.map(async (item) => {
+          if (item.bookImageUrl) return item; // Already has image
+
+          try {
+            const response = await axios.get(
+              `${API_CONFIG.BASE_URL}/books/${item.bookId}/images`,
+              { headers }
+            );
+            const images = response.data;
+            if (images && images.length > 0) {
+              // Find cover image or use first image
+              const coverImage = images.find((img: any) => img.isCover) || images[0];
+              return { ...item, bookImageUrl: coverImage.imageUrl };
+            }
+          } catch (err) {
+            console.warn(`[OrderDetail] Failed to load images for book ${item.bookId}:`, err);
+          }
+          return item;
+        })
+      );
+
+      // Update order data with new images
+      setOrderData({ ...order, items: updatedItems });
+    } catch (error) {
+      console.error('[OrderDetail] Error loading missing images:', error);
+    }
+  };
+
+  // Build full image URL
+  const getImageUrl = (imagePath?: string) => {
+    console.log('[OrderDetail] getImageUrl input:', imagePath);
+    
+    if (!imagePath) {
+      console.log('[OrderDetail] No image path provided, using placeholder');
+      return 'https://via.placeholder.com/80?text=No+Image';
+    }
+    
+    // If imagePath already starts with http, return as is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      console.log('[OrderDetail] Image path is full URL:', imagePath);
+      return imagePath;
+    }
+    
+    // Otherwise, prepend the IMAGE_BASE_URL
+    // Remove leading slash from imagePath if exists
+    const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+    const fullUrl = `${API_CONFIG.IMAGE_BASE_URL}/${cleanPath}`;
+    console.log('[OrderDetail] Built image URL:', fullUrl);
+    return fullUrl;
+  };
+
   // Xử lý gọi điện
   const handleCallCustomer = () => {
-    Linking.openURL(`tel:${mockOrderDetail.customerPhone}`);
+    if (orderData?.customerPhone) {
+      Linking.openURL(`tel:${orderData.customerPhone}`);
+    }
   };
 
   const handleCallShop = () => {
-    Linking.openURL(`tel:${mockOrderDetail.shopPhone}`);
+    if (orderData?.address?.phoneNumber) {
+      Linking.openURL(`tel:${orderData.address.phoneNumber}`);
+    }
   };
 
   // Xử lý chỉ đường (Sử dụng Google Maps query chuẩn)
   const handleNavigateToShop = () => {
-    const query = encodeURIComponent(mockOrderDetail.shopAddress);
-    // Dùng schema chuẩn của Google Maps để mở app bản đồ
-    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+    if (orderData?.address) {
+      const query = encodeURIComponent(formatAddress(orderData.address));
+      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+    }
   };
 
   const handleNavigateToCustomer = () => {
-    const query = encodeURIComponent(mockOrderDetail.deliveryAddress);
-    // Dùng schema chuẩn của Google Maps để mở app bản đồ
-    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+    if (orderData?.address) {
+      const query = encodeURIComponent(formatAddress(orderData.address));
+      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+    }
   };
 
   // Xử lý chụp ảnh chứng từ
@@ -126,15 +300,35 @@ export default function OrderDetailScreen() {
   };
 
   // Workflow actions
-  const handleAcceptOrder = () => {
-    setOrderStatus('accepted');
-    const newEvent = {
-      status: 'accepted',
-      time: new Date().toLocaleString('vi-VN'),
-      label: 'Shipper nhận đơn',
-    };
-    setTimeline([...timeline, newEvent]);
-    Alert.alert('Thành công', 'Bạn đã nhận đơn hàng');
+  const handleAcceptOrder = async () => {
+    try {
+      if (!orderId) return;
+      
+      await shipperOrderService.acceptAndStartDelivery(orderId);
+      setOrderStatus('Shipping');
+      const newEvent = {
+        status: 'shipping',
+        time: new Date().toLocaleString('vi-VN'),
+        label: 'Shipper nhận đơn và bắt đầu giao hàng',
+      };
+      setTimeline([...timeline, newEvent]);
+      Alert.alert('Thành công', 'Bạn đã nhận đơn hàng');
+      fetchOrderDetail(); // Refresh data
+    } catch (error) {
+      // If backend told us the order already has a shipment, show helpful message and navigate to shipment if possible
+      if ((error as any).code === 'ORDER_ALREADY_HAS_SHIPMENT' && (error as any).existingShipment) {
+        const shipment = (error as any).existingShipment;
+        Alert.alert('Đã có vận đơn', 'Đơn hàng này đã có vận đơn. Mở chi tiết vận đơn?', [
+          { text: 'Hủy' },
+          { text: 'Mở', onPress: () => router.push({ pathname: '/(stack)/history-order-detail', params: { id: shipment.orderId } }) }
+        ]);
+        return;
+      }
+
+      // For other errors, log and show generic alert
+      console.error('[OrderDetail] Error accepting order:', error);
+      Alert.alert('Lỗi', 'Không thể nhận đơn hàng. Vui lòng thử lại.');
+    }
   };
 
   const handleStartPickup = () => {
@@ -172,28 +366,41 @@ export default function OrderDetailScreen() {
     setTimeline([...timeline, newEvent]);
   };
 
-  const handleCompleteDelivery = () => {
-    if (!deliveryProof) {
-      Alert.alert('Thông báo', 'Vui lòng chụp ảnh chứng từ giao hàng');
-      return;
+  const handleCompleteDelivery = async () => {
+    try {
+      if (!deliveryProof) {
+        Alert.alert('Thông báo', 'Vui lòng chụp ảnh chứng từ giao hàng');
+        return;
+      }
+      
+      if (!orderId) return;
+      
+      await shipperOrderService.markAsDelivered(orderId, 'Đơn hàng đã được giao thành công');
+      setOrderStatus('Delivered');
+      const newEvent = {
+        status: 'delivered',
+        time: new Date().toLocaleString('vi-VN'),
+        label: 'Giao hàng thành công',
+      };
+      setTimeline([...timeline, newEvent]);
+      Alert.alert('Hoàn thành', 'Bạn đã giao hàng thành công!', [
+        {
+          text: 'OK',
+          onPress: () => router.back(),
+        },
+      ]);
+    } catch (error) {
+      console.error('[OrderDetail] Error completing delivery:', error);
+      Alert.alert('Lỗi', 'Không thể hoàn thành giao hàng. Vui lòng thử lại.');
     }
-    setOrderStatus('completed');
-    const newEvent = {
-      status: 'completed',
-      time: new Date().toLocaleString('vi-VN'),
-      label: 'Giao hàng thành công',
-    };
-    setTimeline([...timeline, newEvent]);
-    Alert.alert('Hoàn thành', 'Bạn đã giao hàng thành công!', [
-      {
-        text: 'OK',
-        onPress: () => router.back(),
-      },
-    ]);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'Confirmed': return '#2196F3';
+      case 'Shipping': return '#FF9800';
+      case 'Delivered': return '#4CAF50';
+      case 'Cancelled': return '#F44336';
       case 'new': return '#2196F3';
       case 'accepted': return '#9C27B0';
       case 'picking_up': return '#FF9800';
@@ -207,6 +414,10 @@ export default function OrderDetailScreen() {
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'Confirmed': return 'Đã xác nhận';
+      case 'Shipping': return 'Đang giao';
+      case 'Delivered': return 'Đã giao';
+      case 'Cancelled': return 'Đã hủy';
       case 'new': return 'Đơn mới';
       case 'accepted': return 'Đã nhận';
       case 'picking_up': return 'Đang lấy hàng';
@@ -217,6 +428,29 @@ export default function OrderDetailScreen() {
       default: return status;
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#E24A4A" />
+        <Text style={styles.loadingText}>Đang tải thông tin đơn hàng...</Text>
+      </View>
+    );
+  }
+
+  // Show error state if no data
+  if (!orderData) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Ionicons name="alert-circle-outline" size={64} color="#999" />
+        <Text style={styles.errorText}>Không tìm thấy thông tin đơn hàng</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchOrderDetail}>
+          <Text style={styles.retryButtonText}>Thử lại</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -239,8 +473,8 @@ export default function OrderDetailScreen() {
               {getStatusText(orderStatus)}
             </Text>
           </View>
-          <Text style={styles.orderId}>#{mockOrderDetail.id}</Text>
-          <Text style={styles.orderDate}>{mockOrderDetail.orderDate}</Text>
+          <Text style={styles.orderId}>#{orderData.orderNumber}</Text>
+          <Text style={styles.orderDate}>{formatDate(orderData.createdAt)}</Text>
         </View>
 
         {/* Timeline */}
@@ -260,14 +494,14 @@ export default function OrderDetailScreen() {
           </View>
         </View>
 
-        {/* Shop Info (Pickup) */}
-        <View style={styles.section}>
+        {/* Shop Info (Pickup) - Sử dụng thông tin từ backend */}
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>🏪 Lấy hàng tại</Text>
           <View style={styles.locationCard}>
             <View style={styles.locationHeader}>
               <View>
-                <Text style={styles.locationName}>{mockOrderDetail.shopName}</Text>
-                <Text style={styles.locationPhone}>{mockOrderDetail.shopPhone}</Text>
+                <Text style={styles.locationName}>Nhà sách (BookStore)</Text>
+                <Text style={styles.locationPhone}>{orderData.address?.phoneNumber || 'Chưa có SĐT'}</Text>
               </View>
               <TouchableOpacity onPress={handleCallShop} style={styles.callIconButton}>
                 <Ionicons name="call" size={20} color="#4CAF50" />
@@ -275,23 +509,16 @@ export default function OrderDetailScreen() {
             </View>
             <View style={styles.locationAddress}>
               <Ionicons name="location-outline" size={18} color="#666" />
-              <Text style={styles.addressText}>{mockOrderDetail.shopAddress}</Text>
+              <Text style={styles.addressText}>{formatAddress(orderData.address)}</Text>
             </View>
             <View style={styles.locationFooter}>
-              <View style={styles.distanceInfo}>
-                <Ionicons name="navigate-outline" size={16} color="#FF9800" />
-                <Text style={styles.distanceText}>{mockOrderDetail.pickupDistance}</Text>
-                <Text style={styles.separator}>•</Text>
-                <Ionicons name="time-outline" size={16} color="#2196F3" />
-                <Text style={styles.distanceText}>{mockOrderDetail.estimatedPickupTime}</Text>
-              </View>
               <TouchableOpacity onPress={handleNavigateToShop} style={styles.navigateSmallButton}>
                 <Ionicons name="navigate" size={16} color="#2196F3" />
                 <Text style={styles.navigateSmallText}>Chỉ đường</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </View> */}
 
         {/* Customer Info (Delivery) */}
         <View style={styles.section}>
@@ -299,8 +526,8 @@ export default function OrderDetailScreen() {
           <View style={styles.locationCard}>
             <View style={styles.locationHeader}>
               <View>
-                <Text style={styles.locationName}>{mockOrderDetail.customerName}</Text>
-                <Text style={styles.locationPhone}>{mockOrderDetail.customerPhone}</Text>
+                <Text style={styles.locationName}>{orderData.address?.recipientName || orderData.customerName}</Text>
+                <Text style={styles.locationPhone}>{orderData.customerPhone || orderData.address?.phoneNumber}</Text>
               </View>
               <TouchableOpacity onPress={handleCallCustomer} style={styles.callIconButton}>
                 <Ionicons name="call" size={20} color="#4CAF50" />
@@ -308,16 +535,9 @@ export default function OrderDetailScreen() {
             </View>
             <View style={styles.locationAddress}>
               <Ionicons name="location-outline" size={18} color="#666" />
-              <Text style={styles.addressText}>{mockOrderDetail.deliveryAddress}</Text>
+              <Text style={styles.addressText}>{formatAddress(orderData.address)}</Text>
             </View>
             <View style={styles.locationFooter}>
-              <View style={styles.distanceInfo}>
-                <Ionicons name="navigate-outline" size={16} color="#4CAF50" />
-                <Text style={styles.distanceText}>{mockOrderDetail.deliveryDistance}</Text>
-                <Text style={styles.separator}>•</Text>
-                <Ionicons name="time-outline" size={16} color="#2196F3" />
-                <Text style={styles.distanceText}>{mockOrderDetail.estimatedDeliveryTime}</Text>
-              </View>
               <TouchableOpacity onPress={handleNavigateToCustomer} style={styles.navigateSmallButton}>
                 <Ionicons name="navigate" size={16} color="#2196F3" />
                 <Text style={styles.navigateSmallText}>Chỉ đường</Text>
@@ -327,29 +547,44 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Notes */}
-        {mockOrderDetail.notes && (
+        {orderData.address?.note && (
           <View style={styles.notesCard}>
             <Ionicons name="alert-circle" size={20} color="#FF9800" />
             <View style={{ flex: 1 }}>
               <Text style={styles.notesTitle}>Ghi chú</Text>
-              <Text style={styles.notesText}>{mockOrderDetail.notes}</Text>
+              <Text style={styles.notesText}>{orderData.address.note}</Text>
             </View>
           </View>
         )}
 
         {/* Order Items */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📦 Sản phẩm ({mockOrderDetail.items.length})</Text>
-          {mockOrderDetail.items.map((item) => (
-            <View key={item.id} style={styles.itemCard}>
-              <Image source={{ uri: item.image }} style={styles.itemImage} />
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>{item.price.toLocaleString('vi-VN')}đ x {item.quantity}</Text>
+          <Text style={styles.sectionTitle}>📦 Sản phẩm ({orderData.items.length})</Text>
+          {orderData.items.map((item, index) => {
+            const imageUrl = getImageUrl(item.bookImageUrl);
+            console.log(`[OrderDetail] Rendering item ${index}:`, item.bookTitle, 'Image URL:', imageUrl);
+            
+            return (
+              <View key={item.id} style={styles.itemCard}>
+                <Image 
+                  source={{ uri: imageUrl }} 
+                  style={styles.itemImage}
+                  resizeMode="cover"
+                  onError={(e) => {
+                    console.error(`[OrderDetail] Image load error for item ${index} (${item.bookTitle}):`, e.nativeEvent.error);
+                  }}
+                  onLoad={() => {
+                    console.log(`[OrderDetail] Image loaded successfully for: ${item.bookTitle}`);
+                  }}
+                />
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemName}>{item.bookTitle}</Text>
+                  <Text style={styles.itemPrice}>{item.unitPrice.toLocaleString('vi-VN')}đ x {item.quantity}</Text>
+                </View>
+                <Text style={styles.itemTotal}>{(item.unitPrice * item.quantity).toLocaleString('vi-VN')}đ</Text>
               </View>
-              <Text style={styles.itemTotal}>{(item.price * item.quantity).toLocaleString('vi-VN')}đ</Text>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* Payment Info */}
@@ -358,28 +593,32 @@ export default function OrderDetailScreen() {
           <View style={styles.paymentCard}>
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Tổng tiền hàng:</Text>
-              <Text style={styles.paymentValue}>{mockOrderDetail.totalAmount.toLocaleString('vi-VN')}đ</Text>
+              <Text style={styles.paymentValue}>{orderData.totalAmount.toLocaleString('vi-VN')}đ</Text>
             </View>
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Phí vận chuyển:</Text>
-              <Text style={styles.shippingFeeText}>+{mockOrderDetail.shippingFee.toLocaleString('vi-VN')}đ</Text>
+              <Text style={styles.shippingFeeText}>
+                +{(orderData.finalAmount - orderData.totalAmount).toLocaleString('vi-VN')}đ
+              </Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.paymentRow}>
               <Text style={styles.totalLabel}>Tổng cộng:</Text>
               <Text style={styles.totalValue}>
-                {(mockOrderDetail.totalAmount + mockOrderDetail.shippingFee).toLocaleString('vi-VN')}đ
+                {orderData.finalAmount.toLocaleString('vi-VN')}đ
               </Text>
             </View>
             <View style={styles.paymentStatusRow}>
               <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
               <Text style={styles.paymentStatusText}>
-                Khách đã thanh toán {mockOrderDetail.paymentMethod}
+                Khách đã thanh toán
               </Text>
             </View>
             <View style={styles.shippingFeeEarn}>
               <Text style={styles.earnLabel}>Thu nhập của bạn:</Text>
-              <Text style={styles.earnValue}>+{mockOrderDetail.shippingFee.toLocaleString('vi-VN')}đ</Text>
+              <Text style={styles.earnValue}>
+                +{(orderData.finalAmount - orderData.totalAmount).toLocaleString('vi-VN')}đ
+              </Text>
             </View>
           </View>
         </View>
@@ -425,10 +664,10 @@ export default function OrderDetailScreen() {
 
       {/* Bottom Action Buttons */}
       <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 10 }]}>
-        {orderStatus === 'new' && (
+        {orderStatus === 'Confirmed' && (
           <TouchableOpacity style={styles.primaryButton} onPress={handleAcceptOrder}>
             <Ionicons name="checkmark-circle" size={22} color="#fff" />
-            <Text style={styles.primaryButtonText}>Nhận đơn hàng</Text>
+            <Text style={styles.primaryButtonText}>Nhận đơn và bắt đầu giao</Text>
           </TouchableOpacity>
         )}
 
@@ -457,7 +696,7 @@ export default function OrderDetailScreen() {
           </TouchableOpacity>
         )}
 
-        {orderStatus === 'delivering' && (
+        {(orderStatus === 'Shipping' || orderStatus === 'delivering') && (
           <TouchableOpacity 
             style={[styles.primaryButton, !deliveryProof && styles.disabledButton]} 
             onPress={handleCompleteDelivery}
@@ -468,7 +707,7 @@ export default function OrderDetailScreen() {
           </TouchableOpacity>
         )}
 
-        {orderStatus === 'completed' && (
+        {(orderStatus === 'Delivered' || orderStatus === 'completed') && (
           <View style={styles.completedBanner}>
             <Ionicons name="checkmark-circle" size={32} color="#4CAF50" />
             <Text style={styles.completedText}>Đã hoàn thành giao hàng</Text>
@@ -848,5 +1087,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#4CAF50',
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 20,
+    backgroundColor: '#E24A4A',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

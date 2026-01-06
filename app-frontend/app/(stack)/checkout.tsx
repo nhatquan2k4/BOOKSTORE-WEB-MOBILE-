@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, Modal, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCart } from '@/app/providers/CartProvider';
@@ -24,11 +25,34 @@ export default function CheckoutScreen() {
   const { addNotification } = useNotifications();
   const { theme, isDarkMode } = useTheme();
 
+  const insets = useSafeAreaInsets();
+
   // Local snackbar for transient in-page messages (better UX than Alert.alert)
   const [snackbar, setSnackbar] = useState<{ message: string; type?: 'info'|'error'|'success' } | null>(null);
+  const snackbarAnim = useRef(new Animated.Value(0)).current;
+  const snackbarTimeoutRef = useRef<number | null>(null);
+
   const showSnackbar = (message: string, type: 'info'|'error'|'success' = 'info', duration = 2500) => {
+    // Clear existing timeout
+    if (snackbarTimeoutRef.current) {
+      clearTimeout(snackbarTimeoutRef.current as any);
+      snackbarTimeoutRef.current = null;
+    }
+
     setSnackbar({ message, type });
-    setTimeout(() => setSnackbar(null), duration);
+
+    // Animate in
+    snackbarAnim.setValue(0);
+    Animated.parallel([
+      Animated.timing(snackbarAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+    ]).start();
+
+    // Auto dismiss
+    snackbarTimeoutRef.current = setTimeout(() => {
+      Animated.timing(snackbarAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+        setSnackbar(null);
+      });
+    }, duration) as unknown as number;
   };
   
   // Determine checkout source: from cart or from book-detail (buy-now)
@@ -497,7 +521,7 @@ export default function CheckoutScreen() {
         
         // Prefer in-app snackbar + notification instead of native alert
         showSnackbar(`Đặt hàng thành công — ${result.orderCode}`, 'success');
-        addNotification({ type: 'order', title: 'Đặt hàng thành công', message: `Mã: ${result.orderCode}`, orderId: result.orderId });
+  addNotification({ type: 'order', title: 'Đặt hàng thành công', message: `Mã: ${result.orderCode}` });
         // Navigate back after short delay so user sees snackbar
         setTimeout(() => router.back(), 1200);
       } else {
@@ -681,7 +705,6 @@ export default function CheckoutScreen() {
         type: 'payment',
         title: 'Thanh toán thành công',
         message: `Đơn hàng của bạn đã được thanh toán. Tổng tiền: ${totalPayment.toLocaleString('vi-VN')}₫`,
-        orderId: currentOrderId,
       });
 
       // Close modal
@@ -1081,11 +1104,27 @@ export default function CheckoutScreen() {
         </View>
       </Modal>
 
-      {/* Snackbar (in-app) */}
+      {/* Snackbar (in-app) - animated from top */}
       {snackbar && (
-        <View style={[styles.snackbar, snackbar.type === 'error' ? { backgroundColor: theme.error } : snackbar.type === 'success' ? { backgroundColor: theme.success } : { backgroundColor: theme.primary }]}>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.snackbar,
+            {
+              backgroundColor: snackbar.type === 'error' ? theme.error : snackbar.type === 'success' ? theme.success : theme.primary,
+              top: insets.top + 12,
+              transform: [
+                {
+                  translateY: snackbarAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }),
+                },
+                { scale: snackbarAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }) },
+              ],
+              opacity: snackbarAnim,
+            },
+          ]}
+        >
           <Text style={styles.snackbarText}>{snackbar.message}</Text>
-        </View>
+        </Animated.View>
       )}
     </View>
   );
@@ -1173,19 +1212,22 @@ const styles = StyleSheet.create({
   confirmPaymentBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 10, gap: 8, marginBottom: 12 },
   confirmPaymentText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   qrModalNote: { fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
-  snackbar: { 
-    position: 'absolute', 
-    left: 0, 
-    right: 0, 
-    bottom: 50, 
-    marginHorizontal: 16, 
-    borderRadius: 8, 
-    padding: 12, 
-    shadowColor: '#000', 
-    shadowOpacity: 0.2, 
-    shadowOffset: { width: 0, height: 2 }, 
-    shadowRadius: 4, 
-    elevation: 3 
+  snackbar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    marginHorizontal: 16,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 20,
+    zIndex: 9999,
   },
   snackbarText: { color: '#fff', fontWeight: '500' },
   snackbarError: {},
