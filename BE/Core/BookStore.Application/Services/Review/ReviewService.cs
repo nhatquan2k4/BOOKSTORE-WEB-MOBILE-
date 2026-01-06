@@ -78,7 +78,7 @@ namespace BookStore.Application.Services.Review
                 Rating = dto.Rating,
                 Title = dto.Title,
                 Content = dto.Content,
-                Status = "Pending",
+                Status = "Approved",
                 IsVerifiedPurchase = true,
                 CreatedAt = DateTime.UtcNow
             };
