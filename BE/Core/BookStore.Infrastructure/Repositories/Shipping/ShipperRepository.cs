@@ -116,6 +116,11 @@ namespace BookStore.Infrastructure.Repositories.Shipping
             return shipper?.Shipments.Count ?? 0;
         }
 
+        public async Task<Shipper?> GetByUserIdAsync(Guid userId)
+        {
+            return await _dbSet.FirstOrDefaultAsync(s => s.UserId == userId);
+        }
+
         public async Task SetShipperStatusAsync(Guid shipperId, bool isActive)
         {
             var shipper = await GetByIdAsync(shipperId);

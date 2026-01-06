@@ -85,7 +85,7 @@ namespace BookStore.Application.Services.Shipping
 
         public async Task<IEnumerable<ShipmentDto>> GetAllShipmentsAsync()
         {
-            var shipments = await _shipmentRepository.GetAllAsync();
+            var shipments = await _shipmentRepository.GetAllWithDetailsAsync();
             return shipments.Select(s => s.ToDto());
         }
 

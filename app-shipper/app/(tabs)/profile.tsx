@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Alert,
   Image,
@@ -9,14 +9,63 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
+import { profileService, UserProfile } from '@/services/profileService';
+import { API_CONFIG } from '@/constants/config';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    console.log('[Profile] User from AuthContext:', {
+      id: user?.id,
+      email: user?.email,
+      fullName: user?.fullName,
+      phoneNumber: user?.phoneNumber,
+    });
+    loadProfileData();
+  }, []);
+
+  // Reload profile when screen comes into focus (returning from personal-info)
+  useFocusEffect(
+    useCallback(() => {
+      loadProfileData();
+    }, [])
+  );
+
+  const loadProfileData = async () => {
+    try {
+      // Don't show loading spinner if we already have data (refreshing)
+      if (!profile) {
+        setLoading(true);
+      }
+      const profileData = await profileService.getMyProfile();
+      console.log('[Profile] Loaded profile data:', {
+        id: profileData.id,
+        userId: profileData.userId,
+        fullName: profileData.fullName,
+        phoneNumber: profileData.phoneNumber,
+        avatarUrl: profileData.avatarUrl,
+      });
+      console.log('[Profile] Full profile object:', profileData);
+      setProfile(profileData);
+    } catch (error: any) {
+      console.error('Error loading profile:', error);
+      // Only show alert if we don't have any data yet
+      if (!profile) {
+        Alert.alert('Lỗi', 'Không thể tải thông tin profile');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleViewMonthlyDetails = () => {
     router.push('/earnings');
@@ -79,6 +128,35 @@ export default function ProfileScreen() {
     { id: 7, icon: 'help-circle-outline', title: 'Trợ giúp', color: '#00BCD4' },
   ];
 
+  // Helper function to get full avatar URL
+  const getAvatarUrl = () => {
+    if (profile?.avatarUrl) {
+      // If avatarUrl starts with http, use it directly
+      if (profile.avatarUrl.startsWith('http')) {
+        console.log('[Profile] Avatar URL (full):', profile.avatarUrl);
+        return profile.avatarUrl;
+      }
+      // Otherwise, prepend with IMAGE_BASE_URL
+      const fullUrl = `${API_CONFIG.IMAGE_BASE_URL}${profile.avatarUrl}`;
+      console.log('[Profile] Avatar URL (constructed):', fullUrl);
+      return fullUrl;
+    }
+    // Default avatar
+    console.log('[Profile] Using default avatar');
+    return 'https://i.pravatar.cc/150?img=12';
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#E24A4A" />
+          <Text style={styles.loadingText}>Đang tải thông tin...</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -87,14 +165,20 @@ export default function ProfileScreen() {
           <View style={styles.profileInfo}>
             <View style={styles.avatarContainer}>
               <Image
-                source={{ uri: 'https://i.pravatar.cc/150?img=12' }}
+                source={{ uri: getAvatarUrl() }}
                 style={styles.avatar}
+                onError={(error) => {
+                  console.error('[Profile] Image load error:', error.nativeEvent.error);
+                }}
+                onLoad={() => {
+                  console.log('[Profile] Image loaded successfully:', getAvatarUrl());
+                }}
               />
               <View style={styles.onlineIndicator} />
             </View>
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>{user?.fullName || 'Shipper'}</Text>
-              <Text style={styles.userPhone}>{user?.phoneNumber || user?.email || 'N/A'}</Text>
+              <Text style={styles.userName}>{profile?.fullName || user?.fullName || 'Shipper'}</Text>
+              <Text style={styles.userPhone}>{profile?.phoneNumber || user?.phoneNumber || user?.email || 'N/A'}</Text>
               <View style={styles.ratingContainer}>
                 <Ionicons name="star" size={16} color="#FFD700" />
                 <Text style={styles.rating}>4.9</Text>
@@ -104,7 +188,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Statistics Cards */}
+        {/* Statistics Cards
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <View style={[styles.statIcon, { backgroundColor: '#E8F5E9' }]}>
@@ -127,9 +211,9 @@ export default function ProfileScreen() {
             <Text style={styles.statValue}>45M</Text>
             <Text style={styles.statLabel}>Tổng thu nhập</Text>
           </View>
-        </View>
+        </View> */}
 
-        {/* This Month Stats */}
+        {/* This Month Stats
         <View style={styles.monthlyStats}>
           <View style={styles.monthlyHeader}>
             <Text style={styles.monthlyTitle}>Tháng này</Text>
@@ -154,7 +238,7 @@ export default function ProfileScreen() {
               <Text style={styles.monthlyItemValue}>5.8M</Text>
             </View>
           </View>
-        </View>
+        </View> */}
 
         {/* Menu Items */}
         <View style={styles.menuContainer}>
@@ -416,5 +500,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     marginTop: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#666',
   },
 });

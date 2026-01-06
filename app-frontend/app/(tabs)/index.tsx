@@ -733,7 +733,7 @@ export default function HomeScreen() {
           {/* Header Content on top - Centered */}
           <View style={styles.header}>
             <View style={styles.headerTextContainer}>
-              <Text style={styles.greeting}>Chào Mừng Bạn Đến Với BookStore</Text>
+              <Text style={styles.greeting}>Chào Mừng Bạn Đến Với Bờ Úc Búc</Text>
               <Text style={styles.subtitle}>Bạn muốn đọc gì hôm nay?</Text>
             </View>
           </View>

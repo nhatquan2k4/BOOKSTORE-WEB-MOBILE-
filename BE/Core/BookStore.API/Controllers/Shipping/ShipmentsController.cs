@@ -11,14 +11,17 @@ namespace BookStore.API.Controllers.Shipping
     public class ShipmentsController : ControllerBase
     {
         private readonly IShipmentService _shipmentService;
+        private readonly IShipperService _shipperService;
         private readonly ILogger<ShipmentsController> _logger;
 
         public ShipmentsController(
             IShipmentService shipmentService,
-            ILogger<ShipmentsController> logger)
+            ILogger<ShipmentsController> logger,
+            IShipperService shipperService)
         {
             _shipmentService = shipmentService;
             _logger = logger;
+            _shipperService = shipperService;
         }
 
         #region Query Methods
@@ -91,7 +94,7 @@ namespace BookStore.API.Controllers.Shipping
         #region Create Operations
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Shipper")]
         public async Task<IActionResult> Create([FromBody] CreateShipmentDto dto)
         {
             if (!ModelState.IsValid)
@@ -99,6 +102,27 @@ namespace BookStore.API.Controllers.Shipping
 
             try
             {
+                // If caller is a Shipper, ensure they can only create shipments for themselves
+                if (User.IsInRole("Shipper"))
+                {
+                    var userIdClaim = User.FindFirst("userId") ?? User.FindFirst("sub") ?? User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+                    if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userGuid))
+                        return Unauthorized(new { message = "Không xác thực được user" });
+
+                    // Resolve shipper for this authenticated user
+                    var shipper = await _shipperService.GetShipperByUserIdAsync(userGuid);
+                    if (shipper == null)
+                        return Forbid("Không tìm thấy thông tin shipper cho user hiện tại");
+
+                    // If client provided a different ShipperId, reject it
+                    if (dto.ShipperId != Guid.Empty && dto.ShipperId != shipper.Id)
+                    {
+                        return StatusCode(403, new { message = "Bạn không có quyền tạo vận đơn cho shipper khác" });
+                    }
+
+                    // Overwrite DTO shipper id to ensure ownership enforcement
+                    dto.ShipperId = shipper.Id;
+                }
                 var shipment = await _shipmentService.CreateShipmentAsync(dto);
                 return CreatedAtAction(
                     nameof(GetById),

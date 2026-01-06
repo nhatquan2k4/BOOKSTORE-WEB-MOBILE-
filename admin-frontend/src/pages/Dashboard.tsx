@@ -14,8 +14,8 @@ const Dashboard: React.FC = () => {
         totalRevenue: 0,
         revenueChange: 0,
     });
-    const [recentOrders, setRecentOrders] = useState<any[]>([]);
     const [topBooks, setTopBooks] = useState<any[]>([]);
+    const [revenueByDay, setRevenueByDay] = useState<{ date: string; revenue: number }[]>([]);
 
     useEffect(() => {
         fetchDashboardData();
@@ -106,12 +106,16 @@ const Dashboard: React.FC = () => {
                 }
             }
 
-            // Convert to array, sort by revenue, and take top 4
+            // Convert to array, sort by quantity sold, and take top 4
             const topBooksArray = Array.from(bookSalesMap.values())
-                .sort((a, b) => b.totalRevenue - a.totalRevenue)
-                .slice(0, 4);
+                .sort((a, b) => b.totalQuantitySold - a.totalQuantitySold)
+                .slice(0, 4)
+                .map(b => ({
+                    ...b,
+                    totalRevenue: undefined // remove reliance on revenue in UI
+                }));
 
-            console.log('🏆 Top selling books:', topBooksArray);
+            console.log('🏆 Top selling books by quantity:', topBooksArray);
             console.log('📊 Setting topBooks state with', topBooksArray.length, 'books');
             setTopBooks(topBooksArray);
 
@@ -121,22 +125,66 @@ const Dashboard: React.FC = () => {
         }
     };
 
+    // Aggregate revenue per day by paginating orders (client-side)
+    const fetchRevenueByDays = async (days = 30) => {
+        try {
+            const pageSize = 500;
+            let page = 1;
+            let allOrders: any[] = [];
+
+            while (true) {
+                const resp = await orderService.getAll({ page, pageSize });
+                const items = resp.data || resp.items || [];
+                allOrders.push(...items);
+                if (items.length < pageSize) break;
+                page++;
+            }
+
+            // Keep only paid/completed/delivered orders
+            const paidOrders = allOrders.filter((o: any) => {
+                const status = (o.status || '').toLowerCase();
+                const payment = (o.paymentStatus || '').toLowerCase();
+                return status === 'paid' || status === 'completed' || status === 'delivered' || payment === 'paid';
+            });
+
+            // Aggregate totals by date (YYYY-MM-DD)
+            const map = new Map<string, number>();
+            for (const o of paidOrders) {
+                const created = o.createdAt || o.created || o.orderDate || o.createdAtUtc;
+                const dt = created ? new Date(created) : new Date();
+                const key = dt.toISOString().slice(0, 10);
+                const total = Number(o.totalAmount || o.total || o.grandTotal || 0) || 0;
+                map.set(key, (map.get(key) || 0) + total);
+            }
+
+            // Build last N days array
+            const arr: { date: string; revenue: number }[] = [];
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const key = d.toISOString().slice(0, 10);
+                arr.push({ date: key, revenue: map.get(key) || 0 });
+            }
+
+            setRevenueByDay(arr);
+        } catch (err) {
+            console.error('Error fetching revenue by days:', err);
+            setRevenueByDay([]);
+        }
+    };
+
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
             
             // Fetch all dashboard data with individual error handling
-            const [orderStatsData, revenueData, recentOrdersData, booksCountData, usersCountData] = await Promise.allSettled([
+            const [orderStatsData, revenueData, booksCountData, usersCountData] = await Promise.allSettled([
                 dashboardService.getOrderStats().catch(err => {
                     console.error('Error fetching order stats:', err);
                     return null;
                 }),
                 dashboardService.getRevenue().catch(err => {
                     console.error('Error fetching revenue:', err);
-                    return null;
-                }),
-                orderService.getAll({ page: 1, pageSize: 4 }).catch(err => {
-                    console.error('Error fetching recent orders:', err);
                     return null;
                 }),
                 dashboardService.getBooksCount().catch(err => {
@@ -152,7 +200,6 @@ const Dashboard: React.FC = () => {
             // Extract values from settled promises
             const orderStats = orderStatsData.status === 'fulfilled' ? orderStatsData.value : null;
             const revenue = revenueData.status === 'fulfilled' ? revenueData.value : null;
-            const recentOrders = recentOrdersData.status === 'fulfilled' ? recentOrdersData.value : null;
             const booksCount = booksCountData.status === 'fulfilled' ? booksCountData.value : 0;
             const usersCount = usersCountData.status === 'fulfilled' ? usersCountData.value : 0;
 
@@ -168,8 +215,8 @@ const Dashboard: React.FC = () => {
                 revenueChange: revenue?.percentageChange || 0,
             });
 
-            // Set recent orders
-            setRecentOrders(recentOrders?.data || recentOrders?.items || []);
+            // Fetch revenue by day (30 days)
+            await fetchRevenueByDays(30);
 
             // Calculate top selling books from paid orders
             await calculateTopBooksFromOrders();
@@ -226,29 +273,7 @@ const Dashboard: React.FC = () => {
         },
     ];
 
-    const getStatusColor = (status: string) => {
-        const colors: Record<string, string> = {
-            pending: 'bg-yellow-100 text-yellow-800',
-            processing: 'bg-blue-100 text-blue-800',
-            shipped: 'bg-purple-100 text-purple-800',
-            delivered: 'bg-green-100 text-green-800',
-            completed: 'bg-green-100 text-green-800',
-            cancelled: 'bg-red-100 text-red-800',
-        };
-        return colors[status] || 'bg-gray-100 text-gray-800';
-    };
-
-    const getStatusText = (status: string) => {
-        const texts: Record<string, string> = {
-            pending: 'Chờ xử lý',
-            processing: 'Đang xử lý',
-            shipped: 'Đang giao',
-            delivered: 'Đã giao',
-            completed: 'Hoàn thành',
-            cancelled: 'Đã hủy',
-        };
-        return texts[status] || status;
-    };
+    // ...status helpers removed (not used in dashboard chart)
 
     if (loading) {
         return (
@@ -294,37 +319,47 @@ const Dashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Recent Orders */}
+                {/* Revenue by Day Chart */}
                 <div className="bg-white rounded-lg shadow">
                     <div className="p-6 border-b border-gray-200">
-                        <h2 className="text-lg font-semibold text-gray-800">Đơn hàng gần đây</h2>
+                        <h2 className="text-lg font-semibold text-gray-800">Doanh thu theo ngày</h2>
+                        <p className="text-sm text-gray-500 mt-1">Tổng doanh thu trong 30 ngày gần nhất</p>
                     </div>
                     <div className="p-6">
-                        {recentOrders.length === 0 ? (
-                            <p className="text-gray-500 text-center py-4">Chưa có đơn hàng nào</p>
+                        {(!revenueByDay || revenueByDay.length === 0) ? (
+                            <p className="text-gray-500 text-center py-4">Chưa có dữ liệu doanh thu</p>
                         ) : (
-                            <div className="space-y-4">
-                                {recentOrders.map((order) => (
-                                    <div key={order.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                                        <div className="flex-1">
-                                            <p className="font-medium text-gray-800">{order.orderNumber || order.id}</p>
-                                            <p className="text-sm text-gray-500">{order.customerName || ''}</p>
-                                            {order.items && order.items.length > 0 && (
-                                                <p className="text-xs text-gray-400 mt-1">
-                                                    {order.items.length} sản phẩm
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="text-right ml-4">
-                                            <p className="font-semibold text-gray-800">
-                                                {(order.totalAmount || 0).toLocaleString('vi-VN')}₫
-                                            </p>
-                                            <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(order.status)}`}>
-                                                {getStatusText(order.status)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="w-full h-48">
+                                {/* Simple SVG line chart */}
+                                <svg viewBox="0 0 600 200" preserveAspectRatio="none" className="w-full h-full">
+                                    {/* Compute points */}
+                                    {(() => {
+                                        // Use only non-zero revenue days for line connections
+                                        const nonZero = revenueByDay
+                                            .map((r, i) => ({ ...r, index: i }))
+                                            .filter(r => r.revenue > 0);
+                                        if (nonZero.length === 0) return null;
+
+                                        const values = nonZero.map(r => r.revenue);
+                                        const max = Math.max(...values, 1);
+                                        const stepX = 600 / Math.max(1, values.length - 1);
+                                        const points = values.map((v, i) => `${i * stepX},${200 - (v / max) * 180}`).join(' ');
+
+                                        return (
+                                            <>
+                                                <polyline fill="none" stroke="#ec4899" strokeWidth="3" points={points} strokeLinejoin="round" strokeLinecap="round" />
+                                                {values.map((v, i) => (
+                                                    <circle key={i} cx={i * stepX} cy={200 - (v / max) * 180} r={3} fill="#ec4899" />
+                                                ))}
+                                            </>
+                                        );
+                                    })()}
+                                </svg>
+                                <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+                                    <span>{revenueByDay[0].date}</span>
+                                    <span>{revenueByDay[Math.floor(revenueByDay.length/2)].date}</span>
+                                    <span>{revenueByDay[revenueByDay.length - 1].date}</span>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -340,67 +375,38 @@ const Dashboard: React.FC = () => {
                         {!topBooks || topBooks.length === 0 ? (
                             <p className="text-gray-500 text-center py-4">Chưa có dữ liệu bán hàng</p>
                         ) : (
-                            <div className="space-y-5">
-                                {topBooks.map((book, index) => {
-                                    const maxRevenue = Math.max(...topBooks.map(b => b.totalRevenue || 0));
-                                    const percentage = maxRevenue > 0 ? ((book.totalRevenue || 0) / maxRevenue) * 100 : 0;
-                                    const colors = [
-                                        'bg-gradient-to-r from-blue-500 to-blue-600',
-                                        'bg-gradient-to-r from-purple-500 to-purple-600',
-                                        'bg-gradient-to-r from-pink-500 to-pink-600',
-                                        'bg-gradient-to-r from-orange-500 to-orange-600',
-                                    ];
-                                    
-                                    return (
-                                        <div key={index} className="relative">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                    <span className="flex-shrink-0 w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-600">
-                                                        {index + 1}
-                                                    </span>
-                                                    <p className="font-medium text-gray-800 truncate flex-1">
-                                                        {book.bookTitle}
-                                                    </p>
+                            <div className="w-full overflow-x-auto">
+                                <div className="flex items-end space-x-6 py-4 px-2" style={{ minWidth: Math.max(300, topBooks.length * 160) }}>
+                                    {topBooks.map((book, index) => {
+                                        const maxQty = Math.max(...topBooks.map(b => b.totalQuantitySold || 0));
+                                        const heightPct = maxQty > 0 ? ((book.totalQuantitySold || 0) / maxQty) * 100 : 0;
+                                        const colors = [
+                                            'bg-blue-500',
+                                            'bg-purple-500',
+                                            'bg-pink-500',
+                                            'bg-orange-500',
+                                        ];
+
+                                        return (
+                                            <div key={index} className="flex flex-col items-center w-40">
+                                                <div className="w-full h-48 flex items-end justify-center">
+                                                    <div
+                                                        className={`${colors[index % colors.length]} w-3/4 rounded-t-md transition-all duration-700`}
+                                                        style={{ height: `${heightPct}%` }}
+                                                        title={`${book.totalQuantitySold} bản`}
+                                                    />
                                                 </div>
-                                                <p className="font-bold text-gray-900 ml-3 flex-shrink-0">
-                                                    {(book.totalRevenue || 0).toLocaleString('vi-VN')}₫
-                                                </p>
-                                            </div>
-                                            <div className="relative w-full h-8 bg-gray-100 rounded-lg overflow-hidden">
-                                                <div 
-                                                    className={`h-full ${colors[index % colors.length]} rounded-lg transition-all duration-1000 ease-out flex items-center justify-between px-3`}
-                                                    style={{ 
-                                                        width: `${percentage}%`,
-                                                        animation: `slideIn 0.8s ease-out ${index * 0.1}s both`
-                                                    }}
-                                                >
-                                                    <span className="text-xs font-semibold text-white">
-                                                        {book.totalQuantitySold} bản
-                                                    </span>
-                                                    {percentage > 20 && (
-                                                        <span className="text-xs font-bold text-white opacity-80">
-                                                            {percentage.toFixed(0)}%
-                                                        </span>
-                                                    )}
+                                                <div className="mt-3 text-center w-full px-1">
+                                                    <p className="text-sm font-medium text-gray-800 truncate">{book.bookTitle}</p>
+                                                    <p className="text-xs text-gray-500">{book.totalQuantitySold} bản</p>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
                     </div>
-                    <style>{`
-                        @keyframes slideIn {
-                            from {
-                                width: 0%;
-                                opacity: 0;
-                            }
-                            to {
-                                opacity: 1;
-                            }
-                        }
-                    `}</style>
                 </div>
             </div>
         </div>

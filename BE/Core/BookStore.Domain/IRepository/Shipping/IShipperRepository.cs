@@ -29,6 +29,9 @@ namespace BookStore.Domain.IRepository.Shipping
             bool? isActive = null,
             string? searchTerm = null);
 
+        // Lấy shipper theo user account id (liên kết UserId trên entity)
+        Task<Shipper?> GetByUserIdAsync(Guid userId);
+
         // Đếm số shipment của một shipper
         Task<int> GetShipmentCountAsync(Guid shipperId);
 

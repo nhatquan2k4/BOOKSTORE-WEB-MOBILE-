@@ -69,6 +69,39 @@ namespace BookStore.API.Controllers.Shipping
             return Ok(new { shipperId = id, shipmentCount = count });
         }
 
+        // GET: api/shippers/me
+        [HttpGet("me")]
+        [Authorize(Roles = "Shipper,Admin")]
+        public async Task<IActionResult> GetCurrentShipper()
+        {
+            // Try to read user id from claims (sub or nameidentifier)
+            var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+            if (userIdClaim == null)
+                return Unauthorized(new { message = "Không có thông tin user" });
+
+            if (!Guid.TryParse(userIdClaim.Value, out var userGuid))
+            {
+                return BadRequest(new { message = "User id không hợp lệ" });
+            }
+
+            try
+            {
+                var shipper = await _shipperService.GetShipperByUserIdAsync(userGuid);
+                if (shipper == null)
+                    return NotFound(new { message = "Không tìm thấy shipper cho user hiện tại" });
+
+                return Ok(shipper);
+            }
+            catch (UserFriendlyException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi khi lấy thông tin shipper", details = ex.Message });
+            }
+        }
+
         #endregion
 
         #region Create Operations

@@ -18,6 +18,9 @@ namespace BookStore.Application.Dtos.Shipping
         // Thông tin shipper
         public ShipperDto? Shipper { get; set; }
 
+        // Thông tin đơn hàng
+        public ShipmentOrderDto? Order { get; set; }
+
         // Lịch sử trạng thái
         public List<ShipmentStatusDto>? StatusHistory { get; set; }
 
@@ -57,7 +60,7 @@ namespace BookStore.Application.Dtos.Shipping
         public string? Notes { get; set; }
         public string? ProofImageUrl { get; set; } // URL ảnh chứng minh giao hàng
     }
-    
+
     // DTO thêm điểm route
     public class CreateRoutePointDto
     {
@@ -107,5 +110,49 @@ namespace BookStore.Application.Dtos.Shipping
         public string? Notes { get; set; }
         public DateTime ArrivedAt { get; set; }
     }
-}
+    // DTO thông tin đơn hàng cho vận đơn
+    public class ShipmentOrderDto
+    {
+        public Guid Id { get; set; }
+        public string OrderNumber { get; set; } = null!;
+        public string Status { get; set; } = null!;
+        public decimal TotalAmount { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal FinalAmount { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? PaidAt { get; set; }
 
+        // Địa chỉ giao hàng
+        public ShipmentOrderAddressDto? Address { get; set; }
+
+        // Danh sách sản phẩm
+        public List<ShipmentOrderItemDto>? Items { get; set; }
+    }
+
+    // DTO địa chỉ giao hàng
+    public class ShipmentOrderAddressDto
+    {
+        public Guid Id { get; set; }
+        public string RecipientName { get; set; } = null!;
+        public string PhoneNumber { get; set; } = null!;
+        public string Province { get; set; } = null!;
+        public string District { get; set; } = null!;
+        public string Ward { get; set; } = null!;
+        public string Street { get; set; } = null!;
+        public string? Note { get; set; }
+
+        // Địa chỉ đầy đủ
+        public string FullAddress => $"{Street}, {Ward}, {District}, {Province}";
+    }
+
+    // DTO sản phẩm trong đơn hàng
+    public class ShipmentOrderItemDto
+    {
+        public Guid Id { get; set; }
+        public Guid BookId { get; set; }
+        public string BookTitle { get; set; } = null!;
+        public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal Subtotal { get; set; }
+    }
+}

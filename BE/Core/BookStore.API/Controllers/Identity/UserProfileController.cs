@@ -48,7 +48,7 @@ namespace BookStore.API.Controllers.Identity
             {
                 var userId = GetCurrentUserId();
                 var profile = await _userProfileService.GetUserProfileByUserIdAsync(userId);
-                
+
                 if (profile == null)
                 {
                     return NotFound(new { Success = false, Message = "Không tìm thấy thông tin profile" });

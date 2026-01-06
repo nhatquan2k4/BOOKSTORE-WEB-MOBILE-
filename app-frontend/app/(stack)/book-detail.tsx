@@ -472,9 +472,9 @@ export default function BookDetail() {
         >
           <Ionicons name="bag-outline" size={24} color={theme.error} />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.rentButton, { borderColor: theme.primary, backgroundColor: theme.cardBackground }]} onPress={() => setRentModalVisible(true)}>
+        {/* <TouchableOpacity style={[styles.rentButton, { borderColor: theme.primary, backgroundColor: theme.cardBackground }]} onPress={() => setRentModalVisible(true)}>
           <Text style={[styles.rentButtonText, { color: theme.primary }]}>Thuê </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <TouchableOpacity style={[styles.buyButton, { backgroundColor: theme.primary }]} onPress={handleBuyNow}>
           <Text style={styles.buyButtonText}>Mua Ngay</Text>
         </TouchableOpacity>

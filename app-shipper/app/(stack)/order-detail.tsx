@@ -16,13 +16,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import shipperOrderService, { ShipperOrder } from '../../services/shipperOrderService';
-import { API_CONFIG } from '../../constants/config';
+import { API_CONFIG, STORAGE_KEYS } from '../../constants/config';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function OrderDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ orderId: string; orderData?: string }>();
-  const { orderId, orderData: orderDataParam } = params;
+  const params = useLocalSearchParams<{ orderId: string; orderData?: string; orderNumber?: string }>();
+  const { orderId, orderData: orderDataParam, orderNumber } = params;
   
   // States
   const [orderData, setOrderData] = useState<ShipperOrder | null>(null);
@@ -61,11 +63,60 @@ export default function OrderDetailScreen() {
       } else {
         // Fetch from API if no data was passed
         console.log('[OrderDetail] Fetching order from API');
-        data = await shipperOrderService.getOrderDetail(orderId);
+        try {
+          data = await shipperOrderService.getOrderDetail(orderId);
+        } catch (error: any) {
+          // If 403 Forbidden, try multiple fallbacks
+          if (error.response?.status === 403) {
+            console.log('[OrderDetail] Access denied, trying fallbacks...');
+            
+            // Fallback 1: Try orderNumber endpoint
+            if (orderNumber) {
+              console.log('[OrderDetail] Fallback 1: Trying with orderNumber:', orderNumber);
+              try {
+                data = await shipperOrderService.getOrderByNumber(orderNumber as string);
+                console.log('[OrderDetail] Successfully fetched by orderNumber');
+              } catch (fallbackError1) {
+                console.error('[OrderDetail] Fallback 1 (orderNumber) failed:', fallbackError1);
+                
+                // Fallback 2: Try via shipment endpoint
+                console.log('[OrderDetail] Fallback 2: Trying via shipment...');
+                try {
+                  data = await shipperOrderService.getOrderViaShipment(orderId);
+                  console.log('[OrderDetail] Successfully fetched via shipment');
+                } catch (fallbackError2) {
+                  console.error('[OrderDetail] Fallback 2 (shipment) also failed:', fallbackError2);
+                  throw error; // Throw original error
+                }
+              }
+            } else {
+              // No orderNumber, try shipment directly
+              console.log('[OrderDetail] No orderNumber, trying shipment directly...');
+              try {
+                data = await shipperOrderService.getOrderViaShipment(orderId);
+                console.log('[OrderDetail] Successfully fetched via shipment');
+              } catch (fallbackError) {
+                console.error('[OrderDetail] Shipment fallback failed:', fallbackError);
+                throw error; // Throw original error
+              }
+            }
+          } else {
+            throw error;
+          }
+        }
       }
 
       setOrderData(data);
       setOrderStatus(data.status);
+      
+      // Load missing book images
+      if (data.items && data.items.length > 0) {
+        const itemsNeedingImages = data.items.filter(item => !item.bookImageUrl);
+        if (itemsNeedingImages.length > 0) {
+          console.log(`[OrderDetail] ${itemsNeedingImages.length} items missing bookImageUrl, fetching...`);
+          await loadMissingItemImages(data);
+        }
+      }
       
       // Debug: Log order data structure
       console.log('[OrderDetail] Full order data:', JSON.stringify(data, null, 2));
@@ -136,6 +187,41 @@ export default function OrderDetailScreen() {
     if (!address) return '';
     const parts = [address.street, address.ward, address.district, address.province];
     return parts.filter(Boolean).join(', ');
+  };
+
+  // Load missing book images from /books/{bookId}/images endpoint
+  const loadMissingItemImages = async (order: ShipperOrder) => {
+    try {
+      const token = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const updatedItems = await Promise.all(
+        order.items.map(async (item) => {
+          if (item.bookImageUrl) return item; // Already has image
+
+          try {
+            const response = await axios.get(
+              `${API_CONFIG.BASE_URL}/books/${item.bookId}/images`,
+              { headers }
+            );
+            const images = response.data;
+            if (images && images.length > 0) {
+              // Find cover image or use first image
+              const coverImage = images.find((img: any) => img.isCover) || images[0];
+              return { ...item, bookImageUrl: coverImage.imageUrl };
+            }
+          } catch (err) {
+            console.warn(`[OrderDetail] Failed to load images for book ${item.bookId}:`, err);
+          }
+          return item;
+        })
+      );
+
+      // Update order data with new images
+      setOrderData({ ...order, items: updatedItems });
+    } catch (error) {
+      console.error('[OrderDetail] Error loading missing images:', error);
+    }
   };
 
   // Build full image URL
@@ -229,6 +315,17 @@ export default function OrderDetailScreen() {
       Alert.alert('Thành công', 'Bạn đã nhận đơn hàng');
       fetchOrderDetail(); // Refresh data
     } catch (error) {
+      // If backend told us the order already has a shipment, show helpful message and navigate to shipment if possible
+      if ((error as any).code === 'ORDER_ALREADY_HAS_SHIPMENT' && (error as any).existingShipment) {
+        const shipment = (error as any).existingShipment;
+        Alert.alert('Đã có vận đơn', 'Đơn hàng này đã có vận đơn. Mở chi tiết vận đơn?', [
+          { text: 'Hủy' },
+          { text: 'Mở', onPress: () => router.push({ pathname: '/(stack)/history-order-detail', params: { id: shipment.orderId } }) }
+        ]);
+        return;
+      }
+
+      // For other errors, log and show generic alert
       console.error('[OrderDetail] Error accepting order:', error);
       Alert.alert('Lỗi', 'Không thể nhận đơn hàng. Vui lòng thử lại.');
     }

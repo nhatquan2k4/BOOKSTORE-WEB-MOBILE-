@@ -1,5 +1,7 @@
 using BookStore.Application.Dtos.Shipping;
 using BookStore.Domain.Entities.Shipping;
+using BookStore.Domain.Entities.Ordering;
+using BookStore.Domain.Entities.Ordering___Payment;
 
 namespace BookStore.Application.Mappers.Shipping
 {
@@ -19,6 +21,7 @@ namespace BookStore.Application.Mappers.Shipping
                 DeliveredAt = entity.DeliveredAt,
                 Notes = entity.Notes,
                 Shipper = entity.Shipper?.ToDto(),
+                Order = entity.Order?.ToShipmentOrderDto(),
                 StatusHistory = entity.StatusHistory?.Select(s => s.ToDto()).ToList(),
                 RoutePoints = entity.RoutePoints?.Select(r => r.ToDto()).ToList()
             };
@@ -86,6 +89,56 @@ namespace BookStore.Application.Mappers.Shipping
                 Status = "Arrived",
                 Note = dto.Notes,
                 Timestamp = DateTime.UtcNow
+            };
+        }
+
+        // Mapper cho Order và các thành phần liên quan
+        public static ShipmentOrderDto? ToShipmentOrderDto(this Order? entity)
+        {
+            if (entity == null) return null;
+
+            return new ShipmentOrderDto
+            {
+                Id = entity.Id,
+                OrderNumber = entity.OrderNumber,
+                Status = entity.Status,
+                TotalAmount = entity.TotalAmount,
+                DiscountAmount = entity.DiscountAmount,
+                FinalAmount = entity.FinalAmount,
+                CreatedAt = entity.CreatedAt,
+                PaidAt = entity.PaidAt,
+                Address = entity.Address?.ToShipmentOrderAddressDto(),
+                Items = entity.Items?.Select(i => i.ToShipmentOrderItemDto()).ToList()
+            };
+        }
+
+        public static ShipmentOrderAddressDto? ToShipmentOrderAddressDto(this OrderAddress? entity)
+        {
+            if (entity == null) return null;
+
+            return new ShipmentOrderAddressDto
+            {
+                Id = entity.Id,
+                RecipientName = entity.RecipientName,
+                PhoneNumber = entity.PhoneNumber,
+                Province = entity.Province,
+                District = entity.District,
+                Ward = entity.Ward,
+                Street = entity.Street,
+                Note = entity.Note
+            };
+        }
+
+        public static ShipmentOrderItemDto ToShipmentOrderItemDto(this OrderItem entity)
+        {
+            return new ShipmentOrderItemDto
+            {
+                Id = entity.Id,
+                BookId = entity.BookId,
+                BookTitle = entity.Book?.Title ?? "N/A",
+                Quantity = entity.Quantity,
+                UnitPrice = entity.UnitPrice,
+                Subtotal = entity.Subtotal
             };
         }
     }

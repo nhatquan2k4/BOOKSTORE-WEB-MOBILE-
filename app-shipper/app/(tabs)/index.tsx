@@ -81,6 +81,16 @@ export default function HomeScreen() {
               loadOrders(); // Reload list
             } catch (error) {
               console.error('Error accepting order:', error);
+              // If backend indicated the order already has a shipment, offer to open it
+              if ((error as any)?.code === 'ORDER_ALREADY_HAS_SHIPMENT' && (error as any)?.existingShipment) {
+                const shipment = (error as any).existingShipment;
+                Alert.alert('Đã có vận đơn', 'Đơn hàng này đã có vận đơn. Mở chi tiết vận đơn?', [
+                  { text: 'Hủy' },
+                  { text: 'Mở', onPress: () => router.push({ pathname: '/(stack)/history-order-detail', params: { id: shipment.orderId } }) }
+                ]);
+                return;
+              }
+
               Alert.alert('Lỗi', 'Không thể nhận đơn hàng');
             }
           },
