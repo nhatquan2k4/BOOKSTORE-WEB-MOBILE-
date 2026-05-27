@@ -25,6 +25,11 @@ namespace BookStore.Application.Mappers.Inventory
             };
         }
 
+        public static IEnumerable<PriceDto> ToDtoList(this IEnumerable<Price> prices)
+        {
+            return prices.Select(price => price.ToDto());
+        }
+
         public static Price ToEntity(this CreatePriceDto dto)
         {
             return new Price

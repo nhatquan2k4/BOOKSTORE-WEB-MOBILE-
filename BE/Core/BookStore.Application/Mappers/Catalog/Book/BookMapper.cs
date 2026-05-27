@@ -1,5 +1,6 @@
 ﻿using BookStore.Application.Dtos.Catalog.Book;
 using BookStore.Application.Dtos.Catalog.BookImages;
+using BookStore.Application.Mappers.Catalog;
 using BookStore.Application.Mappers.Catalog.Author;
 using BookStore.Application.Mappers.Catalog.Category;
 using BookStore.Application.Mappers.Catalog.Publisher;
@@ -39,22 +40,8 @@ namespace BookStore.Application.Mappers.Catalog.Book
                     .Select(bc => bc!.Category.Name)
                     .ToList() ?? new List<string>(),
 
-                // Current Price (active, non-expired)
-                CurrentPrice = book.Prices?
-                    .Where(p => p.IsCurrent
-                                && p.EffectiveFrom <= DateTime.UtcNow
-                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
-                    .OrderByDescending(p => p.EffectiveFrom)
-                    .FirstOrDefault()?.Amount,
-
-                // Discount Price (active price with discount)
-                DiscountPrice = book.Prices?
-                    .Where(p => p.IsCurrent
-                                && p.EffectiveFrom <= DateTime.UtcNow
-                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow)
-                                && p.DiscountId.HasValue)
-                    .OrderByDescending(p => p.EffectiveFrom)
-                    .FirstOrDefault()?.Amount,
+                CurrentPrice = book.GetCurrentPriceAmount(),
+                DiscountPrice = book.GetCurrentDiscountPriceAmount(),
 
                 // Stock Quantity (sum across all warehouses)
                 StockQuantity = book.StockItems?.Sum(s => s.QuantityOnHand) ?? 0,
@@ -84,22 +71,8 @@ namespace BookStore.Application.Mappers.Catalog.Book
                 PageCount = book.PageCount,
                 IsAvailable = book.IsAvailable,
 
-                // Current Price (active, non-expired)
-                CurrentPrice = book.Prices?
-                    .Where(p => p.IsCurrent
-                                && p.EffectiveFrom <= DateTime.UtcNow
-                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
-                    .OrderByDescending(p => p.EffectiveFrom)
-                    .FirstOrDefault()?.Amount,
-
-                // Discount Price (active price with discount)
-                DiscountPrice = book.Prices?
-                    .Where(p => p.IsCurrent
-                                && p.EffectiveFrom <= DateTime.UtcNow
-                                && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow)
-                                && p.DiscountId.HasValue)
-                    .OrderByDescending(p => p.EffectiveFrom)
-                    .FirstOrDefault()?.Amount,
+                CurrentPrice = book.GetCurrentPriceAmount(),
+                DiscountPrice = book.GetCurrentDiscountPriceAmount(),
 
                 // Stock Quantity (sum across all warehouses)
                 StockQuantity = book.StockItems?.Sum(s => s.QuantityOnHand) ?? 0,
@@ -168,6 +141,80 @@ namespace BookStore.Application.Mappers.Catalog.Book
         public static List<BookDto> ToDtoList(this IEnumerable<BookEntity> books)
         {
             return books.Select(b => b.ToDto()).ToList();
+        }
+
+        public static decimal? GetCurrentPriceAmount(this BookEntity book)
+        {
+            return book.Prices?
+                .Where(p => p.IsCurrent
+                            && p.EffectiveFrom <= DateTime.UtcNow
+                            && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
+                .OrderByDescending(p => p.EffectiveFrom)
+                .FirstOrDefault()?.Amount;
+        }
+
+        public static decimal? GetCurrentDiscountPriceAmount(this BookEntity book)
+        {
+            return book.Prices?
+                .Where(p => p.IsCurrent
+                            && p.EffectiveFrom <= DateTime.UtcNow
+                            && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow)
+                            && p.DiscountId.HasValue)
+                .OrderByDescending(p => p.EffectiveFrom)
+                .FirstOrDefault()?.Amount;
+        }
+
+        public static List<RentalPlanDto> ToRentalPlanDtos(this decimal purchasePrice)
+        {
+            var plans = new List<RentalPlanDto>();
+            var configs = new[]
+            {
+                new { Days = 3, Percent = 0.10m, Label = "3 ngày", Popular = false },
+                new { Days = 7, Percent = 0.15m, Label = "7 ngày", Popular = false },
+                new { Days = 14, Percent = 0.25m, Label = "14 ngày", Popular = false },
+                new { Days = 30, Percent = 0.40m, Label = "30 ngày", Popular = false },
+                new { Days = 180, Percent = 0.60m, Label = "180 ngày", Popular = true }
+            };
+
+            var base3Price = Math.Ceiling((purchasePrice * 0.10m) / 1000) * 1000;
+            if (base3Price < 2000) base3Price = 2000;
+            var basePerDay = base3Price / 3;
+
+            var index = 1;
+            foreach (var config in configs)
+            {
+                var price = Math.Ceiling((purchasePrice * config.Percent) / 1000) * 1000;
+                var minPrice = config.Days <= 3 ? 2000 : 3000;
+                if (price < minPrice) price = minPrice;
+
+                if (plans.Any() && price <= plans.Last().Price)
+                {
+                    price = plans.Last().Price + 1000;
+                }
+
+                var savings = 0;
+                if (config.Days > 7 && basePerDay > 0)
+                {
+                    var theoreticalPrice = basePerDay * config.Days;
+                    if (theoreticalPrice > price)
+                    {
+                        savings = (int)Math.Round((1 - price / theoreticalPrice) * 100);
+                        if (savings < 0) savings = 0;
+                    }
+                }
+
+                plans.Add(new RentalPlanDto
+                {
+                    Id = index++,
+                    Days = config.Days,
+                    DurationLabel = config.Label,
+                    Price = price,
+                    SavingsPercentage = savings,
+                    IsPopular = config.Popular
+                });
+            }
+
+            return plans;
         }
     }
 }

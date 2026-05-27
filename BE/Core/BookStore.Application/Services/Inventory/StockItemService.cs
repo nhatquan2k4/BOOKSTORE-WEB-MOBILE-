@@ -38,25 +38,25 @@ namespace BookStore.Application.Services.Inventory
         public async Task<IEnumerable<StockItemDto>> GetStocksByBookIdAsync(Guid bookId)
         {
             var stocks = await _stockItemRepository.GetStocksByBookIdAsync(bookId);
-            return stocks.Select(s => s.ToDto());
+            return stocks.ToDtoList();
         }
 
         public async Task<IEnumerable<StockItemDto>> GetStocksByWarehouseIdAsync(Guid warehouseId)
         {
             var stocks = await _stockItemRepository.GetStocksByWarehouseIdAsync(warehouseId);
-            return stocks.Select(s => s.ToDto());
+            return stocks.ToDtoList();
         }
 
         public async Task<IEnumerable<StockItemDto>> GetLowStockItemsAsync(int threshold = 10)
         {
             var stocks = await _stockItemRepository.GetLowStockItemsAsync(threshold);
-            return stocks.Select(s => s.ToDto());
+            return stocks.ToDtoList();
         }
 
         public async Task<IEnumerable<StockItemDto>> GetOutOfStockItemsAsync()
         {
             var stocks = await _stockItemRepository.GetOutOfStockItemsAsync();
-            return stocks.Select(s => s.ToDto());
+            return stocks.ToDtoList();
         }
 
         public async Task<StockItemDto> CreateStockItemAsync(CreateStockItemDto dto)

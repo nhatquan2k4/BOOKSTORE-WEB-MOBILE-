@@ -24,6 +24,11 @@ namespace BookStore.Application.Mappers.Inventory
             };
         }
 
+        public static IEnumerable<StockItemDto> ToDtoList(this IEnumerable<StockItem> stocks)
+        {
+            return stocks.Select(stock => stock.ToDto());
+        }
+
         public static StockItem ToEntity(this CreateStockItemDto dto)
         {
             var stockItem = new StockItem();

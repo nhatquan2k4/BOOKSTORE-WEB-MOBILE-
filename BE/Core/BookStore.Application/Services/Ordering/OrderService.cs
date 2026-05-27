@@ -2,6 +2,7 @@ using BookStore.Application.Dtos.Ordering;
 using BookStore.Application.IService.Ordering;
 using BookStore.Application.IService.System;
 using BookStore.Application.DTOs.System.Notification;
+using BookStore.Application.Mappers.Catalog.Book;
 using BookStore.Application.Mappers.Ordering;
 using BookStore.Domain.Entities.Ordering;
 using BookStore.Domain.Entities.Ordering___Payment;
@@ -55,24 +56,9 @@ namespace BookStore.Application.Services.Ordering
         public async Task<(List<OrderDto> Items, int TotalCount)> GetAllOrdersAsync(int pageNumber = 1, int pageSize = 10, string? status = null)
         {
             var skip = (pageNumber - 1) * pageSize;
+            var (orders, totalCount) = await _orderRepository.GetOrdersAsync(status, skip, pageSize);
 
-            IEnumerable<Order> orders;
-            int totalCount;
-
-            if (!string.IsNullOrEmpty(status))
-            {
-                orders = await _orderRepository.GetOrdersByStatusAsync(status, skip, pageSize);
-                totalCount = orders.Count();
-            }
-            else
-            {
-                var allOrders = await _orderRepository.GetAllAsync();
-                totalCount = allOrders.Count();
-                orders = allOrders.Skip(skip).Take(pageSize);
-            }
-
-            var orderDtos = orders.Select(o => o.ToDto()).ToList();
-            return (orderDtos, totalCount);
+            return (orders.ToDtoList(), totalCount);
         }
 
         public async Task<OrderDto?> GetOrderByIdAsync(Guid orderId)
@@ -93,8 +79,7 @@ namespace BookStore.Application.Services.Ordering
             var orders = await _orderRepository.GetOrdersByUserIdAsync(userId, status, skip, pageSize);
             var totalCount = await _orderRepository.CountOrdersByUserIdAsync(userId, status);
 
-            var orderDtos = orders.Select(o => o.ToDto()).ToList();
-            return (orderDtos, totalCount);
+            return (orders.ToDtoList(), totalCount);
         }
 
         #endregion
@@ -234,22 +219,7 @@ namespace BookStore.Application.Services.Ordering
             var cart = await _cartRepository.GetActiveCartByUserIdAsync(userId);
             Guard.Against(cart == null || !cart.Items.Any(), "Giỏ hàng trống");
 
-            // Convert CartItems to OrderItems
-            var orderItems = cart!.Items.Select(cartItem => new CreateOrderItemDto
-            {
-                BookId = cartItem.BookId,
-                Quantity = cartItem.Quantity,
-                UnitPrice = cartItem.UnitPrice
-            }).ToList();
-
-            // Create order
-            var createOrderDto = new CreateOrderDto
-            {
-                UserId = userId,
-                Items = orderItems,
-                Address = address,
-                CouponId = couponId
-            };
+            var createOrderDto = cart!.ToCreateOrderDto(userId, address, couponId);
 
             var order = await CreateOrderAsync(createOrderDto);
 
@@ -335,9 +305,7 @@ namespace BookStore.Application.Services.Ordering
             Guard.Against(book == null, "Sách không tồn tại");
             _logger.LogInformation("[CreateRentalOrderAsync] Book found: {BookTitle}", book!.Title);
 
-            var bookPrice = book!.Prices?.Where(p => p.IsCurrent && p.EffectiveFrom <= DateTime.UtcNow)
-                                        .OrderByDescending(p => p.EffectiveFrom)
-                                        .FirstOrDefault()?.Amount ?? 0;
+            var bookPrice = book!.GetCurrentPriceAmount() ?? 0;
             _logger.LogInformation("[CreateRentalOrderAsync] Book price: {BookPrice}", bookPrice);
             Guard.Against(bookPrice <= 0, "Sách chưa có giá bán, không thể thuê");
 
@@ -510,8 +478,7 @@ namespace BookStore.Application.Services.Ordering
                             if (note.Contains("Rental Plan:"))
                             {
                                 var planName = note.Replace("Rental Plan:", "").Trim();
-                                var rentalPlans = await _rentalPlanRepository.GetAllAsync();
-                                var matchedPlan = rentalPlans.FirstOrDefault(p => p.Name == planName);
+                                var matchedPlan = await _rentalPlanRepository.GetByNameAsync(planName);
                                 if (matchedPlan != null)
                                 {
                                     rentalPlanId = matchedPlan.Id;
@@ -526,8 +493,7 @@ namespace BookStore.Application.Services.Ordering
                                 if (int.TryParse(daysStr, out var days))
                                 {
                                     durationDays = days;
-                                    var rentalPlans = await _rentalPlanRepository.GetAllAsync();
-                                    var matchedPlan = rentalPlans.FirstOrDefault(p => p.DurationDays == days);
+                                    var matchedPlan = await _rentalPlanRepository.GetByDurationDaysAsync(days);
                                     if (matchedPlan != null)
                                     {
                                         rentalPlanId = matchedPlan.Id;
@@ -541,8 +507,8 @@ namespace BookStore.Application.Services.Ordering
                         if (!rentalPlanId.HasValue)
                         {
                             _logger.LogWarning($"[OrderService] Could not parse RentalPlan from order note, using default");
-                            var rentalPlans = await _rentalPlanRepository.GetAllAsync();
-                            var defaultPlan = rentalPlans.FirstOrDefault(p => p.DurationDays == 7) ?? rentalPlans.FirstOrDefault();
+                            var defaultPlan = await _rentalPlanRepository.GetByDurationDaysAsync(7)
+                                ?? await _rentalPlanRepository.GetDefaultAsync();
                             if (defaultPlan != null)
                             {
                                 rentalPlanId = defaultPlan.Id;
@@ -679,21 +645,12 @@ namespace BookStore.Application.Services.Ordering
 
         public async Task<int> GetTotalOrdersCountAsync(string? status = null)
         {
-            if (string.IsNullOrEmpty(status))
-            {
-                var allOrders = await _orderRepository.GetAllAsync();
-                return allOrders.Count();
-            }
-
-            var orders = await _orderRepository.GetOrdersByStatusAsync(status, 0, int.MaxValue);
-            return orders.Count();
+            return await _orderRepository.CountOrdersAsync(status);
         }
 
         public async Task<Dictionary<string, int>> GetOrdersCountByStatusAsync()
         {
-            var allOrders = await _orderRepository.GetAllAsync();
-            return allOrders.GroupBy(o => o.Status)
-                            .ToDictionary(g => g.Key, g => g.Count());
+            return await _orderRepository.GetOrderCountsByStatusAsync();
         }
 
         #endregion

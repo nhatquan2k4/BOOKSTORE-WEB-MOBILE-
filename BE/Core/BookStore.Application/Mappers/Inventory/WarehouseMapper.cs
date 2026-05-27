@@ -22,6 +22,11 @@ namespace BookStore.Application.Mappers.Inventory
             };
         }
 
+        public static IEnumerable<WarehouseDto> ToDtoList(this IEnumerable<Warehouse> warehouses)
+        {
+            return warehouses.Select(warehouse => warehouse.ToDto());
+        }
+
         public static Warehouse ToEntity(this CreateWarehouseDto dto)
         {
             return new Warehouse

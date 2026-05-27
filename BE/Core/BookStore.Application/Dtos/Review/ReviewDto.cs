@@ -81,4 +81,26 @@ namespace BookStore.Application.DTOs.Catalog.Review
         public int TotalReviews { get; set; }
         public Dictionary<int, int> RatingDistribution { get; set; } = new();
     }
+
+    public class ReviewEligibilityDebugDto
+    {
+        public Guid UserId { get; set; }
+        public Guid BookId { get; set; }
+        public bool BookExists { get; set; }
+        public string? BookTitle { get; set; }
+        public bool HasPurchased { get; set; }
+        public bool HasReviewed { get; set; }
+        public ExistingReviewDebugDto? ExistingReview { get; set; }
+        public bool CanCreateNew { get; set; }
+        public bool CanUpdate { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public class ExistingReviewDebugDto
+    {
+        public Guid ReviewId { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public int Rating { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
 }

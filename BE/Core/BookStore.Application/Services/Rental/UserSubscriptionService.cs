@@ -94,7 +94,7 @@ namespace BookStore.Application.Services.Rental
         public async Task<IEnumerable<UserSubscriptionDto>> GetUserSubscriptionsAsync(Guid userId)
         {
             var subscriptions = await _subscriptionRepository.GetByUserIdAsync(userId);
-            return subscriptions.Select(s => s.ToDto());
+            return subscriptions.ToDtoList();
         }
 
         public async Task<UserSubscriptionDto?> GetActiveSubscriptionAsync(Guid userId)
@@ -106,7 +106,7 @@ namespace BookStore.Application.Services.Rental
         public async Task<IEnumerable<UserSubscriptionDto>> GetAllSubscriptionsAsync()
         {
             var subscriptions = await _subscriptionRepository.GetAllAsync();
-            return subscriptions.Select(s => s.ToDto());
+            return subscriptions.ToDtoList();
         }
 
         public async Task CancelSubscriptionAsync(Guid subscriptionId)

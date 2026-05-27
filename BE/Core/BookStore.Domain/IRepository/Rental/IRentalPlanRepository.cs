@@ -6,8 +6,11 @@ namespace BookStore.Domain.IRepository.Rental
     {
 
         Task<IEnumerable<RentalPlan>> GetActiveRentalPlansAsync();
+        Task<IEnumerable<RentalPlan>> GetActiveRentalPlansByTypeAsync(string planType);
 
 
         Task<RentalPlan?> GetByNameAsync(string name);
+        Task<RentalPlan?> GetByDurationDaysAsync(int durationDays);
+        Task<RentalPlan?> GetDefaultAsync();
     }
 }

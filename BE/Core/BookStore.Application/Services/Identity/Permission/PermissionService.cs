@@ -17,7 +17,7 @@ namespace BookStore.Application.Services.Identity.Permission
         public async Task<IEnumerable<PermissionDto>> GetAllAsync()
         {
             var permissions = await _permissionRepository.GetAllAsync();
-            return permissions.Select(p => p.ToDto());
+            return permissions.ToDtoList();
         }
 
         public async Task<PermissionDto?> GetByIdAsync(Guid id)
@@ -73,13 +73,13 @@ namespace BookStore.Application.Services.Identity.Permission
         public async Task<IEnumerable<PermissionDto>> GetPermissionsByRoleIdAsync(Guid roleId)
         {
             var permissions = await _permissionRepository.GetPermissionsByRoleIdAsync(roleId);
-            return permissions.Select(p => p.ToDto());
+            return permissions.ToDtoList();
         }
 
         public async Task<IEnumerable<PermissionDto>> GetPermissionsByUserIdAsync(Guid userId)
         {
             var permissions = await _permissionRepository.GetPermissionsByUserIdAsync(userId);
-            return permissions.Select(p => p.ToDto());
+            return permissions.ToDtoList();
         }
 
         public async Task<bool> PermissionNameExistsAsync(string name)

@@ -25,7 +25,7 @@ namespace BookStore.Application.Services.Identity.Role
         public async Task<IEnumerable<RoleDto>> GetAllAsync()
         {
             var roles = await _roleRepository.GetAllAsync();
-            return roles.Select(r => r.ToDto());
+            return roles.ToDtoList();
         }
 
         public async Task<RoleDto?> GetByIdAsync(Guid id)
@@ -94,8 +94,7 @@ namespace BookStore.Application.Services.Identity.Role
             int page, int size, string? search = null)
         {
             var (roles, totalCount) = await _roleRepository.GetPagedAsync(page, size, search);
-            var roleSummaries = roles.Select(r => r.ToSummaryDto());
-            return (roleSummaries, totalCount);
+            return (roles.ToSummaryDtoList(), totalCount);
         }
 
         public async Task<bool> AssignPermissionsToRoleAsync(Guid roleId, List<Guid> permissionIds)
@@ -129,12 +128,7 @@ namespace BookStore.Application.Services.Identity.Role
         public async Task<IEnumerable<PermissionDto>> GetRolePermissionsAsync(Guid roleId)
         {
             var permissions = await _permissionRepository.GetPermissionsByRoleIdAsync(roleId);
-            return permissions.Select(p => new PermissionDto
-            {
-                Id = p.Id,
-                Name = p.Name,
-                Description = p.Description
-            });
+            return permissions.ToDtoList();
         }
 
         public async Task<bool> RoleNameExistsAsync(string name)

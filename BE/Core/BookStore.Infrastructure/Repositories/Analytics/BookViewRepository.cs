@@ -56,6 +56,48 @@ namespace BookStore.Infrastructure.Repositories.Analytics
                 .ToDictionaryAsync(x => x.BookId, x => x.Count);
         }
 
+        public async Task<IReadOnlyList<(Guid BookId, string BookTitle, string? BookCoverUrl, int ViewCount, int UniqueViewers)>> GetTopViewedBookStatsAsync(DateTime from, DateTime to, int top = 10)
+        {
+            var stats = await _context.BookViews
+                .Where(bv => bv.ViewedAt >= from && bv.ViewedAt <= to)
+                .GroupBy(bv => bv.BookId)
+                .Select(g => new
+                {
+                    BookId = g.Key,
+                    ViewCount = g.Count(),
+                    UniqueViewers = g
+                        .Where(view => view.UserId.HasValue)
+                        .Select(view => view.UserId)
+                        .Distinct()
+                        .Count()
+                })
+                .OrderByDescending(x => x.ViewCount)
+                .Take(top)
+                .ToListAsync();
+
+            var bookIds = stats.Select(x => x.BookId).ToList();
+            var books = await _context.Books
+                .Where(book => bookIds.Contains(book.Id))
+                .Include(book => book.Images)
+                .ToDictionaryAsync(book => book.Id);
+
+            return stats
+                .Where(stat => books.ContainsKey(stat.BookId))
+                .Select(stat =>
+                {
+                    var book = books[stat.BookId];
+                    return (
+                        stat.BookId,
+                        book.Title,
+                        book.Images
+                            .OrderBy(image => image.DisplayOrder)
+                            .FirstOrDefault()?.ImageUrl,
+                        stat.ViewCount,
+                        stat.UniqueViewers);
+                })
+                .ToList();
+        }
+
         public async Task<IEnumerable<BookView>> GetByDateRangeAsync(DateTime from, DateTime to)
         {
             return await _context.BookViews

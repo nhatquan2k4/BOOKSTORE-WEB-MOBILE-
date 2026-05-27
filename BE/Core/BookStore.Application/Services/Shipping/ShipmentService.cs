@@ -86,19 +86,19 @@ namespace BookStore.Application.Services.Shipping
         public async Task<IEnumerable<ShipmentDto>> GetAllShipmentsAsync()
         {
             var shipments = await _shipmentRepository.GetAllWithDetailsAsync();
-            return shipments.Select(s => s.ToDto());
+            return shipments.ToDtoList();
         }
 
         public async Task<IEnumerable<ShipmentDto>> GetShipmentsByShipperIdAsync(Guid shipperId)
         {
             var shipments = await _shipmentRepository.GetByShipperIdAsync(shipperId);
-            return shipments.Select(s => s.ToDto());
+            return shipments.ToDtoList();
         }
 
         public async Task<IEnumerable<ShipmentDto>> GetShipmentsByStatusAsync(string status)
         {
             var shipments = await _shipmentRepository.GetByStatusAsync(status);
-            return shipments.Select(s => s.ToDto());
+            return shipments.ToDtoList();
         }
 
         public async Task<ShipmentDto> UpdateShipmentStatusAsync(Guid id, UpdateShipmentStatusDto dto)

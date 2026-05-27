@@ -35,7 +35,7 @@ namespace BookStore.Application.Services.Identity.User
         public async Task<IEnumerable<UserDto>> GetAllAsync()
         {
             var users = await _userRepository.GetAllAsync();
-            return users.Select(u => u.ToDto());
+            return users.ToDtoList();
         }
 
         public async Task<UserDto?> GetByIdAsync(Guid id)
@@ -93,8 +93,7 @@ namespace BookStore.Application.Services.Identity.User
             int pageNumber, int pageSize, string? searchTerm = null)
         {
             var (users, totalCount) = await _userRepository.GetPagedAsync(pageNumber, pageSize, searchTerm);
-            var userSummaries = users.Select(u => u.ToSummaryDto());
-            return (userSummaries, totalCount);
+            return (users.ToSummaryDtoList(), totalCount);
         }
 
         public async Task<UserDto?> GetUserByEmailAsync(string email)
@@ -130,7 +129,7 @@ namespace BookStore.Application.Services.Identity.User
         public async Task<IEnumerable<RoleDto>> GetUserRolesAsync(Guid userId)
         {
             var roles = await _roleRepository.GetRolesByUserIdAsync(userId);
-            return roles.Select(r => r.ToDto());
+            return roles.ToDtoList();
         }
 
         public async Task<bool> AssignRoleToUserAsync(Guid userId, Guid roleId)

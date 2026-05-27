@@ -1,5 +1,6 @@
 using BookStore.Application.DTOs.System.Notification;
 using BookStore.Application.IService.System;
+using BookStore.Application.Mappers.System;
 using BookStore.Domain.Entities.System;
 using BookStore.Domain.IRepository.System;
 using Microsoft.Extensions.Logging;
@@ -48,7 +49,7 @@ namespace BookStore.Application.Services.System
                 _logger.LogInformation("✅ Created notification {NotificationId} for user {UserId}", 
                     notification.Id, dto.UserId);
 
-                return MapToDto(notification);
+                return notification.ToDto();
             }
             catch (Exception ex)
             {
@@ -64,18 +65,7 @@ namespace BookStore.Application.Services.System
             var notifications = await _notificationRepository.GetUserNotificationsAsync(userId, page, pageSize, isRead);
             var totalCount = await _notificationRepository.GetUserNotificationsCountAsync(userId, isRead);
 
-            var notificationDtos = notifications.Select(n => new NotificationListDto
-            {
-                Id = n.Id,
-                Title = n.Title,
-                Message = n.Message,
-                Type = n.Type,
-                IsRead = n.IsRead,
-                CreatedAt = n.CreatedAt,
-                Link = n.Link
-            });
-
-            return (notificationDtos, totalCount);
+            return (notifications.ToListDtos(), totalCount);
         }
 
         public async Task<NotificationDto?> GetNotificationByIdAsync(Guid id, Guid userId)
@@ -85,7 +75,7 @@ namespace BookStore.Application.Services.System
             if (notification == null || notification.UserId != userId)
                 return null;
 
-            return MapToDto(notification);
+            return notification.ToDto();
         }
 
         public async Task<bool> MarkAsReadAsync(Guid id, Guid userId)
@@ -112,7 +102,7 @@ namespace BookStore.Application.Services.System
         public async Task<UnreadCountDto> GetUnreadCountAsync(Guid userId)
         {
             var count = await _notificationRepository.GetUnreadCountAsync(userId);
-            return new UnreadCountDto { UnreadCount = count };
+            return count.ToUnreadCountDto();
         }
 
         public async Task<bool> DeleteNotificationAsync(Guid id, Guid userId)
@@ -148,32 +138,7 @@ namespace BookStore.Application.Services.System
         public async Task<IEnumerable<NotificationListDto>> GetRecentNotificationsAsync(Guid userId, int count)
         {
             var notifications = await _notificationRepository.GetRecentNotificationsAsync(userId, count);
-            
-            return notifications.Select(n => new NotificationListDto
-            {
-                Id = n.Id,
-                Title = n.Title,
-                Message = n.Message,
-                Type = n.Type,
-                IsRead = n.IsRead,
-                CreatedAt = n.CreatedAt,
-                Link = n.Link
-            });
-        }
-
-        private NotificationDto MapToDto(Notification notification)
-        {
-            return new NotificationDto
-            {
-                Id = notification.Id,
-                UserId = notification.UserId,
-                Title = notification.Title,
-                Message = notification.Message,
-                Type = notification.Type,
-                IsRead = notification.IsRead,
-                CreatedAt = notification.CreatedAt,
-                Link = notification.Link
-            };
+            return notifications.ToListDtos();
         }
     }
 }

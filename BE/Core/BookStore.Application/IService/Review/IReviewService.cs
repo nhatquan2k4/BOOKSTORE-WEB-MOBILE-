@@ -16,6 +16,6 @@ namespace BookStore.Application.IService.Review
         Task DeleteReviewAsync(Guid id);
         Task DeleteUserReviewAsync(Guid userId, Guid bookId);
         Task<(IEnumerable<ReviewDto> Reviews, int TotalCount)> GetPendingReviewsAsync(int page, int pageSize);
-        Task<object> GetReviewEligibilityDebugAsync(Guid userId, Guid bookId);
+        Task<ReviewEligibilityDebugDto> GetReviewEligibilityDebugAsync(Guid userId, Guid bookId);
     }
 }

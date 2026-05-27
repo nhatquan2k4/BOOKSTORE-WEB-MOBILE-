@@ -58,14 +58,8 @@ namespace BookStore.Application.Services.Catalog
 
         public async Task<List<CategoryTreeDto>> GetCategoryTreeAsync()
         {
-            // Get all categories and build tree
-            var allCategories = await _categoryRepository.GetAllAsync();
-            var rootCategories = allCategories.Where(c => c.ParentId == null).ToList();
-
-            // Build tree from root categories
-            var trees = rootCategories.Select(c => c.ToTreeDto(0)).ToList();
-
-            return trees;
+            var rootCategories = await _categoryRepository.GetRootCategoriesAsync();
+            return rootCategories.Select(c => c.ToTreeDto(0)).ToList();
         }
 
         public async Task<List<CategoryBreadcrumbDto>> GetBreadcrumbAsync(Guid categoryId)
@@ -251,8 +245,7 @@ namespace BookStore.Application.Services.Catalog
 
         public async Task<bool> HasBooksAsync(Guid categoryId)
         {
-            var category = await _categoryRepository.GetByIdAsync(categoryId);
-            return category?.BookCategories?.Any() ?? false;
+            return await _categoryRepository.HasBooksAsync(categoryId);
         }
 
         public async Task SaveChangesAsync()

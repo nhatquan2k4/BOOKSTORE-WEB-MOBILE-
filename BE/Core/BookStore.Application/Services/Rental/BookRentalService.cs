@@ -3,6 +3,7 @@ using BookStore.Application.IService;
 using BookStore.Application.IService.Rental;
 using BookStore.Application.IService.System;
 using BookStore.Application.DTOs.System.Notification;
+using BookStore.Application.Mappers.Rental;
 using BookStore.Domain.Entities.Rental;
 using BookStore.Domain.IRepository.Catalog;
 using BookStore.Domain.IRepository.Rental;
@@ -124,13 +125,13 @@ namespace BookStore.Application.Services.Rental
         public async Task<IEnumerable<BookRentalDto>> GetMyRentalsAsync(Guid userId, bool includeExpired = false)
         {
             var rentals = await _rentalRepository.GetByUserIdAsync(userId, includeExpired);
-            return rentals.Select(MapToDto);
+            return rentals.ToDtoList();
         }
 
         public async Task<BookRentalDto?> GetRentalByIdAsync(Guid rentalId)
         {
             var rental = await _rentalRepository.GetDetailByIdAsync(rentalId);
-            return rental == null ? null : MapToDto(rental);
+            return rental?.ToDto();
         }
 
         public async Task<BookRentalResultDto> RenewRentalAsync(Guid userId, Guid rentalId, RenewBookRentalDto dto)
@@ -280,19 +281,19 @@ namespace BookStore.Application.Services.Rental
         public async Task<IEnumerable<BookRentalDto>> GetAllRentalsAsync()
         {
             var rentals = await _rentalRepository.GetAllAsync();
-            return rentals.Select(MapToDto);
+            return rentals.ToDtoList();
         }
 
         public async Task<IEnumerable<BookRentalDto>> GetRentalsByUserAsync(Guid userId)
         {
             var rentals = await _rentalRepository.GetByUserIdAsync(userId, includeExpired: true);
-            return rentals.Select(MapToDto);
+            return rentals.ToDtoList();
         }
 
         public async Task<IEnumerable<BookRentalDto>> GetRentalsByBookAsync(Guid bookId)
         {
             var rentals = await _rentalRepository.GetByBookIdAsync(bookId);
-            return rentals.Select(MapToDto);
+            return rentals.ToDtoList();
         }
 
         public async Task CancelRentalAsync(Guid rentalId)
@@ -343,27 +344,5 @@ namespace BookStore.Application.Services.Rental
             _logger.LogInformation($"Updated {expiredRentals.Count()} expired rentals");
         }
 
-        private BookRentalDto MapToDto(BookRental rental)
-        {
-            return new BookRentalDto
-            {
-                Id = rental.Id,
-                UserId = rental.UserId,
-                UserEmail = rental.User?.Email ?? "N/A",
-                BookId = rental.BookId,
-                BookTitle = rental.Book?.Title ?? "N/A",
-                BookISBN = rental.Book?.ISBN?.Value,
-                BookCoverImage = rental.Book?.Images?.FirstOrDefault()?.ImageUrl,
-                RentalPlanId = rental.RentalPlanId,
-                RentalPlanName = rental.RentalPlan?.Name ?? "N/A",
-                DurationDays = rental.RentalPlan?.DurationDays ?? 0,
-                Price = rental.RentalPlan?.Price ?? 0,
-                StartDate = rental.StartDate,
-                EndDate = rental.EndDate,
-                IsReturned = rental.IsReturned,
-                IsRenewed = rental.IsRenewed,
-                Status = rental.Status ?? "Unknown"
-            };
-        }
     }
 }

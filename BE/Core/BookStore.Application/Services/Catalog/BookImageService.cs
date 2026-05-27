@@ -28,14 +28,14 @@ namespace BookStore.Application.Services.Catalog
 
         public async Task<IEnumerable<BookImageDto>> GetAllImagesAsync()
         {
-            var images = await _bookImageRepository.GetAllAsync();
-            return images.OrderBy(i => i.BookId).ThenBy(i => i.DisplayOrder).ToDtoList();
+            var images = await _bookImageRepository.GetAllOrderedAsync();
+            return images.ToDtoList();
         }
 
         public async Task<IEnumerable<BookImageDto>> GetImagesByBookIdAsync(Guid bookId)
         {
             var images = await _bookImageRepository.GetByBookIdAsync(bookId);
-            return images.OrderBy(i => i.DisplayOrder).ToDtoList();
+            return images.ToDtoList();
         }
 
         public async Task<BookImageDto?> GetImageByIdAsync(Guid id)
@@ -245,8 +245,7 @@ namespace BookStore.Application.Services.Catalog
 
         public async Task<BookImageDto?> GetCoverImageAsync(Guid bookId)
         {
-            var images = await _bookImageRepository.GetByBookIdAsync(bookId);
-            var coverImage = images.FirstOrDefault(i => i.IsCover);
+            var coverImage = await _bookImageRepository.GetCoverByBookIdAsync(bookId);
             return coverImage?.ToDto();
         }
 
@@ -283,8 +282,7 @@ namespace BookStore.Application.Services.Catalog
             string? oldImageFileName = null;
             if (isCover)
             {
-                var images = await _bookImageRepository.GetByBookIdAsync(bookId);
-                var currentCover = images.FirstOrDefault(i => i.IsCover);
+                var currentCover = await _bookImageRepository.GetCoverByBookIdAsync(bookId);
 
                 if (currentCover != null)
                 {
@@ -349,8 +347,7 @@ namespace BookStore.Application.Services.Catalog
             }
 
             // Get current max display order
-            var existingImages = await _bookImageRepository.GetByBookIdAsync(bookId);
-            int currentMaxOrder = existingImages.Any() ? existingImages.Max(i => i.DisplayOrder) : -1;
+            var currentMaxOrder = await _bookImageRepository.GetMaxDisplayOrderAsync(bookId);
 
             var uploadedImages = new List<BookImage>();
 
@@ -404,8 +401,7 @@ namespace BookStore.Application.Services.Catalog
 
         private async Task UnsetCurrentCoverAsync(Guid bookId)
         {
-            var images = await _bookImageRepository.GetByBookIdAsync(bookId);
-            var currentCover = images.FirstOrDefault(i => i.IsCover);
+            var currentCover = await _bookImageRepository.GetCoverByBookIdAsync(bookId);
 
             if (currentCover != null)
             {

@@ -1,5 +1,6 @@
 using BookStore.Application.DTOs.Catalog.Review;
 using BookStore.Application.IService.Review;
+using BookStore.Application.Mappers.Review;
 using BookStore.Domain.Entities.Common;
 using BookStore.Domain.Entities.Ordering;
 using BookStore.Domain.IRepository.Catalog;
@@ -144,19 +145,7 @@ namespace BookStore.Application.Services.Review
             var reviews = await _reviewRepository.GetApprovedReviewsByBookIdAsync(bookId, page, pageSize, sortBy);
             var totalCount = await _reviewRepository.GetTotalReviewsCountByBookIdAsync(bookId, approvedOnly: true);
 
-            var reviewDtos = reviews.Select(r => new ReviewListDto
-            {
-                Id = r.Id,
-                UserId = r.UserId,
-                UserName = r.User?.Profiles?.FullName ?? "Anonymous",
-                Rating = r.Rating,
-                Title = r.Title,
-                Content = r.Content,
-                IsVerifiedPurchase = r.IsVerifiedPurchase,
-                CreatedAt = r.CreatedAt
-            });
-
-            return (reviewDtos, totalCount);
+            return (reviews.ToListDtos(), totalCount);
         }
 
         public async Task<ReviewStatisticsDto> GetBookReviewStatisticsAsync(Guid bookId)
@@ -167,12 +156,7 @@ namespace BookStore.Application.Services.Review
 
             var distribution = await _reviewRepository.GetRatingDistributionAsync(bookId);
 
-            return new ReviewStatisticsDto
-            {
-                AverageRating = book.AverageRating,
-                TotalReviews = book.TotalReviews,
-                RatingDistribution = distribution
-            };
+            return book.ToReviewStatisticsDto(distribution);
         }
 
         public async Task<ReviewDto?> GetReviewByIdAsync(Guid id)
@@ -325,24 +309,7 @@ namespace BookStore.Application.Services.Review
                     ?? throw new InvalidOperationException("Review not found");
             }
 
-            return new ReviewDto
-            {
-                Id = review.Id,
-                UserId = review.UserId,
-                UserName = review.User?.Profiles?.FullName ?? "Anonymous",
-                BookId = review.BookId,
-                BookTitle = review.Book?.Title ?? "",
-                OrderId = review.OrderId,
-                Rating = review.Rating,
-                Title = review.Title,
-                Content = review.Content,
-                Status = review.Status,
-                IsVerifiedPurchase = review.IsVerifiedPurchase,
-                IsEdited = review.IsEdited,
-                CreatedAt = review.CreatedAt,
-                UpdatedAt = review.UpdatedAt,
-                ApprovedAt = review.ApprovedAt
-            };
+            return review.ToDto();
         }
 
         public async Task<ReviewDto> UpdateReviewAsync(Guid userId, Guid bookId, UpdateReviewDto dto)
@@ -380,35 +347,20 @@ namespace BookStore.Application.Services.Review
             return await MapToReviewDto(review);
         }
 
-        public async Task<object> GetReviewEligibilityDebugAsync(Guid userId, Guid bookId)
+        public async Task<ReviewEligibilityDebugDto> GetReviewEligibilityDebugAsync(Guid userId, Guid bookId)
         {
             var hasPurchased = await _reviewRepository.HasUserPurchasedBookAsync(userId, bookId);
             var hasReviewed = await _reviewRepository.HasUserReviewedBookAsync(userId, bookId);
             var existingReview = await _reviewRepository.GetUserReviewForBookAsync(userId, bookId);
             var book = await _bookRepository.GetByIdAsync(bookId);
 
-            return new
-            {
-                UserId = userId,
-                BookId = bookId,
-                BookExists = book != null,
-                BookTitle = book?.Title,
-                HasPurchased = hasPurchased,
-                HasReviewed = hasReviewed,
-                ExistingReview = existingReview != null ? new
-                {
-                    ReviewId = existingReview.Id,
-                    Status = existingReview.Status,
-                    Rating = existingReview.Rating,
-                    CreatedAt = existingReview.CreatedAt
-                } : null,
-                CanCreateNew = book != null && hasPurchased && !hasReviewed,
-                CanUpdate = existingReview != null && existingReview.Status != "Approved",
-                Message = book == null ? "Book not found" :
-                         !hasPurchased ? "User has not purchased this book" :
-                         hasReviewed ? $"User already has a review (Status: {existingReview?.Status})" :
-                         "User can review this book"
-            };
+            return ReviewMapper.ToEligibilityDebugDto(
+                userId,
+                bookId,
+                hasPurchased,
+                hasReviewed,
+                existingReview,
+                book);
         }
     }
 }

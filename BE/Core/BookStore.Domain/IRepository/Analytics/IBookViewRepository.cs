@@ -8,6 +8,7 @@ namespace BookStore.Domain.IRepository.Analytics
         Task<IEnumerable<BookView>> GetByUserIdAsync(Guid userId, int pageNumber = 1, int pageSize = 20);
         Task<int> GetViewCountByBookIdAsync(Guid bookId, DateTime? from = null, DateTime? to = null);
         Task<Dictionary<Guid, int>> GetTopViewedBooksAsync(DateTime from, DateTime to, int top = 10);
+        Task<IReadOnlyList<(Guid BookId, string BookTitle, string? BookCoverUrl, int ViewCount, int UniqueViewers)>> GetTopViewedBookStatsAsync(DateTime from, DateTime to, int top = 10);
         Task<IEnumerable<BookView>> GetByDateRangeAsync(DateTime from, DateTime to);
     }
 }

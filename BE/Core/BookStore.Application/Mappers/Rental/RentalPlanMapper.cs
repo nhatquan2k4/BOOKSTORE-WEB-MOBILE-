@@ -20,6 +20,11 @@ namespace BookStore.Application.Mappers.Rental
             };
         }
 
+        public static IEnumerable<RentalPlanDto> ToDtoList(this IEnumerable<RentalPlan> entities)
+        {
+            return entities.Select(entity => entity.ToDto());
+        }
+
         public static RentalPlan ToEntity(this CreateRentalPlanDto dto)
         {
             return new RentalPlan

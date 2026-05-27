@@ -1,6 +1,5 @@
 using BookStore.Application.Dtos.Cart;
 using BookStore.Application.Dtos.Checkout;
-using BookStore.Application.Dtos.Inventory;
 using BookStore.Application.Dtos.Ordering;
 using BookStore.Application.IService.Cart;
 using BookStore.Application.IService.Checkout;
@@ -56,17 +55,7 @@ namespace BookStore.Application.Services.Checkout
 
             if (cart == null || !cart.Items.Any())
             {
-                return new CheckoutPreviewDto
-                {
-                    UserId = userId,
-                    Cart = cart ?? new Dtos.Cart.CartDto { UserId = userId },
-                    Subtotal = 0,
-                    DiscountAmount = 0,
-                    ShippingFee = 0,
-                    TotalAmount = 0,
-                    IsValid = false,
-                    ValidationMessages = new List<string> { "Giỏ hàng trống" }
-                };
+                return CheckoutMapper.ToEmptyCheckoutPreviewDto(userId);
             }
 
             // Tính toán giá
@@ -296,14 +285,11 @@ namespace BookStore.Application.Services.Checkout
             string? couponCode = null,
             string provider = "VietQR")
         {
-            var checkoutRequest = new CheckoutRequestDto
-            {
-                UserId = userId,
-                Address = address,
-                CouponCode = couponCode,
-                Provider = provider,
-                PaymentMethod = "Online"
-            };
+            var checkoutRequest = CheckoutMapper.ToCheckoutRequestDto(
+                userId,
+                address,
+                couponCode,
+                provider);
 
             return await ProcessCheckoutAsync(checkoutRequest);
         }
@@ -347,7 +333,7 @@ namespace BookStore.Application.Services.Checkout
                     _logger.LogWarning($"Payment failed for order {payment.OrderId}, releasing stock");
 
                     // Convert OrderDto sang CartDto để release stock
-                    var cartDto = ConvertOrderToCart(order!);
+                    var cartDto = order!.ToCartDtoForStockRelease();
                     await ReleaseStockForCartAsync(cartDto);
                 }
 
@@ -492,13 +478,9 @@ namespace BookStore.Application.Services.Checkout
                 try
                 {
                     // Reserve stock từ warehouse mặc định (hoặc có thể chọn warehouse gần nhất)
-                    var reserveDto = new ReserveStockDto
-                    {
-                        BookId = item.BookId,
-                        WarehouseId = DEFAULT_WAREHOUSE_ID, // TODO: Smart warehouse selection
-                        Quantity = item.Quantity,
-                        OrderId = cart.Id.ToString() // Tracking purpose
-                    };
+                    var reserveDto = item.ToReserveStockDto(
+                        DEFAULT_WAREHOUSE_ID,
+                        cart.Id.ToString());
 
                     var success = await _stockItemService.ReserveStockAsync(reserveDto);
 
@@ -619,23 +601,6 @@ namespace BookStore.Application.Services.Checkout
                     // Continue với các items khác
                 }
             }
-        }
-
-        private Dtos.Cart.CartDto ConvertOrderToCart(OrderDto order)
-        {
-            return new Dtos.Cart.CartDto
-            {
-                Id = order.Id,
-                UserId = order.UserId,
-                IsActive = false,
-                Items = order.Items.Select(item => new Dtos.Cart.CartItemDto
-                {
-                    BookId = item.BookId,
-                    BookTitle = item.BookTitle,
-                    BookPrice = item.UnitPrice,
-                    Quantity = item.Quantity
-                }).ToList()
-            };
         }
 
     }

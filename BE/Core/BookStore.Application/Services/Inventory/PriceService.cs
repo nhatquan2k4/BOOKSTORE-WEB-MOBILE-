@@ -24,13 +24,13 @@ namespace BookStore.Application.Services.Inventory
         public async Task<IEnumerable<PriceDto>> GetPriceHistoryByBookIdAsync(Guid bookId)
         {
             var prices = await _priceRepository.GetPriceHistoryByBookIdAsync(bookId);
-            return prices.Select(p => p.ToDto());
+            return prices.ToDtoList();
         }
 
         public async Task<IEnumerable<PriceDto>> GetAllCurrentPricesAsync()
         {
             var prices = await _priceRepository.GetAllCurrentPricesAsync();
-            return prices.Select(p => p.ToDto());
+            return prices.ToDtoList();
         }
 
         public async Task<PriceDto> CreatePriceAsync(CreatePriceDto dto)

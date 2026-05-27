@@ -4,7 +4,9 @@ namespace BookStore.Domain.IRepository.Catalog
 {
     public interface ICategoryRepository : IGenericRepository<Category>
     {
+        Task<IEnumerable<Category>> GetRootCategoriesAsync();
         Task<IEnumerable<Category>> GetSubCategoriesAsync(Guid parentId);
         Task<bool> HasSubCategoriesAsync(Guid categoryId);
+        Task<bool> HasBooksAsync(Guid categoryId);
     }
 }

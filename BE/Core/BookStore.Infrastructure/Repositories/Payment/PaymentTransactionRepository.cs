@@ -47,6 +47,11 @@ namespace BookStore.Infrastructure.Repositories.Payment
                 .ToListAsync();
         }
 
+        public async Task<int> CountByProviderAsync(string provider)
+        {
+            return await _dbSet.CountAsync(p => p.Provider == provider);
+        }
+
         public async Task<IEnumerable<PaymentTransaction>> GetByStatusAsync(string status, int skip = 0, int take = 20)
         {
             return await _dbSet
@@ -56,6 +61,11 @@ namespace BookStore.Infrastructure.Repositories.Payment
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync();
+        }
+
+        public async Task<int> CountByStatusAsync(string status)
+        {
+            return await _dbSet.CountAsync(p => p.Status == status);
         }
 
         public async Task UpdatePaymentStatusAsync(Guid paymentId, string newStatus, DateTime? paidAt = null)

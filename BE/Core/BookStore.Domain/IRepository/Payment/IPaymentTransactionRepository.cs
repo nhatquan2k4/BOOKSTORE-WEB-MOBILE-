@@ -15,9 +15,11 @@ namespace BookStore.Domain.IRepository.Payment
         
         // Lấy danh sách payment theo provider (VietQR, VNPay, MoMo, COD)
         Task<IEnumerable<PaymentTransaction>> GetByProviderAsync(string provider, int skip = 0, int take = 20);
+        Task<int> CountByProviderAsync(string provider);
         
         // Lấy payment theo status (Pending, Success, Failed, Refunded)
         Task<IEnumerable<PaymentTransaction>> GetByStatusAsync(string status, int skip = 0, int take = 20);
+        Task<int> CountByStatusAsync(string status);
         
         // Cập nhật status payment (khi webhook callback)
         Task UpdatePaymentStatusAsync(Guid paymentId, string newStatus, DateTime? paidAt = null);

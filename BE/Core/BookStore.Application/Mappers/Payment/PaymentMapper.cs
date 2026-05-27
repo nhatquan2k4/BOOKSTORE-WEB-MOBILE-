@@ -23,15 +23,25 @@ namespace BookStore.Application.Mappers.Payment
             };
         }
 
+        public static List<PaymentTransactionDto> ToDtoList(this IEnumerable<PaymentTransaction> payments)
+        {
+            return payments.Select(payment => payment.ToDto()).ToList();
+        }
+
         // CreatePaymentDto -> PaymentTransaction Entity
         public static PaymentTransaction ToEntity(this CreatePaymentDto dto)
+        {
+            return dto.ToEntity(GenerateTransactionCode());
+        }
+
+        public static PaymentTransaction ToEntity(this CreatePaymentDto dto, string transactionCode)
         {
             return new PaymentTransaction
             {
                 Id = Guid.NewGuid(),
                 OrderId = dto.OrderId,
                 Provider = dto.Provider,
-                TransactionCode = GenerateTransactionCode(),
+                TransactionCode = transactionCode,
                 PaymentMethod = dto.PaymentMethod,
                 Amount = dto.Amount,
                 Status = "Pending",

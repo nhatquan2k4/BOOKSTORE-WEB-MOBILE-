@@ -24,6 +24,11 @@ namespace BookStore.Application.Mappers.Rental
             };
         }
 
+        public static IEnumerable<UserSubscriptionDto> ToDtoList(this IEnumerable<UserSubscription> entities)
+        {
+            return entities.Select(entity => entity.ToDto());
+        }
+
         public static UserSubscription ToEntity(this SubscribeRentalPlanDto dto, Guid userId, RentalPlan plan, string transactionCode)
         {
             var startDate = DateTime.UtcNow;

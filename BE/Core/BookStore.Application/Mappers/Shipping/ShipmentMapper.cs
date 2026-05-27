@@ -27,6 +27,11 @@ namespace BookStore.Application.Mappers.Shipping
             };
         }
 
+        public static IEnumerable<ShipmentDto> ToDtoList(this IEnumerable<Shipment> shipments)
+        {
+            return shipments.Select(shipment => shipment.ToDto());
+        }
+
         public static ShipmentStatusDto ToDto(this ShipmentStatus entity)
         {
             return new ShipmentStatusDto

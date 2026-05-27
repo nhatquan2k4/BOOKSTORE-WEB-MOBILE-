@@ -1,3 +1,5 @@
+using BookStore.Application.DTO.Analytics;
+
 namespace BookStore.Application.IService.Analytics
 {
 
@@ -10,6 +12,6 @@ namespace BookStore.Application.IService.Analytics
 
         Task<Dictionary<Guid, int>> GetTopViewedBooksAsync(DateTime from, DateTime to, int top = 10);
 
-        Task<IEnumerable<object>> GetBookViewsAsync(Guid bookId, int pageNumber = 1, int pageSize = 20);
+        Task<IEnumerable<BookViewDto>> GetBookViewsAsync(Guid bookId, int pageNumber = 1, int pageSize = 20);
     }
 }

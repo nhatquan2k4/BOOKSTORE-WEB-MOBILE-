@@ -12,9 +12,11 @@ namespace BookStore.Domain.IRepository.Ordering
         
         // Lấy danh sách order của user (có filter theo status, phân trang)
         Task<IEnumerable<Order>> GetOrdersByUserIdAsync(Guid userId, string? status = null, int skip = 0, int take = 10);
+        Task<(IEnumerable<Order> Items, int TotalCount)> GetOrdersAsync(string? status = null, int skip = 0, int take = 20);
         
         // Đếm số order theo status của user
         Task<int> CountOrdersByUserIdAsync(Guid userId, string? status = null);
+        Task<int> CountOrdersAsync(string? status = null);
         
         // Lấy order cần ship (status = Paid)
         Task<IEnumerable<Order>> GetOrdersForShippingAsync(int skip = 0, int take = 20);
@@ -35,8 +37,11 @@ namespace BookStore.Domain.IRepository.Ordering
         Task<IEnumerable<Order>> GetPendingCompletionOrdersAsync();
 
         // Analytics methods
+        Task<(decimal TotalRevenue, int TotalOrders, IReadOnlyList<(DateTime Date, decimal Revenue, int OrderCount)> DailyRevenues)> GetRevenueSummaryAsync(DateTime from, DateTime to);
         Task<IEnumerable<Order>> GetCompletedOrdersByDateRangeAsync(DateTime from, DateTime to);
         Task<Dictionary<Guid, int>> GetTopSellingBooksAsync(DateTime from, DateTime to, int top = 10);
+        Task<IReadOnlyList<(Guid BookId, string BookTitle, string? BookCoverUrl, int QuantitySold, decimal TotalRevenue, decimal AveragePrice)>> GetTopSellingBookStatsAsync(DateTime from, DateTime to, int top = 10);
         Task<Dictionary<string, int>> GetOrderCountsByStatusAsync(DateTime from, DateTime to);
+        Task<Dictionary<string, int>> GetOrderCountsByStatusAsync();
     }
 }

@@ -1,5 +1,6 @@
 using BookStore.Application.DTOs.Comment;
 using BookStore.Application.IService.Comment;
+using BookStore.Application.Mappers.Comment;
 using BookStore.Domain.Entities.Common;
 using BookStore.Domain.IRepository.Catalog;
 using BookStore.Domain.IRepository.Comment;
@@ -212,21 +213,8 @@ namespace BookStore.Application.Services.Comment
             }
 
             // Count replies
-            var replyCount = await _commentRepository.GetAllAsync();
-            var count = replyCount.Count(r => r.ParentCommentId == comment.Id && !r.IsDeleted);
-
-            return new CommentDto
-            {
-                Id = comment.Id,
-                UserId = comment.UserId,
-                UserName = comment.User?.Profiles?.FullName ?? "Anonymous",
-                Content = comment.Content,
-                ParentCommentId = comment.ParentCommentId,
-                ReplyCount = count,
-                IsEdited = comment.IsEdited,
-                CreatedAt = comment.CreatedAt,
-                UpdatedAt = comment.UpdatedAt
-            };
+            var replyCount = await _commentRepository.GetRepliesCountAsync(comment.Id);
+            return comment.ToDto(replyCount);
         }
     }
 }

@@ -1,4 +1,6 @@
+using BookStore.Application.DTO.Analytics;
 using BookStore.Application.IService.Analytics;
+using BookStore.Application.Mappers.Analytics;
 using BookStore.Domain.Entities.Analytics___Activity;
 using BookStore.Domain.IRepository.Analytics;
 
@@ -36,50 +38,22 @@ namespace BookStore.Application.Service.Analytics
             await _auditLogRepository.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<object>> GetAdminLogsAsync(Guid adminId, int pageNumber = 1, int pageSize = 20)
+        public async Task<IEnumerable<AuditLogDto>> GetAdminLogsAsync(Guid adminId, int pageNumber = 1, int pageSize = 20)
         {
             var logs = await _auditLogRepository.GetByAdminIdAsync(adminId, pageNumber, pageSize);
-            return logs.Select(l => new
-            {
-                l.Id,
-                l.Action,
-                l.EntityName,
-                l.EntityId,
-                l.Description,
-                l.CreatedAt,
-                l.IpAddress
-            });
+            return logs.ToDtoList();
         }
 
-        public async Task<IEnumerable<object>> GetEntityLogsAsync(string entityName, string entityId)
+        public async Task<IEnumerable<AuditLogDto>> GetEntityLogsAsync(string entityName, string entityId)
         {
             var logs = await _auditLogRepository.GetByEntityAsync(entityName, entityId);
-            return logs.Select(l => new
-            {
-                l.Id,
-                l.AdminId,
-                l.Action,
-                l.Description,
-                l.OldValues,
-                l.NewValues,
-                l.CreatedAt,
-                l.IpAddress
-            });
+            return logs.ToDtoList();
         }
 
-        public async Task<IEnumerable<object>> GetLogsByDateRangeAsync(DateTime from, DateTime to, int pageNumber = 1, int pageSize = 100)
+        public async Task<IEnumerable<AuditLogDto>> GetLogsByDateRangeAsync(DateTime from, DateTime to, int pageNumber = 1, int pageSize = 100)
         {
             var logs = await _auditLogRepository.GetByDateRangeAsync(from, to, pageNumber, pageSize);
-            return logs.Select(l => new
-            {
-                l.Id,
-                l.AdminId,
-                l.Action,
-                l.EntityName,
-                l.EntityId,
-                l.Description,
-                l.CreatedAt
-            });
+            return logs.ToDtoList();
         }
     }
 }

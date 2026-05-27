@@ -58,6 +58,12 @@ namespace BookStore.Infrastructure.Repositories.Comment
                 .CountAsync(c => c.ReviewId == reviewId && !c.IsDeleted && c.ParentCommentId == null);
         }
 
+        public async Task<int> GetRepliesCountAsync(Guid parentCommentId)
+        {
+            return await _dbSet
+                .CountAsync(c => c.ParentCommentId == parentCommentId && !c.IsDeleted);
+        }
+
         public async Task<int> GetUserRecentCommentsCountAsync(Guid userId, int minutes)
         {
             var cutoffTime = DateTime.UtcNow.AddMinutes(-minutes);

@@ -1,4 +1,6 @@
+using BookStore.Application.DTO.Analytics;
 using BookStore.Application.IService.Analytics;
+using BookStore.Application.Mappers.Analytics;
 using BookStore.Domain.Entities.Analytics___Activity;
 using BookStore.Domain.IRepository.Analytics;
 
@@ -40,18 +42,10 @@ namespace BookStore.Application.Service.Analytics
             return await _bookViewRepository.GetTopViewedBooksAsync(from, to, top);
         }
 
-        public async Task<IEnumerable<object>> GetBookViewsAsync(Guid bookId, int pageNumber = 1, int pageSize = 20)
+        public async Task<IEnumerable<BookViewDto>> GetBookViewsAsync(Guid bookId, int pageNumber = 1, int pageSize = 20)
         {
             var views = await _bookViewRepository.GetByBookIdAsync(bookId, pageNumber, pageSize);
-            return views.Select(v => new
-            {
-                v.Id,
-                v.BookId,
-                v.UserId,
-                v.ViewedAt,
-                v.IpAddress,
-                v.SessionId
-            });
+            return views.ToDtoList();
         }
     }
 }

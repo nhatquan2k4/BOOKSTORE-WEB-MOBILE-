@@ -10,6 +10,7 @@ namespace BookStore.Domain.IRepository.Comment
         Task<IEnumerable<CommentEntity>> GetCommentsByReviewIdAsync(Guid reviewId, int page, int pageSize);
         Task<int> GetCommentsCountByBookIdAsync(Guid bookId);
         Task<int> GetCommentsCountByReviewIdAsync(Guid reviewId);
+        Task<int> GetRepliesCountAsync(Guid parentCommentId);
         Task<int> GetUserRecentCommentsCountAsync(Guid userId, int minutes);
         Task<IEnumerable<CommentEntity>> GetRepliesByParentIdAsync(Guid parentCommentId);
     }

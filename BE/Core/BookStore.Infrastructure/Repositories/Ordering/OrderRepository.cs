@@ -61,9 +61,44 @@ namespace BookStore.Infrastructure.Repositories.Ordering
                 .ToListAsync();
         }
 
+        public async Task<(IEnumerable<Order> Items, int TotalCount)> GetOrdersAsync(string? status = null, int skip = 0, int take = 20)
+        {
+            var query = _dbSet.AsQueryable();
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(o => o.Status == status);
+            }
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Include(o => o.Items).ThenInclude(i => i.Book).ThenInclude(b => b.Images)
+                .Include(o => o.Address)
+                .Include(o => o.PaymentTransaction)
+                .Include(o => o.User)
+                .OrderByDescending(o => o.CreatedAt)
+                .Skip(skip)
+                .Take(take)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
         public async Task<int> CountOrdersByUserIdAsync(Guid userId, string? status = null)
         {
             var query = _dbSet.Where(o => o.UserId == userId);
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(o => o.Status == status);
+            }
+
+            return await query.CountAsync();
+        }
+
+        public async Task<int> CountOrdersAsync(string? status = null)
+        {
+            var query = _dbSet.AsQueryable();
 
             if (!string.IsNullOrEmpty(status))
             {
@@ -172,6 +207,33 @@ namespace BookStore.Infrastructure.Repositories.Ordering
                 .ToListAsync();
         }
 
+        public async Task<(decimal TotalRevenue, int TotalOrders, IReadOnlyList<(DateTime Date, decimal Revenue, int OrderCount)> DailyRevenues)> GetRevenueSummaryAsync(DateTime from, DateTime to)
+        {
+            var dailyRevenues = await _dbSet
+                .Where(o => o.CompletedAt.HasValue &&
+                           o.CompletedAt.Value >= from &&
+                           o.CompletedAt.Value <= to)
+                .GroupBy(o => o.CompletedAt!.Value.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Revenue = g.Sum(o => o.FinalAmount),
+                    OrderCount = g.Count()
+                })
+                .OrderBy(x => x.Date)
+                .ToListAsync();
+
+            var totalRevenue = dailyRevenues.Sum(x => x.Revenue);
+            var totalOrders = dailyRevenues.Sum(x => x.OrderCount);
+
+            return (
+                totalRevenue,
+                totalOrders,
+                dailyRevenues
+                    .Select(x => (x.Date, x.Revenue, x.OrderCount))
+                    .ToList());
+        }
+
         public async Task<Dictionary<Guid, int>> GetTopSellingBooksAsync(DateTime from, DateTime to, int top = 10)
         {
             return await _context.OrderItems
@@ -185,10 +247,60 @@ namespace BookStore.Infrastructure.Repositories.Ordering
                 .ToDictionaryAsync(x => x.BookId, x => x.Quantity);
         }
 
+        public async Task<IReadOnlyList<(Guid BookId, string BookTitle, string? BookCoverUrl, int QuantitySold, decimal TotalRevenue, decimal AveragePrice)>> GetTopSellingBookStatsAsync(DateTime from, DateTime to, int top = 10)
+        {
+            var stats = await _context.OrderItems
+                .Where(oi => oi.Order.CompletedAt.HasValue &&
+                            oi.Order.CompletedAt.Value >= from &&
+                            oi.Order.CompletedAt.Value <= to)
+                .GroupBy(oi => oi.BookId)
+                .Select(g => new
+                {
+                    BookId = g.Key,
+                    QuantitySold = g.Sum(oi => oi.Quantity),
+                    TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
+                    AveragePrice = g.Average(oi => oi.UnitPrice)
+                })
+                .OrderByDescending(x => x.QuantitySold)
+                .Take(top)
+                .ToListAsync();
+
+            var bookIds = stats.Select(x => x.BookId).ToList();
+            var books = await _context.Books
+                .Where(book => bookIds.Contains(book.Id))
+                .Include(book => book.Images)
+                .ToDictionaryAsync(book => book.Id);
+
+            return stats
+                .Where(stat => books.ContainsKey(stat.BookId))
+                .Select(stat =>
+                {
+                    var book = books[stat.BookId];
+                    return (
+                        stat.BookId,
+                        book.Title,
+                        book.Images
+                            .OrderBy(image => image.DisplayOrder)
+                            .FirstOrDefault()?.ImageUrl,
+                        stat.QuantitySold,
+                        stat.TotalRevenue,
+                        stat.AveragePrice);
+                })
+                .ToList();
+        }
+
         public async Task<Dictionary<string, int>> GetOrderCountsByStatusAsync(DateTime from, DateTime to)
         {
             return await _dbSet
                 .Where(o => o.CreatedAt >= from && o.CreatedAt <= to)
+                .GroupBy(o => o.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Status, x => x.Count);
+        }
+
+        public async Task<Dictionary<string, int>> GetOrderCountsByStatusAsync()
+        {
+            return await _dbSet
                 .GroupBy(o => o.Status)
                 .Select(g => new { Status = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.Status, x => x.Count);

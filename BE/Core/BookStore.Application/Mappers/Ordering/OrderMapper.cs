@@ -32,6 +32,11 @@ namespace BookStore.Application.Mappers.Ordering
             };
         }
 
+        public static List<OrderDto> ToDtoList(this IEnumerable<Order> orders)
+        {
+            return orders.Select(order => order.ToDto()).ToList();
+        }
+
         // OrderItem Entity -> OrderItemDto
         public static OrderItemDto ToDto(this OrderItem item)
         {
@@ -140,6 +145,34 @@ namespace BookStore.Application.Mappers.Ordering
                 Quantity = dto.Quantity,
                 UnitPrice = dto.UnitPrice
             };
+        }
+
+        public static CreateOrderDto ToCreateOrderDto(
+            this Domain.Entities.Cart.Cart cart,
+            Guid userId,
+            CreateOrderAddressDto address,
+            Guid? couponId = null)
+        {
+            return new CreateOrderDto
+            {
+                UserId = userId,
+                Items = cart.Items.ToCreateOrderItemDtos(),
+                Address = address,
+                CouponId = couponId
+            };
+        }
+
+        public static List<CreateOrderItemDto> ToCreateOrderItemDtos(
+            this IEnumerable<Domain.Entities.Cart.CartItem> cartItems)
+        {
+            return cartItems
+                .Select(cartItem => new CreateOrderItemDto
+                {
+                    BookId = cartItem.BookId,
+                    Quantity = cartItem.Quantity,
+                    UnitPrice = cartItem.UnitPrice
+                })
+                .ToList();
         }
 
         // UpdateOrderDto -> Update Order Entity

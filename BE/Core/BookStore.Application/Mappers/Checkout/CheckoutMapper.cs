@@ -1,5 +1,6 @@
 using BookStore.Application.Dtos.Cart;
 using BookStore.Application.Dtos.Checkout;
+using BookStore.Application.Dtos.Inventory;
 using BookStore.Application.Dtos.Ordering;
 using BookStore.Application.Mappers.Cart;
 using BookStore.Application.Mappers.Ordering;
@@ -57,6 +58,21 @@ namespace BookStore.Application.Mappers.Checkout
                 CouponCode = couponCode,
                 IsValid = isValid,
                 ValidationMessages = validationMessages ?? new List<string>()
+            };
+        }
+
+        public static CheckoutPreviewDto ToEmptyCheckoutPreviewDto(Guid userId)
+        {
+            return new CheckoutPreviewDto
+            {
+                UserId = userId,
+                Cart = new CartDto { UserId = userId },
+                Subtotal = 0,
+                DiscountAmount = 0,
+                ShippingFee = 0,
+                TotalAmount = 0,
+                IsValid = false,
+                ValidationMessages = new List<string> { "Giá» hÃ ng trá»‘ng" }
             };
         }
 
@@ -284,6 +300,54 @@ namespace BookStore.Application.Mappers.Checkout
                 Quantity = item.Quantity,
                 UnitPrice = item.BookPrice
             }).ToList();
+        }
+
+        public static CheckoutRequestDto ToCheckoutRequestDto(
+            Guid userId,
+            CreateOrderAddressDto address,
+            string? couponCode,
+            string provider,
+            string paymentMethod = "Online")
+        {
+            return new CheckoutRequestDto
+            {
+                UserId = userId,
+                Address = address,
+                CouponCode = couponCode,
+                Provider = provider,
+                PaymentMethod = paymentMethod
+            };
+        }
+
+        public static ReserveStockDto ToReserveStockDto(
+            this CartItemDto item,
+            Guid warehouseId,
+            string orderId)
+        {
+            return new ReserveStockDto
+            {
+                BookId = item.BookId,
+                WarehouseId = warehouseId,
+                Quantity = item.Quantity,
+                OrderId = orderId
+            };
+        }
+
+        public static CartDto ToCartDtoForStockRelease(this OrderDto order)
+        {
+            return new CartDto
+            {
+                Id = order.Id,
+                UserId = order.UserId,
+                IsActive = false,
+                Items = order.Items.Select(item => new CartItemDto
+                {
+                    BookId = item.BookId,
+                    BookTitle = item.BookTitle,
+                    BookPrice = item.UnitPrice,
+                    Quantity = item.Quantity
+                }).ToList()
+            };
         }
 
         public static decimal CalculateSubtotal(this ICollection<CartItem> cartItems)

@@ -1,6 +1,6 @@
 ﻿using BookStore.Application.Dtos.Catalog.Book;
 using BookStore.Application.IService.Catalog;
-using BookStore.Domain.Entities.Catalog;
+using BookStore.Application.Mappers.Catalog.Book;
 using BookStore.Domain.IRepository.Catalog;
 
 namespace BookStore.Application.Services.Catalog
@@ -17,12 +17,7 @@ namespace BookStore.Application.Services.Catalog
         public async Task<IEnumerable<BookFormatDto>> GetAllAsync()
         {
             var formats = await _bookFormatRepository.GetAllAsync();
-            return formats.Select(f => new BookFormatDto
-            {
-                Id = f.Id,
-                FormatType = f.FormatType,
-                Description = f.Description
-            });
+            return formats.ToDtoList();
         }
 
         public async Task<BookFormatDto?> GetByIdAsync(Guid id)
@@ -30,12 +25,7 @@ namespace BookStore.Application.Services.Catalog
             var format = await _bookFormatRepository.GetByIdAsync(id);
             if (format == null) return null;
 
-            return new BookFormatDto
-            {
-                Id = format.Id,
-                FormatType = format.FormatType,
-                Description = format.Description
-            };
+            return format.ToDto();
         }
 
         public async Task<BookFormatDto?> GetByFormatTypeAsync(string formatType)
@@ -43,12 +33,7 @@ namespace BookStore.Application.Services.Catalog
             var format = await _bookFormatRepository.GetByFormatType(formatType);
             if (format == null) return null;
 
-            return new BookFormatDto
-            {
-                Id = format.Id,
-                FormatType = format.FormatType,
-                Description = format.Description
-            };
+            return format.ToDto();
         }
 
         public async Task<BookFormatDto> CreateAsync(BookFormatDto dto)
@@ -59,12 +44,7 @@ namespace BookStore.Application.Services.Catalog
                 throw new InvalidOperationException($"Định dạng '{dto.FormatType}' đã tồn tại");
             }
 
-            var format = new BookFormat
-            {
-                Id = Guid.NewGuid(),
-                FormatType = dto.FormatType,
-                Description = dto.Description
-            };
+            var format = dto.ToEntity();
 
             await _bookFormatRepository.AddAsync(format);
             await _bookFormatRepository.SaveChangesAsync();
@@ -87,8 +67,7 @@ namespace BookStore.Application.Services.Catalog
                 throw new InvalidOperationException($"Định dạng '{dto.FormatType}' đã được sử dụng");
             }
 
-            format.FormatType = dto.FormatType;
-            format.Description = dto.Description;
+            format.UpdateFromDto(dto);
 
             _bookFormatRepository.Update(format);
             await _bookFormatRepository.SaveChangesAsync();

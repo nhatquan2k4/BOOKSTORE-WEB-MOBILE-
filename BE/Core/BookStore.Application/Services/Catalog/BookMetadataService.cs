@@ -1,6 +1,6 @@
 ﻿using BookStore.Application.Dtos.Catalog.Book;
 using BookStore.Application.IService.Catalog;
-using BookStore.Domain.Entities.Catalog;
+using BookStore.Application.Mappers.Catalog;
 using BookStore.Domain.IRepository.Catalog;
 
 namespace BookStore.Application.Services.Catalog
@@ -23,25 +23,13 @@ namespace BookStore.Application.Services.Catalog
             var metadata = await _bookMetadataRepository.GetByIdAsync(id);
             if (metadata == null) return null;
 
-            return new BookMetadataDto
-            {
-                Id = metadata.Id,
-                Key = metadata.Key,
-                Value = metadata.Value,
-                BookId = metadata.BookId
-            };
+            return metadata.ToDto();
         }
 
         public async Task<IEnumerable<BookMetadataDto>> GetByBookIdAsync(Guid bookId)
         {
             var metadata = await _bookMetadataRepository.GetByBookIdAsync(bookId);
-            return metadata.Select(m => new BookMetadataDto
-            {
-                Id = m.Id,
-                Key = m.Key,
-                Value = m.Value,
-                BookId = m.BookId
-            });
+            return metadata.ToDtoList();
         }
 
         public async Task<BookMetadataDto> CreateAsync(BookMetadataDto dto)
@@ -59,13 +47,7 @@ namespace BookStore.Application.Services.Catalog
                 throw new ArgumentException("Key không được để trống");
             }
 
-            var metadata = new BookMetadata
-            {
-                Id = Guid.NewGuid(),
-                Key = dto.Key,
-                Value = dto.Value,
-                BookId = dto.BookId
-            };
+            var metadata = dto.ToEntity();
 
             await _bookMetadataRepository.AddAsync(metadata);
             await _bookMetadataRepository.SaveChangesAsync();
@@ -82,9 +64,7 @@ namespace BookStore.Application.Services.Catalog
                 throw new InvalidOperationException("Metadata sách không tồn tại");
             }
 
-            metadata.Key = dto.Key;
-            metadata.Value = dto.Value;
-            metadata.BookId = dto.BookId;
+            metadata.UpdateFromDto(dto);
 
             _bookMetadataRepository.Update(metadata);
             await _bookMetadataRepository.SaveChangesAsync();

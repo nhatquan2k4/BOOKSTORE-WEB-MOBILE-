@@ -53,15 +53,8 @@ namespace BookStore.Application.Services.Identity.Auth
             if (!_passwordService.VerifyPassword(loginDto.Password, user.PasswordHash))
                 throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
 
-            var roles = user.UserRoles?
-            .Select(ur => ur.Role?.Name ?? "")
-            .Where(n => !string.IsNullOrEmpty(n)) ?? Enumerable.Empty<string>();
-
-            var permissions = user.UserRoles?
-                .SelectMany(ur => ur.Role?.RolePermissions ?? new List<Domain.Entities.Identity.RolePermission>())
-                .Select(rp => rp.Permission?.Name ?? "")
-                .Where(n => !string.IsNullOrEmpty(n))
-                .Distinct() ?? Enumerable.Empty<string>();
+            var roles = user.GetRoleNames();
+            var permissions = user.GetPermissionNames();
 
             var accessToken = _tokenService.GenerateAccessToken(user.Id, user.Email, roles, permissions);
             var refreshToken = _tokenService.GenerateRefreshToken();
@@ -110,10 +103,7 @@ namespace BookStore.Application.Services.Identity.Auth
             await _emailVerificationService.GenerateVerificationTokenAsync(user.Id);
 
             var roles = userRole_entity != null ? new List<string> { "User" } : new List<string>();
-            var permissions = userRole_entity?.RolePermissions?
-                .Select(rp => rp.Permission?.Name ?? "")
-                .Where(n => !string.IsNullOrEmpty(n))
-                .ToList() ?? new List<string>();
+            var permissions = userRole_entity?.GetPermissionNames() ?? Enumerable.Empty<string>();
 
             var accessToken = _tokenService.GenerateAccessToken(user.Id, user.Email, roles, permissions);
             var refreshToken = _tokenService.GenerateRefreshToken();
@@ -144,25 +134,18 @@ namespace BookStore.Application.Services.Identity.Auth
 
             await _tokenService.RevokeRefreshTokenAsync(refreshTokenDto.RefreshToken);
 
-            var roles = user.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)) ?? Enumerable.Empty<string>();
-
-            var permissions = user.UserRoles?
-                .SelectMany(ur => ur.Role?.RolePermissions ?? new List<Domain.Entities.Identity.RolePermission>())
-                .Select(rp => rp.Permission?.Name ?? "")
-                .Where(n => !string.IsNullOrEmpty(n))
-                .Distinct() ?? Enumerable.Empty<string>();
+            var roles = user.GetRoleNames();
+            var permissions = user.GetPermissionNames();
 
             var newAccessToken = _tokenService.GenerateAccessToken(user.Id, user.Email, roles, permissions);
             var newRefreshToken = _tokenService.GenerateRefreshToken();
             await _tokenService.CreateRefreshTokenAsync(user.Id, newRefreshToken);
 
-            return new RefreshTokenResponseDto
-            {
-                AccessToken = newAccessToken,
-                RefreshToken = newRefreshToken,
-                AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
-                RefreshTokenExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays)
-            };
+            return AuthMapper.ToRefreshTokenResponseDto(
+                newAccessToken,
+                newRefreshToken,
+                DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays));
         }
 
         public async Task<bool> LogoutAsync(Guid userId)

@@ -133,13 +133,13 @@ namespace BookStore.Application.Services.Shipping
         public async Task<IEnumerable<ShipperDto>> GetAllShippersAsync()
         {
             var shippers = await _shipperRepository.GetAllAsync();
-            return shippers.Select(s => s.ToDto());
+            return shippers.ToDtoList();
         }
 
         public async Task<IEnumerable<ShipperDto>> GetActiveShippersAsync()
         {
             var shippers = await _shipperRepository.GetActiveShippersAsync();
-            return shippers.Select(s => s.ToDto());
+            return shippers.ToDtoList();
         }
 
         public async Task<PagedShipperDto> GetPagedShippersAsync(

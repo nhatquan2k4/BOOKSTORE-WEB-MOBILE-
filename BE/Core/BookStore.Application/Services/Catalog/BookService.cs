@@ -58,7 +58,7 @@ namespace BookStore.Application.Services.Catalog
         public override async Task<IEnumerable<BookDto>> GetAllAsync()
         {
             var allBooks = await _bookRepository.GetAllAsync();
-            return allBooks.Select(b => b.ToDto()).ToList();
+            return allBooks.ToDtoList();
         }
 
         public async Task<PagedResult<BookDto>> GetAllAsync(
@@ -70,48 +70,16 @@ namespace BookStore.Application.Services.Catalog
             Guid? publisherId = null,
             bool? isAvailable = null)
         {
-            var allBooks = await _bookRepository.GetAllAsync();
-            var query = allBooks.AsQueryable();
+            var (books, totalCount) = await _bookRepository.GetPagedAsync(
+                pageNumber,
+                pageSize,
+                searchTerm,
+                categoryId,
+                authorId,
+                publisherId,
+                isAvailable);
 
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                query = query.Where(b =>
-                    (b.Title ?? string.Empty).Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    (b.ISBN != null && b.ISBN.Value.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)));
-            }
-
-            if (categoryId.HasValue)
-            {
-                query = query.Where(b =>
-                    b.BookCategories.Any(bc => bc.CategoryId == categoryId.Value));
-            }
-
-            if (authorId.HasValue)
-            {
-                query = query.Where(b =>
-                    b.BookAuthors.Any(ba => ba.AuthorId == authorId.Value));
-            }
-
-            if (publisherId.HasValue)
-            {
-                query = query.Where(b => b.PublisherId == publisherId.Value);
-            }
-
-            if (isAvailable.HasValue)
-            {
-                query = query.Where(b => b.IsAvailable == isAvailable.Value);
-            }
-
-            var totalCount = query.Count();
-
-            var books = query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            var bookDtos = books.Select(b => b.ToDto()).ToList();
-
-            return new PagedResult<BookDto>(bookDtos, totalCount, pageNumber, pageSize);
+            return new PagedResult<BookDto>(books.ToDtoList(), totalCount, pageNumber, pageSize);
         }
 
         // --- UPDATE: Get detail and calculate rental plans ---
@@ -124,93 +92,15 @@ namespace BookStore.Application.Services.Catalog
 
             // Calculate rental plans if price exists
             // Logic: Get current valid price
-            var currentPrice = book.Prices
-                                .Where(p => p.IsCurrent && p.EffectiveFrom <= DateTime.UtcNow)
-                                .OrderByDescending(p => p.EffectiveFrom)
-                                .FirstOrDefault()?.Amount ?? 0;
+            var currentPrice = book.GetCurrentPriceAmount() ?? 0;
 
             if (currentPrice > 0)
             {
                 if (dto.CurrentPrice == null || dto.CurrentPrice == 0) dto.CurrentPrice = currentPrice;
-                dto.RentalPlans = CalculateRentalPlans(currentPrice);
+                dto.RentalPlans = currentPrice.ToRentalPlanDtos();
             }
 
             return dto;
-        }
-
-        // Helper: Calculate Rental Plans (New Logic: Percent based + Min Floor + Consistency Check)
-        private List<RentalPlanDto> CalculateRentalPlans(decimal purchasePrice)
-        {
-            var plans = new List<RentalPlanDto>();
-            
-            // Cấu hình % giá thuê dựa trên giá bìa (CẬP NHẬT THEO YÊU CẦU MỚI)
-            // 3 ngày: 10%, 7 ngày: 15%, 14 ngày: 25%, 30 ngày: 40%, 180 ngày: 60%
-            var configs = new[]
-            {
-                new { Days = 3,   Percent = 0.10m, Label = "3 ngày", Popular = false }, 
-                new { Days = 7,   Percent = 0.15m, Label = "7 ngày", Popular = false },
-                new { Days = 14,  Percent = 0.25m, Label = "14 ngày", Popular = false },
-                new { Days = 30,  Percent = 0.40m, Label = "30 ngày", Popular = false },
-                new { Days = 180, Percent = 0.60m, Label = "180 ngày", Popular = true }
-            };
-
-            // Tính giá cơ sở gói 3 ngày để so sánh mức tiết kiệm
-            decimal base3Price = Math.Ceiling((purchasePrice * 0.10m) / 1000) * 1000;
-            if (base3Price < 2000) base3Price = 2000; // Giá tối thiểu tham chiếu
-            decimal basePerDay = base3Price / 3;
-
-            int index = 1;
-            foreach (var cfg in configs)
-            {
-                // 1. Tính giá theo %
-                decimal rawPrice = purchasePrice * cfg.Percent;
-
-                // 2. Làm tròn lên hàng nghìn (VD: 1250 -> 2000)
-                decimal price = Math.Ceiling(rawPrice / 1000) * 1000;
-
-                // 3. Áp dụng giá sàn (Min Price) để tránh giá thuê quá thấp (VD: 0đ hoặc 500đ)
-                // Gói 3 ngày tối thiểu 2k, các gói khác tối thiểu 3k
-                decimal minPrice = cfg.Days <= 3 ? 2000 : 3000;
-                if (price < minPrice) price = minPrice;
-
-                // 4. Logic đảm bảo tính hợp lý: 
-                // Giá gói thấp ngày KHÔNG ĐƯỢC cao hơn hoặc bằng giá gói cao ngày liền kề
-                // (Logic này tự động đúng do % tăng dần, nhưng check thêm cho chắc chắn với trường hợp làm tròn)
-                if (plans.Any())
-                {
-                    var prevPlan = plans.Last();
-                    // Nếu giá gói hiện tại (nhiều ngày hơn) <= giá gói trước (ít ngày hơn)
-                    // Thì tăng giá gói hiện tại lên 1 chút (thêm 1000đ so với gói trước)
-                    if (price <= prevPlan.Price)
-                    {
-                        price = prevPlan.Price + 1000;
-                    }
-                }
-
-                // 5. Tính % tiết kiệm (So với việc thuê gói 7 ngày lặp lại)
-                int savings = 0;
-                if (cfg.Days > 7 && basePerDay > 0)
-                {
-                    decimal theoreticalPrice = basePerDay * cfg.Days;
-                    if (theoreticalPrice > price)
-                    {
-                        savings = (int)Math.Round((1 - price / theoreticalPrice) * 100);
-                        if (savings < 0) savings = 0;
-                    }
-                }
-
-                plans.Add(new RentalPlanDto
-                {
-                    Id = index++,
-                    Days = cfg.Days,
-                    DurationLabel = cfg.Label,
-                    Price = price,
-                    SavingsPercentage = savings,
-                    IsPopular = cfg.Popular
-                });
-            }
-
-            return plans;
         }
 
         public async Task<BookDetailDto?> GetByISBNAsync(string isbn)
@@ -226,26 +116,26 @@ namespace BookStore.Application.Services.Catalog
 
         public async Task<List<BookDto>> GetByCategoryAsync(Guid categoryId, int top = 10)
         {
-            var books = await _bookRepository.GetByCategoryAsync(categoryId);
-            return books.Take(top).Select(b => b.ToDto()).ToList();
+            var books = await _bookRepository.GetByCategoryAsync(categoryId, top);
+            return books.ToDtoList();
         }
 
         public async Task<List<BookDto>> GetByAuthorAsync(Guid authorId, int top = 10)
         {
-            var books = await _bookRepository.GetByAuthorAsync(authorId);
-            return books.Take(top).Select(b => b.ToDto()).ToList();
+            var books = await _bookRepository.GetByAuthorAsync(authorId, top);
+            return books.ToDtoList();
         }
 
         public async Task<List<BookDto>> GetByPublisherAsync(Guid publisherId, int top = 10)
         {
-            var books = await _bookRepository.GetByPublisherAsync(publisherId);
-            return books.Take(top).Select(b => b.ToDto()).ToList();
+            var books = await _bookRepository.GetByPublisherAsync(publisherId, top);
+            return books.ToDtoList();
         }
 
         public async Task<List<BookDto>> SearchAsync(string searchTerm, int top = 20)
         {
-            var books = await _bookRepository.SearchAsync(searchTerm);
-            return books.Take(top).Select(b => b.ToDto()).ToList();
+            var books = await _bookRepository.SearchAsync(searchTerm, top);
+            return books.ToDtoList();
         }
 
         public new async Task<BookDetailDto> AddAsync(CreateBookDto dto)
@@ -496,59 +386,12 @@ namespace BookStore.Application.Services.Catalog
         {
             try
             {
-                var allBooks = await _bookRepository.GetAllAsync();
-                var availableBooks = allBooks.Where(b => b.IsAvailable).ToList();
+                var recommendations = await _bookRepository.GetRecommendationsAsync(
+                    excludeBookIds,
+                    categoryIds,
+                    limit);
 
-                if (excludeBookIds.Any())
-                    availableBooks = availableBooks.Where(b => !excludeBookIds.Contains(b.Id)).ToList();
-
-                var recommendations = new List<Book>();
-
-                if (categoryIds.Any())
-                {
-                    var sameCategoryBooks = availableBooks
-                        .Where(b => b.BookCategories.Any(bc => categoryIds.Contains(bc.CategoryId)))
-                        .OrderByDescending(b => b.BookCategories.Count(bc => categoryIds.Contains(bc.CategoryId)))
-                        .ThenByDescending(b =>
-                            b.Prices
-                                .Where(p => p.IsCurrent
-                                            && p.EffectiveFrom <= DateTime.UtcNow
-                                            && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
-                                .OrderByDescending(p => p.EffectiveFrom)
-                                .FirstOrDefault()?.Amount ?? 0)
-                        .Take((int)(limit * 0.7))
-                        .ToList();
-
-                    recommendations.AddRange(sameCategoryBooks);
-                }
-
-                var remainingSlots = limit - recommendations.Count;
-                if (remainingSlots > 0)
-                {
-                    var popularBooks = availableBooks
-                        .Where(b => !recommendations.Contains(b))
-                        .OrderByDescending(b => b.StockItems?.Sum(s => s.QuantityOnHand) ?? 0)
-                        .ThenByDescending(b => b.PublicationYear)
-                        .Take(remainingSlots)
-                        .ToList();
-
-                    recommendations.AddRange(popularBooks);
-                }
-
-                remainingSlots = limit - recommendations.Count;
-                if (remainingSlots > 0)
-                {
-                    var random = new Random();
-                    var fillerBooks = availableBooks
-                        .Where(b => !recommendations.Contains(b))
-                        .OrderBy(_ => random.Next())
-                        .Take(remainingSlots)
-                        .ToList();
-
-                    recommendations.AddRange(fillerBooks);
-                }
-
-                return recommendations.Select(b => b.ToDto()).ToList();
+                return recommendations.ToDtoList();
             }
             catch (Exception ex)
             {
@@ -561,14 +404,8 @@ namespace BookStore.Application.Services.Catalog
         {
             try
             {
-                var books = await _repository.GetAllAsync();
-                
-                return books
-                    .Where(b => b.IsAvailable)
-                    .OrderByDescending(b => b.StockItems?.Sum(s => s.QuantityOnHand) ?? 0)
-                    .Take(top)
-                    .Select(b => b.ToDto())
-                    .ToList();
+                var books = await _bookRepository.GetBestSellingBooksAsync(top);
+                return books.ToDtoList();
             }
             catch (Exception ex)
             {
@@ -581,15 +418,8 @@ namespace BookStore.Application.Services.Catalog
         {
             try
             {
-                var books = await _repository.GetAllAsync();
-                
-                return books
-                    .Where(b => b.IsAvailable)
-                    .OrderByDescending(b => b.PublicationYear)
-                    .ThenBy(b => b.Title)
-                    .Take(top)
-                    .Select(b => b.ToDto())
-                    .ToList();
+                var books = await _bookRepository.GetNewestBooksAsync(top);
+                return books.ToDtoList();
             }
             catch (Exception ex)
             {
@@ -602,16 +432,8 @@ namespace BookStore.Application.Services.Catalog
         {
             try
             {
-                // TODO: Implement proper view tracking
-                // For now, return popular books based on stock
-                var books = await _repository.GetAllAsync();
-                
-                return books
-                    .Where(b => b.IsAvailable)
-                    .OrderByDescending(b => b.StockItems?.Sum(s => s.QuantityOnHand) ?? 0)
-                    .Take(top)
-                    .Select(b => b.ToDto())
-                    .ToList();
+                var books = await _bookRepository.GetMostViewedBooksAsync(top);
+                return books.ToDtoList();
             }
             catch (Exception ex)
             {
@@ -654,17 +476,7 @@ namespace BookStore.Application.Services.Catalog
             if (book == null)
                 throw new NotFoundException($"Không tìm thấy sách với ID {bookId}");
 
-            // Tắt tất cả giá cũ đang active (query với AsTracking để EF Core track entities)
-            var allPrices = await _priceRepository.GetAllAsync();
-            var currentPrices = allPrices.Where(p => p.BookId == bookId && p.IsCurrent).ToList();
-            
-            // Chỉ cần set giá trị, không cần gọi Update() vì entities đã được track
-            foreach (var price in currentPrices)
-            {
-                price.IsCurrent = false;
-                price.EffectiveTo = DateTime.UtcNow;
-                // KHÔNG gọi _priceRepository.Update(price) - EF sẽ tự động detect changes
-            }
+            await _priceRepository.DeactivateCurrentPriceAsync(bookId);
 
             // Tạo giá mới
             var newPrice = new BookStore.Domain.Entities.Pricing___Inventory.Price

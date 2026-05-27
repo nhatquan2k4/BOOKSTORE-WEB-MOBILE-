@@ -46,19 +46,35 @@ namespace BookStore.Application.Mappers.Identity.Auth
                 IsActive = user.IsActive,
                 
                 // Lấy danh sách roles
-                Roles = user.UserRoles?
-                    .Select(ur => ur.Role?.Name)
-                    .Where(name => name != null)
-                    .ToList() ?? new List<string>(),
+                Roles = user.GetRoleNames().ToList(),
                 
                 // Lấy danh sách permissions từ roles
-                Permissions = user.UserRoles?
-                    .SelectMany(ur => ur.Role?.RolePermissions ?? new List<Domain.Entities.Identity.RolePermission>())
-                    .Select(rp => rp.Permission?.Name)
-                    .Where(name => name != null)
-                    .Distinct()
-                    .ToList() ?? new List<string>()
+                Permissions = user.GetPermissionNames().ToList()
             };
+        }
+
+        public static IEnumerable<string> GetRoleNames(this Domain.Entities.Identity.User user)
+        {
+            return user.UserRoles?
+                .Select(userRole => userRole.Role?.Name ?? string.Empty)
+                .Where(name => !string.IsNullOrEmpty(name)) ?? Enumerable.Empty<string>();
+        }
+
+        public static IEnumerable<string> GetPermissionNames(this Domain.Entities.Identity.User user)
+        {
+            return user.UserRoles?
+                .SelectMany(userRole => userRole.Role?.RolePermissions ?? new List<RolePermission>())
+                .Select(rolePermission => rolePermission.Permission?.Name ?? string.Empty)
+                .Where(name => !string.IsNullOrEmpty(name))
+                .Distinct() ?? Enumerable.Empty<string>();
+        }
+
+        public static IEnumerable<string> GetPermissionNames(this Role role)
+        {
+            return role.RolePermissions?
+                .Select(rolePermission => rolePermission.Permission?.Name ?? string.Empty)
+                .Where(name => !string.IsNullOrEmpty(name))
+                .Distinct() ?? Enumerable.Empty<string>();
         }
 
         #endregion

@@ -20,6 +20,11 @@ namespace BookStore.Application.Mappers.Shipping
             };
         }
 
+        public static IEnumerable<ShipperDto> ToDtoList(this IEnumerable<Shipper> shippers)
+        {
+            return shippers.Select(shipper => shipper.ToDto());
+        }
+
         // Shipper Entity -> ShipperDetailDto
         public static ShipperDetailDto ToDetailDto(this Shipper shipper)
         {

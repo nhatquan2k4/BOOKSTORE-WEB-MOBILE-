@@ -11,6 +11,16 @@ namespace BookStore.Infrastructure.Repository.Catalog
         {
         }
 
+        public async Task<IEnumerable<Category>> GetRootCategoriesAsync()
+        {
+            return await _dbSet
+                .Where(c => c.ParentId == null)
+                .Include(c => c.SubCategories)
+                    .ThenInclude(c => c.SubCategories)
+                .Include(c => c.BookCategories)
+                .ToListAsync();
+        }
+
         public async Task<IEnumerable<Category>> GetSubCategoriesAsync(Guid parentId)
         {
             return await _dbSet
@@ -22,6 +32,11 @@ namespace BookStore.Infrastructure.Repository.Catalog
         {
             return await _dbSet
                 .AnyAsync(c => c.ParentId == categoryId);
+        }
+
+        public async Task<bool> HasBooksAsync(Guid categoryId)
+        {
+            return await _context.BookCategories.AnyAsync(bookCategory => bookCategory.CategoryId == categoryId);
         }
     }
 }

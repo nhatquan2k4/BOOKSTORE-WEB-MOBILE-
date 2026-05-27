@@ -1,6 +1,6 @@
 ﻿using BookStore.Application.Dtos.Catalog.Book;
 using BookStore.Application.IService.Catalog;
-using BookStore.Domain.Entities.Catalog;
+using BookStore.Application.Mappers.Catalog.Book;
 using BookStore.Domain.IRepository.Catalog;
 using BookStore.Shared.Exceptions;
 using BookStore.Shared.Utilities;
@@ -19,15 +19,7 @@ namespace BookStore.Application.Services.Catalog
         public async Task<IEnumerable<BookFileDto>> GetAllAsync()
         {
             var files = await _bookFileRepository.GetAllAsync();
-            return files.Select(f => new BookFileDto
-            {
-                Id = f.Id,
-                FileUrl = f.FileUrl,
-                FileType = f.FileType,
-                FileSize = f.FileSize,
-                IsPreview = f.IsPreview,
-                BookId = f.BookId
-            });
+            return files.ToDtoList();
         }
 
         public async Task<BookFileDto?> GetByIdAsync(Guid id)
@@ -35,15 +27,7 @@ namespace BookStore.Application.Services.Catalog
             var file = await _bookFileRepository.GetByIdAsync(id);
             if (file == null) return null;
 
-            return new BookFileDto
-            {
-                Id = file.Id,
-                FileUrl = file.FileUrl,
-                FileType = file.FileType,
-                FileSize = file.FileSize,
-                IsPreview = file.IsPreview,
-                BookId = file.BookId
-            };
+            return file.ToDto();
         }
 
         public async Task<BookFileDto> CreateAsync(BookFileDto dto)
@@ -52,15 +36,7 @@ namespace BookStore.Application.Services.Catalog
             Guard.AgainstNullOrWhiteSpace(dto.FileUrl, nameof(dto.FileUrl));
             Guard.AgainstNullOrWhiteSpace(dto.FileType, nameof(dto.FileType));
 
-            var file = new BookFile
-            {
-                Id = Guid.NewGuid(),
-                FileUrl = dto.FileUrl,
-                FileType = dto.FileType,
-                FileSize = dto.FileSize,
-                IsPreview = dto.IsPreview,
-                BookId = dto.BookId
-            };
+            var file = dto.ToEntity();
 
             await _bookFileRepository.AddAsync(file);
             await _bookFileRepository.SaveChangesAsync();
@@ -81,11 +57,7 @@ namespace BookStore.Application.Services.Catalog
             Guard.AgainstNullOrWhiteSpace(dto.FileUrl, nameof(dto.FileUrl));
             Guard.AgainstNullOrWhiteSpace(dto.FileType, nameof(dto.FileType));
 
-            file.FileUrl = dto.FileUrl;
-            file.FileType = dto.FileType;
-            file.FileSize = dto.FileSize;
-            file.IsPreview = dto.IsPreview;
-            file.BookId = dto.BookId;
+            file.UpdateFromDto(dto);
 
             _bookFileRepository.Update(file);
             await _bookFileRepository.SaveChangesAsync();

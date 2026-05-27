@@ -1,5 +1,6 @@
 using BookStore.Application.Dtos.Catalog.Wishlist;
 using BookStore.Application.IService.Catalog;
+using BookStore.Application.Mappers.Catalog.Wishlist;
 using BookStore.Domain.IRepository.Catalog;
 using BookStore.Shared.Utilities;
 using Microsoft.Extensions.Logging;
@@ -26,28 +27,7 @@ namespace BookStore.Application.Services.Catalog
         {
             var wishlistItems = await _wishlistRepository.GetWishlistByUserIdAsync(userId);
 
-            return wishlistItems.Select(w => new WishlistDto
-            {
-                Id = w.Id,
-                UserId = w.UserId,
-                BookId = w.BookId,
-                CreatedAt = w.CreatedAt,
-                BookTitle = w.Book.Title,
-                BookISBN = w.Book.ISBN.Value,
-                BookImageUrl = w.Book.Images.FirstOrDefault()?.ImageUrl,
-                BookPrice = w.Book.Prices
-                    .Where(p => p.IsCurrent && p.EffectiveFrom <= DateTime.UtcNow && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow))
-                    .OrderByDescending(p => p.EffectiveFrom)
-                    .Select(p => p.Amount)
-                    .FirstOrDefault(),
-                BookDiscountPrice = w.Book.Prices
-                    .Where(p => p.IsCurrent && p.EffectiveFrom <= DateTime.UtcNow && (!p.EffectiveTo.HasValue || p.EffectiveTo >= DateTime.UtcNow) && p.DiscountId.HasValue)
-                    .OrderByDescending(p => p.EffectiveFrom)
-                    .Select(p => p.Amount)
-                    .FirstOrDefault(),
-                AuthorNames = string.Join(", ", w.Book.BookAuthors.Select(ba => ba.Author.Name)),
-                PublisherName = w.Book.Publisher?.Name
-            }).ToList();
+            return wishlistItems.ToDtoList();
         }
 
         public async Task<WishlistDto> AddToWishlistAsync(Guid userId, Guid bookId)
@@ -62,13 +42,7 @@ namespace BookStore.Application.Services.Catalog
             {
                 // Trả về item hiện có
                 var existingItem = await _wishlistRepository.GetWishlistItemAsync(userId, bookId);
-                return new WishlistDto
-                {
-                    Id = existingItem!.Id,
-                    UserId = existingItem.UserId,
-                    BookId = existingItem.BookId,
-                    CreatedAt = existingItem.CreatedAt
-                };
+                return existingItem!.ToDto();
             }
 
             // Thêm vào wishlist
@@ -76,13 +50,7 @@ namespace BookStore.Application.Services.Catalog
 
             _logger.LogInformation("User {UserId} added book {BookId} to wishlist", userId, bookId);
 
-            return new WishlistDto
-            {
-                Id = wishlistItem.Id,
-                UserId = wishlistItem.UserId,
-                BookId = wishlistItem.BookId,
-                CreatedAt = wishlistItem.CreatedAt
-            };
+            return wishlistItem.ToDto();
         }
 
         public async Task<bool> RemoveFromWishlistAsync(Guid userId, Guid bookId)
@@ -117,11 +85,7 @@ namespace BookStore.Application.Services.Catalog
         {
             var bookIds = await _wishlistRepository.GetWishlistBookIdsAsync(userId);
 
-            return new WishlistSummaryDto
-            {
-                TotalItems = bookIds.Count,
-                BookIds = bookIds
-            };
+            return bookIds.ToSummaryDto();
         }
     }
 }

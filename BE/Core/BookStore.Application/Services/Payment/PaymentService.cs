@@ -1,7 +1,6 @@
 using BookStore.Application.Dtos.Payment;
 using BookStore.Application.IService.Payment;
 using BookStore.Application.Mappers.Payment;
-using BookStore.Domain.Entities.Ordering___Payment;
 using BookStore.Domain.IRepository.Ordering;
 using BookStore.Domain.IRepository.Payment;
 using BookStore.Shared.Utilities;
@@ -48,22 +47,18 @@ namespace BookStore.Application.Services.Payment
         {
             var skip = (pageNumber - 1) * pageSize;
             var payments = await _paymentRepository.GetByProviderAsync(provider, skip, pageSize);
+            var totalCount = await _paymentRepository.CountByProviderAsync(provider);
 
-            var paymentDtos = payments.Select(p => p.ToDto()).ToList();
-            var totalCount = paymentDtos.Count; // Approximate
-
-            return (paymentDtos, totalCount);
+            return (payments.ToDtoList(), totalCount);
         }
 
         public async Task<(List<PaymentTransactionDto> Items, int TotalCount)> GetPaymentsByStatusAsync(string status, int pageNumber = 1, int pageSize = 20)
         {
             var skip = (pageNumber - 1) * pageSize;
             var payments = await _paymentRepository.GetByStatusAsync(status, skip, pageSize);
+            var totalCount = await _paymentRepository.CountByStatusAsync(status);
 
-            var paymentDtos = payments.Select(p => p.ToDto()).ToList();
-            var totalCount = paymentDtos.Count; // Approximate
-
-            return (paymentDtos, totalCount);
+            return (payments.ToDtoList(), totalCount);
         }
 
 
@@ -80,17 +75,7 @@ namespace BookStore.Application.Services.Payment
             // Generate transaction code
             var transactionCode = GenerateTransactionCode();
 
-            var payment = new PaymentTransaction
-            {
-                Id = Guid.NewGuid(),
-                OrderId = dto.OrderId,
-                Provider = dto.Provider,
-                TransactionCode = transactionCode,
-                PaymentMethod = dto.PaymentMethod,
-                Amount = dto.Amount,
-                Status = "Pending",
-                CreatedAt = DateTime.UtcNow
-            };
+            var payment = dto.ToEntity(transactionCode);
 
             await _paymentRepository.AddAsync(payment);
             await _paymentRepository.SaveChangesAsync();
@@ -191,7 +176,7 @@ namespace BookStore.Application.Services.Payment
         public async Task<List<PaymentTransactionDto>> GetExpiredPendingPaymentsAsync(int minutesThreshold = 15)
         {
             var expiredPayments = await _paymentRepository.GetExpiredPendingPaymentsAsync(minutesThreshold);
-            return expiredPayments.Select(p => p.ToDto()).ToList();
+            return expiredPayments.ToDtoList();
         }
 
         public async Task CancelExpiredPaymentsAsync()
